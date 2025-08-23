@@ -1,601 +1,573 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>鄧樹遠 - 個人網頁</title>
+    <title>鄧樹遠 - 樹德科技大學動畫與遊戲設計系</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Microsoft JhengHei', 'PingFang TC', 'Noto Sans TC', sans-serif;
         }
 
         body {
-            background-color: #0a0a14;
-            color: #f0f0f0;
+            font-family: 'Microsoft JhengHei', sans-serif;
             line-height: 1.6;
-            overflow-x: hidden;
-        }
-
-        header {
-            background: linear-gradient(135deg, #0a0a14 0%, #1d1d32 100%);
-            color: white;
-            text-align: center;
-            padding: 6rem 0 4rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: radial-gradient(circle at center, rgba(128, 0, 255, 0.3) 0%, rgba(0, 0, 0, 0) 70%);
-            z-index: 1;
-        }
-
-        .profile-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 3rem;
-            position: relative;
-            z-index: 2;
-        }
-
-        .profile-pic {
-            width: 280px;
-            height: 280px;
-            border-radius: 50%;
-            border: 3px solid rgba(138, 43, 226, 0.7);
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(138, 43, 226, 0.3);
-        }
-
-        .profile-pic img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .header-text {
-            flex: 1;
-            min-width: 300px;
-            text-align: left;
-            padding: 0 2rem;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 2rem;
+            padding: 20px;
         }
 
-        nav {
-            background-color: rgba(10, 10, 20, 0.9);
-            padding: 1rem 0;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(138, 43, 226, 0.3);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
         }
 
-        nav ul {
-            list-style: none;
+        .profile-photo {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 5px solid #667eea;
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .profile-photo:hover {
+            transform: scale(1.05);
+        }
+
+        .profile-photo.placeholder {
+            background: linear-gradient(45deg, #667eea, #764ba2);
             display: flex;
+            align-items: center;
             justify-content: center;
-            gap: 2rem;
-        }
-
-        nav a {
             color: white;
-            text-decoration: none;
-            font-weight: 500;
-            transition: all 0.3s;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            position: relative;
-        }
-
-        nav a::after {
-            content: '';
-            position: absolute;
-            width: 0;
-            height: 2px;
-            bottom: 0;
-            left: 50%;
-            background-color: #8a2be2;
-            transition: all 0.3s;
-        }
-
-        nav a:hover::after {
-            width: 80%;
-            left: 10%;
-        }
-
-        nav a:hover {
-            color: #8a2be2;
-        }
-
-        section {
-            background-color: rgba(25, 25, 40, 0.7);
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            padding: 3rem;
-            margin-bottom: 3rem;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(138, 43, 226, 0.2);
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-
-        section:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(138, 43, 226, 0.2);
+            font-size: 48px;
+            font-weight: bold;
         }
 
         h1 {
-            font-size: 3.5rem;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(90deg, #8a2be2, #9370db);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            text-shadow: 0 0 10px rgba(138, 43, 226, 0.3);
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.5em;
         }
 
-        h2 {
-            font-size: 2.2rem;
-            color: #8a2be2;
-            margin: 1.5rem 0 1.5rem;
-            padding-bottom: 0.8rem;
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+
+        .content-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            color: #2c3e50;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .teaching-section {
             position: relative;
         }
 
-        h2::after {
-            content: '';
+        .admin-toggle {
             position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 60px;
-            height: 3px;
-            background: linear-gradient(90deg, #8a2be2, transparent);
-        }
-
-        h3 {
-            font-size: 1.6rem;
-            color: #9370db;
-            margin: 1.5rem 0 1rem;
-        }
-
-        .highlight {
-            font-size: 1.4rem;
-            color: rgba(255, 255, 255, 0.8);
-            margin-bottom: 1rem;
-            font-weight: 300;
-        }
-
-        ul, ol {
-            margin-left: 2rem;
-            margin-bottom: 1.5rem;
-        }
-
-        li {
-            margin-bottom: 0.8rem;
-        }
-
-        .publication {
-            margin-bottom: 2rem;
-            padding-bottom: 2rem;
-            border-bottom: 1px solid rgba(138, 43, 226, 0.2);
-            transition: transform 0.3s;
-        }
-
-        .publication:hover {
-            transform: translateX(10px);
-        }
-
-        .publication:last-child {
-            border-bottom: none;
-        }
-
-        .publication .year {
-            font-weight: bold;
-            color: #8a2be2;
-            margin-right: 0.5rem;
-        }
-
-        .contact-info {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1.5rem;
-            margin-top: 1.5rem;
-        }
-
-        .contact-item {
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-            margin-bottom: 1rem;
-            padding: 0.8rem 1.5rem;
-            background-color: rgba(138, 43, 226, 0.1);
-            border-radius: 50px;
-            transition: all 0.3s;
-        }
-
-        .contact-item:hover {
-            background-color: rgba(138, 43, 226, 0.2);
-            transform: translateY(-3px);
-        }
-
-        .contact-item i {
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: #8a2be2;
+            top: 10px;
+            right: 10px;
+            background: #667eea;
             color: white;
-            border-radius: 50%;
-            font-size: 1.2rem;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
         }
 
-        .contact-item a {
-            color: #9370db;
-            text-decoration: none;
-            transition: color 0.3s;
-        }
-
-        .contact-item a:hover {
-            color: #8a2be2;
-            text-decoration: underline;
-        }
-
-        footer {
-            background-color: rgba(10, 10, 20, 0.95);
-            color: rgba(255, 255, 255, 0.8);
-            text-align: center;
-            padding: 3rem 0;
-            margin-top: 4rem;
-            border-top: 1px solid rgba(138, 43, 226, 0.3);
-        }
-
-        .section-content {
-            max-width: 100%;
-        }
-
-        .grid-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 2rem;
-            margin-top: 2rem;
-        }
-
-        .grid-item {
-            background-color: rgba(40, 40, 60, 0.6);
-            padding: 1.5rem;
-            border-radius: 8px;
-            border-left: 3px solid #8a2be2;
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-
-        .grid-item:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-            background-color: rgba(50, 50, 80, 0.6);
-        }
-
-        .grid-item h4 {
-            color: #9370db;
-            margin-bottom: 0.8rem;
-            font-size: 1.2rem;
-        }
-
-        .skills {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.7rem;
-            margin: 1.5rem 0;
-        }
-
-        .skill-tag {
-            background-color: rgba(138, 43, 226, 0.2);
-            color: #9370db;
-            padding: 0.4rem 1rem;
-            border-radius: 50px;
-            font-size: 0.9rem;
-            transition: all 0.3s;
-        }
-
-        .skill-tag:hover {
-            background-color: rgba(138, 43, 226, 0.4);
+        .admin-toggle:hover {
+            background: #5a67d8;
             transform: translateY(-2px);
         }
 
-        .animated-gradient {
-            background: linear-gradient(-45deg, #8a2be2, #9370db, #4b0082, #8a2be2);
-            background-size: 400% 400%;
-            animation: gradient 15s ease infinite;
-            padding: 3px;
-            border-radius: 8px;
-            margin-bottom: 3rem;
+        .teaching-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
         }
 
-        @keyframes gradient {
-            0% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-            100% {
-                background-position: 0% 50%;
-            }
+        .teaching-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .teaching-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .teaching-item h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .teaching-item a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .teaching-item a:hover {
+            text-decoration: underline;
+        }
+
+        .edit-form {
+            display: none;
+            background: #e3f2fd;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .edit-form.show {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+            transition: background 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #5a67d8;
+        }
+
+        .btn-delete {
+            background: #e74c3c;
+        }
+
+        .btn-delete:hover {
+            background: #c0392b;
+        }
+
+        .password-section {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .password-section.show {
+            display: block;
+        }
+
+        .achievements {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .achievement-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #27ae60;
+        }
+
+        .publications {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #e74c3c;
+        }
+
+        .footer {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 30px;
+            padding: 20px;
         }
 
         @media (max-width: 768px) {
-            .profile-container {
-                flex-direction: column;
-                text-align: center;
-                gap: 1.5rem;
-            }
-            
-            .header-text {
-                text-align: center;
-                padding: 0;
-            }
-            
-            nav ul {
-                flex-direction: column;
-                align-items: center;
-                gap: 0.5rem;
-            }
-            
-            section {
-                padding: 2rem;
-            }
-            
-            .container {
-                padding: 0 1rem;
-            }
-            
-            header {
-                padding: 3rem 0;
+            .header {
+                padding: 20px;
             }
             
             h1 {
-                font-size: 2.5rem;
+                font-size: 2em;
             }
             
-            .profile-pic {
-                width: 220px;
-                height: 220px;
+            .teaching-links {
+                grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 <body>
-    <header>
-        <div class="container">
-            <div class="profile-container">
-                <div class="profile-pic">
-                    <img src="2021-AGDTeachers-tree.jpg" alt="鄧樹遠教授照片">
-                </div>
-                <div class="header-text">
-                    <h1>鄧樹遠</h1>
-                    <p class="highlight">樹德科技大學動畫與遊戲設計系副教授兼系主任</p>
-                    <div class="skills">
-                        <span class="skill-tag">遊戲設計</span>
-                        <span class="skill-tag">劇本創作</span>
-                        <span class="skill-tag">Unity認證</span>
-                        <span class="skill-tag">多媒體設計</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <nav>
-        <div class="container">
-            <ul>
-                <li><a href="#about">關於我</a></li>
-                <li><a href="#research">專長領域</a></li>
-                <li><a href="#teaching">教學成果</a></li>
-                <li><a href="#publications">著作出版</a></li>
-                <li><a href="#contact">聯絡方式</a></li>
-            </ul>
-        </div>
-    </nav>
-
     <div class="container">
-        <div class="animated-gradient">
-            <section id="about">
-                <h2>關於我</h2>
-                <p>您好，我是鄧樹遠，現任樹德科技大學動畫與遊戲設計系副教授（技術職）兼系主任，專長於遊戲設計、劇本創作與數位剪輯，並持有Unity程式設計師與藝術設計師認證。我致力於培養學生的創意思維與實務能力，透過教學與產學合作，為動畫與遊戲設計領域注入新活力。</p>
-                
-                <div class="grid-container">
-                    <div class="grid-item">
-                        <h4>教育背景</h4>
-                        <ul>
-                            <li>雲林科技大學設計學博士候選人</li>
-                        </ul>
-                    </div>
-                    <div class="grid-item">
-                        <h4>專業經歷</h4>
-                        <ul>
-                            <li>樹德科技大學動畫與遊戲設計系副教授兼系主任</li>
-                            <li>曾任明日工作室專案經理，具備豐富的產學合作與專案管理經驗</li>
-                        </ul>
-                    </div>
-                    <div class="grid-item">
-                        <h4>技能認證</h4>
-                        <ul>
-                            <li>Unity程式設計師認證</li>
-                            <li>Unity藝術設計師認證</li>
-                        </ul>
-                    </div>
-                </div>
-            </section>
+        <!-- 個人資料區域 -->
+        <div class="header">
+            <!-- 照片區域 - 支援多種照片來源 -->
+            <div class="profile-photo placeholder" id="profilePhoto">
+                鄧
+            </div>
+            <h1>鄧樹遠</h1>
+            <p class="subtitle">樹德科技大學動畫與遊戲設計系副教授兼系主任</p>
+            <p>您好，我是鄧樹遠，現任樹德科技大學動畫與遊戲設計系副教授（技術職）兼系主任，專長於遊戲設計、劇本創作與數位剪輯，並持有Unity程式設計師與藝術設計師認證。我致力於培養學生的創意思維與實務能力，透過教學與產學合作，為動畫與遊戲設計領域注入新活力。</p>
         </div>
 
-        <section id="research">
-            <h2>研究領域與專長</h2>
+        <!-- 專業領域 -->
+        <div class="content-section">
+            <h2 class="section-title">專業領域</h2>
             <p>我的專業領域集中在遊戲設計與多媒體創作，強調理論與實務的結合：</p>
-            
-            <div class="grid-container">
-                <div class="grid-item">
-                    <h4>遊戲設計與開發</h4>
-                    <p>專注於遊戲機制設計、關卡設計與使用者體驗優化，運用Unity引擎創造沉浸式互動體驗。</p>
-                </div>
-                <div class="grid-item">
-                    <h4>劇本創作與故事敘事</h4>
-                    <p>研究遊戲與數位媒體中的敘事結構與情感設計，創造引人入勝的故事與角色。</p>
-                </div>
-                <div class="grid-item">
-                    <h4>數位剪輯與後製技術</h4>
-                    <p>精通各種數位影像處理與視頻編輯軟體，能夠創作高品質的多媒體內容。</p>
-                </div>
-                <div class="grid-item">
-                    <h4>教育理念與產學連結</h4>
-                    <p>在AI時代，創意與幻想是不可取代的核心價值。我鼓勵學生善用多媒體數位工具，持續創作並挑戰自我。</p>
-                </div>
-            </div>
-            
-            <div class="skills">
-                <span class="skill-tag">遊戲設計</span>
-                <span class="skill-tag">Unity開發</span>
-                <span class="skill-tag">劇本創作</span>
-                <span class="skill-tag">數位敘事</span>
-                <span class="skill-tag">使用者體驗</span>
-                <span class="skill-tag">角色設計</span>
-                <span class="skill-tag">關卡設計</span>
-                <span class="skill-tag">多媒體製作</span>
-                <span class="skill-tag">視頻編輯</span>
-                <span class="skill-tag">產學合作</span>
-            </div>
-        </section>
+            <ul style="margin-top: 15px; padding-left: 20px;">
+                <li><strong>遊戲設計與開發：</strong> 專注於遊戲機制設計、關卡設計與使用者體驗優化，運用Unity引擎創造沉浸式互動體驗。</li>
+                <li><strong>劇本創作與敘事設計：</strong> 研究遊戲與數位媒體中的敘事結構與情感設計，創造引人入勝的故事與角色。</li>
+                <li><strong>數位剪輯與多媒體：</strong> 精通各種數位影像處理與視頻編輯軟體，能夠創作高品質的多媒體內容。</li>
+            </ul>
+            <p style="margin-top: 15px; font-style: italic; color: #666;">在AI時代，創意與幻想是不可取代的核心價值。我鼓勵學生善用多媒體數位工具，持續創作並挑戰自我。</p>
+        </div>
 
-        <section id="teaching">
-            <h2>教學與指導成果</h2>
+        <!-- 教學資源區域 -->
+        <div class="content-section teaching-section">
+            <h2 class="section-title">教學資源</h2>
+            <button class="admin-toggle" onclick="toggleAdmin()">管理模式</button>
             
-            <h3>學生競賽成就</h3>
-            <div class="grid-container">
-                <div class="grid-item">
-                    <h4>放視大賞</h4>
+            <!-- 密碼驗證區域 -->
+            <div class="password-section" id="passwordSection">
+                <h4>請輸入管理密碼：</h4>
+                <div class="form-group">
+                    <input type="password" id="adminPassword" placeholder="輸入密碼">
+                    <button class="btn" onclick="checkPassword()">確認</button>
+                </div>
+            </div>
+
+            <!-- 教學連結顯示區域 -->
+            <div class="teaching-links" id="teachingLinks">
+                <!-- 這裡會動態載入教學連結 -->
+            </div>
+
+            <!-- 編輯表單 -->
+            <div class="edit-form" id="editForm">
+                <h4>新增/編輯教學連結</h4>
+                <form onsubmit="saveTeachingLink(event)">
+                    <div class="form-group">
+                        <label>課程名稱：</label>
+                        <input type="text" id="courseName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>連結網址：</label>
+                        <input type="url" id="courseUrl" required>
+                    </div>
+                    <div class="form-group">
+                        <label>課程描述：</label>
+                        <input type="text" id="courseDescription">
+                    </div>
+                    <button type="submit" class="btn">保存</button>
+                    <button type="button" class="btn" onclick="cancelEdit()">取消</button>
+                    <input type="hidden" id="editingIndex" value="">
+                </form>
+            </div>
+        </div>
+
+        <!-- 指導成果 -->
+        <div class="content-section">
+            <h2 class="section-title">指導成果</h2>
+            <div class="achievements">
+                <div class="achievement-item">
+                    <h4>🏆 放視大賞</h4>
                     <p>指導學生參加「放視大賞」PC遊戲獎，獲得優異成績</p>
                 </div>
-                <div class="grid-item">
-                    <h4>新一代設計展</h4>
+                <div class="achievement-item">
+                    <h4>⭐ 新一代設計展</h4>
                     <p>帶領學生獲得「新一代設計展」點新秀最佳獎</p>
                 </div>
-                <div class="grid-item">
-                    <h4>國際形象美學創意設計競賽</h4>
+                <div class="achievement-item">
+                    <h4>🥇 多項競賽第一名</h4>
                     <p>指導學生連續多年榮獲海報設計、專業攝影與插畫設計等多項第一名</p>
                 </div>
             </div>
-            
-            <h3>開設課程</h3>
-            <div class="grid-container">
-                <div class="grid-item">
-                    <h4>遊戲設計原理</h4>
-                    <p>學士，秋季學期</p>
-                </div>
-                <div class="grid-item">
-                    <h4>Unity遊戲開發</h4>
-                    <p>學士，春季學期</p>
-                </div>
-                <div class="grid-item">
-                    <h4>數位敘事與劇本創作</h4>
-                    <p>碩士，秋季學期</p>
-                </div>
-                <div class="grid-item">
-                    <h4>多媒體設計實務</h4>
-                    <p>學士，春季學期</p>
-                </div>
-            </div>
-            
-            <h3>教學理念</h3>
-            <p>我相信教育應培養學生的創意思維和實務解決問題的能力。在課堂上，我結合理論講授與實際案例分析，鼓勵學生參與業界合作專案，將所學知識應用於解決真實世界的問題。在AI時代，創意思維與想像力是不可取代的核心競爭力。</p>
-        </section>
+        </div>
 
-        <section id="publications">
-            <h2>著作與出版</h2>
-            
-            <h3>專書</h3>
-            <div class="publication">
-                <p><span class="year">2024</span> 鄧樹遠, 施純協. <em>《八卦高手－創易策略》</em>. 商周出版.</p>
+        <!-- 出版著作 -->
+        <div class="content-section">
+            <h2 class="section-title">出版著作</h2>
+            <div class="publications">
+                <h4>2024 《八卦高手－創易策略》</h4>
+                <p><em>鄧樹遠, 施純協. 商周出版.</em></p>
                 <p>將《易經》智慧以漫畫形式呈現，深入淺出地介紹八卦符號與文字。</p>
             </div>
-            
-            <div class="publication">
-                <p><span class="year">2023</span> 鄧樹遠, 施純協. <em>《簡單就是力量－創易策略》</em>. 商周出版.</p>
+            <div class="publications">
+                <h4>2023 《簡單就是力量－創易策略》</h4>
+                <p><em>鄧樹遠, 施純協. 商周出版.</em></p>
                 <p>透過簡明易懂的方式，讓讀者理解《易經》中蘊含的生活智慧。</p>
             </div>
-            
-            <div class="publication">
-                <p><span class="year">2022</span> 鄧樹遠, 施純協. <em>《說卦解字－創易策略》</em>. 商周出版.</p>
+            <div class="publications">
+                <h4>2022 《說卦解字－創易策略》</h4>
+                <p><em>鄧樹遠, 施純協. 商周出版.</em></p>
                 <p>深入探討八卦符號與文字的關聯，以創新的方式詮釋古老智慧。</p>
             </div>
-            
-            <h3>產學合作專案</h3>
-            <div class="publication">
-                <p><span class="year">2024</span> 「互動式數位展覽設計」產學合作專案，與高雄市立美術館合作。</p>
-                <p>運用最新數位技術，為美術館創造沉浸式的參觀體驗。</p>
-            </div>
-            
-            <div class="publication">
-                <p><span class="year">2023</span> 「沉浸式遊戲體驗設計」產學合作專案，與台灣遊戲發展協會合作。</p>
-                <p>探索VR/AR技術在遊戲中的應用，提升玩家的遊戲體驗。</p>
-            </div>
-        </section>
+        </div>
 
-        <section id="contact">
-            <h2>聯絡方式</h2>
-            
-            <div class="contact-info">
-                <div class="contact-item">
-                    <i>📧</i>
-                    <span>郵箱：shuyuan@stu.edu.tw</span>
-                </div>
-                
-                <div class="contact-item">
-                    <i>📱</i>
-                    <span>電話：(07) xxxx-xxxx</span>
-                </div>
-                
-                <div class="contact-item">
-                    <i>🏢</i>
-                    <span>辦公室：樹德科技大學動畫與遊戲設計系</span>
-                </div>
+        <!-- 產學合作 -->
+        <div class="content-section">
+            <h2 class="section-title">產學合作</h2>
+            <div class="publications">
+                <h4>2024 互動式數位展覽設計</h4>
+                <p>與高雄市立美術館合作，運用最新數位技術，為美術館創造沉浸式的參觀體驗。</p>
             </div>
-            
-            <h3>相關連結</h3>
-            <div class="contact-info">
-                <div class="contact-item">
-                    <i>🔗</i>
-                    <span><a href="https://www.youtube.com/channel/UCxxxxxxxx" target="_blank">YouTube 頻道</a></span>
-                </div>
-                
-                <div class="contact-item">
-                    <i>🔗</i>
-                    <span><a href="https://dag.stu.edu.tw/" target="_blank">樹德科技大學動畫與遊戲設計系</a></span>
-                </div>
+            <div class="publications">
+                <h4>2023 沉浸式遊戲體驗設計</h4>
+                <p>與台灣遊戲發展協會合作，探索VR/AR技術在遊戲中的應用，提升玩家的遊戲體驗。</p>
             </div>
-        </section>
+        </div>
+
+        <div class="footer">
+            <p>&copy; 2024 鄧樹遠 | 樹德科技大學動畫與遊戲設計系</p>
+        </div>
     </div>
 
-    <footer>
-        <div class="container">
-            <p>&copy; 2025 鄧樹遠. 版權所有.</p>
-            <p>最後更新：2025年5月18日</p>
-        </div>
-    </footer>
+    <script>
+        // 照片載入功能
+        function loadProfilePhoto() {
+            const photo = document.getElementById('profilePhoto');
+            
+            // 嘗試載入照片的多個來源
+            const photoSources = [
+                'images/profile.jpg',
+                'assets/profile.jpg',
+                'profile.jpg',
+                'https://github.com/treefar/treefar.github.io/raw/main/profile.jpg'
+            ];
+            
+            let currentIndex = 0;
+            
+            function tryLoadPhoto(src) {
+                const img = new Image();
+                img.onload = function() {
+                    photo.innerHTML = '';
+                    photo.classList.remove('placeholder');
+                    photo.style.backgroundImage = `url(${src})`;
+                    photo.style.backgroundSize = 'cover';
+                    photo.style.backgroundPosition = 'center';
+                };
+                img.onerror = function() {
+                    currentIndex++;
+                    if (currentIndex < photoSources.length) {
+                        tryLoadPhoto(photoSources[currentIndex]);
+                    }
+                };
+                img.src = src;
+            }
+            
+            if (photoSources.length > 0) {
+                tryLoadPhoto(photoSources[0]);
+            }
+        }
+
+        // 教學資源管理功能
+        let isAdminMode = false;
+        const adminPassword = 'treefar2024'; // 請修改為您的密碼
+        let teachingData = JSON.parse(localStorage.getItem('teachingLinks')) || [
+            {
+                name: '遊戲設計基礎',
+                url: 'https://example.com/game-design',
+                description: '介紹遊戲設計的基本概念與原理'
+            },
+            {
+                name: 'Unity程式設計',
+                url: 'https://example.com/unity',
+                description: 'Unity引擎的基礎操作與程式設計'
+            },
+            {
+                name: '數位剪輯技巧',
+                url: 'https://example.com/editing',
+                description: '數位影像處理與視頻編輯技巧'
+            }
+        ];
+
+        function toggleAdmin() {
+            if (!isAdminMode) {
+                document.getElementById('passwordSection').classList.add('show');
+            } else {
+                exitAdminMode();
+            }
+        }
+
+        function checkPassword() {
+            const password = document.getElementById('adminPassword').value;
+            if (password === adminPassword) {
+                enterAdminMode();
+            } else {
+                alert('密碼錯誤！');
+            }
+        }
+
+        function enterAdminMode() {
+            isAdminMode = true;
+            document.getElementById('passwordSection').classList.remove('show');
+            document.querySelector('.admin-toggle').textContent = '退出管理';
+            document.querySelector('.admin-toggle').style.background = '#e74c3c';
+            renderTeachingLinks();
+        }
+
+        function exitAdminMode() {
+            isAdminMode = false;
+            document.getElementById('adminPassword').value = '';
+            document.getElementById('editForm').classList.remove('show');
+            document.querySelector('.admin-toggle').textContent = '管理模式';
+            document.querySelector('.admin-toggle').style.background = '#667eea';
+            renderTeachingLinks();
+        }
+
+        function renderTeachingLinks() {
+            const container = document.getElementById('teachingLinks');
+            container.innerHTML = '';
+
+            teachingData.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'teaching-item';
+                div.innerHTML = `
+                    <h4>${item.name}</h4>
+                    <p>${item.description}</p>
+                    <a href="${item.url}" target="_blank">前往學習</a>
+                    ${isAdminMode ? `
+                        <div style="margin-top: 15px;">
+                            <button class="btn" onclick="editTeachingLink(${index})">編輯</button>
+                            <button class="btn btn-delete" onclick="deleteTeachingLink(${index})">刪除</button>
+                        </div>
+                    ` : ''}
+                `;
+                container.appendChild(div);
+            });
+
+            if (isAdminMode) {
+                const addButton = document.createElement('div');
+                addButton.className = 'teaching-item';
+                addButton.style.cursor = 'pointer';
+                addButton.style.border = '2px dashed #667eea';
+                addButton.style.textAlign = 'center';
+                addButton.innerHTML = '<h4>+ 新增教學連結</h4>';
+                addButton.onclick = () => editTeachingLink(-1);
+                container.appendChild(addButton);
+            }
+        }
+
+        function editTeachingLink(index) {
+            const form = document.getElementById('editForm');
+            const editingIndex = document.getElementById('editingIndex');
+            
+            if (index >= 0) {
+                const item = teachingData[index];
+                document.getElementById('courseName').value = item.name;
+                document.getElementById('courseUrl').value = item.url;
+                document.getElementById('courseDescription').value = item.description;
+                editingIndex.value = index;
+            } else {
+                document.getElementById('courseName').value = '';
+                document.getElementById('courseUrl').value = '';
+                document.getElementById('courseDescription').value = '';
+                editingIndex.value = '';
+            }
+            
+            form.classList.add('show');
+        }
+
+        function saveTeachingLink(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('courseName').value;
+            const url = document.getElementById('courseUrl').value;
+            const description = document.getElementById('courseDescription').value;
+            const editingIndex = document.getElementById('editingIndex').value;
+
+            const newItem = { name, url, description };
+
+            if (editingIndex === '') {
+                teachingData.push(newItem);
+            } else {
+                teachingData[parseInt(editingIndex)] = newItem;
+            }
+
+            localStorage.setItem('teachingLinks', JSON.stringify(teachingData));
+            cancelEdit();
+            renderTeachingLinks();
+            alert('保存成功！');
+        }
+
+        function deleteTeachingLink(index) {
+            if (confirm('確定要刪除這個教學連結嗎？')) {
+                teachingData.splice(index, 1);
+                localStorage.setItem('teachingLinks', JSON.stringify(teachingData));
+                renderTeachingLinks();
+            }
+        }
+
+        function cancelEdit() {
+            document.getElementById('editForm').classList.remove('show');
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProfilePhoto();
+            renderTeachingLinks();
+        });
+    </script>
 </body>
 </html>
