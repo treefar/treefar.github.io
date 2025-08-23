@@ -388,12 +388,14 @@
         function loadProfilePhoto() {
             const photo = document.getElementById('profilePhoto');
             
-            // 嘗試載入照片的多個來源
+            // 嘗試載入照片的多個來源，優先載入您的照片
             const photoSources = [
-                'images/profile.jpg',
-                'assets/profile.jpg',
-                'profile.jpg',
-                'https://github.com/treefar/treefar.github.io/raw/main/profile.jpg'
+                '2021-AGDTeachers-tree.jpg',  // 您的照片檔名
+                './2021-AGDTeachers-tree.jpg',  // 加上相對路徑
+                'images/2021-AGDTeachers-tree.jpg',  // 如果在images資料夾
+                'assets/2021-AGDTeachers-tree.jpg',  // 如果在assets資料夾
+                'profile.jpg',  // 備用檔名
+                'https://treefar.github.io/2021-AGDTeachers-tree.jpg'  // GitHub直連
             ];
             
             let currentIndex = 0;
