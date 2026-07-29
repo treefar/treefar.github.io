@@ -16,20 +16,28 @@
     --c-story: #c4b5fd;
     --c-site: #93c5fd;
     --c-tool: #fbbf24;
-    --c-about: #f9a8d4;
+    --c-local: #fda4af;
+    --c-ext: #86efac;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: "Microsoft JhengHei UI", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
     background: var(--bg); color: var(--ink);
-    min-height: 100vh; padding: 48px 24px;
+    min-height: 100vh; padding: 40px 20px 60px;
   }
-  .wrap { max-width: 960px; margin: 0 auto; }
-  header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 6px; flex-wrap: wrap; }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 4px; flex-wrap: wrap; }
   h1 { font-size: 26px; letter-spacing: 1px; }
   h1 span { color: var(--dim); font-weight: 400; }
-  .hint { color: var(--dim); font-size: 13px; margin-bottom: 28px; }
-  .filters { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .about-link { margin-left: auto; color: var(--dim); text-decoration: none; font-size: 14px; border-bottom: 1px dotted var(--dim); }
+  .about-link:hover { color: var(--ink); }
+  .hint { color: var(--dim); font-size: 13px; margin-bottom: 24px; }
+  @media (max-width: 640px) { .hint .kbd-only { display: none; } }
+
+  h2.sec { font-size: 15px; letter-spacing: 3px; color: var(--dim); margin: 36px 0 14px; display: flex; align-items: center; gap: 10px; }
+  h2.sec::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+  .filters { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
   .chip {
     border: 1px solid var(--line); background: none; color: var(--dim);
     padding: 6px 14px; border-radius: 999px; font-size: 13px; cursor: pointer;
@@ -37,120 +45,192 @@
   }
   .chip:hover { color: var(--ink); border-color: var(--dim); }
   .chip.on { color: var(--bg); background: var(--ink); border-color: var(--ink); }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
   .card {
-    position: relative; display: block; background: var(--panel);
-    border: 1px solid var(--line); border-radius: 12px; padding: 18px 18px 16px;
+    position: relative; display: flex; flex-direction: column; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
     text-decoration: none; color: inherit; transition: all .15s;
   }
-  .card:hover { background: var(--panel-hover); border-color: var(--dim); transform: translateY(-2px); }
+  .card:hover { background: var(--panel-hover); border-color: var(--dim); transform: translateY(-3px); }
   .card.hide { display: none; }
+  .thumb { position: relative; aspect-ratio: 16/9; background: #0a0d12; }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .key {
-    position: absolute; top: 14px; right: 14px; width: 22px; height: 22px;
-    border: 1px solid var(--line); border-radius: 5px; color: var(--dim);
-    font-size: 12px; display: flex; align-items: center; justify-content: center;
+    position: absolute; top: 10px; right: 10px; width: 24px; height: 24px;
+    background: rgba(10,13,18,.72); border: 1px solid rgba(255,255,255,.25); border-radius: 6px;
+    color: #fff; font-size: 12px; display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(2px);
   }
-  .tag { font-size: 11px; letter-spacing: 2px; margin-bottom: 8px; }
-  .card h2 { font-size: 17px; margin-bottom: 6px; }
-  .card p { font-size: 13px; color: var(--dim); line-height: 1.6; min-height: 42px; }
-  .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+  .body { padding: 14px 16px 14px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .tag { font-size: 11px; letter-spacing: 2px; }
+  .card h3 { font-size: 16px; }
+  .card p { font-size: 13px; color: var(--dim); line-height: 1.6; flex: 1; }
+  .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
   .url { font-size: 12px; color: var(--dim); opacity: .7; }
-  .gh { font-size: 12px; color: var(--dim); text-decoration: none; border-bottom: 1px dotted var(--dim); }
+  .gh { font-size: 12px; color: var(--dim); border-bottom: 1px dotted var(--dim); cursor: pointer; }
   .gh:hover { color: var(--ink); }
-  .t-game { color: var(--c-game); }
-  .t-story { color: var(--c-story); }
-  .t-site { color: var(--c-site); }
-  .t-tool { color: var(--c-tool); }
-  .t-about { color: var(--c-about); }
-  footer { margin-top: 40px; color: var(--dim); font-size: 12px; opacity: .6; }
+
+  .mini-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  .mini {
+    display: flex; flex-direction: column; gap: 5px; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px;
+    text-decoration: none; color: inherit; transition: all .15s; cursor: pointer;
+  }
+  .mini:hover { background: var(--panel-hover); border-color: var(--dim); }
+  .mini h3 { font-size: 14px; display: flex; align-items: center; gap: 8px; }
+  .mini .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .mini p { font-size: 12px; color: var(--dim); line-height: 1.5; }
+  .mini .addr { font-size: 11px; color: var(--dim); opacity: .7; font-family: Consolas, monospace; word-break: break-all; }
+  .note { font-size: 12px; color: var(--dim); opacity: .8; margin: -6px 0 12px; }
+
+  .t-game { color: var(--c-game); } .d-game { background: var(--c-game); }
+  .t-story { color: var(--c-story); } .d-story { background: var(--c-story); }
+  .t-site { color: var(--c-site); } .d-site { background: var(--c-site); }
+  .t-tool { color: var(--c-tool); } .d-tool { background: var(--c-tool); }
+  .d-local { background: var(--c-local); }
+  .d-ext { background: var(--c-ext); }
+
+  footer { margin-top: 44px; color: var(--dim); font-size: 12px; opacity: .6; }
+  .toast {
+    position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(80px);
+    background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 10px;
+    font-size: 13px; transition: transform .25s, opacity .25s; pointer-events: none; z-index: 9;
+    opacity: 0;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header><h1>treefar <span>／專案導航</span></h1></header>
-  <p class="hint">按數字鍵 1–7 直接開啟對應專案</p>
+  <header>
+    <h1>treefar <span>／專案導航</span></h1>
+    <a class="about-link" href="/about.html">關於我</a>
+  </header>
+  <p class="hint"><span class="kbd-only">按數字鍵 1–6 直接開啟對應專案　·　</span>本機工具僅在自己電腦且服務開啟時可用</p>
 
+  <h2 class="sec">網頁專案</h2>
   <div class="filters" id="filters">
     <button class="chip on" data-f="all">全部</button>
     <button class="chip" data-f="game">遊戲</button>
     <button class="chip" data-f="story">互動敘事</button>
     <button class="chip" data-f="site">網站</button>
     <button class="chip" data-f="tool">工具</button>
-    <button class="chip" data-f="about">關於</button>
   </div>
+  <div class="grid" id="grid"></div>
 
-  <div class="grid" id="grid">
-    <a class="card" data-f="game" href="/neon-swarm-shooter/">
-      <span class="key">1</span>
-      <div class="tag t-game">GAME</div>
-      <h2>霓虹蜂潮 NEON SWARM</h2>
-      <p>固定畫面 Roguelite 彈幕射擊。像素美術與音效全原創，WebAudio 即時合成。</p>
-      <div class="foot"><span class="url">/neon-swarm-shooter</span><span class="gh" data-gh="https://github.com/treefar/neon-swarm-shooter">repo</span></div>
-    </a>
-    <a class="card" data-f="game" href="/avalanche-run/">
-      <span class="key">2</span>
-      <div class="tag t-game">GAME</div>
-      <h2>雪崩來了！AVALANCHE RUN</h2>
-      <p>Three.js 3D 滑雪逃生。雪崩在後，一路閃樹過彎往山下衝。</p>
-      <div class="foot"><span class="url">/avalanche-run</span><span class="gh" data-gh="https://github.com/treefar/avalanche-run">repo</span></div>
-    </a>
-    <a class="card" data-f="tool" href="/capy-generator/">
-      <span class="key">3</span>
-      <div class="tag t-tool">TOOL</div>
-      <h2>Capy Generator 水豚生成器</h2>
-      <p>程序化 3D 水豚：捏體型、換毛色、玩玩具、切天氣，生成收藏卡片。</p>
-      <div class="foot"><span class="url">/capy-generator</span><span class="gh" data-gh="https://github.com/treefar/capy-generator">repo</span></div>
-    </a>
-    <a class="card" data-f="game story" href="/yokai-realm/">
-      <span class="key">4</span>
-      <div class="tag t-story">GAME × STORY</div>
-      <h2>妖境說</h2>
-      <p>視覺小說＋遊戲第一階段原型，台味妖怪世界觀。</p>
-      <div class="foot"><span class="url">/yokai-realm</span><span class="gh" data-gh="https://github.com/treefar/yokai-realm">repo</span></div>
-    </a>
-    <a class="card" data-f="story" href="/schoolStoryDemo/">
-      <span class="key">5</span>
-      <div class="tag t-story">STORY</div>
-      <h2>本校怪異事件處理簿</h2>
-      <p>「系主任不是人」——校園怪談互動故事 Demo。</p>
-      <div class="foot"><span class="url">/schoolStoryDemo</span><span class="gh" data-gh="https://github.com/treefar/schoolStoryDemo">repo</span></div>
-    </a>
-    <a class="card" data-f="site" href="/agd-comic-site/">
-      <span class="key">6</span>
-      <div class="tag t-site">SITE</div>
-      <h2>動遊系 COMIC EDITION</h2>
-      <p>樹德科大動畫與遊戲設計系，漫畫風新形象網站。</p>
-      <div class="foot"><span class="url">/agd-comic-site</span><span class="gh" data-gh="https://github.com/treefar/agd-comic-site">repo</span></div>
-    </a>
-    <a class="card" data-f="about" href="/about.html">
-      <span class="key">7</span>
-      <div class="tag t-about">ABOUT</div>
-      <h2>關於鄧樹遠</h2>
-      <p>個人簡介——樹德科技大學動畫與遊戲設計系。</p>
-      <div class="foot"><span class="url">/about.html</span></div>
-    </a>
-  </div>
+  <h2 class="sec">本機工具</h2>
+  <p class="note">這些連結指向 localhost 或本機路徑，只在這台電腦、對應服務開著時有效；路徑卡片點一下即複製。</p>
+  <div class="mini-grid" id="tools"></div>
+
+  <h2 class="sec">外部連結</h2>
+  <div class="mini-grid" id="links"></div>
 
   <footer>treefar.github.io — 自用專案導航</footer>
 </div>
+<div class="toast" id="toast">已複製路徑</div>
+
 <script>
-  const cards = [...document.querySelectorAll('.card')];
-  document.getElementById('filters').addEventListener('click', e => {
-    const btn = e.target.closest('.chip');
-    if (!btn) return;
-    document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
-    btn.classList.add('on');
-    const f = btn.dataset.f;
-    cards.forEach(c => c.classList.toggle('hide', f !== 'all' && !c.dataset.f.split(' ').includes(f)));
+// ===== 要新增項目，改下面三個陣列即可 =====
+
+// 網頁專案：cat 可多值（空白分隔）：game / story / site / tool
+const SITES = [
+  { slug: "neon-swarm-shooter", title: "霓虹蜂潮 NEON SWARM", cat: "game", tag: "GAME",
+    desc: "固定畫面 Roguelite 彈幕射擊。像素美術與音效全原創，WebAudio 即時合成。" },
+  { slug: "avalanche-run", title: "雪崩來了！AVALANCHE RUN", cat: "game", tag: "GAME",
+    desc: "Three.js 3D 滑雪逃生。雪崩在後，一路閃樹過彎往山下衝。" },
+  { slug: "capy-generator", title: "Capy Generator 水豚生成器", cat: "tool", tag: "TOOL",
+    desc: "程序化 3D 水豚：捏體型、換毛色、玩玩具、切天氣，生成收藏卡片。" },
+  { slug: "yokai-realm", title: "妖境說", cat: "game story", tag: "GAME × STORY",
+    desc: "水墨山海間重寫一部山海經——視覺小說＋戰鬥原型。" },
+  { slug: "schoolStoryDemo", title: "本校怪異事件處理簿", cat: "story", tag: "STORY",
+    desc: "「系主任不是人」——校園怪談互動故事 Demo。" },
+  { slug: "agd-comic-site", title: "動遊系 COMIC EDITION", cat: "site", tag: "SITE",
+    desc: "樹德科大動畫與遊戲設計系，漫畫風新形象網站。" },
+];
+
+// 本機工具：有 url 的直接開啟（localhost 服務）；有 path 的點擊複製路徑
+const TOOLS = [
+  { title: "博論實驗輔助系統", url: "http://localhost:3789",
+    desc: "編劇實務研究的實驗輔助系統，服務開著時點此進入。" },
+  { title: "拼界 Puzzlebound（Unity 專案）", path: "C:\\Users\\USER\\Desktop\\Puzzlebound",
+    desc: "甄妤畢展 VN。點擊複製專案路徑，到檔案總管貼上開啟。" },
+  // { title: "範例：本機服務", url: "http://localhost:8080", desc: "說明文字" },
+  // { title: "範例：資料夾捷徑", path: "D:\\某個資料夾", desc: "點擊複製路徑" },
+];
+
+// 外部連結
+const LINKS = [
+  { title: "GitHub（treefar）", url: "https://github.com/treefar", desc: "所有 repo 與原始碼。" },
+  // { title: "範例：常用網站", url: "https://example.com", desc: "說明文字" },
+];
+
+// ===== 以下為渲染邏輯，一般不用動 =====
+const grid = document.getElementById("grid");
+SITES.forEach((s, i) => {
+  const a = document.createElement("a");
+  a.className = "card"; a.dataset.f = s.cat; a.href = `/${s.slug}/`;
+  const t = s.tag.toLowerCase().includes("story") && !s.cat.includes("game") ? "story" : s.cat.split(" ")[0];
+  a.innerHTML = `
+    <div class="thumb"><img src="/previews/${s.slug}.jpg" alt="${s.title}" width="640" height="360" loading="lazy"><span class="key">${i + 1}</span></div>
+    <div class="body">
+      <div class="tag t-${t}">${s.tag}</div>
+      <h3>${s.title}</h3>
+      <p>${s.desc}</p>
+      <div class="foot"><span class="url">/${s.slug}</span><span class="gh" data-gh="https://github.com/treefar/${s.slug}">repo</span></div>
+    </div>`;
+  grid.appendChild(a);
+});
+
+const tools = document.getElementById("tools");
+TOOLS.forEach(t => {
+  const el = document.createElement(t.url ? "a" : "div");
+  el.className = "mini";
+  if (t.url) el.href = t.url;
+  el.innerHTML = `
+    <h3><span class="dot d-local"></span>${t.title}</h3>
+    <p>${t.desc || ""}</p>
+    <span class="addr">${t.url || t.path}</span>`;
+  if (t.path) el.addEventListener("click", () => {
+    navigator.clipboard.writeText(t.path).then(showToast);
   });
-  document.querySelectorAll('.gh').forEach(el => {
-    el.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); window.open(el.dataset.gh, '_blank'); });
-  });
-  addEventListener('keydown', e => {
-    if (e.target.tagName === 'INPUT') return;
-    const n = parseInt(e.key, 10);
-    if (n >= 1 && n <= cards.length) location.href = cards[n - 1].getAttribute('href');
-  });
+  tools.appendChild(el);
+});
+
+const links = document.getElementById("links");
+LINKS.forEach(t => {
+  const el = document.createElement("a");
+  el.className = "mini"; el.href = t.url; el.target = "_blank"; el.rel = "noopener";
+  el.innerHTML = `
+    <h3><span class="dot d-ext"></span>${t.title}</h3>
+    <p>${t.desc || ""}</p>
+    <span class="addr">${t.url}</span>`;
+  links.appendChild(el);
+});
+
+const cards = [...grid.querySelectorAll(".card")];
+document.getElementById("filters").addEventListener("click", e => {
+  const btn = e.target.closest(".chip");
+  if (!btn) return;
+  document.querySelectorAll(".chip").forEach(c => c.classList.remove("on"));
+  btn.classList.add("on");
+  const f = btn.dataset.f;
+  cards.forEach(c => c.classList.toggle("hide", f !== "all" && !c.dataset.f.split(" ").includes(f)));
+});
+grid.addEventListener("click", e => {
+  const gh = e.target.closest(".gh");
+  if (gh) { e.preventDefault(); e.stopPropagation(); window.open(gh.dataset.gh, "_blank"); }
+});
+addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT") return;
+  const n = parseInt(e.key, 10);
+  if (n >= 1 && n <= cards.length) location.href = cards[n - 1].getAttribute("href");
+});
+function showToast() {
+  const t = document.getElementById("toast");
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 1600);
+}
 </script>
 </body>
 </html>
