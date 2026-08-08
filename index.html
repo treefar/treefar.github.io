@@ -107,7 +107,7 @@
     <h1>treefar <span>／專案導航</span></h1>
     <a class="about-link" href="/about.html">關於我</a>
   </header>
-  <p class="hint"><span class="kbd-only">按數字鍵 1–6 直接開啟對應專案　·　</span>本機工具僅在自己電腦且服務開啟時可用</p>
+  <p class="hint"><span class="kbd-only">按數字鍵 1–9 直接開啟對應專案　·　</span>本機工具僅在自己電腦且服務開啟時可用</p>
 
   <h2 class="sec">網頁專案</h2>
   <div class="filters" id="filters">
@@ -139,6 +139,9 @@ const SITES = [
     desc: "動遊系學生趕畢展的三入口塔防。招牌機制「內耗引擎」：異職種相鄰會吵架，吵架降輸出卻累積爆氣，滿槽就能發動組合技。十關 46 波、五位審查委員各有專屬反制。" },
   { slug: "pixel-city-editor", title: "像素地圖編輯器", cat: "tool", tag: "TOOL",
     desc: "七套場景主題的 2.5D 像素地圖編輯器。67 個可放置角色、會照亮周圍的光源、碰撞與遊戲物件錨點，可匯出 Tiled TMX 與通用 JSON。" },
+  { slug: "3d-pixel-tools", title: "3D／像素三工具實驗室", cat: "tool", tag: "TOOL × 3D",
+    image: "3d-pixel-tools.png", repo: "treefar.github.io",
+    desc: "Asset Forge、PixelOver、Crocotile 3D 的能力比較、原生驗證與 Unity 整合案例。含 Waterfall 開放世界與三型共骨架機甲。" },
   { slug: "neon-swarm-shooter", title: "霓虹蜂潮 NEON SWARM", cat: "game", tag: "GAME",
     desc: "固定畫面 Roguelite 彈幕射擊。像素美術與音效全原創，WebAudio 即時合成。" },
   { slug: "avalanche-run", title: "雪崩來了！AVALANCHE RUN", cat: "game", tag: "GAME",
@@ -178,12 +181,12 @@ SITES.forEach((s, i) => {
   a.className = "card"; a.dataset.f = s.cat; a.href = `/${s.slug}/`;
   const t = s.tag.toLowerCase().includes("story") && !s.cat.includes("game") ? "story" : s.cat.split(" ")[0];
   a.innerHTML = `
-    <div class="thumb"><img src="/previews/${s.slug}.jpg" alt="${s.title}" width="640" height="360" loading="lazy"><span class="key">${i + 1}</span></div>
+    <div class="thumb"><img src="/previews/${s.image || (s.slug + ".jpg")}" alt="${s.title}" width="640" height="360" loading="lazy">${i < 9 ? '<span class="key">' + (i + 1) + '</span>' : ''}</div>
     <div class="body">
       <div class="tag t-${t}">${s.tag}</div>
       <h3>${s.title}</h3>
       <p>${s.desc}</p>
-      <div class="foot"><span class="url">/${s.slug}</span><span class="gh" data-gh="https://github.com/treefar/${s.slug}">repo</span></div>
+      <div class="foot"><span class="url">/${s.slug}</span><span class="gh" data-gh="https://github.com/treefar/${s.repo || s.slug}">repo</span></div>
     </div>`;
   grid.appendChild(a);
 });
