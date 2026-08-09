@@ -252,7 +252,7 @@ const SLIDES = [
   { title: "深度專注行動指南｜樹遠老師版", tag: "SLIDES × FOCUS", image: "deep-focus.png",
     url: "/slides/深度專注行動指南_樹遠老師版.pptx",
     desc: "樹遠老師版的深度專注行動指南，加入個人工作節奏與可執行的專注方法。" },
-  { title: "1001 款不得不玩的遊戲｜研究表（2013 版）", tag: "DATA × RESEARCH", image: "github-top100-zh-tw.png",
+  { title: "1001 款不得不玩的遊戲｜研究表（2013 版）", tag: "DATA × RESEARCH", kind: "data", image: "github-top100-zh-tw.png",
     url: "/slides/1001款不得不玩的遊戲_研究表_2013版.xlsx",
     desc: "遊戲研究資料表（Excel），可下載作為研究、課程與遊戲分析的資料來源。" },
 ];
@@ -304,7 +304,7 @@ SLIDES.forEach((s) => {
       <div class="tag t-tool">${s.tag}</div>
       <h3>${s.title}</h3>
       <p>${s.desc}</p>
-      <div class="foot"><span class="url">下載 PPTX</span><span class="gh">投影片專區</span></div>
+      <div class="foot"><span class="url">${s.kind === "data" ? "下載 Excel" : "下載 PPTX"}</span><span class="gh">投影片專區</span></div>
     </div>`;
   slides.appendChild(a);
 });
