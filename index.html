@@ -164,6 +164,10 @@
   </div>
   <div class="grid" id="grid"></div>
 
+  <h2 class="sec">投影片專區</h2>
+  <p class="note">可下載的完整簡報；卡片縮圖是封面，點擊後直接下載 PPTX。</p>
+  <div class="grid" id="slides"></div>
+
   <h2 class="sec">本機工具</h2>
   <p class="note">這些連結指向 localhost 或本機路徑，只在這台電腦、對應服務開著時有效；路徑卡片點一下即複製。</p>
   <div class="mini-grid" id="tools"></div>
@@ -215,6 +219,16 @@ const SITES = [
     desc: "把模糊問題拆成事實、假設與最小驗證。提供三種分析深度、案例庫、假設風險矩陣、決策日誌與多格式匯出。" },
 ];
 
+// 投影片：放在首頁的獨立投影片專區，url 指向 repo 內的可下載檔案
+const SLIDES = [
+  { title: "兩本書重點與個人化建言", tag: "SLIDES × READING", image: "deep-learning-deep-work.png",
+    url: "/slides/兩本書重點與個人化建言_深度學習力與深度工作力_實際情境修正版.pptx",
+    desc: "《深度學習力》×《深度工作力》：完整目錄、各章重點，以及對教學、博論、系務與 AI 工作流的個人化建言。" },
+  { title: "管理器、Dashboard 與 Daemon", tag: "SLIDES × AI WORKFLOW", image: "dashboard-system.png",
+    url: "/slides/管理器_Dashboard_Daemon_個人化建置方案.pptx",
+    desc: "依實際工作情境設計三層 AI 工作系統：Dashboard 前台、管理器調度、Daemon 背景自動化與 90 天建置路線。" },
+];
+
 // 本機工具：有 url 的直接開啟（localhost 服務）；有 path 的點擊複製路徑
 const TOOLS = [
   { title: "博論實驗輔助系統", url: "http://localhost:3789",
@@ -246,6 +260,21 @@ SITES.forEach((s, i) => {
       <div class="foot"><span class="url">/${s.slug}</span><span class="gh" data-gh="https://github.com/treefar/${s.repo || s.slug}">repo</span></div>
     </div>`;
   grid.appendChild(a);
+});
+
+const slides = document.getElementById("slides");
+SLIDES.forEach((s) => {
+  const a = document.createElement("a");
+  a.className = "card"; a.href = s.url;
+  a.innerHTML = `
+    <div class="thumb"><img src="/previews/${s.image}" alt="${s.title}" width="640" height="360" loading="lazy"></div>
+    <div class="body">
+      <div class="tag t-tool">${s.tag}</div>
+      <h3>${s.title}</h3>
+      <p>${s.desc}</p>
+      <div class="foot"><span class="url">下載 PPTX</span><span class="gh">投影片專區</span></div>
+    </div>`;
+  slides.appendChild(a);
 });
 
 const tools = document.getElementById("tools");
