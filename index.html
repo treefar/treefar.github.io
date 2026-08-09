@@ -224,9 +224,6 @@ const SITES = [
   { slug: "first-principles-navigator", title: "第一性原理｜核心問題導航器", cat: "tool", tag: "TOOL × THINKING",
     image: "first-principles-navigator.webp",
     desc: "把模糊問題拆成事實、假設與最小驗證。提供三種分析深度、案例庫、假設風險矩陣、決策日誌與多格式匯出。" },
-  { slug: "gary-talks-summary", title: "Gary Talks Stuff 主題簡報", cat: "tool site", tag: "AI × SUMMARY",
-    image: "gary-talks-summary.png", repo: "treefar.github.io",
-    desc: "把 Gary Talks Stuff 47 支影片依主題整理成 5 份、共 81 頁的簡報：AI 工作流、工具實作、職涯設計、產業變化與投資觀點。" },
 ];
 
 // 投影片：放在首頁的獨立投影片專區，url 指向 repo 內的可下載檔案
@@ -255,6 +252,12 @@ const SLIDES = [
   { title: "1001 款不得不玩的遊戲｜研究表（2013 版）", tag: "DATA × RESEARCH", kind: "data", image: "github-top100-zh-tw.png",
     url: "/slides/1001款不得不玩的遊戲_研究表_2013版.xlsx",
     desc: "遊戲研究資料表（Excel），可下載作為研究、課程與遊戲分析的資料來源。" },
+  { title: "Gary Talks Stuff 主題簡報", tag: "SLIDES × AI SUMMARY", kind: "collection", image: "gary-talks-summary.png",
+    url: "/gary-talks-summary/",
+    desc: "47 支影片依主題整理成 5 份簡報：AI 工作流、工具實作、職涯設計、產業變化與投資觀點。" },
+  { title: "PAPAYA 電腦教室近三個月主題簡報", tag: "SLIDES × AI SUMMARY", kind: "collection", image: "papaya-class-summary.png",
+    url: "/papaya-class-summary/",
+    desc: "近三個月 9 支影片整理成 4 份簡報：AI 助手、知識庫、本機 AI、工作實作與創作技能。" },
 ];
 
 // 本機工具：有 url 的直接開啟（localhost 服務）；有 path 的點擊複製路徑
@@ -274,10 +277,6 @@ const LINKS = [
 ];
 
 // ===== 以下為渲染邏輯，一般不用動 =====
-SITES.push({ slug: "papaya-class-summary", title: "PAPAYA 電腦教室近三個月主題簡報", cat: "tool site", tag: "AI × SUMMARY",
-  image: "papaya-class-summary.png", repo: "treefar.github.io",
-  desc: "近三個月 9 支影片、含 3 支會員專屬，整理成 4 份、共 64 頁的 AI 助手、知識庫、本機 AI、工作實作與創作技能簡報。" });
-
 const grid = document.getElementById("grid");
 SITES.forEach((s, i) => {
   const a = document.createElement("a");
@@ -304,7 +303,7 @@ SLIDES.forEach((s) => {
       <div class="tag t-tool">${s.tag}</div>
       <h3>${s.title}</h3>
       <p>${s.desc}</p>
-      <div class="foot"><span class="url">${s.kind === "data" ? "下載 Excel" : "下載 PPTX"}</span><span class="gh">投影片專區</span></div>
+      <div class="foot"><span class="url">${s.kind === "data" ? "下載 Excel" : s.kind === "collection" ? "開啟簡報集" : "下載 PPTX"}</span><span class="gh">投影片專區</span></div>
     </div>`;
   slides.appendChild(a);
 });
