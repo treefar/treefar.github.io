@@ -56,6 +56,13 @@
   .card.hide { display: none; }
   .thumb { position: relative; aspect-ratio: 16/9; background: #0a0d12; }
   .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .slide-text-thumb {
+    display: flex; align-items: flex-end; padding: 18px;
+    background: linear-gradient(135deg, #182033 0%, #36456d 55%, #5c6fb0 100%);
+  }
+  .slide-text-thumb span {
+    max-width: 90%; color: #fff; font-size: 17px; font-weight: 700; line-height: 1.35;
+  }
   .key {
     position: absolute; top: 10px; right: 10px; width: 24px; height: 24px;
     background: rgba(10,13,18,.72); border: 1px solid rgba(255,255,255,.25); border-radius: 6px;
@@ -224,6 +231,18 @@ const SITES = [
 
 // 投影片：放在首頁的獨立投影片專區，url 指向 repo 內的可下載檔案
 const SLIDES = [
+  { title: "1001 款不得不玩的遊戲：深入研究簡報", tag: "SLIDES × GAME RESEARCH", image: null,
+    url: "/slides/1001款不得不玩的遊戲_深入研究簡報.pptx",
+    desc: "把經典遊戲清單轉成可拆解、可教學、可研究的設計基因庫，連結遊戲史、設計研究與情感 AI。" },
+  { title: "AI Agent Context Engineering 精簡教學版", tag: "SLIDES × AI AGENT", image: null,
+    url: "/slides/AI_Agent_Context_Engineering_精簡教學版.pptx",
+    desc: "從壓縮、記憶、過濾到任務導向摘要，理解 Agent 如何管理資訊生命週期。" },
+  { title: "Hermes × n8n 重點摘要", tag: "SLIDES × AUTOMATION", image: null,
+    url: "/slides/Hermes_n8n_重點摘要.pptx",
+    desc: "比較 Hermes 與 n8n 的分工，整理先用 Hermes、何時補上 n8n，以及唯讀優先的導入原則。" },
+  { title: "反脆弱：生活工作實踐摘要", tag: "SLIDES × LIFE SYSTEM", image: null,
+    url: "/slides/反脆弱_生活工作實踐摘要.pptx",
+    desc: "從健身、遊戲開發、行政與親子關係，建立可恢復、可累積的生活與工作系統。" },
   { title: "兩本書重點與個人化建言", tag: "SLIDES × READING", image: "deep-learning-deep-work.png",
     url: "/slides/兩本書重點與個人化建言_深度學習力與深度工作力_實際情境修正版.pptx",
     desc: "《深度學習力》×《深度工作力》：完整目錄、各章重點，以及對教學、博論、系務與 AI 工作流的個人化建言。" },
@@ -270,7 +289,7 @@ SLIDES.forEach((s) => {
   const a = document.createElement("a");
   a.className = "card"; a.href = s.url;
   a.innerHTML = `
-    <div class="thumb"><img src="/previews/${s.image}" alt="${s.title}" width="640" height="360" loading="lazy"></div>
+    ${s.image ? `<div class="thumb"><img src="/previews/${s.image}" alt="${s.title}" width="640" height="360" loading="lazy"></div>` : `<div class="thumb slide-text-thumb"><span>${s.title}</span></div>`}
     <div class="body">
       <div class="tag t-tool">${s.tag}</div>
       <h3>${s.title}</h3>
