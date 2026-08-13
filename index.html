@@ -191,10 +191,8 @@
 
 // 網頁專案：cat 可多值（空白分隔）：game / story / site / tool
 const SITES = [
-  { slug: "design-style-library", title: "設計風格庫", cat: "tool site", tag: "TOOL × DESIGN",
-    desc: "八組文件與介面視覺風格：漫畫特刊、紙上期刊、深夜實驗室、克萊因藍、RPG 訊息視窗、規格控制台、靛藍儀表板、管線青。點風格看即時預覽，複製 CSS、拿 Unity 色票與 USS、產投影片主題參數，或複製一段指令貼回 Claude Code 直接套進專案。" },
-  { slug: "game-style-library", title: "遊戲風格庫", cat: "tool site", tag: "TOOL × DESIGN",
-    desc: "十二套遊戲題材視覺風格，抽自 Claude Design 專案的原生設計系統：糖果流行、典籍金箔、水彩由灰轉彩、8-bit 磚塊、夜巫金光、和紙墨繪、薔薇與椿、怪異事件簿、第十三格、墨金古典、CRT 主機介面、鏽港夜行。含動態語彙、素材語彙與 AI 生圖 prompt；CRT 主機介面一套骨架附四種題材皮膚。" },
+  { slug: "style-library", title: "風格庫", cat: "tool site", tag: "TOOL × DESIGN",
+    desc: "二十套視覺風格，上方可切分類。文件與介面 8 組：漫畫特刊、紙上期刊、深夜實驗室、克萊因藍、RPG 訊息視窗、規格控制台、靛藍儀表板、管線青。遊戲題材 12 套（抽自 Claude Design 專案的原生設計系統）：糖果流行、典籍金箔、水彩由灰轉彩、8-bit 磚塊、夜巫金光、和紙墨繪、薔薇與椿、怪異事件簿、第十三格、墨金古典、CRT 主機介面、鏽港夜行。點風格看即時預覽，複製 CSS、拿 Unity 色票與 USS、產投影片主題參數，或複製一段指令貼回 Claude Code 直接套進專案。" },
   { slug: "rpg-quest", title: "勇者的試煉", cat: "game story", tag: "GAME × RPG",
     image: "rpg-quest.png",
     desc: "月蝕將至，三名旅人只有一夜。從王城蒐集線索、集結同伴，穿越荒野與洞窟，以回合制戰鬥阻止魔王甦醒的繁中像素 RPG。" },
@@ -289,10 +287,8 @@ const TOOLS = [
     desc: "編劇實務研究的實驗輔助系統，服務開著時點此進入。" },
   { title: "拼界 Puzzlebound（Unity 專案）", path: "C:\\Users\\USER\\Desktop\\Puzzlebound",
     desc: "甄妤畢展 VN。點擊複製專案路徑，到檔案總管貼上開啟。" },
-  { title: "風格庫原始碼（設計 · 8 組）", path: "C:\\Users\\USER\\Desktop\\claude design風格庫",
-    desc: "要改風格時用這個。改 styles/*.json 後跑 node tools/build.mjs 重建，再推 design-style-library repo。線上版見上方卡片。" },
-  { title: "風格庫原始碼（遊戲 · 10 套）", path: "C:\\Users\\USER\\Desktop\\claude design遊戲風格庫",
-    desc: "同上，含 _source/ 的 Claude Design 匯出原檔與素材 zip（151 MB，未上線）。推 game-style-library repo。" },
+  { title: "風格庫原始碼（20 套）", path: "C:\\Users\\USER\\Desktop\\claude design 風格庫",
+    desc: "要改風格時用這個。改 styles/*.json 後跑 node tools/build.mjs 重建，再 git push 推 style-library repo，線上就更新。含 _source/ 的 Claude Design 匯出原檔與素材 zip（151 MB，不上線）。本機預覽 node tools/serve.mjs → localhost:5811。" },
   // { title: "範例：本機服務", url: "http://localhost:8080", desc: "說明文字" },
   // { title: "範例：資料夾捷徑", path: "D:\\某個資料夾", desc: "點擊複製路徑" },
 ];
