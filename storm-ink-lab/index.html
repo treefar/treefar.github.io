@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="雷墨繪卷 2D 與 3D 一致化美術實驗：Unity 戰鬥垂直切片、Three.js 互動砲塔與完整驗證成果。">
+  <meta name="theme-color" content="#0e1116">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:title" content="雷墨繪卷｜2D × 3D 美術實驗">
+  <meta property="og:description" content="Unity 戰鬥垂直切片與 Three.js 互動砲塔，共用同一套手繪墨線、霧面水粉與 3D 卡通渲染語言。">
+  <meta property="og:url" content="https://treefar.link/storm-ink-lab/">
+  <meta property="og:image" content="https://treefar.link/storm-ink-lab/assets/og.png">
+  <meta property="og:image:alt" content="雷墨繪卷角色、覺醒墨爆與卡通渲染砲塔">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="雷墨繪卷｜2D × 3D 美術實驗">
+  <meta name="twitter:description" content="跨 Unity 2D 與 Three.js 3D 的一致化美術實驗。">
+  <meta name="twitter:image" content="https://treefar.link/storm-ink-lab/assets/og.png">
+  <title>雷墨繪卷｜2D × 3D 美術實驗</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳至主要內容</a>
+  <header class="site-header">
+    <a class="back-link" href="/" aria-label="返回 treefar 專案導航">← treefar／專案導航</a>
+    <span class="header-tag">GAME × ART TECH</span>
+  </header>
+
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow">STORM INK CHRONICLE</p>
+        <h1 id="hero-title">雷墨繪卷<br><span>2D × 3D 美術實驗</span></h1>
+        <p class="hero-lead">以手繪墨線、霧面水粉與和紙肌理，讓 Unity 戰鬥原型與 Three.js 3D 工具共用同一套視覺語言。</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#showcase">查看成果</a>
+          <a class="button" href="./viewer/">開啟互動 3D 實驗室</a>
+        </div>
+      </div>
+      <figure class="hero-visual">
+        <img src="./assets/unity-glimmer.png" alt="雷墨繪卷風格的 Unity 戰鬥覺醒畫面" width="1280" height="800">
+        <figcaption>Glimmer of the Storm／覺醒演出</figcaption>
+      </figure>
+    </section>
+
+    <section class="proof-strip" aria-label="專案驗證摘要">
+      <div><strong>18／18</strong><span>Unity EditMode</span></div>
+      <div><strong>3／3</strong><span>Unity PlayMode</span></div>
+      <div><strong>78／78</strong><span>素材與建置檢查</span></div>
+      <div><strong>6／6</strong><span>Web 單元測試</span></div>
+      <div><strong>4／4</strong><span>Web 瀏覽器測試</span></div>
+    </section>
+
+    <section class="section" id="showcase" aria-labelledby="showcase-title">
+      <div class="section-heading">
+        <p class="eyebrow">FIRST LOOK</p>
+        <h2 id="showcase-title">一套風格，跨越兩種媒介</h2>
+      </div>
+      <div class="card-grid">
+        <article class="card feature-card">
+          <span class="card-index">01</span>
+          <p class="card-kicker">UNITY 2D</p>
+          <h3>戰鬥垂直切片</h3>
+          <p>角色、敵人、技能、背景與覺醒特效統一為手繪墨線與霧面厚塗，保留清楚的戰鬥辨識度。</p>
+        </article>
+        <article class="card feature-card">
+          <span class="card-index">02</span>
+          <p class="card-kicker">THREE.JS 3D</p>
+          <h3>卡通渲染砲塔</h3>
+          <p>三階色塊、墨線輪廓與乾筆磨痕組成 3D 手繪感，支援旋轉、關節控制與 GLB 匯出。</p>
+        </article>
+        <article class="card feature-card accent-card">
+          <span class="card-index">03</span>
+          <p class="card-kicker">ART SYSTEM</p>
+          <h3>一致性設計系統</h3>
+          <p>靛藍、米紙、雷青、鈍朱、舊金與苔綠共用色票，介面與素材遵循相同筆觸及明度規則。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="gallery-title">
+      <div class="section-heading split-heading">
+        <div>
+          <p class="eyebrow">VISUAL SYSTEM</p>
+          <h2 id="gallery-title">從戰鬥畫面到 3D 表面</h2>
+        </div>
+        <div class="filters" role="group" aria-label="篩選成果圖">
+          <button class="filter is-active" type="button" data-filter="all" aria-pressed="true">全部</button>
+          <button class="filter" type="button" data-filter="2d" aria-pressed="false">2D</button>
+          <button class="filter" type="button" data-filter="3d" aria-pressed="false">3D</button>
+          <button class="filter" type="button" data-filter="system" aria-pressed="false">系統</button>
+        </div>
+      </div>
+      <p class="filter-status" id="filter-status" aria-live="polite">顯示全部 6 項成果</p>
+      <div class="gallery-grid" id="gallery">
+        <button class="gallery-card wide" type="button" data-category="system" data-full="./assets/art-direction.png" data-caption="雷墨繪卷美術母版：角色、敵人、場景、技能與 3D 砲塔共用同一語彙">
+          <img src="./assets/art-direction.png" alt="雷墨繪卷美術母版，包含角色、敵人、場景、技能圖示與砲塔" width="1730" height="973" loading="lazy">
+          <span><b>美術母版</b>角色、敵人、場景、技能與 3D 共用規格</span>
+        </button>
+        <button class="gallery-card" type="button" data-category="2d" data-full="./assets/unity-title.png" data-caption="Unity 標題畫面：以遠景建築與閃電建立視覺主題">
+          <img src="./assets/unity-title.png" alt="Glimmer of the Storm 標題畫面" width="1280" height="800" loading="lazy">
+          <span><b>標題畫面</b>遠景、字級與主視覺層次</span>
+        </button>
+        <button class="gallery-card" type="button" data-category="2d" data-full="./assets/unity-battle.png" data-caption="Unity 戰鬥介面：人物辨識、技能列與狀態資訊維持一致層級">
+          <img src="./assets/unity-battle.png" alt="雷墨繪卷風格的 Unity 戰鬥介面" width="1280" height="800" loading="lazy">
+          <span><b>戰鬥介面</b>角色辨識與資訊層級</span>
+        </button>
+        <button class="gallery-card" type="button" data-category="2d" data-full="./assets/unity-glimmer.png" data-caption="Glimmer 覺醒演出：墨爆、雷光與舊金形成瞬間焦點">
+          <img src="./assets/unity-glimmer.png" alt="Glimmer 覺醒墨爆與雷光特效" width="1280" height="800" loading="lazy">
+          <span><b>覺醒演出</b>墨爆、雷光與舊金焦點</span>
+        </button>
+        <button class="gallery-card" type="button" data-category="2d" data-full="./assets/unity-final.png" data-caption="三圈戰鬥最終結算：沿用同一張卡片、框線與字級系統">
+          <img src="./assets/unity-final.png" alt="三圈戰鬥的最終結算畫面" width="1280" height="800" loading="lazy">
+          <span><b>最終結算</b>流程收束與狀態回饋</span>
+        </button>
+        <button class="gallery-card wide" type="button" data-category="3d" data-full="./assets/threejs-lab.png" data-caption="Three.js 砲塔實驗室：三階色塊、墨線輪廓、關節控制與驗證資訊">
+          <img src="./assets/threejs-lab.png" alt="Three.js 互動砲塔實驗室桌機畫面" width="1440" height="900" loading="lazy">
+          <span><b>3D 互動實驗室</b>卡通渲染、輪廓與語意節點</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="section lab-section" aria-labelledby="lab-title">
+      <div class="lab-copy">
+        <p class="eyebrow">LIVE THREE.JS LAB</p>
+        <h2 id="lab-title">直接操作 3D 成果</h2>
+        <p>拖曳旋轉、縮放檢視，調整底座、砲塔俯仰與散熱翼；可切換燈光、爆炸分解視圖，並匯出保留語意節點的 GLB。</p>
+        <div class="hero-actions">
+          <a class="button primary" href="./viewer/">進入互動實驗室</a>
+          <a class="button" href="./assets/sentinel_turret_01.glb" download>下載驗證版 GLB</a>
+        </div>
+      </div>
+      <div class="spec-card" aria-label="3D 模型規格">
+        <div><span>Triangles</span><strong>844</strong></div>
+        <div><span>Meshes</span><strong>15</strong></div>
+        <div><span>Materials</span><strong>4</strong></div>
+        <div><span>Named nodes</span><strong>26</strong></div>
+        <p>單位：公尺<br>上軸：+Y<br>前方：+Z</p>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="palette-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">SHARED LANGUAGE</p>
+          <h2 id="palette-title">不是套濾鏡，是共用規則</h2>
+        </div>
+      </div>
+      <div class="system-grid">
+        <article class="card system-card">
+          <h3>視覺硬條件</h3>
+          <ul>
+            <li>不規則手繪墨線，不使用均勻向量描邊</li>
+            <li>霧面水粉與乾筆磨損，避免塑膠高光</li>
+            <li>特效服務資訊焦點，不遮蔽技能名稱</li>
+            <li>2D 與 3D 共用色票、明度與材質節奏</li>
+          </ul>
+        </article>
+        <article class="card palette-card">
+          <h3>核心色票</h3>
+          <div class="swatches" aria-label="雷墨繪卷核心色票">
+            <span style="--swatch:#171a22"><b>墨黑</b>#171A22</span>
+            <span style="--swatch:#1c2942"><b>靛藍</b>#1C2942</span>
+            <span style="--swatch:#e9e0c7"><b>米紙</b>#E9E0C7</span>
+            <span style="--swatch:#55bed1"><b>雷青</b>#55BED1</span>
+            <span style="--swatch:#c7a04a"><b>舊金</b>#C7A04A</span>
+            <span style="--swatch:#5f8b66"><b>苔綠</b>#5F8B66</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="qa-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">VERIFIED OUTPUT</p>
+          <h2 id="qa-title">以可重跑檢查封板</h2>
+        </div>
+      </div>
+      <div class="qa-grid">
+        <article class="card qa-card"><strong>Unity</strong><h3>18／18 EditMode</h3><p>資料、流程與素材契約全部通過。</p></article>
+        <article class="card qa-card"><strong>Unity</strong><h3>3／3 PlayMode</h3><p>標題、三圈戰鬥、結算與存檔重載流程通過。</p></article>
+        <article class="card qa-card"><strong>Build</strong><h3>78／78 Validator</h3><p>高解析度、16:9 背景、音訊與 Windows 建置通過。</p></article>
+        <article class="card qa-card"><strong>Visual</strong><h3>7＋7 幕巡場</h3><p>720p 與 800p 皆為可見畫面，Player error 為 0。</p></article>
+        <article class="card qa-card"><strong>Web</strong><h3>6／6 Unit</h3><p>語意節點、面數、材質與關節契約通過。</p></article>
+        <article class="card qa-card"><strong>Browser</strong><h3>4／4 E2E</h3><p>桌機與緊湊版面、控制與 GLB 匯出通過。</p></article>
+      </div>
+      <details class="boundary-card">
+        <summary>公開範圍與已知邊界</summary>
+        <div>
+          <p>此頁公開展示原創成果、3D Web 工具與驗證數據；沒有使用參考作品的商標、角色、故事、音樂或素材。</p>
+          <p>Unity Windows 版目前保留為專案內測產物，未在本頁提供下載；3D GLB 是通用交換版，Web 專用墨線效果不會寫入 glTF。</p>
+        </div>
+      </details>
+    </section>
+  </main>
+
+  <footer>
+    <span>treefar／遊戲參考復刻研究</span>
+    <span>原創機制與美術實驗</span>
+  </footer>
+  <dialog class="lightbox" id="lightbox" aria-labelledby="lightbox-caption">
+    <button class="lightbox-close" type="button" aria-label="關閉圖片">關閉</button>
+    <button class="lightbox-nav previous" type="button" aria-label="上一張圖片">←</button>
+    <figure>
+      <img id="lightbox-image" src="./assets/unity-glimmer.png" alt="">
+      <figcaption id="lightbox-caption"></figcaption>
+    </figure>
+    <button class="lightbox-nav next" type="button" aria-label="下一張圖片">→</button>
+  </dialog>
+  <script src="./app.js" defer></script>
+</body>
+</html>
