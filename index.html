@@ -191,6 +191,9 @@
 
 // 網頁專案：cat 可多值（空白分隔）：game / story / site / tool
 const SITES = [
+  { slug: "game-audio-station", title: "聲音補給站", cat: "tool site", tag: "TOOL × AUDIO",
+    image: "game-audio-station.webp", url: "https://treefar-game-audio.treefar.chatgpt.site/", urlLabel: "私人登入站", repo: false,
+    desc: "快速取得遊戲所需的音效與音樂。優先搜尋 18 套自有雲端素材，再查可商用來源；缺少時可用 Google Lyria 生成音樂、Gemini TTS 生成語音，並下載或匯入 Unity 專案。" },
   { slug: "style-library", title: "風格庫", cat: "tool site", tag: "TOOL × DESIGN",
     desc: "二十套視覺風格，上方可切分類。文件與介面 8 組：漫畫特刊、紙上期刊、深夜實驗室、克萊因藍、RPG 訊息視窗、規格控制台、靛藍儀表板、管線青。遊戲題材 12 套（抽自 Claude Design 專案的原生設計系統）：糖果流行、典籍金箔、水彩由灰轉彩、8-bit 磚塊、夜巫金光、和紙墨繪、薔薇與椿、怪異事件簿、第十三格、墨金古典、CRT 主機介面、鏽港夜行。點風格看即時預覽，複製 CSS、拿 Unity 色票與 USS、產投影片主題參數，或複製一段指令貼回 Claude Code 直接套進專案。" },
   { slug: "rpg-quest", title: "勇者的試煉", cat: "game story", tag: "GAME × RPG",
@@ -303,7 +306,8 @@ const LINKS = [
 const grid = document.getElementById("grid");
 SITES.forEach((s, i) => {
   const a = document.createElement("a");
-  a.className = "card"; a.dataset.f = s.cat; a.href = `/${s.slug}/`;
+  a.className = "card"; a.dataset.f = s.cat; a.href = s.url || `/${s.slug}/`;
+  if (s.url) { a.target = "_blank"; a.rel = "noopener"; }
   const t = s.tag.toLowerCase().includes("story") && !s.cat.includes("game") ? "story" : s.cat.split(" ")[0];
   a.innerHTML = `
     <div class="thumb"><img src="/previews/${s.image || (s.slug + ".jpg")}" alt="${s.title}" width="640" height="360" loading="lazy">${i < 9 ? '<span class="key">' + (i + 1) + '</span>' : ''}</div>
@@ -311,7 +315,7 @@ SITES.forEach((s, i) => {
       <div class="tag t-${t}">${s.tag}</div>
       <h3>${s.title}</h3>
       <p>${s.desc}</p>
-      <div class="foot"><span class="url">/${s.slug}</span><span class="gh" data-gh="https://github.com/treefar/${s.repo || s.slug}">repo</span></div>
+      <div class="foot"><span class="url">${s.urlLabel || ("/" + s.slug)}</span>${s.repo === false ? '<span class="url">登入使用</span>' : `<span class="gh" data-gh="https://github.com/treefar/${s.repo || s.slug}">repo</span>`}</div>
     </div>`;
   grid.appendChild(a);
 });
