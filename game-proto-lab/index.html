@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="GameProtoLab 三款 Unity 遊戲原型分析：Abathor、Clash 與 Sushiamo 的玩法定位、開發完成度、驗證證據與後續優先順序。">
+  <meta name="theme-color" content="#0b1120">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:title" content="GameProtoLab｜三款遊戲原型決策頁">
+  <meta property="og:description" content="兩款可玩垂直切片、一款技術骨架；以實際建置、畫面與黑箱驗證說清楚現況與下一步。">
+  <meta property="og:url" content="https://treefar.link/game-proto-lab/">
+  <meta property="og:image" content="https://treefar.link/game-proto-lab/assets/og.png">
+  <meta property="og:image:alt" content="GameProtoLab 的 Abathor 與 Clash 產品選擇畫面">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="GameProtoLab｜三款遊戲原型決策頁">
+  <meta name="twitter:description" content="三款 Unity 原型的定位、完成度、驗證證據與投資優先順序。">
+  <meta name="twitter:image" content="https://treefar.link/game-proto-lab/assets/og.png">
+  <title>GameProtoLab｜三款遊戲原型決策頁</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳至主要內容</a>
+  <header class="site-header">
+    <a class="back-link" href="/" aria-label="返回 treefar 專案導航">← treefar／專案導航</a>
+    <span class="header-tag">GAME × PROTOTYPE LAB</span>
+  </header>
+
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow">UNITY 6 · ITERATION 30</p>
+        <h1 id="hero-title">三款原型<br><span>一張決策地圖</span></h1>
+        <p class="hero-lead">GameProtoLab 是內部試玩與驗收容器，不是三款合集商品。Abathor 與 Clash 已形成可玩的功能垂直切片；Sushiamo 保留為計分、模擬與平衡骨架。</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#games">比較三款原型</a>
+          <a class="button" href="#decision">查看續作順序</a>
+        </div>
+      </div>
+      <figure class="hero-visual">
+        <img src="./assets/products.png" alt="GameProtoLab 產品入口，並列 Abathor 與 Clash 兩款遊戲" width="1280" height="720">
+        <figcaption>產品入口／uGUI iteration 30</figcaption>
+      </figure>
+    </section>
+
+    <section class="proof-strip" aria-label="專案驗證摘要">
+      <div><strong>3</strong><span>可執行原型</span></div>
+      <div><strong>2</strong><span>產品候選</span></div>
+      <div><strong>9／9</strong><span>最終 Release 回歸</span></div>
+      <div><strong>16</strong><span>響應式 UI 截圖</span></div>
+      <div><strong>100×</strong><span>切換穩定測試</span></div>
+    </section>
+
+    <section class="section" id="games" aria-labelledby="games-title">
+      <div class="section-heading split-heading">
+        <div>
+          <p class="eyebrow">PORTFOLIO REVIEW</p>
+          <h2 id="games-title">三款遊戲，三種成熟度</h2>
+        </div>
+        <div class="filters" role="group" aria-label="篩選遊戲原型">
+          <button class="filter is-active" type="button" data-filter="all" aria-pressed="true">全部</button>
+          <button class="filter" type="button" data-filter="product" aria-pressed="false">產品候選</button>
+          <button class="filter" type="button" data-filter="lab" aria-pressed="false">技術骨架</button>
+        </div>
+      </div>
+      <p class="filter-status" id="filter-status" aria-live="polite">顯示全部 3 款原型</p>
+      <div class="game-grid" id="game-grid">
+        <article class="game-card priority" data-category="product">
+          <div class="game-rank"><span>01</span><b>優先開發</b></div>
+          <p class="card-kicker">SINGLE-PLAYER BRAWLER</p>
+          <h3>Clash：破陣投技</h3>
+          <p class="pitch">看穿深度與包圍節奏，抓住一名敵人當武器，用一次投擲撞穿整群。</p>
+          <ul>
+            <li>三房流程：深度對位、投擲破門、六敵隊長戰</li>
+            <li>突擊、疾行、重裝、隊長形成可讀的敵群分工</li>
+            <li>核心賣點集中，單人測試與迭代成本最低</li>
+          </ul>
+          <span class="status ready">功能垂直切片</span>
+        </article>
+        <article class="game-card" data-category="product">
+          <div class="game-rank"><span>02</span><b>次優先</b></div>
+          <p class="card-kicker">CO-OP × COMPETITION</p>
+          <h3>Abathor：競合遠征</h3>
+          <p class="pitch">兩人合作開門、互救與繞背，但唯一寶物只能由一人帶走。</p>
+          <ul>
+            <li>共享六點命數、倒地互救與 Boss 背擊</li>
+            <li>合作目標與個人勝負在同一局中拉扯</li>
+            <li>特色鮮明，但依賴雙人輸入與同螢幕可讀性</li>
+          </ul>
+          <span class="status ready">功能垂直切片</span>
+        </article>
+        <article class="game-card" data-category="lab">
+          <div class="game-rank"><span>03</span><b>保留骨架</b></div>
+          <p class="card-kicker">SCORE-BUILDING SYSTEM</p>
+          <h3>Sushiamo：壽司計分構築</h3>
+          <p class="pitch">從食材組合、醬料與客人需求堆疊分數，跨越七層門檻。</p>
+          <ul>
+            <li>Unity 操作原型與獨立純 C# 平衡模擬器</li>
+            <li>計分、棄牌、熟練度與固定種子回歸已成立</li>
+            <li>仍缺商店、獎勵、內容管線與完整存檔設計</li>
+          </ul>
+          <span class="status lab">技術與平衡骨架</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="gallery-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">VISIBLE EVIDENCE</p>
+          <h2 id="gallery-title">畫面證據，不只測試文字</h2>
+        </div>
+      </div>
+      <div class="gallery-grid">
+        <button class="gallery-card wide" type="button" data-full="./assets/products.png" data-caption="兩款產品入口：正式候選只呈現 Abathor 與 Clash，Sushiamo 收進內部實驗室">
+          <img src="./assets/products.png" alt="Abathor 與 Clash 產品入口" width="1280" height="720" loading="lazy">
+          <span><b>產品入口</b>兩款候選、賣點與操作提示</span>
+        </button>
+        <button class="gallery-card" type="button" data-full="./assets/abathor.png" data-caption="Abathor 招牌構圖：雙人合作夾擊守門將軍">
+          <img src="./assets/abathor.png" alt="Abathor 雙人合作夾擊守門將軍的原型畫面" width="1280" height="720" loading="lazy">
+          <span><b>Abathor</b>競合、互救與背擊</span>
+        </button>
+        <button class="gallery-card" type="button" data-full="./assets/clash.png" data-caption="Clash 招牌構圖：抓住敵人並沿深度方向投擲破陣">
+          <img src="./assets/clash.png" alt="Clash 抓住敵人並投向敵群的原型畫面" width="1280" height="720" loading="lazy">
+          <span><b>Clash</b>抓敵、投擲與群體破陣</span>
+        </button>
+        <button class="gallery-card" type="button" data-full="./assets/lab.png" data-caption="內部機制實驗室：三款原型皆可進入，但不冒充三款產品合集">
+          <img src="./assets/lab.png" alt="GameProtoLab 內部機制實驗室選單" width="1280" height="720" loading="lazy">
+          <span><b>內部實驗室</b>三款技術原型完整保留</span>
+        </button>
+        <button class="gallery-card" type="button" data-full="./assets/settings.png" data-caption="共用 uGUI 設定頁：音量、震動、Hit Stop 與降低脈衝設定">
+          <img src="./assets/settings.png" alt="GameProtoLab uGUI 設定頁" width="1280" height="720" loading="lazy">
+          <span><b>共用設定</b>可讀性與動態效果選項</span>
+        </button>
+        <button class="gallery-card wide" type="button" data-full="./assets/bindings.png" data-caption="鍵盤改鍵頁：兩名玩家的動作與目前綁定集中呈現">
+          <img src="./assets/bindings.png" alt="GameProtoLab 雙人鍵盤改鍵頁" width="1280" height="720" loading="lazy">
+          <span><b>鍵盤改鍵</b>雙人操作與版本化偏好設定</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="section" id="decision" aria-labelledby="decision-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">INVESTMENT ORDER</p>
+          <h2 id="decision-title">若只能先做一款，選 Clash</h2>
+        </div>
+      </div>
+      <div class="decision-grid">
+        <article class="decision-lead">
+          <p class="decision-number">01</p>
+          <h3>Clash 先商品化</h3>
+          <p>抓敵當武器是最容易一句話說清楚、也最能從畫面直接辨識的核心動詞。單人流程降低招募與輸入測試成本，三房關卡又足以支撐下一輪正式化。</p>
+        </article>
+        <div class="decision-stack">
+          <article><span>02</span><div><h3>Abathor 接續</h3><p>競合關係有長期潛力，但要先證明雙人操作、救援溝通與唯一寶物衝突在真人情境成立。</p></div></article>
+          <article><span>03</span><div><h3>Sushiamo 維持骨架</h3><p>保留模擬器與計分核心，等商店、存檔與內容產能有明確資源再擴張。</p></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="qa-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">VERIFIED, WITH BOUNDARIES</p>
+          <h2 id="qa-title">完成到哪裡，邊界寫清楚</h2>
+        </div>
+      </div>
+      <div class="qa-grid">
+        <article class="card qa-card"><strong>Build</strong><h3>Release＋Development</h3><p>Unity 6000.5.3f1 乾淨建置與效能版建置均成功。</p></article>
+        <article class="card qa-card"><strong>Runtime</strong><h3>9／9 最終回歸</h3><p>勝利、導覽、設定、改鍵與 100 次切換全部通過。</p></article>
+        <article class="card qa-card"><strong>Visual</strong><h3>4 種解析度</h3><p>800×600 至 2560×1440 共 16 張 uGUI 畫面，無裁切互蓋。</p></article>
+        <article class="card qa-card"><strong>Package</strong><h3>ZIP 黑箱通過</h3><p>兩個啟動器皆 PASS，CSV 2 列、42 欄，檔案雜湊一致。</p></article>
+        <article class="card qa-card"><strong>Performance</strong><h3>兩款皆過門檻</h3><p>Development Player 的 Frame、Main Thread 與 GC 指標均合格。</p></article>
+        <article class="card qa-card"><strong>Scope</strong><h3>真人 Gate 暫緩</h3><p>本頁不把自動代打宣稱為真人可玩性或市場驗證。</p></article>
+      </div>
+      <details class="boundary-card">
+        <summary>仍待完成的正式化工作</summary>
+        <div>
+          <p>玩法 HUD、結果頁與觀察表仍採 IMGUI；正式角色、場景、動畫與混音音樂尚未資產化。</p>
+          <p>控制器改鍵、實體手把驗證與真人首玩尚未完成。真人測試依本輪指示暫緩，不以自動測試替代。</p>
+        </div>
+      </details>
+    </section>
+  </main>
+
+  <footer>
+    <span>treefar／GameProtoLab</span>
+    <span>機制原型、驗證與產品決策</span>
+  </footer>
+
+  <dialog class="lightbox" id="lightbox" aria-labelledby="lightbox-caption">
+    <button class="lightbox-close" type="button" aria-label="關閉圖片">關閉</button>
+    <button class="lightbox-nav previous" type="button" aria-label="上一張圖片">←</button>
+    <figure>
+      <img id="lightbox-image" src="./assets/products.png" alt="">
+      <figcaption id="lightbox-caption"></figcaption>
+    </figure>
+    <button class="lightbox-nav next" type="button" aria-label="下一張圖片">→</button>
+  </dialog>
+  <script src="./app.js" defer></script>
+</body>
+</html>
