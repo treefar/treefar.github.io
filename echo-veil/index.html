@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="ECHO VEIL 原創 2D 哥德科幻動作探索遊戲 Gate 1 Windows 原型。">
+  <title>ECHO VEIL｜Gate 1 Windows 原型</title>
+  <style>
+    :root {
+      --bg: #080b12; --panel: #101724; --line: #273248; --ink: #edf5ff;
+      --dim: #9eacc2; --cyan: #62e6ff; --violet: #a88cff;
+    }
+    * { box-sizing: border-box; }
+    html { color-scheme: dark; }
+    body {
+      margin: 0; color: var(--ink); background:
+        radial-gradient(circle at 78% 8%, rgba(112,75,190,.22), transparent 32rem),
+        radial-gradient(circle at 15% 35%, rgba(38,156,181,.12), transparent 28rem), var(--bg);
+      font-family: Inter, "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    }
+    a { color: inherit; }
+    .wrap { width: min(1080px, calc(100% - 36px)); margin: auto; }
+    nav { display: flex; justify-content: space-between; align-items: center; padding: 24px 0; }
+    nav a { color: var(--dim); text-decoration: none; font-size: 14px; }
+    .mark { color: var(--ink); font-weight: 800; letter-spacing: .12em; }
+    .hero { display: grid; grid-template-columns: 1.1fr .9fr; gap: 32px; align-items: center; padding: 44px 0 30px; }
+    .eyebrow { color: var(--cyan); font-size: 12px; font-weight: 800; letter-spacing: .18em; }
+    h1 { margin: 12px 0 8px; font-size: clamp(48px, 8vw, 88px); line-height: .95; letter-spacing: -.04em; }
+    .subtitle { margin: 0 0 22px; color: var(--violet); font-size: 20px; font-weight: 700; }
+    .lead { max-width: 640px; color: var(--dim); font-size: 17px; line-height: 1.8; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+    .button { display: inline-flex; align-items: center; gap: 8px; padding: 13px 18px; border: 1px solid var(--line); border-radius: 10px; text-decoration: none; font-weight: 750; transition: transform .15s; }
+    .button.primary { color: #071016; background: var(--cyan); border-color: var(--cyan); }
+    .button:hover { transform: translateY(-2px); }
+    .shot { position: relative; aspect-ratio: 16/9; margin: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); box-shadow: 0 24px 80px rgba(0,0,0,.35); }
+    .shot img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .shot span { position: absolute; left: 14px; bottom: 14px; padding: 7px 10px; border-radius: 7px; background: rgba(8,11,18,.8); color: var(--cyan); font-size: 11px; letter-spacing: .12em; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; padding: 30px 0 18px; }
+    .card { padding: 20px; border: 1px solid var(--line); border-radius: 14px; background: rgba(16,23,36,.82); }
+    .card h2 { margin: 0 0 8px; font-size: 16px; }
+    .card p { margin: 0; color: var(--dim); line-height: 1.65; font-size: 14px; }
+    .checks { margin: 44px 0; padding: 26px; border: 1px solid var(--line); border-radius: 16px; background: rgba(16,23,36,.78); }
+    .checks h2 { margin: 0 0 18px; font-size: 22px; }
+    .check-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .check { padding: 13px 15px; border-radius: 10px; background: rgba(98,230,255,.06); color: var(--dim); }
+    .check::before { content: "✓"; margin-right: 9px; color: var(--cyan); font-weight: 900; }
+    .note { color: var(--dim); font-size: 13px; line-height: 1.7; }
+    footer { padding: 20px 0 42px; color: var(--dim); border-top: 1px solid var(--line); font-size: 13px; }
+    @media (max-width: 760px) {
+      .hero { grid-template-columns: 1fr; padding-top: 24px; }
+      .grid, .check-grid { grid-template-columns: 1fr; }
+      h1 { font-size: 54px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <nav><a class="mark" href="/">TREEFAR / PROJECTS</a><a href="/">← 回到專案首頁</a></nav>
+    <main>
+      <section class="hero">
+        <div>
+          <div class="eyebrow">WINDOWS × GATE 1 PROTOTYPE</div>
+          <h1>ECHO<br>VEIL</h1>
+          <p class="subtitle">迴聲帷幕</p>
+          <p class="lead">原創 2D 哥德科幻動作探索原型。運用 Phase Step 短暫切換位面、穿越敵方投射物，再以近戰反擊 Choir Sentry。每次勝負會自動建立乾淨新局，可直接持續遊玩與測試。</p>
+          <div class="actions">
+            <a class="button primary" href="/downloads/ECHO_VEIL_Gate1_Win64.zip" download>下載 Windows 版</a>
+            <a class="button" href="#validation">查看驗證結果</a>
+          </div>
+        </div>
+        <figure class="shot">
+          <img src="/previews/echo-veil.png" alt="ECHO VEIL Gate 1 戰鬥畫面" width="1600" height="900">
+          <span>ARRIVAL NAVE / GATE 1</span>
+        </figure>
+      </section>
+
+      <section class="grid" aria-label="玩法特色">
+        <article class="card"><h2>Phase Step</h2><p>短暫進入相位狀態，穿越特定威脅並重新掌握攻防節奏。</p></article>
+        <article class="card"><h2>近戰閉環</h2><p>辨識敵方預兆、閃避投射物、貼近攻擊，完成清楚的勝負回饋。</p></article>
+        <article class="card"><h2>連續新局</h2><p>勝利或倒下後顯示結果，2.25 秒後自動重開，不必手動重啟程式。</p></article>
+      </section>
+
+      <section class="checks" id="validation">
+        <h2>本版驗證</h2>
+        <div class="check-grid">
+          <div class="check">Unity 6000.5.5f1 Windows 64 位元建置</div>
+          <div class="check">EditMode 與 PlayMode 回歸測試通過</div>
+          <div class="check">15 分鐘連續自動遊玩穩定性通過</div>
+          <div class="check">Windows 結束流程重複稽核通過</div>
+        </div>
+        <p class="note">這是 Gate 1 灰盒原型，重點為玩家移動、Phase Step、近戰、敵方投射物、傷害與跨回合流程。最終美術、完整關卡與人類手感簽核仍屬後續製作範圍。</p>
+      </section>
+    </main>
+    <footer>ECHO VEIL © 2026 treefar｜原創研究與遊戲開發原型</footer>
+  </div>
+</body>
+</html>
