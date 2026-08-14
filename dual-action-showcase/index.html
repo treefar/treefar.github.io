@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="競合遠征與破陣投技兩款動作遊戲垂直切片：一款把隊友變成競爭者，一款把敵人變成武器。">
+  <meta name="theme-color" content="#0e111b">
+  <link rel="canonical" href="https://treefar.link/dual-action-showcase/">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:title" content="雙鋒原型室｜競合遠征 × 破陣投技">
+  <meta property="og:description" content="兩款可勝可敗的動作垂直切片，從玩家承諾、核心動詞到可重播驗證。">
+  <meta property="og:url" content="https://treefar.link/dual-action-showcase/">
+  <meta property="og:image" content="https://treefar.link/dual-action-showcase/shared-ui.png">
+  <meta property="og:image:width" content="1920">
+  <meta property="og:image:height" content="1080">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="雙鋒原型室｜競合遠征 × 破陣投技">
+  <meta name="twitter:description" content="一款把隊友變成競爭者，一款把敵人變成武器。">
+  <meta name="twitter:image" content="https://treefar.link/dual-action-showcase/shared-ui.png">
+  <title>雙鋒原型室｜競合遠征 × 破陣投技</title>
+  <style>
+    :root {
+      --bg: #0e111b;
+      --panel: #171d2b;
+      --panel-2: #20293c;
+      --line: #34425c;
+      --ink: #eef3ff;
+      --dim: #9eabc1;
+      --gold: #ffc348;
+      --cyan: #5fd9ff;
+      --orange: #ff9f43;
+      --magenta: #f04ca0;
+      --shadow: 0 28px 76px rgba(0,0,0,.38);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; color-scheme: dark; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 4%, rgba(95,217,255,.12), transparent 32rem),
+        radial-gradient(circle at 88% 12%, rgba(240,76,160,.12), transparent 34rem),
+        var(--bg);
+      font-family: "Microsoft JhengHei UI", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+      line-height: 1.65;
+    }
+    img { display: block; max-width: 100%; }
+    button, a { font: inherit; }
+    a { color: inherit; }
+    .skip {
+      position: fixed; left: 16px; top: 12px; z-index: 100;
+      width: 1px; height: 1px; padding: 0; overflow: hidden;
+      clip: rect(0 0 0 0); white-space: nowrap;
+      border-radius: 10px; background: var(--gold); color: #171107;
+      font-weight: 900; text-decoration: none;
+    }
+    .skip:focus { width: auto; height: auto; padding: 10px 14px; overflow: visible; clip: auto; }
+    .wrap { width: min(1160px, calc(100% - 40px)); margin: 0 auto; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center; gap: 20px;
+      padding: 22px 0; color: var(--dim); font-size: 14px;
+    }
+    .topbar a { text-decoration: none; }
+    .topbar a:hover { color: var(--ink); }
+    .mark { color: var(--ink); font-weight: 900; letter-spacing: .08em; }
+    .hero {
+      position: relative; overflow: hidden; isolation: isolate;
+      min-height: 680px; border: 1px solid var(--line); border-radius: 30px;
+      background: #0b0f18; box-shadow: var(--shadow);
+    }
+    .hero-art { position: absolute; inset: 0; z-index: -2; display: grid; grid-template-columns: 1fr 1fr; }
+    .hero-art img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-art img:first-child { object-position: 58% center; }
+    .hero-art img:last-child { object-position: 38% center; }
+    .hero::after {
+      content: ""; position: absolute; inset: 0; z-index: -1;
+      background: linear-gradient(90deg, rgba(8,12,20,.98) 0%, rgba(8,12,20,.92) 32%, rgba(8,12,20,.34) 66%, rgba(8,12,20,.18));
+    }
+    .hero-copy { width: min(660px, 62%); padding: clamp(46px, 7vw, 84px); }
+    .eyebrow, .kicker { color: var(--gold); font-size: 12px; font-weight: 900; letter-spacing: .2em; }
+    h1 { margin: 16px 0 18px; font-size: clamp(46px, 7.2vw, 84px); line-height: .96; letter-spacing: -.04em; }
+    h1 span { display: block; margin-top: 18px; color: var(--cyan); font-size: .34em; letter-spacing: .14em; }
+    .lead { margin: 0; max-width: 610px; color: rgba(238,243,255,.8); font-size: 18px; line-height: 1.85; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+    .button {
+      display: inline-flex; align-items: center; justify-content: center; min-height: 46px;
+      padding: 0 18px; border: 1px solid rgba(255,255,255,.28); border-radius: 12px;
+      text-decoration: none; font-weight: 900; transition: transform .16s, border-color .16s, background .16s;
+    }
+    .button.primary { border-color: var(--gold); background: var(--gold); color: #191205; }
+    .button:hover { transform: translateY(-2px); border-color: var(--gold); }
+    :focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; }
+    .stats {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+      margin: 28px 0 88px; overflow: hidden; border: 1px solid var(--line);
+      border-radius: 18px; background: var(--line);
+    }
+    .stat { padding: 22px; background: rgba(23,29,43,.97); }
+    .stat strong { display: block; margin-bottom: 4px; color: var(--gold); font-size: 24px; }
+    .stat span { color: var(--dim); font-size: 13px; }
+    section { margin-bottom: 92px; }
+    .section-head {
+      display: grid; grid-template-columns: .78fr 1.22fr; gap: 48px;
+      align-items: end; margin-bottom: 30px;
+    }
+    h2 { margin: 10px 0 0; font-size: clamp(32px, 4vw, 50px); line-height: 1.14; }
+    .section-head p { margin: 0; color: var(--dim); line-height: 1.85; }
+    .game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .game-card {
+      overflow: hidden; border: 1px solid var(--line); border-radius: 24px;
+      background: linear-gradient(155deg, rgba(32,41,60,.98), rgba(19,25,38,.98));
+      box-shadow: 0 18px 46px rgba(0,0,0,.2);
+    }
+    .game-card img { width: 100%; aspect-ratio: 16/9; object-fit: cover; }
+    .game-card-body { padding: 28px; }
+    .game-card .tag { color: var(--cyan); font-size: 12px; font-weight: 900; letter-spacing: .14em; }
+    .game-card.clash .tag { color: var(--magenta); }
+    .game-card h3 { margin: 8px 0 12px; font-size: 30px; }
+    .promise { margin: 0 0 20px; color: var(--dim); }
+    .verb-chain { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+    .verb-chain li { padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink); font-size: 13px; }
+    .spotlight {
+      display: grid; grid-template-columns: .74fr 1.26fr; gap: 34px; align-items: center;
+      padding: 34px; border: 1px solid var(--line); border-radius: 24px; background: var(--panel);
+    }
+    .switches { display: flex; gap: 10px; margin: 24px 0; }
+    .switch {
+      min-height: 42px; padding: 0 16px; border: 1px solid var(--line); border-radius: 999px;
+      background: transparent; color: var(--dim); cursor: pointer;
+    }
+    .switch[aria-pressed="true"] { border-color: var(--gold); background: var(--gold); color: #191205; font-weight: 900; }
+    .spotlight-copy p { color: var(--dim); }
+    .spotlight-flow { margin: 18px 0 0; padding-left: 1.2em; color: var(--ink); }
+    .spotlight-frame {
+      position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 18px;
+      background: #060913; box-shadow: 0 18px 50px rgba(0,0,0,.32);
+    }
+    .spotlight-frame img { width: 100%; aspect-ratio: 16/9; object-fit: cover; transition: opacity .16s; }
+    .spotlight-label {
+      position: absolute; left: 14px; bottom: 14px; padding: 7px 10px; border-radius: 8px;
+      background: rgba(8,12,20,.86); color: var(--gold); font-size: 12px; font-weight: 900;
+    }
+    .proof-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .proof-card {
+      padding: 24px; border: 1px solid var(--line); border-radius: 18px;
+      background: linear-gradient(145deg, rgba(32,41,60,.94), rgba(18,24,36,.94));
+    }
+    .proof-card b { display: block; margin-bottom: 14px; color: var(--cyan); font-size: 14px; letter-spacing: .12em; }
+    .proof-card strong { display: block; margin-bottom: 7px; font-size: 22px; }
+    .proof-card span { color: var(--dim); font-size: 14px; }
+    .gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .shot {
+      margin: 0; padding: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 18px;
+      background: var(--panel); color: var(--ink); cursor: zoom-in; text-align: left;
+    }
+    .shot img { width: 100%; aspect-ratio: 16/9; object-fit: cover; }
+    .shot span { display: block; padding: 15px 17px 18px; color: var(--dim); font-size: 14px; }
+    .shot strong { color: var(--ink); }
+    .status {
+      display: grid; grid-template-columns: .82fr 1.18fr; gap: 42px;
+      padding: 42px; border: 1px solid rgba(255,195,72,.34); border-radius: 24px;
+      background: linear-gradient(135deg, #342611, #171d2b 58%);
+    }
+    .status p { color: var(--dim); }
+    .status-list { display: grid; align-content: center; }
+    .status-row { display: flex; justify-content: space-between; gap: 24px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,.12); }
+    .status-row:last-child { border: 0; }
+    .status-row span { color: var(--dim); }
+    .status-row strong { color: var(--gold); text-align: right; }
+    .notice { margin-top: 18px; color: #decda7; font-size: 14px; }
+    footer { padding: 8px 0 52px; border-top: 1px solid var(--line); color: var(--dim); font-size: 13px; text-align: center; }
+    dialog {
+      width: min(1120px, calc(100% - 28px)); padding: 0; border: 1px solid var(--line); border-radius: 18px;
+      background: #090d16; color: var(--ink); box-shadow: var(--shadow);
+    }
+    dialog::backdrop { background: rgba(4,6,10,.84); backdrop-filter: blur(5px); }
+    .dialog-bar { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 13px 16px; }
+    .dialog-bar strong { font-size: 14px; }
+    .dialog-close { border: 1px solid var(--line); border-radius: 9px; background: var(--panel); color: var(--ink); padding: 7px 11px; cursor: pointer; }
+    dialog img { width: 100%; max-height: calc(100vh - 100px); object-fit: contain; }
+    @media (max-width: 900px) {
+      .hero { min-height: 700px; display: flex; align-items: end; }
+      .hero::after { background: linear-gradient(180deg, rgba(8,12,20,.08) 18%, rgba(8,12,20,.97) 65%); }
+      .hero-copy { width: 100%; padding: 350px 38px 44px; }
+      .section-head, .spotlight, .status { grid-template-columns: 1fr; gap: 24px; }
+      .proof-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 680px) {
+      .wrap { width: min(100% - 24px, 1160px); }
+      .topbar { padding: 16px 0; font-size: 13px; }
+      .mark { display: none; }
+      .hero { min-height: 640px; border-radius: 20px; }
+      .hero-art { grid-template-columns: 1fr; }
+      .hero-art img:first-child { display: none; }
+      .hero-art img:last-child { object-position: 52% center; }
+      .hero-copy { padding: 300px 22px 30px; }
+      h1 { font-size: clamp(44px, 14vw, 62px); }
+      .lead { font-size: 16px; }
+      .actions .button { width: 100%; }
+      .stats, .game-grid, .proof-grid, .gallery { grid-template-columns: 1fr; }
+      .stat { padding: 18px; }
+      section { margin-bottom: 68px; }
+      .game-card-body, .spotlight, .status { padding: 24px 20px; }
+      .switches { display: grid; grid-template-columns: 1fr 1fr; }
+      .status-row { flex-direction: column; gap: 3px; }
+      .status-row strong { text-align: left; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#content">跳到主要內容</a>
+  <div class="wrap">
+    <nav class="topbar" aria-label="頁面導覽">
+      <a class="mark" href="/">TREEFAR / PROJECTS</a>
+      <a href="/">← 返回 treefar 專案導航</a>
+    </nav>
+
+    <main id="content">
+      <header class="hero">
+        <div class="hero-art" aria-hidden="true">
+          <img src="abathor-hero.png" alt="">
+          <img src="clash-hero.png" alt="">
+        </div>
+        <div class="hero-copy">
+          <div class="eyebrow">TWO ACTION VERTICAL SLICES</div>
+          <h1>雙鋒原型室<span>競合遠征 × 破陣投技</span></h1>
+          <p class="lead">一款把隊友變成競爭者，一款把敵人變成武器。兩種完全不同的核心動詞，都已整理成可勝、可敗、可重玩的垂直切片，單局設計目標為 6–8 分鐘。</p>
+          <div class="actions">
+            <a class="button primary" href="#games">認識兩款提案</a>
+            <a class="button" href="#validation">查看驗證證據</a>
+          </div>
+        </div>
+      </header>
+
+      <div class="stats" aria-label="專案摘要">
+        <div class="stat"><strong>2 款</strong><span>各自獨立的產品承諾</span></div>
+        <div class="stat"><strong>6–8 分</strong><span>單局垂直切片目標</span></div>
+        <div class="stat"><strong>16／16</strong><span>共用介面解析度驗證</span></div>
+        <div class="stat"><strong>Iteration 30</strong><span>Windows 可玩原型</span></div>
+      </div>
+
+      <section id="games" aria-labelledby="games-title">
+        <div class="section-head">
+          <div><span class="kicker">PRODUCT PROMISES</span><h2 id="games-title">不是合集，是兩款各自站得住的遊戲。</h2></div>
+          <p>共同入口只負責試玩與驗收，不把兩款包裝成同一商品。競合遠征用合作與競搶製造關係張力；破陣投技用深度對位與抓投，讓場上每名敵人都可能成為下一件武器。</p>
+        </div>
+        <div class="game-grid">
+          <article class="game-card abathor">
+            <img src="abathor-hero.png" alt="兩名玩家在月夜城塞夾擊巨型守將" width="1672" height="941">
+            <div class="game-card-body">
+              <div class="tag">2P CO-OP × RIVALRY</div>
+              <h3>競合遠征</h3>
+              <p class="promise">兩人必須合作開門、互救並夾擊守將；但最後唯一寶物，只能由其中一人帶走。</p>
+              <ul class="verb-chain" aria-label="核心流程">
+                <li>踩壓板</li><li>互救</li><li>背擊</li><li>競搶寶物</li>
+              </ul>
+            </div>
+          </article>
+          <article class="game-card clash">
+            <img src="clash-hero.png" alt="霓虹街區中的戰士把敵人投向重裝隊長" width="1672" height="941">
+            <div class="game-card-body">
+              <div class="tag">SOLO BRAWLER × DEPTH PLAY</div>
+              <h3>破陣投技</h3>
+              <p class="promise">看穿偽 3D 深度，抓住一名敵人當武器，靠投擲破甲並一次撞穿整群。</p>
+              <ul class="verb-chain" aria-label="核心流程">
+                <li>深度對位</li><li>抓敵</li><li>投擲破甲</li><li>撞穿整群</li>
+              </ul>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section aria-labelledby="loop-title">
+        <div class="spotlight">
+          <div class="spotlight-copy">
+            <span class="kicker">PLAYABLE FLOW</span>
+            <h2 id="loop-title">每個賣點，都放進正常流程。</h2>
+            <div class="switches" role="group" aria-label="切換遊戲流程">
+              <button class="switch" type="button" data-game="abathor" aria-pressed="true">競合遠征</button>
+              <button class="switch" type="button" data-game="clash" aria-pressed="false">破陣投技</button>
+            </div>
+            <p id="loopSummary">合作不是口號：兩人先共同通過機關與守將，再在終點面對只有一人能拿走的寶物。</p>
+            <ol class="spotlight-flow" id="loopFlow">
+              <li>安全移動與角色分工</li>
+              <li>雙人壓板與倒地互救</li>
+              <li>夾擊守將，創造背擊窗口</li>
+              <li>搶奪唯一寶物並進入結算</li>
+            </ol>
+          </div>
+          <div class="spotlight-frame">
+            <img id="loopImage" src="abathor-gameplay.png" alt="競合遠征兩名玩家爭奪唯一寶物" width="1920" height="1080">
+            <span class="spotlight-label" id="loopLabel">競搶時刻</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="validation" aria-labelledby="validation-title">
+        <div class="section-head">
+          <div><span class="kicker">VERIFIED, NOT IMPLIED</span><h2 id="validation-title">能斷言的才算完成。</h2></div>
+          <p>自動測試負責確認功能、狀態與重播一致性；可見 Player 截圖與人工看圖負責確認版面。真人首玩則保持獨立門檻，不用自動代打冒充使用者理解。</p>
+        </div>
+        <div class="proof-grid">
+          <article class="proof-card"><b>FLOW</b><strong>勝敗皆可達</strong><span>兩款正常勝利流程與失敗／重玩狀態都有回歸驗證。</span></article>
+          <article class="proof-card"><b>UI</b><strong>4 種解析度</strong><span>800×600 到 2560×1440，入口、實驗室、暫停與改鍵共 16／16 通過。</span></article>
+          <article class="proof-card"><b>STABILITY</b><strong>切換 100 次</strong><span>Sprite、Texture、AudioClip 與世界根節點沒有持續增加。</span></article>
+          <article class="proof-card"><b>PERFORMANCE</b><strong>Main p95 &lt; 2.1 ms</strong><span>可見 Development Player 下兩款均通過既定效能門檻。</span></article>
+        </div>
+      </section>
+
+      <section aria-labelledby="gallery-title">
+        <div class="section-head">
+          <div><span class="kicker">REAL CAPTURES</span><h2 id="gallery-title">美術提案與實際畫面分開標示。</h2></div>
+          <p>彩色像素圖是產品美術方向；程式化戰鬥畫面則是目前真正可玩的內容。兩者並列，避免把概念圖誤當成已完成的正式遊戲素材。</p>
+        </div>
+        <div class="gallery">
+          <button class="shot" type="button" data-full="shared-ui.png" data-caption="兩款產品入口｜uGUI retained shell">
+            <img src="shared-ui.png" alt="兩款產品入口畫面" width="1920" height="1080">
+            <span><strong>產品入口</strong>｜兩款承諾、操作與美術方向在同一畫面清楚分流。</span>
+          </button>
+          <button class="shot" type="button" data-full="settings.png" data-caption="共用暫停與可及性設定">
+            <img src="settings.png" alt="暫停與可及性設定畫面" width="1280" height="720">
+            <span><strong>共用設定</strong>｜音量、震動、打擊凍幀、光脈衝與鍵盤改鍵。</span>
+          </button>
+          <button class="shot" type="button" data-full="abathor-gameplay.png" data-caption="競合遠征實機代理畫面｜競搶唯一寶物">
+            <img src="abathor-gameplay.png" alt="競合遠征程式化實機畫面" width="1920" height="1080">
+            <span><strong>競合遠征實機</strong>｜程式代理剪影保留兩人面向、動作與競搶訊號。</span>
+          </button>
+          <button class="shot" type="button" data-full="clash-gameplay.png" data-caption="破陣投技實機代理畫面｜投擲路徑撞穿敵群">
+            <img src="clash-gameplay.png" alt="破陣投技程式化實機畫面" width="1920" height="1080">
+            <span><strong>破陣投技實機</strong>｜投擲拖影、破甲回饋與群聚敵人的碰撞路徑。</span>
+          </button>
+        </div>
+      </section>
+
+      <section aria-labelledby="status-title">
+        <div class="status">
+          <div>
+            <span class="kicker">CURRENT GATE</span>
+            <h2 id="status-title">自動驗證完成，商品化判斷仍等真人。</h2>
+            <p>目前適合作為可控的垂直切片與美術方向提案；不把它描述成已完成的正式商品，也不把固定 showcase 或自動代打當成真人首玩證據。</p>
+            <p class="notice">下一道門檻：破陣投技固定 6 位首玩者；競合遠征固定 4 組雙人。驗證完成率、6–8 分鐘節奏、核心理解與自然溝通。兩款正式名稱仍須完成命名與商標檢索。</p>
+          </div>
+          <div class="status-list" aria-label="完成狀態">
+            <div class="status-row"><span>可勝可敗垂直切片</span><strong>已完成</strong></div>
+            <div class="status-row"><span>uGUI 共用外殼與解析度</span><strong>已驗證</strong></div>
+            <div class="status-row"><span>真人首玩與理解率</span><strong>待執行</strong></div>
+            <div class="status-row"><span>正式角色、場景與錄製混音</span><strong>尚未完成</strong></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>GameProtoLab · 競合遠征 × 破陣投技 · 2026</footer>
+  </div>
+
+  <dialog id="lightbox" aria-labelledby="dialogCaption">
+    <div class="dialog-bar">
+      <strong id="dialogCaption">畫面預覽</strong>
+      <button class="dialog-close" type="button">關閉 Esc</button>
+    </div>
+    <img id="dialogImage" src="shared-ui.png" alt="">
+  </dialog>
+
+  <script>
+    const games = {
+      abathor: {
+        summary: "合作不是口號：兩人先共同通過機關與守將，再在終點面對只有一人能拿走的寶物。",
+        flow: ["安全移動與角色分工", "雙人壓板與倒地互救", "夾擊守將，創造背擊窗口", "搶奪唯一寶物並進入結算"],
+        image: "abathor-gameplay.png",
+        alt: "競合遠征兩名玩家爭奪唯一寶物",
+        label: "競搶時刻"
+      },
+      clash: {
+        summary: "敵人不是路障：先找準深度，再抓住一名敵人，把他的身體變成破甲與清群工具。",
+        flow: ["深度對位與攻擊教學", "抓取敵人並調整投擲路徑", "用投擲撞倒另一名敵人開門", "破甲隊長並清空最後一波"],
+        image: "clash-gameplay.png",
+        alt: "破陣投技把一名敵人投向整群敵人",
+        label: "一次撞穿整群"
+      }
+    };
+
+    const loopSummary = document.getElementById("loopSummary");
+    const loopFlow = document.getElementById("loopFlow");
+    const loopImage = document.getElementById("loopImage");
+    const loopLabel = document.getElementById("loopLabel");
+    document.querySelectorAll(".switch").forEach(button => {
+      button.addEventListener("click", () => {
+        const game = games[button.dataset.game];
+        document.querySelectorAll(".switch").forEach(item => item.setAttribute("aria-pressed", item === button ? "true" : "false"));
+        loopSummary.textContent = game.summary;
+        loopFlow.replaceChildren(...game.flow.map(text => Object.assign(document.createElement("li"), { textContent: text })));
+        loopImage.src = game.image;
+        loopImage.alt = game.alt;
+        loopLabel.textContent = game.label;
+      });
+    });
+
+    const lightbox = document.getElementById("lightbox");
+    const dialogImage = document.getElementById("dialogImage");
+    const dialogCaption = document.getElementById("dialogCaption");
+    document.querySelectorAll(".shot").forEach(button => {
+      button.addEventListener("click", () => {
+        dialogImage.src = button.dataset.full;
+        dialogImage.alt = button.dataset.caption;
+        dialogCaption.textContent = button.dataset.caption;
+        lightbox.showModal();
+      });
+    });
+    document.querySelector(".dialog-close").addEventListener("click", () => lightbox.close());
+    lightbox.addEventListener("click", event => {
+      if (event.target === lightbox) lightbox.close();
+    });
+  </script>
+</body>
+</html>
