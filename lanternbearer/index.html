@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="《提燈者 Lanternbearer》原創 3D 低模地城 RPG 垂直切片：用燈油換視野，用視野換先手。">
+  <meta name="theme-color" content="#0b1014">
+  <link rel="canonical" href="https://treefar.link/lanternbearer/">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:title" content="提燈者 Lanternbearer｜3D 地城 RPG 垂直切片">
+  <meta property="og:description" content="燈火照多遠，你就看多遠，也會被多遠外的敵人發現。">
+  <meta property="og:url" content="https://treefar.link/lanternbearer/">
+  <meta property="og:image" content="https://treefar.link/lanternbearer/key-art.jpg">
+  <meta property="og:image:width" content="1600">
+  <meta property="og:image:height" content="900">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="提燈者 Lanternbearer｜3D 地城 RPG 垂直切片">
+  <meta name="twitter:description" content="用燈油換視野，用視野換先手。">
+  <meta name="twitter:image" content="https://treefar.link/lanternbearer/key-art.jpg">
+  <title>提燈者 Lanternbearer｜3D 地城 RPG 垂直切片</title>
+  <style>
+    :root {
+      --bg: #0b1014;
+      --panel: #111a1f;
+      --panel-soft: #172229;
+      --line: rgba(171, 210, 210, .16);
+      --ink: #f4efe3;
+      --dim: #a5b1b3;
+      --amber: #ffb43b;
+      --amber-deep: #bd6824;
+      --teal: #58d8d0;
+      --teal-deep: #123b40;
+      --shadow: 0 28px 80px rgba(0, 0, 0, .38);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; color-scheme: dark; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 82% 6%, rgba(28, 139, 145, .18), transparent 30rem),
+        radial-gradient(circle at 14% 28%, rgba(255, 180, 59, .1), transparent 28rem),
+        var(--bg);
+      font-family: "Microsoft JhengHei UI", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+      line-height: 1.6;
+    }
+    img { max-width: 100%; }
+    a { color: inherit; }
+    button { font: inherit; }
+    .skip {
+      position: fixed; left: 16px; top: 12px; z-index: 100;
+      width: 1px; height: 1px; padding: 0; overflow: hidden;
+      clip: rect(0 0 0 0); white-space: nowrap;
+      border-radius: 10px; background: var(--amber); color: #171109;
+      font-weight: 800; text-decoration: none;
+    }
+    .skip:focus {
+      width: auto; height: auto; padding: 10px 14px; overflow: visible;
+      clip: auto; white-space: normal;
+    }
+    .wrap { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center; gap: 20px;
+      padding: 22px 0; color: var(--dim); font-size: 14px;
+    }
+    .topbar a { text-decoration: none; }
+    .topbar a:hover { color: var(--ink); }
+    .mark { color: var(--ink); font-weight: 800; letter-spacing: .08em; }
+    .hero {
+      position: relative; min-height: 620px; overflow: hidden; isolation: isolate;
+      display: flex; align-items: center; border: 1px solid var(--line); border-radius: 30px;
+      background: #081014; box-shadow: var(--shadow);
+    }
+    .hero::before {
+      content: ""; position: absolute; inset: 0; z-index: -1;
+      background: linear-gradient(90deg, rgba(7, 11, 13, .98) 0%, rgba(7, 11, 13, .86) 38%, rgba(7, 11, 13, .14) 72%);
+    }
+    .hero img {
+      position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover;
+    }
+    .hero-copy { width: min(610px, 62%); padding: clamp(42px, 7vw, 80px); }
+    .eyebrow, .kicker {
+      color: var(--teal); font-size: 12px; font-weight: 900; letter-spacing: .2em;
+    }
+    h1 {
+      margin: 13px 0 14px; font-size: clamp(50px, 7.2vw, 82px);
+      line-height: .94; letter-spacing: -.035em;
+    }
+    h1 span {
+      display: block; margin-top: 18px; color: var(--amber);
+      font-size: .34em; letter-spacing: .16em;
+    }
+    .lead { margin: 0; max-width: 560px; color: rgba(244, 239, 227, .78); font-size: 18px; line-height: 1.85; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+    .button {
+      display: inline-flex; align-items: center; justify-content: center; min-height: 46px;
+      padding: 0 18px; border: 1px solid rgba(255,255,255,.24); border-radius: 12px;
+      text-decoration: none; font-weight: 800; transition: transform .16s, border-color .16s;
+    }
+    .button.primary { border-color: var(--amber); background: var(--amber); color: #1b1308; }
+    .button:hover { transform: translateY(-2px); border-color: var(--amber); }
+    .button:focus-visible, .mode-button:focus-visible, a:focus-visible {
+      outline: 3px solid var(--teal); outline-offset: 3px;
+    }
+    .stats {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+      margin: 28px 0 84px; overflow: hidden; border: 1px solid var(--line);
+      border-radius: 18px; background: var(--line);
+    }
+    .stat { padding: 22px; background: rgba(17, 26, 31, .96); }
+    .stat strong { display: block; margin-bottom: 4px; color: var(--amber); font-size: 24px; }
+    .stat span { color: var(--dim); font-size: 13px; }
+    section { margin-bottom: 88px; }
+    .section-head {
+      display: grid; grid-template-columns: .8fr 1.2fr; gap: 48px;
+      align-items: end; margin-bottom: 30px;
+    }
+    h2 { margin: 10px 0 0; font-size: clamp(32px, 4vw, 48px); line-height: 1.14; }
+    .section-head p { margin: 0; color: var(--dim); font-size: 16px; line-height: 1.85; }
+    .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .feature {
+      min-height: 220px; padding: 26px; border: 1px solid var(--line); border-radius: 18px;
+      background: linear-gradient(145deg, rgba(23, 34, 41, .94), rgba(14, 23, 28, .94));
+    }
+    .feature b {
+      display: grid; place-items: center; width: 38px; height: 38px; margin-bottom: 22px;
+      border-radius: 11px; background: rgba(255, 180, 59, .14); color: var(--amber);
+    }
+    .feature h3 { margin: 0 0 10px; font-size: 21px; }
+    .feature p { margin: 0; color: var(--dim); }
+    .compare {
+      display: grid; grid-template-columns: .76fr 1.24fr; gap: 34px; align-items: center;
+      padding: 34px; border: 1px solid var(--line); border-radius: 24px; background: var(--panel);
+    }
+    .compare-copy p { color: var(--dim); }
+    .mode-buttons { display: flex; gap: 10px; margin-top: 24px; }
+    .mode-button {
+      min-height: 42px; padding: 0 16px; border: 1px solid var(--line); border-radius: 999px;
+      background: transparent; color: var(--dim); cursor: pointer;
+    }
+    .mode-button[aria-pressed="true"] { border-color: var(--amber); background: var(--amber); color: #1a1208; font-weight: 800; }
+    .compare-frame {
+      position: relative; aspect-ratio: 16 / 9; overflow: hidden; border: 1px solid var(--line);
+      border-radius: 18px; background: #030506; box-shadow: 0 20px 50px rgba(0,0,0,.34);
+    }
+    .compare-frame img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .compare-label {
+      position: absolute; left: 14px; bottom: 14px; padding: 7px 10px; border-radius: 8px;
+      background: rgba(7,11,13,.82); color: var(--amber); font-size: 12px; font-weight: 800;
+    }
+    .gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    figure {
+      margin: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 18px;
+      background: var(--panel); box-shadow: 0 14px 38px rgba(0,0,0,.2);
+    }
+    figure img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; }
+    figcaption { padding: 17px 18px 19px; color: var(--dim); font-size: 14px; }
+    figcaption strong { display: block; margin-bottom: 3px; color: var(--ink); font-size: 17px; }
+    .proof {
+      display: grid; grid-template-columns: .84fr 1.16fr; gap: 40px; padding: 42px;
+      border: 1px solid rgba(88, 216, 208, .24); border-radius: 24px;
+      background: linear-gradient(135deg, var(--teal-deep), #101b22 68%);
+    }
+    .proof p { color: rgba(244,239,227,.7); }
+    .proof-list { display: grid; align-content: center; }
+    .proof-item {
+      display: flex; justify-content: space-between; gap: 24px;
+      padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,.13);
+    }
+    .proof-item:last-child { border: 0; }
+    .proof-item span { color: rgba(244,239,227,.68); }
+    .proof-item strong { color: var(--teal); text-align: right; }
+    .notice {
+      margin-top: 18px; padding: 19px 21px; border: 1px solid rgba(255,180,59,.38);
+      border-radius: 16px; background: rgba(255,180,59,.08); color: #d8c7a7;
+    }
+    footer {
+      padding: 8px 0 50px; border-top: 1px solid var(--line);
+      color: var(--dim); font-size: 13px; text-align: center;
+    }
+    @media (max-width: 860px) {
+      .hero { min-height: 650px; align-items: end; }
+      .hero::before { background: linear-gradient(180deg, rgba(7,11,13,.12) 18%, rgba(7,11,13,.96) 70%); }
+      .hero-copy { width: 100%; padding: 300px 34px 42px; }
+      .stats { grid-template-columns: 1fr 1fr; }
+      .section-head, .compare, .proof { grid-template-columns: 1fr; gap: 22px; }
+      .feature-grid { grid-template-columns: 1fr; }
+      .feature { min-height: 0; }
+    }
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 24px, 1120px); }
+      .topbar { padding: 16px 0; font-size: 13px; }
+      .mark { display: none; }
+      .hero { min-height: 600px; border-radius: 20px; }
+      .hero img { object-position: 61% center; }
+      .hero-copy { padding: 285px 22px 30px; }
+      h1 { font-size: clamp(46px, 15vw, 62px); }
+      .lead { font-size: 16px; }
+      .actions .button { width: 100%; }
+      .stats, .gallery { grid-template-columns: 1fr; }
+      .stat { padding: 18px; }
+      section { margin-bottom: 68px; }
+      .compare, .proof { padding: 24px 20px; border-radius: 19px; }
+      .mode-buttons { display: grid; grid-template-columns: 1fr 1fr; }
+      .proof-item { flex-direction: column; gap: 3px; }
+      .proof-item strong { text-align: left; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#content">跳到主要內容</a>
+  <div class="wrap">
+    <nav class="topbar" aria-label="頁面導覽">
+      <a class="mark" href="/">TREEFAR / PROJECTS</a>
+      <a href="/">← 返回 treefar 專案導航</a>
+    </nav>
+
+    <main id="content">
+      <header class="hero">
+        <img src="key-art.jpg" alt="三人冒險隊在黑暗地城中舉起提燈，敵人潛伏在光圈之外" width="1600" height="900">
+        <div class="hero-copy">
+          <div class="eyebrow">3D DUNGEON RPG · VERTICAL SLICE</div>
+          <h1>提燈者<span>LANTERNBEARER</span></h1>
+          <p class="lead">燈火照多遠，你就看多遠，也會被多遠外的敵人發現。用燈油換視野、用視野換先手，在黑暗裡決定每一步要看見多少風險。</p>
+          <div class="actions">
+            <a class="button primary" href="#light">體驗亮暗差異</a>
+            <a class="button" href="#validation">查看驗證結果</a>
+          </div>
+        </div>
+      </header>
+
+      <div class="stats" aria-label="專案摘要">
+        <div class="stat"><strong>3 層</strong><span>手工格狀地城</span></div>
+        <div class="stat"><strong>10 職</strong><span>30 種戰鬥技能</span></div>
+        <div class="stat"><strong>8 種</strong><span>可見符號敵人</span></div>
+        <div class="stat"><strong>Windows</strong><span>20–30 分鐘切片目標</span></div>
+      </div>
+
+      <section aria-labelledby="design-title">
+        <div class="section-head">
+          <div><span class="kicker">CORE DESIGN</span><h2 id="design-title">光不是安全，是一筆交易。</h2></div>
+          <p>四段亮度直接改變可見範圍、燈油消耗與敵人察覺距離。點得越亮，地圖資訊越完整，也越容易讓巡邏怪先發現隊伍。熄燈能避開危險，代價是幾乎失去導航資訊。</p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature"><b>01</b><h3>步進探索</h3><p>以 WASD 或方向鍵逐格前進；視野會在敵人移動前重算，讓玩家能依這一步的資訊判斷繞路或接戰。</p></article>
+          <article class="feature"><b>02</b><h3>符號遇敵</h3><p>敵人直接存在於地圖上，會巡邏、察覺、追擊。誰先看見誰，會決定側視回合戰的先手權。</p></article>
+          <article class="feature"><b>03</b><h3>職業即探索風格</h3><p>十種職業都與燈油軸互動：看得更遠、降低耗油、摸黑聽聲，或用高風險強光換取時機。</p></article>
+        </div>
+      </section>
+
+      <section id="light" aria-labelledby="light-title">
+        <div class="compare">
+          <div class="compare-copy">
+            <span class="kicker">LIGHT / RISK</span>
+            <h2 id="light-title">同一個位置，兩種情報。</h2>
+            <p>切換下方按鈕比較全開燈與熄燈。全開能讀出路線，但被察覺半徑高於視野；熄燈時只剩腳邊一格，卻能讓隊伍從威脅旁邊安靜通過。</p>
+            <div class="mode-buttons" role="group" aria-label="切換地城亮度">
+              <button class="mode-button" type="button" data-mode="bright" aria-pressed="true">全開燈</button>
+              <button class="mode-button" type="button" data-mode="dark" aria-pressed="false">熄燈</button>
+            </div>
+          </div>
+          <div class="compare-frame">
+            <img id="lightShot" src="dungeon-bright.jpg" alt="全開燈時可看見較大範圍的地城" width="1600" height="900">
+            <span class="compare-label" id="lightLabel" aria-live="polite">全開燈 · 視野 7 格／被察覺 9 格</span>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="gallery-title">
+        <div class="section-head">
+          <div><span class="kicker">IN-GAME</span><h2 id="gallery-title">探索、整備、交戰。</h2></div>
+          <p>以下皆為 2026 年 8 月 14 日 Windows Player 實機巡場畫面。營地可轉職、休息與存檔；戰鬥支援狀態效果；八種怪物均已完成比例、朝向與材質驗證。</p>
+        </div>
+        <div class="gallery">
+          <figure>
+            <img src="camp.jpg" alt="營地介面顯示三名隊員、五個開場職業與技能列表" width="1600" height="900" loading="lazy">
+            <figcaption><strong>營地整備</strong>轉職不重置角色等級，已解鎖的戰鬥技能永久保留。</figcaption>
+          </figure>
+          <figure>
+            <img src="status.jpg" alt="側視回合戰畫面顯示攻擊提升與防禦下降狀態" width="1600" height="900" loading="lazy">
+            <figcaption><strong>側視回合戰</strong>攻擊提升、防禦下降與剩餘回合會直接顯示在隊伍與敵人狀態列。</figcaption>
+          </figure>
+          <figure>
+            <img src="monsters.jpg" alt="八種低模怪物在地城背景前並列展示" width="1600" height="900" loading="lazy">
+            <figcaption><strong>八種地城怪物</strong>從弱小巡邏怪到第三層守門者，數值、速度與察覺特性各不相同。</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section id="validation" aria-labelledby="validation-title">
+        <div class="proof">
+          <div>
+            <span class="kicker">VERIFIED BUILD · 2026-08-14</span>
+            <h2 id="validation-title">現行版本驗證</h2>
+            <p>公開頁只陳述已由自動測試、Windows Player 與人工畫面檢查支持的結果；不把代理巡場冒充真人遊玩感受。</p>
+          </div>
+          <div class="proof-list">
+            <div class="proof-item"><span>自動驗收</span><strong>617／617 通過</strong></div>
+            <div class="proof-item"><span>邏輯／存檔／狀態／職業</span><strong>250／250 通過</strong></div>
+            <div class="proof-item"><span>Windows runtime gate</span><strong>7／7 畫面，exit 0</strong></div>
+            <div class="proof-item"><span>音訊與存檔</span><strong>BGM／環境音／SFX／存檔通過</strong></div>
+          </div>
+        </div>
+        <aside class="notice"><strong>目前邊界：</strong>這是 Unity 6000.5.3f1 製作的 Windows 垂直切片，不是正式發行版。完整 20–30 分鐘真人首玩仍待執行；遊戲名稱亦為暫名。頁面圖片包含原創 Key Art 與遊戲內合法授權素材的渲染結果，不提供第三方素材原檔。</aside>
+      </section>
+    </main>
+
+    <footer>提燈者 Lanternbearer © 2026 treefar · 原創遊戲研究與 Unity 垂直切片</footer>
+  </div>
+
+  <script>
+    const lightModes = {
+      bright: {
+        src: "dungeon-bright.jpg",
+        alt: "全開燈時可看見較大範圍的地城",
+        label: "全開燈 · 視野 7 格／被察覺 9 格"
+      },
+      dark: {
+        src: "dungeon-dark.jpg",
+        alt: "熄燈時只看得見角色腳邊的一格地城",
+        label: "熄燈 · 視野 1 格／被察覺 0 格"
+      }
+    };
+    const lightShot = document.getElementById("lightShot");
+    const lightLabel = document.getElementById("lightLabel");
+    document.querySelectorAll(".mode-button").forEach(button => {
+      button.addEventListener("click", () => {
+        const mode = lightModes[button.dataset.mode];
+        lightShot.src = mode.src;
+        lightShot.alt = mode.alt;
+        lightLabel.textContent = mode.label;
+        document.querySelectorAll(".mode-button").forEach(item => {
+          item.setAttribute("aria-pressed", String(item === button));
+        });
+      });
+    });
+  </script>
+</body>
+</html>
