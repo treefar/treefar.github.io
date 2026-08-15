@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="直接在瀏覽器試玩 GameProtoLab 的 Abathor 與 Clash Unity WebGL 灰盒原型。">
+  <meta name="theme-color" content="#0b1120">
+  <title>GameProtoLab｜WebGL 灰盒試玩</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#play-main">跳至試玩區</a>
+  <header class="site-header">
+    <a class="back-link" href="../">← 返回原型分析</a>
+    <span class="header-tag">PUBLIC WEBGL · GRAYBOX</span>
+  </header>
+
+  <main id="play-main">
+    <section class="intro" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">UNITY 6 · DESKTOP PLAYTEST</p>
+        <h1 id="page-title">兩款原型<br><span>直接開始試玩</span></h1>
+      </div>
+      <p class="intro-copy">本頁是玩法驗證用的灰盒原型，角色與場景不是正式美術。請使用電腦鍵盤或既有遊戲控制器操作。</p>
+    </section>
+
+    <section class="play-card" aria-label="GameProtoLab WebGL 試玩區">
+      <div class="play-toolbar">
+        <div>
+          <strong>GameProtoLab</strong>
+          <span id="runtime-status" role="status" aria-live="polite">準備載入</span>
+        </div>
+        <button id="fullscreen-button" type="button" disabled>全螢幕</button>
+      </div>
+
+      <div id="desktop-player" class="player-frame">
+        <canvas id="unity-canvas" width="1280" height="720" tabindex="0" aria-label="GameProtoLab 遊戲畫面"></canvas>
+        <div id="loading-panel" class="loading-panel">
+          <p>載入 Unity WebGL</p>
+          <div class="progress-track" aria-hidden="true"><span id="progress-bar"></span></div>
+          <span id="progress-label">0%</span>
+        </div>
+        <div id="error-panel" class="error-panel" hidden>
+          <strong>試玩版載入失敗</strong>
+          <p id="error-message">請重新整理頁面，或改用最新版 Chrome、Edge、Firefox。</p>
+          <button id="retry-button" type="button">重新載入</button>
+        </div>
+      </div>
+
+      <div id="mobile-notice" class="mobile-notice" hidden>
+        <img src="../assets/products.png" alt="Abathor 與 Clash 兩款灰盒原型的產品入口" width="1280" height="720">
+        <div>
+          <p class="eyebrow">DESKTOP REQUIRED</p>
+          <h2>請用電腦試玩</h2>
+          <p>目前版本以鍵盤與遊戲控制器操作，尚未加入觸控介面。手機版不會下載大型 Unity 檔案。</p>
+          <a class="button" href="../">先看完整原型分析</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="info-grid" aria-label="試玩說明">
+      <article>
+        <p class="eyebrow">SELECT</p>
+        <h2>選擇遊戲</h2>
+        <p>方向鍵上下選擇，A 或 Enter 確認。Abathor 是雙人競合；Clash 是單人清版。</p>
+      </article>
+      <article>
+        <p class="eyebrow">PAUSE</p>
+        <h2>暫停與設定</h2>
+        <p>Esc 或控制器 Start 暫停；可調整音量、震動、打擊凍幀與鍵盤按鍵。</p>
+      </article>
+      <article>
+        <p class="eyebrow">BOUNDARY</p>
+        <h2>公開範圍</h2>
+        <p>公開版只提供 Abathor 與 Clash；Sushiamo 與內部驗收工具不會出現在此版本。</p>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    <span>GameProtoLab · 公開灰盒試玩</span>
+    <a href="../">玩法分析與後續決策</a>
+  </footer>
+  <script src="./app.js"></script>
+</body>
+</html>
