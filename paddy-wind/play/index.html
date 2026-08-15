@@ -49,10 +49,11 @@
     const errorBox=document.querySelector('#error');
     const fullscreen=document.querySelector('#fullscreen');
     const buildUrl='Build';
+    const buildRevision=encodeURIComponent('1.0-20260815b');
     const config={
-      dataUrl:buildUrl+'/WebGL.data.unityweb',
-      frameworkUrl:buildUrl+'/WebGL.framework.js.unityweb',
-      codeUrl:buildUrl+'/WebGL.wasm.unityweb',
+      dataUrl:buildUrl+'/WebGL.data.unityweb?v='+buildRevision,
+      frameworkUrl:buildUrl+'/WebGL.framework.js.unityweb?v='+buildRevision,
+      codeUrl:buildUrl+'/WebGL.wasm.unityweb?v='+buildRevision,
       streamingAssetsUrl:'StreamingAssets',
       companyName:'Windhe Town Studio',
       productName:'風從稻田來',
@@ -61,7 +62,7 @@
       devicePixelRatio:Math.min(window.devicePixelRatio||1,1.5)
     };
     const loader=document.createElement('script');
-    loader.src=buildUrl+'/WebGL.loader.js';
+    loader.src=buildUrl+'/WebGL.loader.js?v='+buildRevision;
     loader.onload=()=>createUnityInstance(canvas,config,p=>{const value=Math.round(p*100);bar.style.width=value+'%';percent.textContent=value+'%';}).then(instance=>{loading.hidden=true;fullscreen.disabled=false;fullscreen.addEventListener('click',()=>instance.SetFullscreen(1));canvas.focus();}).catch(message=>{loading.hidden=true;errorBox.hidden=false;errorBox.textContent='載入失敗：'+message;});
     loader.onerror=()=>{loading.hidden=true;errorBox.hidden=false;errorBox.textContent='載入器下載失敗，請重新整理後再試。';};
     document.body.appendChild(loader);
