@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="直接在瀏覽器試玩《雷墨繪卷》三圈戰鬥垂直切片。支援滑鼠、觸控與全螢幕。">
+  <meta name="theme-color" content="#171a22">
+  <title>雷墨繪卷｜WebGL 試玩</title>
+  <link rel="stylesheet" href="./styles.css?v=20260816b">
+</head>
+<body>
+  <a class="skip-link" href="#play-main">跳至試玩區</a>
+  <header class="site-header">
+    <a class="back-link" href="../">← 返回雷墨繪卷</a>
+    <span class="header-tag">UNITY WEBGL · PLAYABLE</span>
+  </header>
+
+  <main id="play-main">
+    <section class="intro" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">GLIMMER OF THE STORM</p>
+        <h1 id="page-title">三圈戰鬥<br><span>直接在瀏覽器覺醒</span></h1>
+      </div>
+      <p class="intro-copy">選擇招式累積熟練度，在危險與保底節奏交會時觸發 Glimmer。支援滑鼠與觸控；手機建議橫向並開啟全螢幕。</p>
+    </section>
+
+    <section class="play-card" aria-label="雷墨繪卷 WebGL 試玩區">
+      <div class="play-toolbar">
+        <div>
+          <strong>雷墨繪卷</strong>
+          <span id="runtime-status" role="status" aria-live="polite">準備載入</span>
+        </div>
+        <button id="fullscreen-button" type="button" disabled>全螢幕</button>
+      </div>
+
+      <div id="player-frame" class="player-frame">
+        <canvas id="unity-canvas" width="1280" height="720" tabindex="0" aria-label="雷墨繪卷遊戲畫面"></canvas>
+        <div id="loading-panel" class="loading-panel">
+          <p>載入 Unity WebGL</p>
+          <div class="progress-track" aria-hidden="true"><span id="progress-bar"></span></div>
+          <span id="progress-label">0%</span>
+        </div>
+        <div id="error-panel" class="error-panel" hidden>
+          <strong>試玩版載入失敗</strong>
+          <p id="error-message">請重新整理頁面，或改用最新版 Chrome、Edge、Firefox 或 Safari。</p>
+          <button id="retry-button" type="button">重新載入</button>
+        </div>
+      </div>
+      <p id="orientation-hint" class="orientation-hint" hidden>手機直向畫面較小，旋轉為橫向可獲得較佳操作空間。</p>
+    </section>
+
+    <section class="info-grid" aria-label="試玩說明">
+      <article>
+        <p class="eyebrow">PLAY</p>
+        <h2>滑鼠與觸控</h2>
+        <p>按「Begin cycle」進入戰鬥，直接點選四個招式。右上角「II」可暫停並切換全螢幕。</p>
+      </article>
+      <article>
+        <p class="eyebrow">GLIMMER</p>
+        <h2>熟練與覺醒</h2>
+        <p>反覆使用前一階招式提升熟練度，生命越危險越容易覺醒；未觸發時會累積保底進度。</p>
+      </article>
+      <article>
+        <p class="eyebrow">SAVE</p>
+        <h2>自動保存</h2>
+        <p>每圈結束會保存進度於目前瀏覽器。清除網站資料、無痕模式或更換裝置會失去該紀錄。</p>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    <span>treefar／雷墨繪卷</span>
+    <a href="../">美術實驗與驗證成果</a>
+  </footer>
+  <script src="./app.js?v=20260816"></script>
+</body>
+</html>
