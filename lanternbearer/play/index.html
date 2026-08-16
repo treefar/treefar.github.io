@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="description" content="直接在瀏覽器試玩《提燈者 Lanternbearer》：調整燈火、探索格狀地城並迎戰巡邏怪物。">
+  <meta name="theme-color" content="#0b1014">
+  <link rel="canonical" href="https://treefar.link/lanternbearer/play/">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:title" content="提燈者 Lanternbearer｜WebGL 試玩">
+  <meta property="og:description" content="用燈油換視野，用視野換先手。免安裝，直接開始地城探索。">
+  <meta property="og:url" content="https://treefar.link/lanternbearer/play/">
+  <meta property="og:image" content="https://treefar.link/lanternbearer/key-art.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <title>提燈者 Lanternbearer｜WebGL 試玩</title>
+  <link rel="icon" href="../key-art.jpg">
+  <link rel="stylesheet" href="styles.css?v=20260816">
+</head>
+<body>
+  <a class="skip" href="#game">跳到試玩區</a>
+  <header class="topbar wrap">
+    <a class="brand" href="../"><span>TREEFAR</span> / 提燈者</a>
+    <a class="back" href="../">← 返回完整成果頁</a>
+  </header>
+
+  <main class="wrap">
+    <section class="intro" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">UNITY 6 · WEBGL PLAYTEST</p>
+        <h1 id="page-title">提燈者<span>LANTERNBEARER</span></h1>
+      </div>
+      <p class="intro-copy">調整提燈亮度，在情報、燈油與被敵人察覺的風險之間取捨。這是可存檔的桌機瀏覽器試玩版，免安裝即可開始。</p>
+    </section>
+
+    <section id="game" class="play-card" aria-label="提燈者 WebGL 試玩區">
+      <div class="toolbar">
+        <div>
+          <strong>第一層 · 柱廳</strong>
+          <span id="runtime-status" role="status" aria-live="polite">準備載入</span>
+        </div>
+        <button id="fullscreen" type="button" disabled>全螢幕</button>
+      </div>
+
+      <div id="desktop-player" class="player-frame">
+        <canvas id="unity-canvas" width="960" height="600" tabindex="0" aria-label="提燈者遊戲畫面"></canvas>
+        <div id="loading" class="loading-panel">
+          <div class="loading-copy">
+            <p class="eyebrow">LIGHTING THE LANTERN</p>
+            <h2>正在點亮地城</h2>
+            <p>初次載入約 61 MB，完成後請點一下遊戲畫面啟用鍵盤與音效。</p>
+            <div class="progress-track" aria-hidden="true"><span id="progress-bar"></span></div>
+            <span id="progress-label">0%</span>
+          </div>
+        </div>
+        <div id="banner" class="banner" role="alert" hidden></div>
+        <div id="error" class="error-panel" role="alert" hidden>
+          <strong>試玩版載入失敗</strong>
+          <p id="error-message">請重新整理頁面，或改用最新版 Chrome、Edge、Firefox。</p>
+          <button id="retry" type="button">重新載入</button>
+        </div>
+      </div>
+
+      <div id="mobile-notice" class="mobile-notice" hidden>
+        <img src="../key-art.jpg" alt="三人冒險隊在黑暗地城中舉起提燈" width="1600" height="900">
+        <div>
+          <p class="eyebrow">DESKTOP KEYBOARD REQUIRED</p>
+          <h2>請用電腦試玩</h2>
+          <p>目前版本需要實體鍵盤，尚未加入手機觸控操作。手機版保留完整介紹，但不會下載 61 MB 的 Unity 遊戲檔案。</p>
+          <a class="button" href="../">查看玩法與開發成果</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="info-grid" aria-label="試玩操作與注意事項">
+      <article>
+        <p class="eyebrow">EXPLORE</p>
+        <h2>地城探索</h2>
+        <div class="keys" aria-label="探索按鍵">
+          <span><kbd>WASD</kbd>／方向鍵移動</span>
+          <span><kbd>Space</kbd>／<kbd>L</kbd> 切換燈光</span>
+          <span><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> 隊員能力</span>
+        </div>
+      </article>
+      <article>
+        <p class="eyebrow">BATTLE</p>
+        <h2>遭遇戰鬥</h2>
+        <p>接觸地圖上的怪物會切換為回合戰。直接點選攻擊、技能、防禦或逃走；燈光與遭遇方向會影響先手。</p>
+      </article>
+      <article>
+        <p class="eyebrow">SAVE</p>
+        <h2>瀏覽器存檔</h2>
+        <p>營地存檔會保存在這個瀏覽器與這台裝置。清除網站資料或使用無痕模式，可能使紀錄消失。</p>
+      </article>
+    </section>
+
+    <aside class="play-note"><strong>試玩提示：</strong>Chrome 或 Edge 的桌機最新版體驗最佳。音訊需由點擊啟動；若沒有聲音，請點一下遊戲畫面。<a href="ThirdPartyNotices.txt">第三方字型授權</a></aside>
+  </main>
+
+  <footer class="wrap">
+    <span>提燈者 Lanternbearer © 2026 treefar</span>
+    <a href="../">遊戲設計、畫面與驗證報告</a>
+  </footer>
+  <script src="app.js?v=20260816"></script>
+</body>
+</html>
