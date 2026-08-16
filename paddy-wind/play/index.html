@@ -39,7 +39,7 @@
       </div>
       <div class="toolbar"><div class="status"><b>桌機版</b> 建議鍵盤或手把操作；進入後先點一下遊戲畫面。</div><button type="button" id="fullscreen" disabled>全螢幕</button></div>
     </section>
-    <div class="guide"><section class="card"><h2>主要操作</h2><p>沿著水田緩慢騎行，靠近聲音後停下錄音；遇見白鷺、巡田奶奶與小橋時可放慢探索。</p><div class="keys"><span class="key">D 踩踏</span><span class="key">A 煞車</span><span class="key">Shift 用力踩</span><span class="key">Q 錄音</span><span class="key">F 相機</span><span class="key">Space 互動</span><span class="key">Esc 暫停</span></div></section><aside class="card"><h2>目前限制</h2><p>這是十五分鐘垂直切片的第一版 Web 移植。手機可開啟畫面，但尚未加入觸控騎行介面；音訊需在使用者點擊後由瀏覽器啟動。<a href="ThirdPartyNotices.txt">第三方字型授權</a></p></aside></div>
+    <div class="guide"><section class="card"><h2>主要操作</h2><p>沿著水田緩慢騎行，靠近聲音後停下錄音；遇見白鷺、巡田奶奶與小橋時可放慢探索。</p><div class="keys"><span class="key">D 踩踏</span><span class="key">A 煞車</span><span class="key">Shift 用力踩</span><span class="key">Q 錄音</span><span class="key">F 相機</span><span class="key">Space 互動</span><span class="key">Esc 暫停</span></div></section><aside class="card"><h2>目前限制</h2><p>這是十五分鐘垂直切片的正式逐格動畫版 Web 移植。手機可開啟畫面，但尚未加入觸控騎行介面；音訊需在使用者點擊後由瀏覽器啟動。<a href="ThirdPartyNotices.txt">第三方字型授權</a></p></aside></div>
   </main>
   <script>
     const canvas=document.querySelector('#unity-canvas');
@@ -49,7 +49,7 @@
     const errorBox=document.querySelector('#error');
     const fullscreen=document.querySelector('#fullscreen');
     const buildUrl='Build';
-    const buildRevision=encodeURIComponent('1.0-20260815b');
+    const buildRevision=encodeURIComponent('1.0-20260816a');
     const config={
       dataUrl:buildUrl+'/WebGL.data.unityweb?v='+buildRevision,
       frameworkUrl:buildUrl+'/WebGL.framework.js.unityweb?v='+buildRevision,
