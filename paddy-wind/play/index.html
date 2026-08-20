@@ -76,7 +76,7 @@
     };
     const loader=document.createElement('script');
     loader.src=buildUrl+'/WebGL.loader.js?v='+buildRevision;
-    loader.onload=()=>createUnityInstance(canvas,config,p=>{const value=Math.round(p*100);bar.style.width=value+'%';percent.textContent=value+'%';}).then(instance=>{unityInstance=instance;loading.hidden=true;fullscreen.disabled=false;fullscreen.addEventListener('click',()=>instance.SetFullscreen(1));canvas.focus();}).catch(message=>{loading.hidden=true;errorBox.hidden=false;errorBox.textContent='載入失敗：'+message;});
+    loader.onload=()=>createUnityInstance(canvas,config,p=>{const value=Math.round(p*100);bar.style.width=value+'%';percent.textContent=value+'%';}).then(instance=>{unityInstance=instance;if(matchMedia('(pointer:coarse)').matches)instance.SendMessage('TouchInput','EnableWebTouchUI');loading.hidden=true;fullscreen.disabled=false;fullscreen.addEventListener('click',()=>instance.SetFullscreen(1));canvas.focus();}).catch(message=>{loading.hidden=true;errorBox.hidden=false;errorBox.textContent='載入失敗：'+message;});
     loader.onerror=()=>{loading.hidden=true;errorBox.hidden=false;errorBox.textContent='載入器下載失敗，請重新整理後再試。';};
     document.body.appendChild(loader);
   </script>
