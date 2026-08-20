@@ -16,7 +16,7 @@
     .brand{font-weight:850;text-decoration:none}.brand span{color:var(--teal)}.back{color:var(--dim);font-size:.88rem;text-decoration:none}
     main{padding:18px 0 34px}.stage{overflow:hidden;border:1px solid var(--line);border-radius:18px;background:#050709;box-shadow:0 24px 70px rgba(0,0,0,.38)}
     .canvas-wrap{position:relative;aspect-ratio:16/9;min-height:260px;background:#050709}
-    #unity-canvas{display:block;width:100%;height:100%;background:#050709;outline:0}
+    #unity-canvas{display:block;width:100%;height:100%;background:#050709;outline:0;touch-action:none;user-select:none;-webkit-user-select:none}
     .loading{position:absolute;inset:0;display:grid;place-items:center;padding:24px;background:linear-gradient(160deg,#101a20,#0a0d12);text-align:center}
     .loading[hidden]{display:none}.loading-box{width:min(430px,86%)}.loading h1{margin:0 0 8px;font-size:clamp(1.5rem,4vw,2.6rem)}.loading p{margin:0 0 18px;color:var(--dim)}
     .track{height:9px;overflow:hidden;border:1px solid var(--line);border-radius:999px;background:#080b0f}.bar{width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--teal),var(--sun));transition:width .2s}
@@ -37,9 +37,9 @@
         <div class="loading" id="loading"><div class="loading-box"><h1>風從稻田來</h1><p>正在載入水田、風聲與自行車……</p><div class="track"><div class="bar" id="bar"></div></div><span class="percent" id="percent">0%</span></div></div>
         <div class="error" id="error" role="alert" hidden></div>
       </div>
-      <div class="toolbar"><div class="status"><b>桌機版</b> 建議鍵盤或手把操作；進入後先點一下遊戲畫面。</div><button type="button" id="fullscreen" disabled>全螢幕</button></div>
+      <div class="toolbar"><div class="status"><b>桌機與手機</b> 支援鍵盤、手把及手機橫向多點觸控；進入後先點一下遊戲畫面。</div><button type="button" id="fullscreen" disabled>全螢幕</button></div>
     </section>
-    <div class="guide"><section class="card"><h2>主要操作</h2><p>沿著水田緩慢騎行，靠近聲音後停下錄音；遇見白鷺、巡田奶奶與小橋時可放慢探索。</p><div class="keys"><span class="key">D 踩踏</span><span class="key">A 煞車</span><span class="key">Shift 用力踩</span><span class="key">Q 錄音</span><span class="key">F 相機</span><span class="key">Space 互動</span><span class="key">Esc 暫停</span></div></section><aside class="card"><h2>目前限制</h2><p>這是十五分鐘垂直切片的正式逐格動畫版 Web 移植。手機可開啟畫面，但尚未加入觸控騎行介面；音訊需在使用者點擊後由瀏覽器啟動。<a href="ThirdPartyNotices.txt">第三方字型授權</a></p></aside></div>
+    <div class="guide"><section class="card"><h2>主要操作</h2><p>沿著水田緩慢騎行，靠近聲音後停下錄音；遇見白鷺、巡田奶奶與小橋時可放慢探索。手機請橫向遊玩，畫面上可直接多點觸控。</p><div class="keys"><span class="key">D／踩踏</span><span class="key">A／煞車</span><span class="key">Shift／加速</span><span class="key">Q／錄音</span><span class="key">F／相機</span><span class="key">Space／互動</span><span class="key">Esc／暫停</span></div></section><aside class="card"><h2>目前限制</h2><p>這是十五分鐘垂直切片的正式逐格動畫版 Web 移植，支援桌機鍵盤、手把與手機橫向觸控。行動裝置效能依瀏覽器而異；音訊需在使用者首次點擊後啟動。<a href="ThirdPartyNotices.txt">第三方字型授權</a></p></aside></div>
   </main>
   <script>
     const canvas=document.querySelector('#unity-canvas');
@@ -48,8 +48,21 @@
     const percent=document.querySelector('#percent');
     const errorBox=document.querySelector('#error');
     const fullscreen=document.querySelector('#fullscreen');
+    let unityInstance=null;
+    const touchRects={pause:[.02,.03,.15,.21],bell:[.19,.03,.15,.21],observe:[.02,.29,.19,.21],brake:[.02,.76,.22,.21],record:[.27,.76,.15,.21],action:[.44,.76,.15,.21],photo:[.61,.76,.14,.21],boost:[.78,.52,.20,.21],pedal:[.77,.76,.21,.21]};
+    const activePointers=new Map();
+    function touchControlAt(event){
+      const box=canvas.getBoundingClientRect(),x=(event.clientX-box.left)/box.width,y=(event.clientY-box.top)/box.height;
+      for(const [name,rect] of Object.entries(touchRects))if(x>=rect[0]&&x<=rect[0]+rect[2]&&y>=rect[1]&&y<=rect[1]+rect[3])return name;
+      return '';
+    }
+    function sendTouch(name,held){if(unityInstance&&name)unityInstance.SendMessage('TouchInput','SetWebTouch',name+':'+(held?'1':'0'));}
+    canvas.addEventListener('pointerdown',event=>{if(event.pointerType!=='touch')return;event.preventDefault();canvas.setPointerCapture(event.pointerId);if(unityInstance)unityInstance.SendMessage('TouchInput','SetWebAnyPressed');const name=touchControlAt(event);activePointers.set(event.pointerId,name);sendTouch(name,true);});
+    canvas.addEventListener('pointermove',event=>{if(event.pointerType!=='touch'||!activePointers.has(event.pointerId))return;event.preventDefault();const previous=activePointers.get(event.pointerId),next=touchControlAt(event);if(previous===next)return;sendTouch(previous,false);sendTouch(next,true);activePointers.set(event.pointerId,next);});
+    function releaseTouch(event){if(event.pointerType!=='touch'||!activePointers.has(event.pointerId))return;event.preventDefault();sendTouch(activePointers.get(event.pointerId),false);activePointers.delete(event.pointerId);}
+    canvas.addEventListener('pointerup',releaseTouch);canvas.addEventListener('pointercancel',releaseTouch);canvas.addEventListener('lostpointercapture',releaseTouch);
     const buildUrl='Build';
-    const buildRevision=encodeURIComponent('1.0-20260816a');
+    const buildRevision=encodeURIComponent('1.0-20260820a');
     const config={
       dataUrl:buildUrl+'/WebGL.data.unityweb?v='+buildRevision,
       frameworkUrl:buildUrl+'/WebGL.framework.js.unityweb?v='+buildRevision,
@@ -63,7 +76,7 @@
     };
     const loader=document.createElement('script');
     loader.src=buildUrl+'/WebGL.loader.js?v='+buildRevision;
-    loader.onload=()=>createUnityInstance(canvas,config,p=>{const value=Math.round(p*100);bar.style.width=value+'%';percent.textContent=value+'%';}).then(instance=>{loading.hidden=true;fullscreen.disabled=false;fullscreen.addEventListener('click',()=>instance.SetFullscreen(1));canvas.focus();}).catch(message=>{loading.hidden=true;errorBox.hidden=false;errorBox.textContent='載入失敗：'+message;});
+    loader.onload=()=>createUnityInstance(canvas,config,p=>{const value=Math.round(p*100);bar.style.width=value+'%';percent.textContent=value+'%';}).then(instance=>{unityInstance=instance;loading.hidden=true;fullscreen.disabled=false;fullscreen.addEventListener('click',()=>instance.SetFullscreen(1));canvas.focus();}).catch(message=>{loading.hidden=true;errorBox.hidden=false;errorBox.textContent='載入失敗：'+message;});
     loader.onerror=()=>{loading.hidden=true;errorBox.hidden=false;errorBox.textContent='載入器下載失敗，請重新整理後再試。';};
     document.body.appendChild(loader);
   </script>
