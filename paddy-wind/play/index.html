@@ -62,7 +62,7 @@
     function releaseTouch(event){if(event.pointerType!=='touch'||!activePointers.has(event.pointerId))return;event.preventDefault();sendTouch(activePointers.get(event.pointerId),false);activePointers.delete(event.pointerId);}
     canvas.addEventListener('pointerup',releaseTouch);canvas.addEventListener('pointercancel',releaseTouch);canvas.addEventListener('lostpointercapture',releaseTouch);
     const buildUrl='Build';
-    const buildRevision=encodeURIComponent('1.0-20260820b');
+    const buildRevision=encodeURIComponent('1.0-20260820c');
     const config={
       dataUrl:buildUrl+'/WebGL.data.unityweb?v='+buildRevision,
       frameworkUrl:buildUrl+'/WebGL.framework.js.unityweb?v='+buildRevision,
