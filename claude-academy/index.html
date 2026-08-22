@@ -11,18 +11,21 @@
   --bg:#FAF8F5; --surface:#FFFFFF; --ink:#201D18; --muted:#6F6A61;
   --accent:#B85C38; --accent-ink:#9C4A2B; --soft:#F3E9E0;
   --border:#E8E2D9; --chip:#F2EEE7; --shadow:0 1px 3px rgba(32,29,24,.06);
+  --gate-err:#B3423A;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#16130F; --surface:#201C17; --ink:#ECE7DF; --muted:#A69E92;
     --accent:#E5946B; --accent-ink:#E5946B; --soft:#2C231C;
     --border:#363028; --chip:#2A251F; --shadow:0 1px 3px rgba(0,0,0,.35);
+    --gate-err:#FDA4AF;
   }
 }
 :root[data-theme="dark"]{
   --bg:#16130F; --surface:#201C17; --ink:#ECE7DF; --muted:#A69E92;
   --accent:#E5946B; --accent-ink:#E5946B; --soft:#2C231C;
   --border:#363028; --chip:#2A251F; --shadow:0 1px 3px rgba(0,0,0,.35);
+  --gate-err:#FDA4AF;
 }
 *{box-sizing:border-box}
 body{
@@ -107,9 +110,39 @@ footer{margin-top:64px; border-top:1px solid var(--border); padding-top:22px; fo
 footer ul{padding-left:1.3em; margin:.4em 0}
 footer li{margin-bottom:.35em}
 @media (max-width:560px){ .course{padding:18px 16px 12px} }
+
+/* ---------- access gate（與首頁共用密碼與解鎖狀態） ---------- */
+body.gate-locked{overflow:hidden}
+body.gate-locked > .wrap{filter:blur(9px); pointer-events:none; user-select:none}
+.access-gate{position:fixed; inset:0; z-index:99; display:grid; place-items:center; padding:24px; background:rgba(12,10,7,.82); backdrop-filter:blur(10px)}
+.access-gate[hidden]{display:none}
+.access-card{width:min(100%,390px); padding:30px; border:1px solid var(--border); border-radius:14px; background:var(--surface); box-shadow:0 24px 80px rgba(0,0,0,.45)}
+.access-mark{width:46px; height:46px; display:grid; place-items:center; margin-bottom:18px; border-radius:12px; background:var(--ink); color:var(--surface); font-weight:700; font-size:20px; font-family:"Noto Serif TC",serif}
+.access-card h2{font-family:"Noto Serif TC",serif; font-size:1.3rem; margin:0 0 8px}
+.access-card p{color:var(--muted); font-size:.85rem; margin:0; line-height:1.7}
+.access-form{display:grid; gap:12px; margin-top:22px}
+.access-form label{font-size:.85rem; color:var(--muted)}
+.access-form input{width:100%; padding:12px 14px; border:1px solid var(--border); border-radius:10px; background:var(--bg); color:var(--ink); font:inherit; outline:none}
+.access-form input:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--soft)}
+.access-form button{padding:12px 16px; border:0; border-radius:10px; background:var(--ink); color:var(--surface); font:inherit; font-weight:700; cursor:pointer}
+.access-form button:hover{opacity:.9}
+.access-error{min-height:21px; color:var(--gate-err)}
 </style>
 </head>
-<body>
+<body class="gate-locked">
+<div class="access-gate" id="accessGate" role="dialog" aria-modal="true" aria-labelledby="accessTitle">
+  <section class="access-card">
+    <div class="access-mark" aria-hidden="true">樹</div>
+    <h2 id="accessTitle">私人專案頁面</h2>
+    <p>這是暫時性的存取門檻。請輸入密碼後進入。</p>
+    <form class="access-form" id="accessForm">
+      <label for="accessPassword">密碼</label>
+      <input id="accessPassword" name="password" type="password" inputmode="numeric" autocomplete="current-password" required autofocus />
+      <button type="submit">進入頁面</button>
+      <p class="access-error" id="accessError" role="alert" aria-live="polite"></p>
+    </form>
+  </section>
+</div>
 
 <div class="wrap">
 <header>
@@ -600,5 +633,41 @@ footer li{margin-bottom:.35em}
 </footer>
 </div>
 
+<script>
+// ===== 暫時性存取門檻：與首頁共用同一組密碼與 sessionStorage 解鎖狀態 =====
+const ACCESS_SESSION_KEY = "treefar-home-access-v1";
+const ACCESS_PASSWORD_HASH = "4c08c723d47104e004dee56e8fa90173f7158339f7cb30d2099d8e64522c3d59";
+const accessGate = document.getElementById("accessGate");
+const accessForm = document.getElementById("accessForm");
+const accessPassword = document.getElementById("accessPassword");
+const accessError = document.getElementById("accessError");
+
+function unlockPage() {
+  document.body.classList.remove("gate-locked");
+  accessGate.hidden = true;
+}
+
+if (sessionStorage.getItem(ACCESS_SESSION_KEY) === "granted") {
+  unlockPage();
+} else {
+  requestAnimationFrame(() => accessPassword.focus());
+}
+
+accessForm.addEventListener("submit", async event => {
+  event.preventDefault();
+  accessError.textContent = "";
+  const bytes = new TextEncoder().encode(accessPassword.value);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  const hash = [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, "0")).join("");
+  if (hash === ACCESS_PASSWORD_HASH) {
+    sessionStorage.setItem(ACCESS_SESSION_KEY, "granted");
+    accessPassword.value = "";
+    unlockPage();
+    return;
+  }
+  accessPassword.select();
+  accessError.textContent = "密碼不正確，請再試一次。";
+});
+</script>
 </body>
 </html>
