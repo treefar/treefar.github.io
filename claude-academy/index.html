@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Claude Academy 22 門正式課程的分類總覽，含每門課的章節標題與重點摘要（繁體中文）。">
+<title>Claude Academy 課程地圖</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+:root{
+  --bg:#FAF8F5; --surface:#FFFFFF; --ink:#201D18; --muted:#6F6A61;
+  --accent:#B85C38; --accent-ink:#9C4A2B; --soft:#F3E9E0;
+  --border:#E8E2D9; --chip:#F2EEE7; --shadow:0 1px 3px rgba(32,29,24,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16130F; --surface:#201C17; --ink:#ECE7DF; --muted:#A69E92;
+    --accent:#E5946B; --accent-ink:#E5946B; --soft:#2C231C;
+    --border:#363028; --chip:#2A251F; --shadow:0 1px 3px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16130F; --surface:#201C17; --ink:#ECE7DF; --muted:#A69E92;
+  --accent:#E5946B; --accent-ink:#E5946B; --soft:#2C231C;
+  --border:#363028; --chip:#2A251F; --shadow:0 1px 3px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Noto Sans TC",-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
+  font-size:16px; line-height:1.75; margin:0;
+}
+.wrap{max-width:880px; margin:0 auto; padding:0 20px 80px}
+a{color:var(--accent-ink); text-decoration:none}
+a:hover{text-decoration:underline}
+a:focus-visible,summary:focus-visible{outline:2px solid var(--accent); outline-offset:3px; border-radius:2px}
+
+/* ---------- header ---------- */
+header{padding:56px 0 8px}
+.eyebrow{font-size:.8rem; letter-spacing:.14em; color:var(--muted); text-transform:uppercase}
+h1{
+  font-family:"Noto Serif TC",serif; font-weight:900; font-size:clamp(1.9rem,5vw,2.7rem);
+  line-height:1.25; margin:.35em 0 .4em; text-wrap:balance;
+}
+.lede{color:var(--muted); max-width:38em; margin:0 0 28px}
+.stats{display:flex; flex-wrap:wrap; gap:12px; margin-bottom:8px}
+.stat{
+  background:var(--surface); border:1px solid var(--border); border-radius:10px;
+  padding:10px 18px; box-shadow:var(--shadow); min-width:100px;
+}
+.stat b{font-family:"Noto Serif TC",serif; font-size:1.35rem; font-weight:900; display:block; color:var(--accent-ink); font-variant-numeric:tabular-nums}
+.stat span{font-size:.82rem; color:var(--muted)}
+
+/* ---------- nav ---------- */
+nav{
+  position:sticky; top:0; z-index:5; background:var(--bg);
+  border-bottom:1px solid var(--border);
+  display:flex; gap:4px; overflow-x:auto; padding:10px 0; margin-top:24px;
+}
+nav a{
+  white-space:nowrap; padding:6px 14px; border-radius:999px;
+  font-size:.9rem; font-weight:500; color:var(--ink); border:1px solid transparent;
+}
+nav a:hover{background:var(--soft); text-decoration:none; border-color:var(--border)}
+
+/* ---------- sections ---------- */
+section{margin-top:52px; scroll-margin-top:64px}
+.sec-head{border-left:4px solid var(--accent); padding-left:14px; margin-bottom:6px}
+h2{font-family:"Noto Serif TC",serif; font-weight:900; font-size:1.45rem; margin:0; text-wrap:balance}
+.sec-note{color:var(--muted); font-size:.95rem; margin:2px 0 22px; padding-left:18px}
+
+/* ---------- course card ---------- */
+.course{
+  background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  padding:22px 24px 16px; margin-bottom:18px; box-shadow:var(--shadow);
+}
+.course-head{display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 16px; margin-bottom:6px}
+h3{font-family:"Noto Serif TC",serif; font-weight:700; font-size:1.13rem; margin:0; flex:1 1 auto}
+h3 .no{color:var(--muted); font-weight:700; margin-right:.4em; font-variant-numeric:tabular-nums}
+.chips{display:flex; flex-wrap:wrap; gap:6px}
+.chip{
+  background:var(--chip); border-radius:999px; padding:2px 11px;
+  font-size:.78rem; color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap;
+}
+.course p{margin:.35em 0}
+.desc{font-size:.95rem}
+.meta{font-size:.88rem; color:var(--muted)}
+.meta b{color:var(--ink); font-weight:500}
+details{margin-top:12px; border-top:1px dashed var(--border)}
+summary{
+  cursor:pointer; padding:10px 0 6px; font-size:.9rem; font-weight:700; color:var(--accent-ink);
+  list-style:none; display:flex; align-items:center; gap:.5em;
+}
+summary::before{content:"▸"; transition:transform .15s}
+details[open] summary::before{transform:rotate(90deg)}
+@media (prefers-reduced-motion: reduce){ summary::before{transition:none} }
+summary::-webkit-details-marker{display:none}
+details ol{margin:4px 0 10px; padding-left:1.4em}
+details li{margin-bottom:10px; font-size:.93rem}
+details li b{font-weight:700}
+.lessons{color:var(--muted); font-size:.86rem}
+details li p{margin:.15em 0 0; color:var(--ink)}
+.quiz{color:var(--muted); font-size:.88rem}
+
+/* ---------- footer ---------- */
+footer{margin-top:64px; border-top:1px solid var(--border); padding-top:22px; font-size:.87rem; color:var(--muted)}
+footer ul{padding-left:1.3em; margin:.4em 0}
+footer li{margin-bottom:.35em}
+@media (max-width:560px){ .course{padding:18px 16px 12px} }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header>
+  <p class="eyebrow">Anthropic 官方免費學習平台 · 非官方整理 · 2026-08-21</p>
+  <h1>Claude Academy 課程地圖</h1>
+  <p class="lede">Claude Academy（<a href="https://academy.claude.com/zh-TW" target="_blank" rel="noopener">academy.claude.com/zh-TW</a>）的 22 門正式課程，依主題分成四類，每門課列出章節標題與重點摘要。免費、有繁體中文，不登入就能看課；登入後可存進度、拿完成徽章與證書。</p>
+  <div class="stats">
+    <div class="stat"><b>22</b><span>門課程</span></div>
+    <div class="stat"><b>4</b><span>大類別</span></div>
+    <div class="stat"><b>≈70</b><span>小時總時長</span></div>
+    <div class="stat"><b>355</b><span>平台總資源數</span></div>
+  </div>
+</header>
+
+<nav>
+  <a href="#sec-a">A · AI 素養（10）</a>
+  <a href="#sec-b">B · 產品入門（5）</a>
+  <a href="#sec-c">C · 代理與 MCP（4）</a>
+  <a href="#sec-d">D · API 與雲端（3）</a>
+</nav>
+
+<!-- ============ A ============ -->
+<section id="sec-a">
+  <div class="sec-head"><h2>A · AI 素養（AI Fluency）系列</h2></div>
+  <p class="sec-note">不分技術背景，學怎麼跟 AI 協作。全系列共用「4D 框架」：委派（Delegation）、描述（Description）、辨別（Discernment）、審慎（Diligence）；先修〈框架與基礎〉再挑自己身分的分支課。</p>
+
+  <article class="course">
+    <div class="course-head">
+      <h3><span class="no">1</span><a href="https://academy.claude.com/zh-TW/courses/ai-fluency-framework-foundations" target="_blank" rel="noopener">AI 流暢度：框架與基礎</a></h3>
+      <div class="chips"><span class="chip">14 堂</span><span class="chip">1 測驗</span><span class="chip">4 小時</span><span class="chip">證書</span></div>
+    </div>
+    <p class="desc">全系列的旗艦課，由 Anthropic 與 Joseph Feller、Rick Dakan 兩位教授合作，教你有效、高效、合乎道德且安全地與 AI 協作，核心是 4D 框架。</p>
+    <p class="meta"><b>適合：</b>從剛接觸 Claude 的新手到資深 AI 從業者。</p>
+    <details>
+      <summary>章節與重點（10 章）</summary>
+      <ol>
+        <li><b>AI 流暢度簡介</b> <span class="lessons">（1 堂）</span><p>定義 AI 流暢度的含義，說明它為何是與 AI 協作的關鍵能力。</p></li>
+        <li><b>AI 流暢度框架</b> <span class="lessons">（2 堂：為什麼我們需要 AI 流暢度？、4D 框架）</span><p>介紹貫穿全課的 4D 框架，並區分自動化、增強、代理三種與 AI 互動的方式。</p></li>
+        <li><b>深入探討 1：什麼是生成式 AI？</b> <span class="lessons">（2 堂：生成式 AI 基礎、能力與限制）</span><p>解釋生成式 AI 與大型語言模型的運作方式，以及其關鍵能力與限制。</p></li>
+        <li><b>委派</b> <span class="lessons">（2 堂：深入了解委派、專案規劃與委派）</span><p>運用問題意識、平台意識與任務委派做策略性決策——哪些工作交給 AI、哪些留給自己。</p></li>
+        <li><b>描述</b> <span class="lessons">（1 堂）</span><p>透過產品、流程、表現三種描述，把需求向 AI 溝通清楚。</p></li>
+        <li><b>深入探討 2：有效的提示技巧</b> <span class="lessons">（1 堂）</span><p>基礎提示（prompting）技巧實作，讓指令更精準有效。</p></li>
+        <li><b>辨別</b> <span class="lessons">（1 堂）</span><p>批判性評估 AI 的輸出、流程與行為品質。</p></li>
+        <li><b>描述-辨別循環</b> <span class="lessons">（1 堂）</span><p>把描述與辨別串成疊代循環，逐步精煉 AI 產出。</p></li>
+        <li><b>審慎</b> <span class="lessons">（1 堂）</span><p>實踐創作審慎、透明審慎與部署審慎，為 AI 協助完成的工作負起責任。</p></li>
+        <li><b>結論與證書</b> <span class="lessons">（2 堂：結論、額外活動）</span><p>總結全課並提供延伸練習；通過期末評估可取得完成證書。</p></li>
+      </ol>
+      <p class="quiz">＋課程測驗與完成徽章（此頁未附章節描述，重點依學習目標與堂課標題歸納）</p>
+    </details>
+  </article>
+
+  <article class="course">
+    <div class="course-head">
+      <h3><span class="no">2</span><a href="https://academy.claude.com/zh-TW/courses/ai-capabilities-and-limitations" target="_blank" rel="noopener">AI 能力與限制</a></h3>
+      <div class="chips"><span class="chip">13 堂</span><span class="chip">1 測驗</span><span class="chip">3.5 小時</span></div>
+    </div>
+    <p class="desc">建立「大型語言模型能做什麼、不能做什麼」的準確心智模型。4D 框架課教「人的能力」，這門教「機器的特性」，目標是校準對 AI 的信任。</p>
+    <details>
+      <summary>章節與重點（6 章）</summary>
+      <ol>
+        <li><b>開始使用</b> <span class="lessons">（3 堂：簡介、我們所說的 AI 是什麼意思、AI 如何形成其特質）</span><p>把籠統的「AI」收斂到大型語言模型，說明預訓練與微調如何塑造模型行為（含迎合、冗長等特徵），並介紹四特性框架。</p></li>
+        <li><b>下一個詞元預測</b> <span class="lessons">（2 堂：講解＋動手試）</span><p>每個回答都是一個詞元接一個詞元預測出來的；理解它為何擅長摘要改寫、為何會生出像真卻錯的內容。</p></li>
+        <li><b>知識</b> <span class="lessons">（2 堂：講解＋實際操作）</span><p>模型只知道訓練資料中頻繁出現的東西——主流強、冷門與新近弱；學會判斷何時可信、何時要自備來源。</p></li>
+        <li><b>工作記憶</b> <span class="lessons">（2 堂：講解＋實際試試看）</span><p>上下文視窗就是模型的工作記憶；了解什麼放得下、什麼會悄悄掉出去、長文件中注意力並不均勻。</p></li>
+        <li><b>可操控性</b> <span class="lessons">（2 堂：講解＋實際試試看）</span><p>短、具體、可驗證的指令可靠，長推理鏈與抽象要求容易滑掉；學會把不穩的指令改寫成模型真能遵循的形式。</p></li>
+        <li><b>整合所有內容與後續步驟</b> <span class="lessons">（2 堂：當屬性相互衝突時、後續步驟）</span><p>真實任務常同時考驗多個特性；學會診斷意外輸出、下針對性修正，而不是盲目重試。</p></li>
+      </ol>
+      <p class="quiz">＋課程測驗與完成徽章</p>
+    </details>
+  </article>
+
+  <article class="course">
+    <div class="course-head">
+      <h3><span class="no">3</span><a href="https://academy.claude.com/zh-TW/courses/ai-fluency-for-builders" target="_blank" rel="noopener">建構者的 AI 流暢度</a></h3>
+      <div class="chips"><span class="chip">9 堂</span><span class="chip">1 測驗</span><span class="chip">3 小時</span></div>
+    </div>
+    <p class="desc">與 CodePath 合作開發，把 4D 框架套進「從界定客戶問題到交付產品」的完整建構歷程，在提升速度的同時保住人類判斷的角色。</p>
+    <p class="meta"><b>適合：</b>建構者——產品人員、工程師與創作者。<b>先修：</b>建議先修〈框架與基礎〉。</p>
+    <details>
+      <summary>章節與重點（6 章）</summary>
+      <ol>
+        <li><b>簡介與 AI 流暢度框架</b> <span class="lessons">（2 堂）</span><p>建立可重複使用的簡報文件，把價值觀與脈絡交給 AI；分辨內圈與外圈開發迴路，把現有工作對映到 4D。</p></li>
+        <li><b>AI 如何運作</b> <span class="lessons">（1 堂）</span><p>建立生成式 AI「能與不能」的心智模型，理解限制如何影響你選擇拿 AI 建什麼。</p></li>
+        <li><b>建構者的 4D 框架</b> <span class="lessons">（2 堂：委派與建構者工具箱、描述與打造卓越成果）</span><p>寫程式前先寫定義「完成」的驗收測試，用描述鏈把混亂需求轉成 AI 可執行的精確指令。</p></li>
+        <li><b>建構者的判斷力</b> <span class="lessons">（2 堂：程式碼的判斷力、使用者體驗的判斷力）</span><p>用正確性、品質、適配性、體驗、責任五視角評估 AI 生成的程式碼與 UX——你的品味成為差異化優勢。</p></li>
+        <li><b>整合所有內容</b> <span class="lessons">（1 堂）</span><p>對交付成果全權負責——從「該不該存在」到「上線後是否真的服務使用者」。</p></li>
+        <li><b>總結</b> <span class="lessons">（1 堂）</span><p>整合 4D 四維度，取得課後持續精進的資源。</p></li>
+      </ol>
+      <p class="quiz">＋課程測驗與完成徽章</p>
+    </details>
+  </article>
+
+  <article class="course">
+    <div class="course-head">
+      <h3><span class="no">4</span><a href="https://academy.claude.com/zh-TW/courses/ai-fluency-for-students" target="_blank" rel="noopener">學生的 AI 流暢度</a></h3>
+      <div class="chips"><span class="chip">5 堂</span><span class="chip">1 測驗</span><span class="chip">3 小時</span><span class="chip">證書</span></div>
+    </div>
+    <p class="desc">把 4D 框架應用到學習、職涯規劃與學業成功，核心命題是區分「用 AI 代做作業」與「用 AI 真正學會」。</p>
+    <p class="meta"><b>先修：</b>需先理解 4D 框架。</p>
+    <details>
+      <summary>章節與重點（3 章）</summary>
+      <ol>
+        <li><b>簡介與 AI 流暢度框架</b> <span class="lessons">（2 堂）</span><p>回顧 4D 四能力，放進學生情境中理解。</p></li>
+        <li><b>框架在學生中的應用</b> <span class="lessons">（2 堂：AI 作為學習夥伴、AI 在職業規劃中的應用）</span><p>設定「增強而非取代學習」的 AI 學習夥伴與學習日誌；用 AI 做職涯探索、履歷改善與面試練習。</p></li>
+        <li><b>結論與證書</b> <span class="lessons">（1 堂：成為循環中的人類）</span><p>建立個人 AI 協作政策，維持自己作為「迴圈中的人類」的能動性。</p></li>
+      </ol>
+      <p class="quiz">＋課程測驗與完成徽章</p>
+    </details>
+  </article>
+
+  <article class="course">
+    <div class="course-head">
+      <h3><span class="no">5</span><a href="https://academy.claude.com/zh-TW/courses/ai-fluency-for-educators" target="_blank" rel="noopener">教育工作者的 AI Fluency</a></h3>
+      <div class="chips"><span class="chip">4 堂</span><span class="chip">1 測驗</span><span class="chip">1.5 小時</span><span class="chip">證書</span></div>
+    </div>
+    <p class="desc">協助高等教育教職人員把 4D 框架應用於課程設計、學習材料與教學實踐——與 AI 協作產出教材，同時驗證準確性、維護學術誠信。</p>
+    <p class="meta"><b>適合：</b>學術教職人員、教學設計師與教育領導者。</p>
+    <details>
+      <summary>章節與重點（3 章）</summary>
+      <ol>
+        <li><b>簡介與 AI Fluency 框架</b> <span class="lessons">（2 堂）</span><p>回顧 4D，並建立記錄教學價值觀、限制條件與學生概況的教學情境文件。</p></li>
+        <li><b>教育工作者的應用</b> <span class="lessons">（2 堂：課程設計與學習成果、學習材料與作業）</span><p>與 AI 協作產出講座投影片、學習指南、課堂練習與評量，用描述-辨別循環評估改進。</p></li>
+        <li><b>結論與證書</b><p>課程收尾。</p></li>
+      </ol>
+      <p class="quiz">＋課程測驗與完成徽章</p>
+    </details>
+  </article>
+
+  <article class="course">
+    <div class="course-head">
+      <h3><span class="no">6</span><a href="https://academy.claude.com/zh-TW/courses/teaching-ai-fluency" target="_blank" rel="noopener">教授 AI 流暢度</a></h3>
+      <div class="chips"><span class="chip">7 堂</span><span class="chip">1 測驗</span><span class="chip">4.5 小時</span><span class="chip">證書</span></div>
+    </div>
+    <p class="desc">與第 5 門「自己用」不同，這門是「教別人」的方法課：在教師主導環境中教授並評估 AI 流暢度，提供評估策略、作業設計與學科應用方法。</p>
+    <p class="meta"><b>適合：</b>要向學生教授 AI 流暢度的學術教師與教學設計師。</p>
+    <details>
+      <summary>章節與重點（4 章）</summary>
+      <ol>
+        <li><b>AI 流暢度教學簡介與方法</b> <span class="lessons">（3 堂：教學方法、委派-審慎循環、描述-辨別循環）</span><p>依學生與情境選擇線性、非線性、聚焦式或循環式教學路徑，把兩組循環當成相互連結的策略與戰術流程來教。</p></li>
+        <li><b>評估 AI 流暢度</b> <span class="lessons">（2 堂：我們如何評估 4D？、為 AI 流暢度設計作業）</span><p>以成果、過程、反思為基礎設計真實且疊代式的作業，同時讓評分負擔可控。</p></li>
+        <li><b>AI 對學科內容的影響</b> <span class="lessons">（2 堂）</span><p>分析 AI 對自身學科的課程、教學法與評估的影響，與同事共建學科特定應用。</p></li>
+        <li><b>結論與證書</b><p>課程收尾。</p></li>
+      </ol>
+      <p class="quiz">＋課程測驗與完成徽章</p>
+    </details>
+  </article>
+
+  <article class="course">
+    <div class="course-head">
+      <h3><span class="no">7</span><a href="https://academy.claude.com/zh-TW/courses/ai-fluency-for-k-12-educators" target="_blank" rel="noopener">面向 pK–12 教育者的 AI 流暢度</a></h3>
+      <div class="chips"><span class="chip">10 堂</span><span class="chip">1 測驗</span><span class="chip">3 小時</span></div>
+    </div>
+    <p class="desc">與 Teach For America 合作，依 pK–12（學前到高中）教育者的實際需求與顧慮研究打造；在資源有限、使命導向的教育現場用 4D 支持學生學習。</p>
+    <p class="meta"><b>先修：</b>建議先完成〈框架與基礎〉與〈AI 能力與限制〉。</p>
+    <details>
+      <summary>章節與重點（6 章）</summary>
+      <ol>
+        <li><b>本課程的製作方式</b> <span class="lessons">（1 堂）</span><p>說明與 Teach For America 基於教育者研究共同打造的背景。</p></li>
+        <li><b>簡介與 AI 流暢度框架</b> <span class="lessons">（3 堂：歡迎、4D 框架、探索！）</span><p>把自己的角色、價值觀、目標與限制寫成可重複使用的情境文件。</p></li>
+        <li><b>AI 如何運作</b> <span class="lessons">（1 堂）</span><p>建立 AI「可靠能做與不能做」的心智模型，用互動式「下一個詞元」模擬器動手體驗。</p></li>
+        <li><b>負責任地使用 AI</b> <span class="lessons">（3 堂：創造高品質的 AI 輸出、倫理與負責任的 AI 使用、AI 的憲法、教學法與您）</span><p>用描述-辨別循環產出差異化教材，用委派-勤勉循環處理倫理面——保護學生資料、應對倫理灰色地帶。</p></li>
+        <li><b>整合應用</b> <span class="lessons">（1 堂）</span><p>對自己工作中的真實任務跑一次端到端的 4D 工作流程。</p></li>
+        <li><b>結論與證書</b> <span class="lessons">（1 堂）</span><p>課程收尾與延伸資源。</p></li>
+      </ol>
+      <p class="quiz">＋課程測驗與完成徽章</p>
+    </details>
+  </article>
+
+  <article class="course">
+    <div class="course-head">
+      <h3><span class="no">8</span><a href="https://academy.claude.com/zh-TW/courses/ai-fluency-for-pk-12-train-the-trainer" target="_blank" rel="noopener">pK-12 培訓講師的 AI 流暢度課程</a></h3>
+      <div class="chips"><span class="chip">4 堂</span><span class="chip">45 分鐘</span></div>
+    </div>
+    <p class="desc">與美國教師聯合會（AFT）合作的 Train-the-Trainer 課：讓教育者能在自己的學校帶領同事培訓，附可立即使用的完整工作坊工具包。</p>
+    <p class="meta"><b>先修：</b>建議先完成第 7 門建立自身流暢度。</p>
+    <details>
+      <summary>章節與重點（3 章）</summary>
+      <ol>
+        <li><b>歡迎</b> <span class="lessons">（1 堂：從學習者到培訓者）</span><p>為同事引導 AI 流暢度學習意味著什麼，如何有信心地主持工作坊。</p></li>
+        <li><b>pK-12 培訓講師工具包</b> <span class="lessons">（3 堂：如何使用此套件、投影片與引導者指南、學習者工作手冊）</span><p>主持工作坊所需的一切——附引導者指南的投影片、依年級分組練習的工作手冊。</p></li>
+        <li><b>課程完成</b><p>結課節點；本課無測驗與徽章。</p></li>
+      </ol>
+    </details>
+  </article>
+
+  <article class="course">
+    <div class="course-head">
+      <h3><span class="no">9</span><a href="https://academy.claude.com/zh-TW/courses/ai-fluency-for-small-businesses" target="_blank" rel="noopener">小型企業的 AI 流暢度</a></h3>
+      <div class="chips"><span class="chip">9 堂</span><span class="chip">1 測驗</span><span class="chip">4 小時</span></div>
+    </div>
+    <p class="desc">與 PayPal 等企業合作、基於小企業從業者研究打造：把 4D 套用到研究、客戶資料與營運等日常業務，同時忠於自身使命與價值觀。</p>
+    <p class="meta"><b>適合：</b>小型企業的業主與各職能員工。</p>
+    <details>
+      <summary>章節與重點（6 章）</summary>
+      <ol>
+        <li><b>簡介與 AI 流暢度框架</b> <span class="lessons">（2 堂）</span><p>認識 4D 四能力，先梳理企業的價值觀、目標與限制。</p></li>
+        <li><b>AI 如何運作</b> <span class="lessons">（2 堂：AI 能力與限制、探索一下！）</span><p>建立務實心智模型（幻覺、知識截止日期），用「下一個 token 模擬器」動手體驗。</p></li>
+        <li><b>描述-辨別循環</b> <span class="lessons">（1 堂：運用 AI 精煉）</span><p>套用到真實研究任務——練習富含上下文的提示，行動前批判性評估產出。</p></li>
+        <li><b>委派-審慎循環</b> <span class="lessons">（1 堂：透明的 AI 使用）</span><p>套用到客戶資料處理——判斷哪些任務適合交給 AI，實踐資料衛生與透明使用。</p></li>
+        <li><b>整合應用</b> <span class="lessons">（2 堂：整合所有內容、人在迴圈中）</span><p>建立可重複的 AI 增強工作流程，草擬處理透明度與責任歸屬的 AI 使用政策。</p></li>
+        <li><b>結論與證書</b> <span class="lessons">（1 堂）</span><p>總結課程並規劃下一步。</p></li>
+      </ol>
+      <p class="quiz">＋課程測驗與完成徽章</p>
+    </details>
+  </article>
+
+  <article class="course">
+    <div class="course-head">
+      <h3><span class="no">10</span><a href="https://academy.claude.com/zh-TW/courses/ai-fluency-for-nonprofits" target="_blank" rel="noopener">非營利組織的 AI 流暢力</a></h3>
+      <div class="chips"><span class="chip">9 堂</span><span class="chip">1 測驗</span><span class="chip">4 小時</span></div>
+    </div>
+    <p class="desc">與 GivingTuesday 合作：涵蓋政策研究、補助提案寫作、數據分析，在忠於使命與價值觀的前提下推動全組織的 AI 採用。</p>
+    <p class="meta"><b>適合：</b>非營利組織的各職能員工——募款、溝通、專案執行、營運或領導職位。</p>
+    <details>
+      <summary>章節與重點（5 章）</summary>
+      <ol>
+        <li><b>簡介與 AI 流暢力框架</b> <span class="lessons">（2 堂）</span><p>認識構成全課基礎的 4D 四能力。</p></li>
+        <li><b>描述-判斷循環</b> <span class="lessons">（2 堂：運用 AI 進行研究、用 AI 寫作）</span><p>研究政策環境與補助機會，草擬能反映組織真實聲音的提案與溝通內容。</p></li>
+        <li><b>委派-審慎循環</b> <span class="lessons">（2 堂：了解隱私與資料、運用 AI 進行資料分析）</span><p>評估 AI 工具的資料處理政策、保護個資，先用已知資料驗證 AI 分析的有效性。</p></li>
+        <li><b>整合應用</b> <span class="lessons">（2 堂：工作流程增強、整合）</span><p>設計含人工審查的可重複工作流程，草擬與使命一致的組織 AI 政策。</p></li>
+        <li><b>結論與證書</b> <span class="lessons">（1 堂）</span><p>總結課程並規劃組織內的後續採用步驟。</p></li>
+      </ol>
+      <p class="quiz">＋課程測驗與完成徽章</p>
+    </details>
+  </article>
+</section>
+
+<!-- ============ B ============ -->
+<section id="sec-b">
+  <div class="sec-head"><h2>B · 產品入門</h2></div>
+  <p class="sec-note">學會用 Claude 各產品做事：聊天版、Cowork、Claude Code 與開發平台。</p>
+
+  <article class="course">
+    <div class="course-head">
+      <h3><span class="no">11</span><a href="https://academy.claude.com/zh-TW/courses/claude-101" target="_blank" rel="noopener">Claude 101</a></h3>
+      <div class="chips"><span class="chip">13 堂</span><span class="chip">1 測驗</span><span class="chip">2.5 小時</span></div>
+    </div>
+    <p class="desc">把 Claude 融入日常工作的起點：從第一次對話與有效提示，到 Projects、Artifacts、技能、Connectors、企業搜尋與 Research，最後綜覽全產品線。</p>
+    <p class="meta"><b>適合：</b>任何剛開始在工作中使用 Claude 的人；任何方案帳戶即可，無需 AI 經驗。</p>
+    <details>
+      <summary>章節與重點（5 章）</summary>
+      <ol>
+        <li><b>認識 Claude</b> <span class="lessons">（4 堂：什麼是 Claude？、第一次對話、獲得更好的結果、桌面應用程式 Chat／Cowork／Code）</span><p>完成第一次有效對話，學會調整提示，依任務在三種模式間選擇。</p></li>
+        <li><b>組織您的工作與知識</b> <span class="lessons">（3 堂：專案介紹、使用 Artifacts 創作、與技能協作）</span><p>用 Projects 組織脈絡、Artifacts 產出可分享成品、技能提供可重複使用的上下文。</p></li>
+        <li><b>擴展 Claude 的應用範圍</b> <span class="lessons">（3 堂：連接您的工具、企業搜尋、Research 模式）</span><p>接上自己的工具與公司知識，用 Research 模式做網路深度研究。</p></li>
+        <li><b>整合所學</b> <span class="lessons">（2 堂：依角色劃分的使用案例、其他協作方式）</span><p>依職務角色看實際案例，綜覽 Claude Code、Tag、Design、Microsoft 365、Chrome 等使用方式。</p></li>
+        <li><b>結論與證書</b> <span class="lessons">（1 堂）</span><p>總結課程並指引後續學習路徑。</p></li>
+      </ol>
+      <p class="quiz">＋課程測驗與完成徽章</p>
+    </details>
+  </article>
+
+  <article class="course">
+    <div class="course-head">
+      <h3><span class="no">12</span><a href="https://academy.claude.com/zh-TW/courses/claude-code-101" target="_blank" rel="noopener">Claude Code 101</a></h3>
+      <div class="chips"><span class="chip">12 堂</span><span class="chip">1 測驗</span><span class="chip">1 小時</span></div>
+    </div>
+    <p class="desc">介紹「住在終端機裡的代理式編碼工具」：它是什麼、怎麼運作、以及用它完成實際工作的核心工作流程。</p>
+    <p class="meta"><b>適合：</b>新開發者與還沒試過編碼代理的資深工程師。<b>先備：</b>基本命令列操作＋Claude 帳戶或 API 金鑰。</p>
+    <details>
+      <summary>章節與重點（4 章）</summary>
+      <ol>
+        <li><b>什麼是 Claude Code？</b> <span class="lessons">（2 堂：什麼是 Claude Code？、Claude Code 如何運作）</span><p>建立心智模型——編碼代理跟聊天型 AI 差在哪，「蒐集上下文 → 採取行動 → 驗證結果」的代理迴圈如何配合工具與權限運作。</p></li>
+        <li><b>您的第一個提示</b> <span class="lessons">（2 堂：安裝 Claude Code、您的第一個提示）</span><p>在終端機、VS Code、JetBrains、Claude Desktop 或網頁裝好，用核准模式、自動接受、計劃模式挑選監督程度。</p></li>
+        <li><b>日常工作流程</b> <span class="lessons">（3 堂：探索→計劃→編碼→提交、上下文管理、程式碼審查）</span><p>用「探索 → 計劃 → 編碼 → 提交」節奏做實際任務，用 /compact、/clear、/context 管理上下文。</p></li>
+        <li><b>自訂 Claude Code</b> <span class="lessons">（5 堂：CLAUDE.md 檔案、子代理、技能、MCP、Hooks）</span><p>寫 CLAUDE.md 記住專案慣例、建子代理與技能、接 MCP 伺服器、用 hooks 加確定性護欄。</p></li>
+      </ol>
+      <p class="quiz">＋課程測驗與完成徽章</p>
+    </details>
+  </article>
+
+  <article class="course">
+    <div class="course-head">
+      <h3><span class="no">13</span><a href="https://academy.claude.com/zh-TW/courses/claude-code-in-action" target="_blank" rel="noopener">Claude Code 實戰</a></h3>
+      <div class="chips"><span class="chip">9 堂</span><span class="chip">1 測驗</span><span class="chip">1 小時</span></div>
+    </div>
+    <p class="desc">101 的進階接續：長工作階段引導、CLAUDE.md 與權限設定、hooks、例行排程與無頭模式、GitHub 整合、無監督執行的驗證與團隊外掛封裝。（章節名官網未翻譯，此處為中譯）</p>
+    <p class="meta"><b>適合：</b>已會下單一提示、想進入團隊級工作流程的開發者；需熟悉 Git 與命令列。</p>
+    <details>
+      <summary>章節與重點（4 章）</summary>
+      <ol>
+        <li><b>引導工作方向</b> <span class="lessons">（1 堂：引導長工作階段）</span><p>用計畫模式界定範圍、引導壓縮保留重點、用 rewind 修正方向，在手動引導與自主執行間做選擇。</p></li>
+        <li><b>設定 Claude</b> <span class="lessons">（4 堂：一份會被遵守的 CLAUDE.md、驗證技能、權限模式、Hooks）</span><p>寫精簡且真的會被遵守的 CLAUDE.md，把重複程序包成技能，挑對權限模式，用 hooks 強制不可妥協的規則。</p></li>
+        <li><b>自動化重複工作</b> <span class="lessons">（2 堂：例行排程與無頭模式、GitHub Actions 與程式碼審查）</span><p>把提示排成例行排程（routines），透過託管程式碼審查與 GitHub Action 接進 PR 流程。</p></li>
+        <li><b>驗證與分享</b> <span class="lessons">（2 堂：驗證無監督的執行、外掛 Plugins）</span><p>依監督程度成比例地驗證執行，把可信任的設定封裝成全團隊可安裝的外掛。</p></li>
+      </ol>
+      <p class="quiz">＋課程測驗與完成徽章</p>
+    </details>
+  </article>
+
+  <article class="course">
+    <div class="course-head">
+      <h3><span class="no">14</span><a href="https://academy.claude.com/zh-TW/courses/introduction-to-claude-cowork" target="_blank" rel="noopener">Claude Cowork 簡介</a></h3>
+      <div class="chips"><span class="chip">14 堂</span><span class="chip">1 測驗</span><span class="chip">2.5 小時</span></div>
+    </div>
+    <p class="desc">把多步驟工作整批委派給 Cowork：設定工作空間與權限、提供上下文、跑完任務循環，並用外掛程式處理研究、文件與瀏覽器任務。</p>
+    <p class="meta"><b>適合：</b>每天在檔案與工具間搬移資訊的知識工作者；不需寫程式。<b>先備：</b>付費 Claude 方案＋桌面版 App。</p>
+    <details>
+      <summary>章節與重點（4 章）</summary>
+      <ol>
+        <li><b>認識 Claude Cowork</b> <span class="lessons">（4 堂：什麼是 Cowork、設定、能為您做什麼、第一個任務）</span><p>了解 Cowork 與 Chat 的差異、完成設定，實際跑完第一個端到端任務。</p></li>
+        <li><b>讓 Claude Cowork 為您所用</b> <span class="lessons">（4 堂：更快獲得更好的成果、常駐上下文、技能、外掛程式）</span><p>用全域指示與 Projects 給常駐上下文，建技能、裝外掛，讓 Claude 熟悉你的術語與產出格式。</p></li>
+        <li><b>隨時隨地使用 Claude</b> <span class="lessons">（2 堂：Claude in Chrome、適用於 Microsoft 365 的 Claude）</span><p>操作網頁應用，直接在 Word、Excel、PowerPoint、Outlook 內工作。</p></li>
+        <li><b>分享與安全</b> <span class="lessons">（4 堂：安全最佳實踐、驗證外掛程式的技能、與團隊分享、總結）</span><p>養成審查計畫與產出的習慣，先用評估驗證技能再依賴它，把工作流程分享給團隊。</p></li>
+      </ol>
+      <p class="quiz">＋課程測驗與完成徽章</p>
+    </details>
+  </article>
+
+  <article class="course">
+    <div class="course-head">
+      <h3><span class="no">15</span><a href="https://academy.claude.com/zh-TW/courses/claude-platform-101" target="_blank" rel="noopener">Claude Platform 101</a></h3>
+      <div class="chips"><span class="chip">13 堂</span><span class="chip">1 測驗</span><span class="chip">1.5 小時</span><span class="chip">暫無繁中</span></div>
+    </div>
+    <p class="desc">從零開始在 Claude 平台上開發：API 請求的第一性原理、代理迴圈、工具使用與擴展思考，到內建工具、Skills、MCP、上下文管理與託管代理。</p>
+    <p class="meta"><b>適合：</b>想把 Claude 建進自家應用的開發者；示範用 TypeScript SDK，需 Console 帳號與 API 金鑰。</p>
+    <details>
+      <summary>章節與重點（5 章）</summary>
+      <ol>
+        <li><b>什麼是 Claude 平台？</b> <span class="lessons">（3 堂：平台介紹、第一次 API 呼叫、選擇合適的模型）</span><p>用 messages.create 發出第一次請求；以成本與延遲權衡比較 Fable、Opus、Sonnet、Haiku。</p></li>
+        <li><b>教導你的代理</b> <span class="lessons">（3 堂：代理迴圈解析、什麼是工具使用？、什麼是思考？）</span><p>徒手打造代理迴圈，給 Claude 觸及外部系統的能力，用擴展思考處理困難問題。</p></li>
+        <li><b>擴充你的代理</b> <span class="lessons">（4 堂：內建工具、技能 Skills、MCP、上下文管理）</span><p>用內建工具、Skills 與 MCP 伺服器延伸代理，以四種上下文管理模式控制成本。</p></li>
+        <li><b>託管代理</b> <span class="lessons">（2 堂：什麼是託管代理？、建立第一個託管代理）</span><p>判斷何時自己跑迴圈、何時交給 Anthropic 的沙箱化託管代理，端到端建置一次。</p></li>
+        <li><b>用 Claude Code 進行開發</b> <span class="lessons">（1 堂）</span><p>用 Claude Code 開發 API 應用，審查代理替你寫的程式碼。</p></li>
+      </ol>
+      <p class="quiz">＋課程測驗與完成徽章</p>
+    </details>
+  </article>
+</section>
+
+<!-- ============ C ============ -->
+<section id="sec-c">
+  <div class="sec-head"><h2>C · 代理與 MCP</h2></div>
+  <p class="sec-note">進階自訂與擴充：技能、子代理，以及連接外部服務的 MCP 協定。</p>
+
+  <article class="course">
+    <div class="course-head">
+      <h3><span class="no">16</span><a href="https://academy.claude.com/zh-TW/courses/introduction-to-agent-skills" target="_blank" rel="noopener">代理技能簡介</a></h3>
+      <div class="chips"><span class="chip">6 堂</span><span class="chip">1 小時</span></div>
+    </div>
+    <p class="desc">在 Claude Code 中建立、設定並分享「技能」——可重複使用的 Markdown 指示，Claude 會自動套用到符合的任務。</p>
+    <details>
+      <summary>章節與重點（單層 6 堂）</summary>
+      <ol>
+        <li><b>單一層級課綱</b> <span class="lessons">（6 堂：什麼是技能？、建立您的第一個技能、設定與多檔案技能、Skills 與其他 Claude Code 功能、分享技能、技能疑難排解）</span><p>從撰寫 SKILL.md 與 frontmatter 開始，學會寫好技能描述、限制工具存取、以漸進式揭露組織大型技能；在技能、CLAUDE.md、子代理、hooks、MCP 之間選型，最後分享技能並排解觸發與載入問題。</p></li>
+      </ol>
+      <p class="quiz">本課無測驗</p>
+    </details>
+  </article>
+
+  <article class="course">
+    <div class="course-head">
+      <h3><span class="no">17</span><a href="https://academy.claude.com/zh-TW/courses/introduction-to-subagents" target="_blank" rel="noopener">子代理入門</a></h3>
+      <div class="chips"><span class="chip">4 堂</span><span class="chip">45 分鐘</span></div>
+    </div>
+    <p class="desc">把複雜任務拆給多個並行的 Claude 子代理：子代理在獨立上下文中單獨完成工作、只回傳摘要，讓主對話保持簡潔專注。</p>
+    <details>
+      <summary>章節與重點（單層 4 堂）</summary>
+      <ol>
+        <li><b>單一層級課綱</b> <span class="lessons">（4 堂：什麼是子代理？、建立子代理、設計有效的子代理、有效使用子代理）</span><p>理解子代理的運作原理（獨立上下文視窗、摘要回傳），用 /agents 指令建立自訂子代理，以結構化輸出與最小工具權限設計可靠的子代理，辨識該用與不該用的時機。</p></li>
+      </ol>
+      <p class="quiz">本課無測驗</p>
+    </details>
+  </article>
+
+  <article class="course">
+    <div class="course-head">
+      <h3><span class="no">18</span><a href="https://academy.claude.com/zh-TW/courses/introduction-to-model-context-protocol" target="_blank" rel="noopener">Model Context Protocol 簡介</a></h3>
+      <div class="chips"><span class="chip">10 堂</span><span class="chip">1 測驗</span><span class="chip">1 小時</span></div>
+    </div>
+    <p class="desc">用 Python SDK 從零建構 MCP 伺服器與客戶端，涵蓋連接 Claude 與外部服務的三大核心元素——工具、資源與提示。</p>
+    <p class="meta"><b>先備：</b>Python 實務經驗、async/await、API 與 JSON 基本概念。</p>
+    <details>
+      <summary>章節與重點（4 章）</summary>
+      <ol>
+        <li><b>簡介</b> <span class="lessons">（2 堂：Introducing MCP、MCP 客戶端）</span><p>從整體架構理解 MCP 為何存在，如何把工具定義與執行的負擔轉移到專門的伺服器。</p></li>
+        <li><b>MCP 伺服器實作</b> <span class="lessons">（2 堂：使用 MCP 定義工具、伺服器檢查器）</span><p>用 Python SDK 裝飾器建出第一個伺服器，用 Inspector 在瀏覽器中測試偵錯。</p></li>
+        <li><b>連接 MCP 客戶端</b> <span class="lessons">（5 堂：實作客戶端、定義資源、存取資源、定義提示、客戶端中的提示）</span><p>實作客戶端，定義唯讀資源（靜態 URI 與參數化範本），建構預製提示，看懂三元素如何串起完整應用。</p></li>
+        <li><b>評估與總結</b> <span class="lessons">（1 堂：MCP 回顧）</span><p>回顧三大元素的控制歸屬：工具歸模型、資源歸應用程式、提示歸使用者。</p></li>
+      </ol>
+      <p class="quiz">＋MCP 最終評估與完成徽章</p>
+    </details>
+  </article>
+
+  <article class="course">
+    <div class="course-head">
+      <h3><span class="no">19</span><a href="https://academy.claude.com/zh-TW/courses/model-context-protocol-advanced-topics" target="_blank" rel="noopener">Model Context Protocol：進階主題</a></h3>
+      <div class="chips"><span class="chip">11 堂</span><span class="chip">1 測驗</span><span class="chip">1.5 小時</span></div>
+    </div>
+    <p class="desc">超越 MCP 基礎：取樣（sampling）、通知、根目錄（roots）三項進階功能，加上傳輸機制與生產環境部署考量。</p>
+    <p class="meta"><b>適合：</b>正在建置生產環境 MCP 伺服器的工程師。</p>
+    <details>
+      <summary>章節與重點（2 章）</summary>
+      <ol>
+        <li><b>核心 MCP 功能</b> <span class="lessons">（6 堂：取樣＋演練、日誌與進度通知＋導覽、Roots＋逐步說明）</span><p>用取樣把 AI 呼叫成本轉移給客戶端、用通知改善長時間操作的回饋體驗、用 roots 在安全邊界內授予檔案目錄存取。</p></li>
+        <li><b>傳輸與通訊</b> <span class="lessons">（5 堂：JSON 訊息類型、STDIO 傳輸、StreamableHTTP 傳輸×2、狀態與 StreamableHTTP）</span><p>JSON 訊息協定與請求-結果配對、本機用 STDIO、StreamableHTTP 的會話管理與雙連線架構，以及有狀態與無狀態部署的取捨。</p></li>
+      </ol>
+      <p class="quiz">＋MCP 概念評估與完成徽章</p>
+    </details>
+  </article>
+</section>
+
+<!-- ============ D ============ -->
+<section id="sec-d">
+  <div class="sec-head"><h2>D · API 與雲端平台</h2></div>
+  <p class="sec-note">開發者向大部頭課程。三門內容高度重疊（API、提示工程、工具使用、RAG、MCP、代理），差異主要在平台設定與部署，依你用的雲端擇一即可。</p>
+
+  <article class="course">
+    <div class="course-head">
+      <h3><span class="no">20</span><a href="https://academy.claude.com/zh-TW/courses/building-with-the-claude-api" target="_blank" rel="noopener">使用 Claude API 進行開發</a></h3>
+      <div class="chips"><span class="chip">67 堂</span><span class="chip">8 測驗</span><span class="chip">9 小時</span></div>
+    </div>
+    <p class="desc">用 Claude API 操作 Anthropic 模型的完整範疇：API 基礎、提示工程與評估、工具使用、RAG、MCP、Claude Code 與電腦使用、代理式工作流程與生產模式。</p>
+    <p class="meta"><b>適合：</b>要把 Claude 整合進生產應用的軟體工程師；需熟 Python 與 JSON。</p>
+    <details>
+      <summary>章節與重點（9 章）</summary>
+      <ol>
+        <li><b>使用 API 存取 Claude</b> <span class="lessons">（8 堂）</span><p>API 驗證與金鑰管理、基本請求、多輪對話、系統提示、溫度、串流與結構化輸出。</p></li>
+        <li><b>提示評估</b> <span class="lessons">（6 堂）</span><p>建立可重複的評估流程：產生測試資料集、執行評估，用模型評分與程式碼評分自動打分。</p></li>
+        <li><b>提示工程技巧</b> <span class="lessons">（5 堂）</span><p>清晰直接、具體明確、XML 標籤結構化、範例式學習等系統化技巧。</p></li>
+        <li><b>與 Claude 的工具使用</b> <span class="lessons">（12 堂）</span><p>函式呼叫、多輪工具互動、批次與細粒度工具呼叫，以及文字編輯、網路搜尋等內建工具。</p></li>
+        <li><b>RAG 與代理式搜尋</b> <span class="lessons">（7 堂）</span><p>文本分塊、嵌入、BM25 混合搜尋、多索引架構與上下文檢索的生產級實作。</p></li>
+        <li><b>Claude 的功能</b> <span class="lessons">（8 堂）</span><p>擴展思考、圖像與 PDF 輸入、引用生成、提示快取規則與實戰、程式碼執行與 Files API。</p></li>
+        <li><b>Model Context Protocol</b> <span class="lessons">（10 堂）</span><p>定義自訂工具、資源與提示範本，實作 MCP 伺服器與客戶端，掌握完整整合生命週期。</p></li>
+        <li><b>Anthropic 應用程式</b> <span class="lessons">（4 堂）</span><p>Claude Code 加速開發工作流程、Computer Use 自動化 UI 操作，含 MCP 整合模式。</p></li>
+        <li><b>代理與工作流程</b> <span class="lessons">（7 堂）</span><p>平行執行、操作串連、條件路由等自主 AI 系統架構模式，以及有效的除錯策略。</p></li>
+      </ol>
+      <p class="quiz">＋8 個測驗（章末測驗與最終評估）與完成徽章</p>
+    </details>
+  </article>
+
+  <article class="course">
+    <div class="course-head">
+      <h3><span class="no">21</span><a href="https://academy.claude.com/zh-TW/courses/claude-with-amazon-bedrock" target="_blank" rel="noopener">Claude 與 Amazon Bedrock</a></h3>
+      <div class="chips"><span class="chip">65 堂</span><span class="chip">8 測驗</span><span class="chip">8 小時</span></div>
+    </div>
+    <p class="desc">透過 Amazon Bedrock 整合與部署 Claude：API 實作、提示工程與評估、工具使用、RAG、MCP、代理程式，以及 AWS 生態系中的生產級應用。</p>
+    <p class="meta"><b>適合：</b>AWS 生態的開發者；需有可用 Bedrock 的 AWS 帳號。</p>
+    <details>
+      <summary>章節與重點（9 章）</summary>
+      <ol>
+        <li><b>課程介紹</b> <span class="lessons">（1 堂：Claude 模型概覽）</span><p>認識 Claude 模型家族與其在 Bedrock 上的定位。</p></li>
+        <li><b>使用 API</b> <span class="lessons">（8 堂）</span><p>API 驗證、基本請求、對話管理、系統提示，用溫度與串流控制推論行為。</p></li>
+        <li><b>提示評估</b> <span class="lessons">（6 堂）</span><p>產生測試資料集、執行評估，用模型評分與程式碼評分自動打分。</p></li>
+        <li><b>提示工程</b> <span class="lessons">（5 堂）</span><p>提示策略、評估框架與系統化測試方法。</p></li>
+        <li><b>工具使用</b> <span class="lessons">（12 堂）</span><p>以 JSON Schema 設計自訂工具：多輪互動、多工具與批次呼叫、結構化資料提取。</p></li>
+        <li><b>檢索增強生成</b> <span class="lessons">（9 堂）</span><p>分塊、嵌入、BM25 混合搜尋、多重搜尋管線、重新排序與上下文檢索。</p></li>
+        <li><b>Claude 的功能</b> <span class="lessons">（6 堂）</span><p>擴展思考、視覺與 PDF 輸入、引用生成，以及降低延遲與成本的提示快取。</p></li>
+        <li><b>Model Context Protocol</b> <span class="lessons">（11 堂）</span><p>定義工具、資源與提示，實作 MCP 伺服器與客戶端，總回顧整合生命週期。</p></li>
+        <li><b>代理程式</b> <span class="lessons">（7 堂）</span><p>Claude Code 加速開發與自動化除錯（含平行化）、Computer Use 自動化 UI 操作、代理的核心特質。</p></li>
+      </ol>
+      <p class="quiz">＋8 個測驗（章末測驗與最終評量）與完成徽章</p>
+    </details>
+  </article>
+
+  <article class="course">
+    <div class="course-head">
+      <h3><span class="no">22</span><a href="https://academy.claude.com/zh-TW/courses/claude-with-google-cloud-s-vertex-ai" target="_blank" rel="noopener">透過 Google Cloud 的 Vertex AI 使用 Claude</a></h3>
+      <div class="chips"><span class="chip">66 堂</span><span class="chip">9 測驗</span><span class="chip">8.5 小時</span></div>
+    </div>
+    <p class="desc">透過 Vertex AI 使用 Anthropic 模型的完整技術培訓：環境設定、提示工程與評估、工具使用、RAG、MCP、Claude Code 與 Computer Use、代理式工作流程與生產部署。</p>
+    <p class="meta"><b>適合：</b>Google Cloud 生態的開發者，以及從其他 LLM 供應商轉換的開發者；需有可用 Vertex AI 的 GCP 帳號。</p>
+    <details>
+      <summary>章節與重點（8 章）</summary>
+      <ol>
+        <li><b>透過 API 存取 Claude</b> <span class="lessons">（9 堂）</span><p>在 Vertex AI 上完成設定與驗證、發出請求、管理對話與系統提示，控制模型輸出。</p></li>
+        <li><b>提示評估</b> <span class="lessons">（6 堂）</span><p>產生測試資料集、執行評估，用模型評分與程式碼評分自動打分。</p></li>
+        <li><b>提示工程技術</b> <span class="lessons">（5 堂）</span><p>清晰指令、XML 標籤結構化與範例式學習等系統化技巧。</p></li>
+        <li><b>Claude 的工具使用</b> <span class="lessons">（13 堂）</span><p>函式呼叫、多輪工具互動、多工具與批次工具、結構化資料工具與內建工具。</p></li>
+        <li><b>檢索增強生成</b> <span class="lessons">（9 堂）</span><p>分塊、嵌入、BM25 混合搜尋、多索引管線、重新排序與上下文檢索。</p></li>
+        <li><b>Claude 的功能</b> <span class="lessons">（6 堂）</span><p>擴展思考、視覺輸入、引用生成，以及提示快取的規則與實戰。</p></li>
+        <li><b>Model Context Protocol</b> <span class="lessons">（11 堂）</span><p>定義自訂工具、資源與提示範本，實作 MCP 伺服器與客戶端。</p></li>
+        <li><b>代理程式與工作流程</b> <span class="lessons">（7 堂）</span><p>平行執行、操作串連、條件路由與除錯策略，釐清工作流程與代理的分界。</p></li>
+      </ol>
+      <p class="quiz">＋9 個測驗（8 章章末測驗與最終評估）與完成徽章</p>
+    </details>
+  </article>
+</section>
+
+<footer>
+  <p><b>整理備註</b></p>
+  <ul>
+    <li>各課堂數、測驗數均已與官網課程頁逐一核對相符（2026-08-21）。</li>
+    <li>「Claude Platform 101」整頁與「Claude Code 實戰」的章節名，官網尚未提供繁中翻譯，文中為中譯。</li>
+    <li>本頁為非官方整理；課程內容與最新狀態以 <a href="https://academy.claude.com/zh-TW" target="_blank" rel="noopener">Claude Academy 官網</a> 為準。</li>
+    <li>資料來源：Claude Academy 繁體中文版逐頁擷取；發現管道：<a href="https://www.kocpc.com.tw/archives/665971" target="_blank" rel="noopener">電腦王阿達的介紹文</a>。</li>
+  </ul>
+</footer>
+</div>
+
+</body>
+</html>
