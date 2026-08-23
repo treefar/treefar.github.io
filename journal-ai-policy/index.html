@@ -1,0 +1,660 @@
+<title>期刊 AI 規範速查</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600&display=swap">
+
+<style>
+:root{
+  --paper:#F4F5F1;
+  --surface:#FFFFFF;
+  --surface-2:#EDEFE9;
+  --ink:#17233A;
+  --ink-soft:#59627A;
+  --ink-faint:#828B9E;
+  --rule:#DCDFD8;
+  --rule-strong:#C3C8BE;
+  --accent:#2C5F63;
+  --accent-soft:#E1EBEA;
+  --stop:#9E332C;
+  --stop-soft:#F6E5E3;
+  --warn:#8A6A1F;
+  --warn-soft:#F3EBD9;
+  --go:#3B6B4C;
+  --go-soft:#E2EDE4;
+  --shadow:0 1px 2px rgba(23,35,58,.05), 0 8px 24px -16px rgba(23,35,58,.28);
+
+  --f-display:'Newsreader','Noto Serif TC',Georgia,'Times New Roman',serif;
+  --f-body:'IBM Plex Sans','Noto Sans TC',-apple-system,'Segoe UI',sans-serif;
+  --f-mono:'IBM Plex Mono','Noto Sans TC',ui-monospace,'Cascadia Mono',monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#12161C;
+    --surface:#1A1F27;
+    --surface-2:#222834;
+    --ink:#E7EAE4;
+    --ink-soft:#9BA4B2;
+    --ink-faint:#798394;
+    --rule:#2C333E;
+    --rule-strong:#3C4552;
+    --accent:#79B8B4;
+    --accent-soft:#1D2E30;
+    --stop:#E39289;
+    --stop-soft:#2E2020;
+    --warn:#DCBA6E;
+    --warn-soft:#2B2519;
+    --go:#93C7A1;
+    --go-soft:#1D2A22;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -16px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#12161C;
+  --surface:#1A1F27;
+  --surface-2:#222834;
+  --ink:#E7EAE4;
+  --ink-soft:#9BA4B2;
+  --ink-faint:#798394;
+  --rule:#2C333E;
+  --rule-strong:#3C4552;
+  --accent:#79B8B4;
+  --accent-soft:#1D2E30;
+  --stop:#E39289;
+  --stop-soft:#2E2020;
+  --warn:#DCBA6E;
+  --warn-soft:#2B2519;
+  --go:#93C7A1;
+  --go-soft:#1D2A22;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -16px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--f-body);
+  font-size:16px;
+  line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1140px;margin:0 auto;padding:0 28px}
+.narrow{max-width:760px}
+
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;font-weight:500}
+h1{font-size:clamp(2.5rem,6vw,4rem);line-height:1.06;letter-spacing:-.02em}
+h2{font-size:clamp(1.6rem,3vw,2.1rem);line-height:1.2;letter-spacing:-.01em}
+h3{font-size:1.15rem;line-height:1.35}
+p{margin:0}
+a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:3px}
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+
+.eyebrow{
+  font-family:var(--f-mono);
+  font-size:.72rem;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--ink-faint);
+}
+
+/* ---------- hero ---------- */
+header.hero{
+  border-bottom:1px solid var(--rule);
+  background:linear-gradient(180deg,var(--surface) 0%,var(--paper) 100%);
+}
+.hero-in{display:flex;flex-direction:column;gap:22px;padding:64px 0 52px}
+.hero-lead{font-size:1.12rem;color:var(--ink-soft);max-width:62ch}
+.hero-lead strong{color:var(--ink);font-weight:600}
+.stamp{
+  display:flex;flex-wrap:wrap;gap:10px 18px;align-items:baseline;
+  font-family:var(--f-mono);font-size:.78rem;color:var(--ink-faint);
+}
+.stamp b{color:var(--accent);font-weight:500}
+
+.notice{
+  display:flex;gap:14px;align-items:flex-start;
+  border:1px solid var(--rule-strong);
+  border-left:3px solid var(--warn);
+  background:var(--warn-soft);
+  padding:14px 18px;border-radius:3px;
+  max-width:70ch;
+}
+.notice .k{
+  font-family:var(--f-mono);font-size:.7rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--warn);white-space:nowrap;padding-top:3px;
+}
+.notice p{font-size:.92rem;color:var(--ink)}
+
+/* ---------- sections ---------- */
+section{padding:60px 0;border-bottom:1px solid var(--rule)}
+.sec-head{display:flex;flex-direction:column;gap:8px;margin-bottom:32px;max-width:68ch}
+.sec-head p{color:var(--ink-soft);font-size:.98rem}
+
+/* ---------- target cards ---------- */
+.targets{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+.card{
+  background:var(--surface);border:1px solid var(--rule);border-radius:4px;
+  padding:26px 24px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow);
+}
+.card-top{display:flex;flex-direction:column;gap:6px}
+.card h3{font-family:var(--f-display)}
+.card .meta{font-family:var(--f-mono);font-size:.72rem;color:var(--ink-faint);letter-spacing:.04em}
+.card ul{margin:0;padding-left:1.05em;display:flex;flex-direction:column;gap:9px;font-size:.93rem;color:var(--ink-soft)}
+.card li::marker{color:var(--accent)}
+.card li strong{color:var(--ink);font-weight:600}
+.spot{
+  font-family:var(--f-mono);font-size:.78rem;
+  background:var(--accent-soft);color:var(--accent);
+  padding:2px 7px;border-radius:3px;white-space:nowrap;
+}
+
+/* ---------- baseline list ---------- */
+.baseline{display:flex;flex-direction:column;gap:0;border-top:1px solid var(--rule)}
+.bl-row{
+  display:grid;grid-template-columns:minmax(180px,220px) 1fr;gap:8px 32px;
+  padding:22px 0;border-bottom:1px solid var(--rule);align-items:start;
+}
+.bl-row h3{font-size:1.05rem;color:var(--ink)}
+.bl-row .body{display:flex;flex-direction:column;gap:8px;color:var(--ink-soft);font-size:.95rem}
+.exception{
+  border-left:2px solid var(--stop);padding-left:12px;
+  font-size:.88rem;color:var(--ink-soft);
+}
+.exception b{color:var(--stop);font-weight:600}
+
+/* ---------- filter ---------- */
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;align-items:center}
+.filters .lab{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-right:4px}
+.chip{
+  font-family:var(--f-body);font-size:.85rem;
+  border:1px solid var(--rule-strong);background:var(--surface);color:var(--ink-soft);
+  padding:5px 13px;border-radius:100px;cursor:pointer;transition:background .14s,color .14s,border-color .14s;
+}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--paper)}
+
+/* ---------- table ---------- */
+.table-scroll{overflow-x:auto;border:1px solid var(--rule);border-radius:4px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:940px;font-size:.87rem}
+thead th{
+  position:sticky;top:0;z-index:2;
+  background:var(--surface-2);color:var(--ink);
+  font-family:var(--f-mono);font-weight:500;font-size:.72rem;
+  letter-spacing:.08em;text-transform:uppercase;
+  text-align:left;padding:13px 14px;border-bottom:1px solid var(--rule-strong);
+  white-space:nowrap;
+}
+tbody td{padding:14px;border-bottom:1px solid var(--rule);vertical-align:top;color:var(--ink-soft);line-height:1.5}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--surface-2)}
+tbody tr[hidden]{display:none}
+th.unit,td.unit{
+  font-family:var(--f-body);font-weight:600;color:var(--ink);white-space:nowrap;
+  position:sticky;left:0;background:var(--surface);border-right:1px solid var(--rule);
+}
+tbody tr:hover td.unit{background:var(--surface-2)}
+.sub{display:block;font-family:var(--f-mono);font-size:.68rem;color:var(--ink-faint);font-weight:400;letter-spacing:.03em;margin-top:2px}
+
+.tag{
+  display:inline-block;font-family:var(--f-mono);font-size:.68rem;letter-spacing:.05em;
+  padding:2px 6px;border-radius:3px;margin-bottom:5px;white-space:nowrap;
+}
+.t-stop{background:var(--stop-soft);color:var(--stop)}
+.t-warn{background:var(--warn-soft);color:var(--warn)}
+.t-go{background:var(--go-soft);color:var(--go)}
+.t-none{background:var(--surface-2);color:var(--ink-faint)}
+.loc{font-family:var(--f-mono);font-size:.8rem;color:var(--ink)}
+
+.legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;font-size:.8rem;color:var(--ink-faint)}
+.legend span{display:flex;align-items:center;gap:6px}
+.dot{width:9px;height:9px;border-radius:2px;display:inline-block}
+
+/* ---------- taiwan ---------- */
+.tw{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+.myth{
+  background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:22px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.myth .wrong{
+  font-size:.88rem;color:var(--stop);font-family:var(--f-body);
+  border-left:2px solid var(--stop);padding-left:10px;
+}
+.myth .right{font-size:.93rem;color:var(--ink)}
+.myth .src{font-family:var(--f-mono);font-size:.7rem;color:var(--ink-faint);word-break:break-all}
+
+/* ---------- practice ---------- */
+.practice{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+.step{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:24px;display:flex;flex-direction:column;gap:12px}
+.step .when{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.step p{font-size:.93rem;color:var(--ink-soft)}
+.step ul{margin:0;padding-left:1.05em;font-size:.9rem;color:var(--ink-soft);display:flex;flex-direction:column;gap:7px}
+pre{
+  margin:0;background:var(--surface-2);border:1px solid var(--rule);border-radius:3px;
+  padding:14px;overflow-x:auto;font-family:var(--f-mono);font-size:.78rem;
+  line-height:1.6;color:var(--ink);
+}
+
+/* ---------- limits ---------- */
+.limits{display:flex;flex-direction:column;gap:12px;max-width:74ch}
+.limit{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;font-size:.93rem;color:var(--ink-soft)}
+.limit .n{font-family:var(--f-mono);font-size:.7rem;color:var(--ink-faint);padding-top:4px;white-space:nowrap}
+.limit b{color:var(--ink);font-weight:600}
+
+footer{padding:44px 0 64px;color:var(--ink-faint);font-size:.85rem;display:flex;flex-direction:column;gap:10px}
+footer .f-line{font-family:var(--f-mono);font-size:.75rem;letter-spacing:.03em}
+
+@media (max-width:640px){
+  .wrap{padding:0 20px}
+  .hero-in{padding:46px 0 38px}
+  section{padding:44px 0}
+  .bl-row{grid-template-columns:1fr;gap:10px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<header class="hero">
+  <div class="wrap hero-in">
+    <span class="eyebrow">政策快照 · 2026-08-23</span>
+    <h1>期刊 AI 規範速查</h1>
+    <p class="hero-lead">12 個學術組織與出版社，對「用 AI 寫論文」到底是怎麼規定的。每一條都回到官方頁面對過原文，附政策日期。<strong>給要投稿的人用的白話版。</strong></p>
+    <div class="stamp">
+      <span>查證單位 <b>12</b></span>
+      <span>期刊落點範例 <b>3</b></span>
+      <span>唯一放寬的出版社 <b>ACM</b></span>
+      <span>唯一取自存檔快照 <b>APA</b></span>
+    </div>
+    <div class="notice">
+      <span class="k">先讀這個</span>
+      <p>這些政策改版很快，光是 2026 上半年就有 Elsevier、Wiley、ACM、IEEE 四家改過。這份是 2026-08-23 的快照，<b>投稿前一定要回該期刊官網再看一次當期版本</b>，不一致時以官網為準。</p>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">三個落點範例</span>
+      <h2>期刊沒寫，怎麼查到底</h2>
+      <p>期刊本身多半沒有自己的 AI 條款，是沿用所屬出版社的政策。以下三個範例分別代表三種常見狀況：完全沒規範、沿用出版社三分類、沿用出版社位置分流。</p>
+    </div>
+    <div class="targets">
+
+      <article class="card">
+        <div class="card-top">
+          <h3>本土心理學研究</h3>
+          <span class="meta">TSSCI · 稿約完全沒有 AI 條款</span>
+        </div>
+        <ul>
+          <li>稿約已逐頁確認，<strong>一個字都沒提 AI</strong>。未定事宜參照 APA 出版手冊第 7 版（2019），那一版也沒有。</li>
+          <li>做法：依台灣 AREE（學術倫理教育資源中心）通則，自擬一段中文揭露聲明，放<span class="spot">誌謝</span>或<span class="spot">方法</span>段。</li>
+          <li>投稿前寫信問編輯部能不能放、放哪裡，把回信留存。</li>
+          <li>引用格式沿用 APA Style 的 AI 引用規範（稿約既然說參照 APA 手冊）。</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <div class="card-top">
+          <h3>Games and Culture</h3>
+          <span class="meta">SSCI · 沿用 SAGE 出版社政策</span>
+        </div>
+        <ul>
+          <li>SAGE 把 AI 用途分三類：<strong>改語言文法＝免揭露</strong>；產出會影響方法、分析、結果、結論的內容＝要揭露；還有一組直接禁止。</li>
+          <li><strong>翻譯算「要揭露」那一類</strong>，不是單純潤稿，別誤判。</li>
+          <li>揭露寫在<span class="spot">methods</span>或<span class="spot">acknowledgements</span>。</li>
+          <li>質性研究的三條紅線：用 prompt 生資料、<strong>用 AI 假扮受訪者</strong>、<strong>把經驗與主題分析交給 AI</strong>，全部禁止。</li>
+          <li>雙盲審查，揭露聲明本身也不能洩漏作者身分。</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <div class="card-top">
+          <h3>CAVW</h3>
+          <span class="meta">SCIE · 沿用 Wiley 政策（2026-07 更新）</span>
+        </div>
+        <ul>
+          <li>位置分流最清楚的一家：寫作類→<span class="spot">Acknowledgments</span>；方法與分析類→<span class="spot">Methods</span>；圖像→<span class="spot">圖說</span>。</li>
+          <li>揭露要寫五件事：工具與版本、日期、AI 扮演什麼角色、用在哪一節、作者怎麼審核它的產出。有官方範本可以套。</li>
+          <li><strong>質性資料編碼</strong>如果用了 AI，算分析類，要寫進 Methods。</li>
+          <li>Wiley 明文寫著：用 AI 協助撰稿本身不構成退稿理由。重點是揭露，不是禁用。</li>
+        </ul>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">跨出版社共識</span>
+      <h2>五條底線</h2>
+      <p>各家細節不同，但這五條幾乎所有單位都一樣。記住這五條，剩下的查表。</p>
+    </div>
+    <div class="baseline">
+
+      <div class="bl-row">
+        <h3>AI 不能掛作者</h3>
+        <div class="body">
+          <p>作者欄、貢獻者欄都不行。理由一致：AI 沒辦法為內容負責，也不能處理著作權與授權。這條零例外。</p>
+          <p class="exception"><b>寫法注意：</b>IEEE 是唯一沒有明文寫「AI 不得掛名」的，它靠「作者資格保留給 individuals」的定義排除。引用時要引那條定義，別寫成「IEEE 明令禁止」。</p>
+        </div>
+      </div>
+
+      <div class="bl-row">
+        <h3>產生或大改內容要揭露</h3>
+        <div class="body">
+          <p>只做拼字文法檢查通常免揭露，但門檻各家不同。翻譯在 SAGE、Wiley、APA 都算「要揭露」。</p>
+          <p class="exception"><b>唯一例外：</b>ACM 從 2026-05-14 起，<b>寫作用途完全免揭露</b>。但研究過程用 AI（設計、資料、程式碼、分析）還是要詳細寫進 Methods。投 ACM 以外的地方不要套用這條。</p>
+        </div>
+      </div>
+
+      <div class="bl-row">
+        <h3>圖像的門檻比文字高很多</h3>
+        <div class="body">
+          <p>示意圖、流程圖、概念插畫多半可以（要揭露）。但只要是「當證據用」的影像——實驗資料圖、觀測影像、診斷影像、照片——Elsevier、Wiley、T&amp;F 一律禁止 AI 生成或修改。SAGE 禁止拿 AI 生成圖冒充研究圖像。</p>
+        </div>
+      </div>
+
+      <div class="bl-row">
+        <h3>錯了是你的責任</h3>
+        <div class="body">
+          <p>「AI 寫錯的」不能當理由。AI 幻覺出來的文獻算違反研究誠信，ACM 可以整篇撤稿。APA 要求你去讀 AI 引用的原始出處確認過。WAME 和 APA 都要求保存 prompt 備查。</p>
+        </div>
+      </div>
+
+      <div class="bl-row">
+        <h3>審稿不能把稿件餵給 AI</h3>
+        <div class="body">
+          <p>未發表稿件是機密，上傳到不保證保密的 AI 服務等於違反保密義務。ACM 的保密條款明文點名 LLM。</p>
+          <p class="exception"><b>常見的唯一放寬：</b>可以用 AI 潤飾<b>你自己已經寫好的</b>審稿意見（SAGE、Wiley、T&amp;F、ACM 允許，ACM 還要求先把可識別的內容拿掉）。APA 連這個都不給。任何情況都不能上傳稿件本身。</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">速查總表</span>
+      <h2>12 個單位，六個問題</h2>
+      <p>橫向可捲動。等寬字排的是揭露要寫在哪一節。每一格背後都有官方原文與政策日期，引用前請回官方頁核對。</p>
+    </div>
+
+    <div class="filters">
+      <span class="lab">篩選</span>
+      <button class="chip" data-f="all" aria-pressed="true">全部</button>
+      <button class="chip" data-f="target" aria-pressed="false">三個落點範例</button>
+      <button class="chip" data-f="norm" aria-pressed="false">倫理組織</button>
+      <button class="chip" data-f="publisher" aria-pressed="false">出版社</button>
+      <button class="chip" data-f="tw" aria-pressed="false">台灣</button>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th class="unit">單位</th>
+            <th>AI 掛名作者</th>
+            <th>文字潤稿</th>
+            <th>揭露寫在哪</th>
+            <th>AI 圖像</th>
+            <th>分析與程式碼</th>
+            <th>審稿餵 AI</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <tr data-g="norm">
+            <td class="unit">COPE<span class="sub">2023-02-13</span></td>
+            <td><span class="tag t-stop">禁止</span></td>
+            <td><span class="tag t-warn">須揭露</span></td>
+            <td><span class="loc">Methods</span> 或類似章節</td>
+            <td><span class="tag t-warn">須揭露</span></td>
+            <td><span class="tag t-warn">須揭露</span></td>
+            <td><span class="tag t-none">未規範</span></td>
+          </tr>
+
+          <tr data-g="norm">
+            <td class="unit">ICMJE<span class="sub">2026-01</span></td>
+            <td><span class="tag t-stop">禁止</span>引用也不可當作者</td>
+            <td><span class="tag t-warn">須揭露</span>拼字文法一般可接受</td>
+            <td>投稿信＋<span class="loc">誌謝</span>；分析類寫 <span class="loc">Methods</span></td>
+            <td><span class="tag t-warn">須揭露</span></td>
+            <td><span class="loc">Methods</span>，須擔保無抄襲</td>
+            <td><span class="tag t-stop">原則禁止</span>要用須期刊允許</td>
+          </tr>
+
+          <tr data-g="norm">
+            <td class="unit">WAME<span class="sub">2023-05-31</span></td>
+            <td><span class="tag t-stop">禁止</span></td>
+            <td><span class="tag t-warn">須揭露</span>並附全部 prompt</td>
+            <td><span class="loc">誌謝</span>；分析類寫 <span class="loc">Abstract + Methods</span></td>
+            <td><span class="tag t-warn">須揭露</span></td>
+            <td>全體最嚴：prompt、查詢日期時間、工具版本都要附</td>
+            <td><span class="tag t-stop">禁止</span>等同違反保密</td>
+          </tr>
+
+          <tr data-g="publisher">
+            <td class="unit">Elsevier<span class="sub">2026-06</span></td>
+            <td><span class="tag t-stop">禁止</span>也不可當作者引用</td>
+            <td><span class="tag t-warn">須揭露</span>純文法標點免</td>
+            <td>獨立的 <span class="loc">AI declaration</span>，隨稿刊出，有官方範本</td>
+            <td><span class="tag t-stop">實驗資料圖禁止</span>示意圖可</td>
+            <td><span class="loc">Methods</span></td>
+            <td><span class="tag t-stop">禁止</span>稿件任何部分都不行</td>
+          </tr>
+
+          <tr data-g="publisher">
+            <td class="unit">Springer Nature<span class="sub">未標日期</span></td>
+            <td><span class="tag t-stop">禁止</span>Red 級</td>
+            <td><span class="tag t-go">潤飾免揭露</span>大量改寫須揭露</td>
+            <td>現行頁未指定，依各刊投稿欄位</td>
+            <td><span class="tag t-stop">deepfakes 禁止</span></td>
+            <td>資料清理免；探索分析須揭露</td>
+            <td><span class="tag t-stop">禁止</span>不得委託 AI 評判</td>
+          </tr>
+
+          <tr data-g="publisher target">
+            <td class="unit">SAGE<span class="sub">Games and Culture</span></td>
+            <td><span class="tag t-stop">禁止</span></td>
+            <td><span class="tag t-go">改語言免揭露</span>翻譯算生成須揭露</td>
+            <td><span class="loc">methods</span> 或 <span class="loc">acknowledgements</span></td>
+            <td>示意圖可（揭露）；冒充研究圖像禁止</td>
+            <td>程式碼可（揭露）；<b>生資料、代受訪者、主題分析禁止</b></td>
+            <td><span class="tag t-stop">產報告禁止</span>可潤飾自寫的報告</td>
+          </tr>
+
+          <tr data-g="publisher target">
+            <td class="unit">Wiley<span class="sub">CAVW · 2026-07</span></td>
+            <td><span class="tag t-stop">禁止</span></td>
+            <td><span class="tag t-warn">實質編修與翻譯須揭露</span>純文法免</td>
+            <td>寫作→<span class="loc">Acknowledgments</span>；分析→<span class="loc">Methods</span>；圖像→<span class="loc">圖說</span></td>
+            <td>視覺化可；<b>修照片與證據性影像禁止</b></td>
+            <td><span class="loc">Methods</span>，含質性編碼</td>
+            <td><span class="tag t-stop">禁止</span>含圖表</td>
+          </tr>
+
+          <tr data-g="publisher">
+            <td class="unit">Taylor &amp; Francis<span class="sub">未標日期</span></td>
+            <td><span class="tag t-stop">禁止</span></td>
+            <td><span class="tag t-warn">須揭露</span>工具全名含版本＋怎麼用＋為何用</td>
+            <td>文章內專門的 AI 揭露聲明；書籍放 <span class="loc">preface</span></td>
+            <td>示意圖可；研究與臨床影像禁止</td>
+            <td>支援 coding；未經嚴謹修訂的生成內容禁止</td>
+            <td><span class="tag t-stop">禁止</span>不得用 AI 產生審稿報告</td>
+          </tr>
+
+          <tr data-g="publisher">
+            <td class="unit">IEEE<span class="sub">2026-06-25</span></td>
+            <td><span class="tag t-warn">無明文</span>以「作者須為 individuals」排除</td>
+            <td><span class="tag t-go">不改語意即免揭露</span>建議仍揭露</td>
+            <td><span class="loc">Acknowledgments</span>，含圖與程式碼，統一放這裡</td>
+            <td>同一條揭露規定</td>
+            <td>同上；AI 模擬資料須標示為 AI 生成</td>
+            <td><span class="tag t-stop">禁止</span>不得經公開平台產生審稿內容</td>
+          </tr>
+
+          <tr data-g="publisher">
+            <td class="unit">ACM<span class="sub">2026-05-14</span></td>
+            <td><span class="tag t-stop">禁止</span>作者須為可辨識的人</td>
+            <td><span class="tag t-go">免揭露</span>2026-05 起放寬，全體異數</td>
+            <td>研究用途→<span class="loc">Methods</span>；寫作用途→不必寫</td>
+            <td>與結論相關的圖表比照研究用途</td>
+            <td>程式碼、資料集、圖表只要與結論相關就要詳述</td>
+            <td>可潤飾但須先去識別；不得上傳到不保密的系統</td>
+          </tr>
+
+          <tr data-g="publisher">
+            <td class="unit">APA Journals<span class="sub">2025-10 · 存檔快照</span></td>
+            <td><span class="tag t-stop">禁止</span></td>
+            <td><span class="tag t-warn">須揭露並引用</span>文法檢查軟體不在政策範圍</td>
+            <td>依用途分流：<span class="loc">Introduction</span> / <span class="loc">author note</span> / <span class="loc">Method</span> / 圖表所在章節</td>
+            <td>在圖表所在章節揭露，附 prompt 與工具</td>
+            <td><span class="loc">Method</span>，要寫工具與跑了幾輪</td>
+            <td><span class="tag t-stop">全面禁止</span>沒有潤飾例外</td>
+          </tr>
+
+          <tr data-g="tw">
+            <td class="unit">台灣<span class="sub">國科會 / 教育部</span></td>
+            <td colspan="6">沒有研究人員專用指引。可參照的只有行政院對公務機關的指引（輔助業務應適當揭露）與 AREE 的通則。詳見下一節。</td>
+          </tr>
+
+          <tr data-g="tw target">
+            <td class="unit">本土心理學研究<span class="sub">TSSCI</span></td>
+            <td colspan="6">稿約完全未規範（已逐頁確認），依通則辦理，建議 email 編輯部確認揭露方式與位置。</td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+
+    <div class="legend">
+      <span><i class="dot" style="background:var(--stop)"></i>禁止</span>
+      <span><i class="dot" style="background:var(--warn)"></i>可用但須揭露</span>
+      <span><i class="dot" style="background:var(--go)"></i>免揭露</span>
+      <span><i class="dot" style="background:var(--ink-faint)"></i>未規範</span>
+      <span style="font-family:var(--f-mono);font-size:.75rem">等寬字＝揭露要寫的章節</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">台灣現況</span>
+      <h2>三個常被講錯的事</h2>
+      <p>這三條都查證過官方文件。學術倫理相關的會議與課程上常聽到相反的說法。</p>
+    </div>
+    <div class="tw">
+
+      <div class="myth">
+        <p class="wrong">「國科會有訂研究人員的 AI 指引」</p>
+        <p class="right">沒有。大家講的「國科會指引」其實是<b>行政院及所屬機關（構）使用生成式 AI 參考指引</b>，2023-08-31 院會通過，對象是公務機關，公立學校「得準用」。要點：機密不餵 AI、不當決策唯一依據、輔助業務應適當揭露、無罰則。</p>
+        <p class="src">nstc.gov.tw · PDF 公告</p>
+      </div>
+
+      <div class="myth">
+        <p class="wrong">「教育部對大專有部頒 AI 規範」</p>
+        <p class="right">沒有部頒指引，只有一份轉發函（112-11-03 臺教資通字第 1120106231 號）加上委辦的 AREE 資源。各校自訂校內規範。<b>學位論文口試與學位程序以就讀學校的規定為準，要向所屬系所確認。</b></p>
+        <p class="src">教育部轉發函</p>
+      </div>
+
+      <div class="myth">
+        <p class="wrong">「AI 基本法通過了，學術寫作有法可管」</p>
+        <p class="right">《人工智慧基本法》2025-12-23 三讀，但它是揭示七大原則的基本法，<b>沒有學術寫作的專門條文</b>。台灣目前最完整的官方資源是 AREE 學術倫理教育資源中心的主題專區與問答集，但它<b>也沒有現成的聲明範本</b>。</p>
+        <p class="src">ethics.moe.edu.tw · 專區更新 2026-06-24</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">平時怎麼做</span>
+      <h2>不要投稿前才回想</h2>
+      <p>揭露聲明寫不出來，多半是因為當初沒記。兩個習慣就夠了。</p>
+    </div>
+    <div class="practice">
+
+      <div class="step">
+        <span class="when">平時 · 每次用完就記</span>
+        <h3>AI 使用登記簿</h3>
+        <p>每個稿件專案的資料夾放一份 <code style="font-family:var(--f-mono);font-size:.85em">AI使用登記.md</code>，跟稿件一起走。只要 AI 產出被用進稿件就當下記一筆。</p>
+        <ul>
+          <li>要記：日期、工具與版本、用途、用在哪一節、作者怎麼審核的、prompt</li>
+          <li>純工具型使用（找文獻、抓錯字、格式轉換）不強制記，但拿不準就記</li>
+          <li>WAME、APA、Wiley 都可能要求補交 prompt，記了不吃虧</li>
+        </ul>
+      </div>
+
+      <div class="step">
+        <span class="when">投稿前 · 逐條回答</span>
+        <h3>投稿前檢查清單</h3>
+        <p>逐條回答 yes / no，不能含糊帶過。任何一條卡住就先停下處理，不要「先投再說」。</p>
+        <ul>
+          <li>先到官網核對當期投稿須知，這份表只是快照</li>
+          <li>確認揭露位置（各家不同，查上表）</li>
+          <li>雙盲審查的期刊，檢查揭露聲明有沒有洩漏身分</li>
+          <li>確認圖像有沒有踩到「證據性影像」禁令</li>
+        </ul>
+      </div>
+
+      <div class="step">
+        <span class="when">寫聲明 · 五個要素</span>
+        <h3>揭露聲明長怎樣</h3>
+        <p>Wiley 的五要素最完整，其他家可以照這個減。</p>
+        <pre>工具與版本 ＋ 使用日期
+＋ AI 扮演的角色
+＋ 用在哪一節
+＋ 作者如何指導與審核</pre>
+        <ul>
+          <li>Elsevier 與 Wiley 有官方範本可以直接套</li>
+          <li>SAGE、T&amp;F、IEEE、ACM、APA 都沒有範本，只規定要素</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap narrow">
+    <div class="sec-head">
+      <span class="eyebrow">這份表的限制</span>
+      <h2>引用之前要知道的事</h2>
+    </div>
+    <div class="limits">
+      <div class="limit"><span class="n">APA</span><p><b>三頁取自 Internet Archive 的官方頁存檔快照，不是即時官網。</b>查證當時 apa.org 全站對該網路的 IP 由防火牆封鎖，四種抓取方式都失敗。快照日期 2026-02-14 / 2026-06-01 / 2026-02-02。引用前請自行重開官網複核。</p></div>
+      <div class="limit"><span class="n">IEEE</span><p>查無明文禁止 AI 掛名的句子，表中所列是依作者資格條件（限 individuals）推論而來。</p></div>
+      <div class="limit"><span class="n">日期</span><p>SAGE、Springer Nature、T&amp;F、AREE 部分頁面未標版本日期，引用時一律註明 accessed 2026-08-23。</p></div>
+      <div class="limit"><span class="n">未查</span><p>各投稿系統（ScholarOne、Research Exchange）內有沒有 AI 必填欄位，需要登入才知道，未查證。各期刊個別投稿指南是否比出版社政策更嚴，未逐刊查證。</p></div>
+      <div class="limit"><span class="n">校規</span><p>各校自訂的學位論文 AI 規範不在本表範圍，要另外向所屬系所查明。</p></div>
+    </div>
+  </div>
+</section>
+
+<footer class="wrap">
+  <p class="f-line">查證日期 2026-08-23 · 全部取自官方第一手頁面（APA 除外，見上）· 每筆均附官方 URL 與政策日期</p>
+  <p>整理者：鄧樹遠（樹德科技大學動畫與遊戲設計系）。本頁是政策快照，不構成法律或投稿建議；各單位政策以其官網當期版本為準。</p>
+</footer>
+
+<script>
+(function(){
+  var chips = Array.prototype.slice.call(document.querySelectorAll('.chip'));
+  var rows  = Array.prototype.slice.call(document.querySelectorAll('tbody tr'));
+  chips.forEach(function(c){
+    c.addEventListener('click', function(){
+      var f = c.getAttribute('data-f');
+      chips.forEach(function(o){ o.setAttribute('aria-pressed', String(o === c)); });
+      rows.forEach(function(r){
+        var g = r.getAttribute('data-g') || '';
+        r.hidden = !(f === 'all' || g.split(' ').indexOf(f) !== -1);
+      });
+    });
+  });
+})();
+</script>

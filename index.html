@@ -317,6 +317,9 @@ const SLIDES = [
   { title: "Obsidian × ChatGPT 早晨寫作流程", tag: "SLIDES × WRITING", image: null,
     url: "/slides/Obsidian_ChatGPT_早晨寫作流程_重點摘要.pptx",
     desc: "睡前囤 10 個點子、早上用大綱加語音餵給 ChatGPT 成文。關鍵是把沒用到的點子留在同一頁互相 cluster，以及卡片盒只收 idea、不在裡面發展 outline。" },
+  { title: "期刊 AI 規範速查", tag: "REFERENCE × ACADEMIC AI", kind: "page", image: null,
+    url: "/journal-ai-policy/",
+    desc: "COPE、ICMJE、WAME 與 Elsevier、Springer Nature、SAGE、Wiley、T&F、IEEE、ACM、APA 共 12 個單位的生成式 AI 政策速查表，含五條跨出版社底線與台灣現況三個常見誤解。每筆對過官方原文與政策日期，2026-08-23 快照。" },
 ];
 
 // 本機工具：有 url 的直接開啟（localhost 服務）；有 path 的點擊複製路徑
@@ -369,7 +372,7 @@ SLIDES.forEach((s) => {
       <div class="tag t-tool">${s.tag}</div>
       <h3>${s.title}</h3>
       <p>${s.desc}</p>
-      <div class="foot"><span class="url">${s.kind === "data" ? "下載 Excel" : s.kind === "collection" ? "開啟簡報集" : "下載 PPTX"}</span><span class="gh">投影片專區</span></div>
+      <div class="foot"><span class="url">${s.kind === "data" ? "下載 Excel" : s.kind === "collection" ? "開啟簡報集" : s.kind === "page" ? "開啟速查頁" : "下載 PPTX"}</span><span class="gh">投影片專區</span></div>
     </div>`;
   slides.appendChild(a);
 });
