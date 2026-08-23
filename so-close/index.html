@@ -1,0 +1,972 @@
+<meta charset="utf-8">
+<title>差一點就抓到 — So Close</title>
+<style>
+  html,body{margin:0;height:100%;background:#0f1013;overflow:hidden;
+    font-family:"Segoe UI","Microsoft JhengHei",system-ui,sans-serif;color:#3a2e2a;
+    -webkit-font-smoothing:antialiased}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+  canvas{background:#FCF6E8;box-shadow:0 0 0 1px #2c3037;cursor:pointer}
+  #boot{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    background:#0f1013;color:#8f97a1;font-size:14px;letter-spacing:.1em}
+</style>
+<div id="wrap"><canvas id="cv" width="1280" height="720"></canvas></div>
+<div id="boot">載入中…</div>
+<script>
+"use strict";
+/* ============================================================================
+   《差一點就抓到》So Close — 原創遊戲
+   手法與節奏參考《保證不取物》Prize Denied（snownooo）做為研究對象，
+   但美術、音樂、角色、文字、數值全部原創重製，未取用原作任何檔案。
+   架構沿用 prototype/greybox.html 已驗證的物理、爪子、導演器；本檔加上
+   玩家驅動的互動、三個地點、標題與結局。
+   ========================================================================== */
+
+/* ---------- 0. 參數 ---------- */
+const CFG = {
+  W:1280, H:720,
+  machineCount:4, machineW:238, machineH:352, machineGap:58,
+  interiorPad:20,
+
+  zoomWide:0.66, zoomMed:1.00, zoomClose:1.95,
+  camEase:6.5, camShakeDecay:6.0,
+
+  G:1500, restitution:0.08, airDrag:0.002, groundFriction:0.86, subSteps:6,
+  prizeR:22,
+
+  clawTopY:42, clawMoveSpeed:250, clawDropSpeed:235, clawLiftSpeed:155,
+  armLen:58, armPivotDX:14, armClosedDeg:13, armOpenDeg:42, armCloseTime:0.34,
+
+  // 手感：夾中 ~20%、差點夾到 ~33%、空手 ~47%
+  // 手滑改成「夾住當下擲一次」而不是每幀擲：爪子停在堆頂時抬升距離短，
+  // 連續機率會讓手滑率跟著變少，實測掉到 7.7%。一次性擲骰與抬升距離無關。
+  gripBase:3.1, gripOffsetPenalty:0.11, aimError:26,
+  slipRange:[0.30,0.85], slipChance:0.62,
+
+  cardHold:1.05, cardSlide:0.26, handSize:5, maxPlaced:8,
+  customersPerDay:4, daysPerLocation:7, coin:6,
+};
+
+/* 三個地點：換色票、換目標、換難度 */
+const LOCATIONS = [
+  {id:'arcade', name:'粉紅遊藝場', bg:'BG_arcade', goal:135, tint:'#FFF1F2',
+   flavour:'第一家店。客人好騙，房租也便宜。'},
+  {id:'night',  name:'夜市攤位',   bg:'BG_night',  goal:170, tint:'#4D577E',
+   flavour:'夜市人多，但個個都是老手。'},
+  {id:'moon',   name:'月球分店',   bg:'BG_moon',   goal:205, tint:'#D2C7EB',
+   flavour:'重力比較小，爪子也比較不聽話。'},
+];
+
+/* 顧客：錢包跨數量級，能力真的改變該回合的分布 */
+const CUSTOMERS = [
+  {name:'新手',   wallet:[30,90],      aim:+14, ability:null,
+   desc:'沒有特殊能力'},
+  {name:'學生',   wallet:[60,180],     aim:+6,  ability:'patient',
+   desc:'耐心好，會多投一次幣'},
+  {name:'上班族', wallet:[200,600],    aim:0,   ability:'rich',
+   desc:'錢多，每次投幣加倍'},
+  {name:'老手',   wallet:[400,1200],   aim:-12, ability:'steady',
+   desc:'手穩，手滑率減半'},
+  {name:'代抓王', wallet:[1500,6000],  aim:-20, ability:'immune',
+   desc:'無視你出的第一張牌'},
+  {name:'網紅',   wallet:[3000,20000], aim:-8,  ability:'crowd',
+   desc:'差點夾到時額外賺一倍'},
+];
+
+/* 行動卡：功能性命名，非原作卡名 */
+const CARDS = [
+  {id:'weak',  name:'減爪力', icon:0, desc:'本次握力 -2.0'},
+  {id:'slip',  name:'易手滑', icon:7, desc:'本次手滑率 ×1.8'},
+  {id:'shift', name:'換目標', icon:3, desc:'顧客改瞄別顆'},
+  {id:'nudge', name:'推一下', icon:6, desc:'獎品堆受橫向衝擊'},
+  {id:'coin',  name:'再投幣', icon:1, desc:'顧客立刻追加投幣'},
+  {id:'steal', name:'偷回來', icon:0, desc:'夾住的獎品掉回機台'},
+  {id:'time',  name:'加時',   icon:2, desc:'本回合多賺 $4'},
+  {id:'love',  name:'博好感', icon:4, desc:'信任 +1（上限 5）'},
+];
+
+/* 商店零件。設計重點：主要加「手滑」而不是砍「握力」。
+   第一版全部在砍握力，實測每天買一件之後 79% 空手、0/3 過關——顧客根本
+   夾不起來，連「差點夾到」都沒了，等於把玩家自己的收入來源砍掉。
+   同一個插槽只能裝一件，買新的會換掉舊的，避免無限堆疊。 */
+const PARTS = [
+  {id:'weakclaw', name:'弱爪',   slot:'爪頭', dOdds:-14, dGrip:-0.50, dSlip:+0.14, price:8},
+  {id:'tiltfloor',name:'斜底板', slot:'外框', dOdds:-9,  dGrip:-0.25, dSlip:+0.10, price:6},
+  {id:'baffle',   name:'擋板',   slot:'擋板', dOdds:-11, dGrip:-0.30, dSlip:+0.08, price:7},
+  {id:'lowpower', name:'減電力', slot:'電力', dOdds:-8,  dGrip:0,     dSlip:+0.16, price:6},
+  {id:'sticky',   name:'黏底',   slot:'控制', dOdds:-6,  dGrip:0,     dSlip:+0.12, price:5},
+  {id:'bigprize', name:'大獎品', slot:'獎品', dOdds:-5,  dGrip:-0.35, dSlip:+0.06, price:9},
+];
+// 同插槽替換，不堆疊
+function installPart(m,p){
+  const i=m.parts.findIndex(q=>q.slot===p.slot);
+  if(i>=0) m.parts[i]=p; else m.parts.push(p);
+}
+
+/* ---------- 1. 工具 ---------- */
+const clamp=(v,a,b)=>v<a?a:v>b?b:v, lerp=(a,b,t)=>a+(b-a)*t;
+const rnd=(a,b)=>a+Math.random()*(b-a), rndi=(a,b)=>Math.floor(rnd(a,b+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const DEG=Math.PI/180;
+
+/* ---------- 2. 色票（量自生成的定調圖） ---------- */
+const C = {
+  ink:'#6B4E45', inkSoft:'#9A7F76',
+  paper:'#FCF6E8', cream:'#F2EDE9',
+  pink:'#F5CED4', mint:'#B5DACF', lilac:'#E4C6E5', sky:'#AFD3E8',
+  coral:'#F1A9A0', butter:'#F5DFA3',
+  accent:'#E8B33A', bad:'#C97B7B', good:'#8FBF9F',
+  panel:'#FFFDF7',
+};
+
+/* ---------- 3. 美術載入（缺圖自動退回幾何形狀，不會整個壞掉） ---------- */
+const ART = {}; let artReady=false;
+const SHEETS = {
+  SHEET_prizes:{cols:6,rows:1,into:'prize'},
+  SHEET_cardicons:{cols:4,rows:2,into:'icon'},
+  SHEET_customers:{cols:4,rows:1,into:'cust'},
+};
+const CG_COUNT = 10;
+const FILES = ['BG_arcade','BG_night','BG_moon','KEY_title','MACHINE_body',
+               'SHEET_prizes','SHEET_cardicons','SHEET_customers',
+               'UI_cardframe','UI_piggy',
+               'END_win','END_lose','END_all',
+               ...Array.from({length:CG_COUNT},(_,i)=>'CG_'+String(i+1).padStart(2,'0'))];
+
+/* 開場十拍。文字與角色之後可整段替換，畫面不必動。
+   節奏照原作預告片：全硬切、沒有溶接，每張靜止＋極慢推近。 */
+const CUTSCENE = [
+  '這家店以前不是這樣的。',
+  '我對客人太好了。',
+  '每一台都設得很鬆，人人都抱得走。',
+  '然後帳單就堆起來了。',
+  '我拆開機台，第一次把手伸進去。',
+  '弱爪、斜底板、擋板——原來這些都有名字。',
+  '招牌重新亮起來的那天，我沒有笑。',
+  '第一個客人推門進來。',
+  '他差一點就抓到了。',
+  '然後他又投了一枚。',
+];
+const CG_HOLD = 3.1;      // 每張停留秒數；點擊可提前跳下一張
+
+function sliceSheet(img, cols, rows){
+  const out=[], w=Math.floor(img.width/cols), h=Math.floor(img.height/rows);
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+    const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+    cv.getContext('2d').drawImage(img, c*w, r*h, w, h, 0, 0, w, h);
+    out.push(keyOutWhite(cv));
+  }
+  return out;
+}
+// 生圖模型只能給白底，這裡把接近純白的像素去背。屬於技術後製，不是修圖。
+function keyOutWhite(cv){
+  const ctx=cv.getContext('2d'), d=ctx.getImageData(0,0,cv.width,cv.height), p=d.data;
+  for(let i=0;i<p.length;i+=4){
+    const r=p[i],g=p[i+1],b=p[i+2];
+    if(r>238&&g>238&&b>238) p[i+3]=0;
+    else if(r>222&&g>222&&b>222) p[i+3]=Math.round(255*(1-(Math.min(r,g,b)-222)/16));
+  }
+  ctx.putImageData(d,0,0); return cv;
+}
+function loadArt(done){
+  let left=FILES.length; if(!left) return done();
+  const finish=()=>{ if(--left<=0){ artReady=true; done(); } };
+  FILES.forEach(name=>{
+    const img=new Image();
+    img.onload=()=>{
+      const sh=SHEETS[name];
+      if(sh) ART[sh.into]=sliceSheet(img, sh.cols, sh.rows);
+      else ART[name]= name.startsWith('BG_')||name==='KEY_title' ? img : keyOutWhite(toCanvas(img));
+      if(name==='MACHINE_body') buildMachineTints(ART[name]);
+      finish();
+    };
+    img.onerror=finish;                 // 缺圖就跳過，畫幾何形狀
+    img.src='art/'+name+'.png';
+  });
+  setTimeout(()=>{ if(!artReady){ artReady=true; done(); } }, 8000);   // 保險
+}
+function toCanvas(img){ const c=document.createElement('canvas'); c.width=img.width; c.height=img.height;
+  c.getContext('2d').drawImage(img,0,0); return c; }
+
+/* 機台原圖是薄荷綠。用 multiply 疊色在綠底上會變濁，四台看起來一樣，
+   所以改成載入後預先用 hue-rotate 產四個色版，執行時直接畫，不用每幀濾鏡。 */
+const MACHINE_HUE=[190,0,130,50];        // 粉紅／原綠／薰衣草／天藍
+function buildMachineTints(base){
+  ART.machineTint = MACHINE_HUE.map(deg=>{
+    const c=document.createElement('canvas'); c.width=base.width; c.height=base.height;
+    const g=c.getContext('2d');
+    if(deg) g.filter=`hue-rotate(${deg}deg) saturate(0.92)`;
+    g.drawImage(base,0,0); return c;
+  });
+}
+
+/* ---------- 4. 世界 ---------- */
+let cv,ctx,cam,dir,T=0,paused=false,mouse={x:0,y:0},hover=null;
+
+function machineX(i){ return i*(CFG.machineW+CFG.machineGap); }
+
+function makeMachine(i){
+  const x=machineX(i);
+  const m={ i, x, y:0, w:CFG.machineW, h:CFG.machineH,
+    tint:[C.pink,C.mint,C.lilac,C.sky][i%4],
+    parts:[], prizes:[], baseOdds:rndi(48,72) };
+  m.inner={ x:x+CFG.interiorPad, y:CFG.interiorPad+24,
+            w:m.w-CFG.interiorPad*2, h:m.h-CFG.interiorPad*2-64 };
+  return m;
+}
+// 顯示的機率＝由零件算出來的，不是亂數
+function odds(m){ return clamp(m.baseOdds + m.parts.reduce((s,p)=>s+p.dOdds,0), 0, 99); }
+function partSum(m,k){ return m.parts.reduce((s,p)=>s+(p[k]||0),0); }
+
+function makeWorld(){
+  const machines=[]; for(let i=0;i<CFG.machineCount;i++) machines.push(makeMachine(i));
+  const m0=machines[0];
+  return { machines,
+    claw:{ mi:0, x:m0.inner.x+m0.inner.w/2, y:m0.inner.y+CFG.clawTopY,
+           armT:0, holding:null, liftFrom:0, liftTo:0, targetX:0 },
+    cust:null, loc:0, day:1, turn:0, money:0, trust:5, missStreak:0,
+    hand:[], deck:[], stock:[], playedCard:null, cardsThisTurn:0,
+    log:[], screen:null, totalMoney:0, best:0 };
+}
+let world;
+
+/* ---------- 5. 鏡頭 ---------- */
+function makeCam(){ return {x:0,y:0,z:CFG.zoomWide,tx:0,ty:0,tz:CFG.zoomWide,shake:0,sx:0,sy:0}; }
+function camLookAt(x,y,z,hard){ cam.tx=x;cam.ty=y; if(z)cam.tz=z;
+  if(hard){cam.x=x;cam.y=y; if(z)cam.z=z;} }
+function camMachine(i,z,hard){ const m=world.machines[i];
+  camLookAt(m.x+m.w/2, m.y+m.h*0.46, z||CFG.zoomMed, hard); }
+function camUpdate(dt){
+  const k=1-Math.exp(-CFG.camEase*dt);
+  cam.x=lerp(cam.x,cam.tx,k); cam.y=lerp(cam.y,cam.ty,k); cam.z=lerp(cam.z,cam.tz,k);
+  if(cam.shake>0){ cam.shake=Math.max(0,cam.shake-CFG.camShakeDecay*dt*cam.shake-0.01);
+    cam.sx=rnd(-1,1)*cam.shake*12; cam.sy=rnd(-1,1)*cam.shake*12; }
+  else cam.sx=cam.sy=0;
+}
+const shake=a=>cam.shake=Math.max(cam.shake,a);
+
+/* ---------- 6. 物理（沿用灰盒驗證過的解算） ---------- */
+function physics(dt){
+  const h=dt/CFG.subSteps;
+  for(let s=0;s<CFG.subSteps;s++) for(const m of world.machines){
+    const P=m.prizes, inn=m.inner;
+    for(const p of P){
+      if(p.gripped||p.out) continue;
+      p.vy+=CFG.G*h; p.vx*=(1-CFG.airDrag); p.vy*=(1-CFG.airDrag);
+      p.x+=p.vx*h; p.y+=p.vy*h;
+      if(p.x-p.r<inn.x){p.x=inn.x+p.r;p.vx=-p.vx*CFG.restitution;}
+      if(p.x+p.r>inn.x+inn.w){p.x=inn.x+inn.w-p.r;p.vx=-p.vx*CFG.restitution;}
+      if(p.y+p.r>inn.y+inn.h){p.y=inn.y+inn.h-p.r;p.vy=-p.vy*CFG.restitution;p.vx*=CFG.groundFriction;}
+      if(p.y-p.r<inn.y){p.y=inn.y+p.r;p.vy=-p.vy*CFG.restitution;}
+    }
+    for(let a=0;a<P.length;a++){ const A=P[a]; if(A.gripped||A.out) continue;
+      for(let b=a+1;b<P.length;b++){ const B=P[b]; if(B.out) continue;
+        let dx=B.x-A.x,dy=B.y-A.y,d2=dx*dx+dy*dy,rr=A.r+B.r;
+        if(d2>=rr*rr||d2===0) continue;
+        const d=Math.sqrt(d2),nx=dx/d,ny=dy/d,pen=rr-d;
+        if(B.gripped){A.x-=nx*pen;A.y-=ny*pen;continue;}
+        if(A.gripped){B.x+=nx*pen;B.y+=ny*pen;continue;}
+        const im=1/A.w+1/B.w;
+        A.x-=nx*pen*(1/A.w)/im; A.y-=ny*pen*(1/A.w)/im;
+        B.x+=nx*pen*(1/B.w)/im; B.y+=ny*pen*(1/B.w)/im;
+        const vn=(B.vx-A.vx)*nx+(B.vy-A.vy)*ny;
+        if(vn<0){ const j=-(1+CFG.restitution)*vn/im;
+          A.vx-=j*nx/A.w; A.vy-=j*ny/A.w; B.vx+=j*nx/B.w; B.vy+=j*ny/B.w; } } }
+    if(world.claw.mi===m.i) pushByArms(m);
+  }
+}
+function armTips(){
+  const cl=world.claw, a=lerp(CFG.armOpenDeg,CFG.armClosedDeg,cl.armT)*DEG;
+  return { L:{px:cl.x-CFG.armPivotDX,py:cl.y,tx:cl.x-CFG.armPivotDX-Math.sin(a)*CFG.armLen,ty:cl.y+Math.cos(a)*CFG.armLen},
+           R:{px:cl.x+CFG.armPivotDX,py:cl.y,tx:cl.x+CFG.armPivotDX+Math.sin(a)*CFG.armLen,ty:cl.y+Math.cos(a)*CFG.armLen} };
+}
+function segPush(p,ax,ay,bx,by,rad){
+  const dx=bx-ax,dy=by-ay,L2=dx*dx+dy*dy;
+  let t=L2>0?((p.x-ax)*dx+(p.y-ay)*dy)/L2:0; t=clamp(t,0,1);
+  const cx=ax+dx*t, cy=ay+dy*t; let nx=p.x-cx,ny=p.y-cy,d=Math.hypot(nx,ny);
+  const need=p.r+rad; if(d>=need) return;
+  if(d===0){nx=0;ny=-1;d=1;} nx/=d;ny/=d;
+  p.x+=nx*(need-d); p.y+=ny*(need-d);
+  const vn=p.vx*nx+p.vy*ny; if(vn<0){p.vx-=vn*nx*1.3;p.vy-=vn*ny*1.3;}
+}
+function pushByArms(m){ const t=armTips();
+  for(const p of m.prizes){ if(p.gripped||p.out) continue;
+    segPush(p,t.L.px,t.L.py,t.L.tx,t.L.ty,4); segPush(p,t.R.px,t.R.py,t.R.tx,t.R.ty,4); } }
+
+/* ---------- 7. 夾取 ---------- */
+let mods={grip:0,slip:1,bonus:0,blocked:false};
+function tryGrip(){
+  const cl=world.claw,m=world.machines[cl.mi],t=armTips();
+  const gapL=t.L.tx,gapR=t.R.tx,tipY=(t.L.ty+t.R.ty)/2;
+  let best=null,bd=1e9;
+  for(const p of m.prizes){ if(p.out) continue;
+    if(p.x<gapL-6||p.x>gapR+6) continue;
+    if(p.y<cl.y+CFG.armLen*0.12||p.y>tipY+p.r*1.15) continue;   // 0.30 太嚴，堆頂夾不到
+    const d=Math.abs(p.x-cl.x); if(d<bd){bd=d;best=p;} }
+  if(!best) return null;
+  const s=CFG.gripBase+mods.grip+partSum(m,'dGrip')-best.w-bd*CFG.gripOffsetPenalty;
+  if(s<=0) return null;
+  best.gripped=true; best.vx=best.vy=0; cl.holding=best;
+  // 夾住的當下就決定這次會不會手滑、以及在哪個抬升進度鬆手
+  const cu=world.cust;
+  let ch=CFG.slipChance*mods.slip+partSum(m,'dSlip');
+  if(cu&&cu.def.ability==='steady') ch*=0.5;
+  cl.willSlip=Math.random()<clamp(ch,0,0.95);
+  cl.slipAt=rnd(CFG.slipRange[0],CFG.slipRange[1]);
+  return best;
+}
+function slipCheck(dt,prog){
+  const cl=world.claw;
+  if(!cl.holding||!cl.willSlip||prog<cl.slipAt) return;
+  const p=cl.holding; p.gripped=false; p.vx=rnd(-40,40); p.vy=20; cl.holding=null;
+  cl.willSlip=false;
+  world.result='差點夾到'; flash('差點夾到！',C.accent,1.0); shake(0.55);
+}
+
+/* ---------- 8. 導演器（灰盒修好的版本） ---------- */
+function makeDirector(){ return {
+  gen:null,waitT:0,waitFn:null,beat:'',beatT:0,
+  flashTxt:'',flashCol:'',flashT:0,banner:'',bannerT:0,
+  start(g){ this.gen=g; this.waitT=0; this.waitFn=null; this.banner=''; this.bannerT=0; this.step(); },
+  step(){ if(!this.gen) return;
+    for(let guard=0;guard<64;guard++){
+      const r=this.gen.next(); if(r.done){this.gen=null;return;}
+      const y=r.value||{};
+      if(y.beat){this.beat=y.beat;this.beatT=0;}
+      if(y.until){this.waitFn=y.until;this.waitT=0;return;}
+      if(typeof y.wait==='number'&&y.wait>0){this.waitT=y.wait;this.waitFn=null;return;} }
+    console.warn('[director] 連續 64 個零等待'); this.gen=null; },
+  update(dt){ this.beatT+=dt;
+    if(this.flashT>0)this.flashT-=dt; if(this.bannerT>0)this.bannerT-=dt;
+    if(!this.gen) return;
+    if(this.waitFn){ if(this.waitFn(dt)){this.waitFn=null;this.step();} return; }
+    if(this.waitT>0){ this.waitT-=dt; if(this.waitT<=0) this.step(); } } };
+}
+const wait=s=>({wait:s}), until=f=>({until:f}), beat=(n,s)=>({beat:n,wait:s});
+function flash(t,c,d){ dir.flashTxt=t; dir.flashCol=c||C.ink; dir.flashT=d||0.9; }
+function banner(t,d){ dir.banner=t; dir.bannerT=d||1.4; }
+
+/* ---------- 9. 流程 ---------- */
+let clicked=false;                       // 由 canvas click 設 true，供 until 使用
+const waitClick = ()=>until(()=>{ if(clicked){clicked=false;return true;} return false; });
+
+function newDeck(){ world.deck=[]; for(let i=0;i<3;i++) world.deck.push(...CARDS.map(c=>c)); }
+function drawHand(){ world.hand=[]; for(let i=0;i<CFG.handSize;i++) world.hand.push(pick(world.deck.length?world.deck:CARDS)); }
+
+function* runCutscene(){
+  for(let i=0;i<CUTSCENE.length;i++){
+    world.screen={kind:'cg', i, t:0, line:CUTSCENE[i]};
+    yield beat('開場 '+(i+1)+'/'+CUTSCENE.length, 0);
+    // 停 CG_HOLD 秒，或玩家點擊提前跳過。硬切，不做淡入淡出。
+    yield until(dt=>{ const s=world.screen; s.t+=dt;
+      if(clicked){ clicked=false; return true; }
+      return s.t>=CG_HOLD; });
+  }
+  world.screen=null;
+}
+
+function* locationClear(L){
+  world.screen={kind:'clear', name:L.name, money:world.money, goal:L.goal};
+  yield beat('地點過關',0);
+  camLookAt(machineX(1)+CFG.machineW/2, CFG.machineH*0.45, CFG.zoomWide, true);
+  yield waitClick();
+  world.screen=null;
+}
+
+function* runGame(){
+  // 標題
+  world.screen={kind:'title'};
+  yield beat('TITLE',0); yield waitClick();
+  world.screen=null;
+
+  yield* runCutscene();
+
+  for(world.loc=0; world.loc<LOCATIONS.length; world.loc++){
+    const L=LOCATIONS[world.loc];
+    world.day=1; world.money=0; world.trust=5; world.missStreak=0;
+    newDeck(); drawHand(); world.stock=[];
+    resetMachines();
+
+    world.screen={kind:'chapter', title:L.name, sub:L.flavour,
+                  foot:`目標　${CFG.daysPerLocation} 天內營收 $${L.goal}`};
+    yield beat('地點：'+L.name,0); yield waitClick(); world.screen=null;
+
+    while(world.day<=CFG.daysPerLocation){
+      yield* runDay(L);
+      if(world.trust<=0){ yield* ending(false); return; }
+      world.day++;
+    }
+    if(world.money<L.goal){ yield* ending(false); return; }
+    yield* locationClear(L);
+    world.totalMoney+=world.money;
+  }
+  yield* ending(true);
+}
+
+function resetMachines(){
+  for(const m of world.machines){ m.prizes=[]; m.parts=[]; m.baseOdds=rndi(48,72); }
+}
+
+function* runDay(L){
+  // 選卡
+  world.screen={kind:'draft', title:'選一張卡帶進今天',
+                cards:[pick(CARDS),pick(CARDS),pick(CARDS)], picked:-1};
+  yield beat('選卡',0);
+  camLookAt(machineX(1)+CFG.machineW/2, CFG.machineH*0.45, CFG.zoomWide, true);
+  yield until(()=> world.screen.picked>=0);
+  world.hand.push(world.screen.cards[world.screen.picked]);
+  world.screen=null;
+
+  // 佈置：玩家自己放獎品
+  // 先把已出貨的獎品從陣列移除。不清的話 m.prizes.length 永遠等於 maxPlaced，
+  // 玩家補不了貨，機台會逐日乾掉（實測 7 天後場上只剩 3 顆）。
+  for(const mm of world.machines) mm.prizes = mm.prizes.filter(p=>!p.out);
+  world.screen={kind:'build', mi:1, placed:0};
+  yield beat('佈置機台',0);
+  camMachine(1, CFG.zoomMed, true);
+  yield until(()=> world.screen.done===true);
+  world.screen=null;
+
+  // 開店
+  for(let c=0;c<CFG.customersPerDay;c++){
+    world.turn++;
+    yield* runTurn(L);
+    if(world.trust<=0) return;
+  }
+
+  // 結算
+  yield beat('結算',0);
+  camLookAt(machineX(1)+CFG.machineW/2, CFG.machineH*0.45, CFG.zoomWide, true);
+  // 只在明顯落後（低於應有進度的 75%）才扣信任。嚴格比對進度會被單日變異誤傷。
+  const pace = L.goal*world.day/CFG.daysPerLocation;
+  const behind = world.money < pace*0.75;
+  if(behind){ world.trust=clamp(world.trust-1,0,5);
+    banner(`第 ${world.day} 天結束　$${world.money} / $${L.goal}　進度落後，信任 -1`,2.2); }
+  else banner(`第 ${world.day} 天結束　$${world.money} / $${L.goal}`,1.8);
+  yield wait(behind?2.3:1.9);
+  if(world.trust<=0) return;
+
+  // 商店
+  const offer=[]; while(offer.length<3){ const p=pick(PARTS); if(!offer.includes(p)) offer.push(p); }
+  world.screen={kind:'shop', offer, bought:[], done:false};
+  yield beat('商店',0);
+  yield until(()=> world.screen.done===true);
+  world.screen=null;
+}
+
+function* runTurn(L){
+  const cl=world.claw;
+  mods={grip:0,slip:1,bonus:0,blocked:false};
+  world.cardsThisTurn=0; world.result='';
+
+  const live=world.machines.filter(m=>m.prizes.some(p=>!p.out));
+  const m = live.length? pick(live) : world.machines[1];
+  const mi=m.i;
+  cl.mi=mi; cl.x=m.inner.x+m.inner.w/2; cl.y=m.inner.y+CFG.clawTopY;
+  cl.armT=0; cl.holding=null;
+
+  yield beat('鏡頭橫移',0); camMachine(mi,CFG.zoomMed,false); yield wait(0.72);
+
+  // 顧客入場
+  const def=pick(CUSTOMERS);
+  world.cust={def, x:m.x-90, wallet:rndi(def.wallet[0],def.wallet[1]), t:0};
+  yield beat('顧客上門',0);
+  flash(def.name+'　'+def.desc, C.ink, 1.6);
+  yield until(dt=>{ const cu=world.cust; cu.t+=dt;
+    cu.x=lerp(m.x-90, m.x+m.w*0.60, clamp(cu.t/0.6,0,1)); return cu.t>=0.6; });
+
+  // 投幣
+  yield beat('投幣',0);
+  const fee=CFG.coin*(def.ability==='rich'?2:1);
+  world.money+=fee; world.cust.wallet-=fee;
+  flash('+$'+fee,C.accent,0.7); shake(0.18);
+  yield wait(0.42);
+
+  yield beat('鏡頭推近',0);
+  camLookAt(m.x+m.w/2, m.y+m.h*0.42, CFG.zoomMed*1.28, false);
+  yield wait(0.44);
+
+  // 瞄準（玩家在這段可以出牌）
+  yield beat('瞄準　可出牌',0);
+  const tgts=m.prizes.filter(p=>!p.out);
+  const err=CFG.aimError+def.aim;
+  cl.targetX = tgts.length
+    ? clamp(pick(tgts).x+rnd(-err,err), m.inner.x+28, m.inner.x+m.inner.w-28)
+    : m.x+m.w/2;
+  cl.x = (cl.targetX>m.inner.x+m.inner.w/2) ? m.inner.x+28 : m.inner.x+m.inner.w-28;
+  yield until(dt=>{ const d=cl.targetX-cl.x, s=CFG.clawMoveSpeed*0.55*dt;
+    if(Math.abs(d)<=s){cl.x=cl.targetX;return true;} cl.x+=Math.sign(d)*s; return false; });
+
+  yield beat('下爪',0);
+  const bottomY=m.inner.y+m.inner.h-CFG.armLen*0.72;
+  // 碰到獎品堆就停，像真的爪子。之前固定降到底，堆頂那一層永遠在判定窗外夾不到
+  // （實測 8 顆裡有 4 顆落在 y=225~232，而判定窗是 [268,332]）。
+  yield until(dt=>{ cl.y+=CFG.clawDropSpeed*dt;
+    const t=armTips(), tipY=(t.L.ty+t.R.ty)/2;
+    const hit=m.prizes.some(p=>!p.out&&!p.gripped &&
+      Math.abs(p.x-cl.x)<p.r+CFG.armPivotDX+6 && tipY>p.y-p.r*0.35);
+    if(hit||cl.y>=bottomY){ cl.y=Math.min(cl.y,bottomY); return true; }
+    return false; });
+
+  yield beat('閉合',0);
+  let ct=0; yield until(dt=>{ ct+=dt; cl.armT=clamp(ct/CFG.armCloseTime,0,1); return cl.armT>=1; });
+  tryGrip();
+  cl.liftFrom=cl.y; cl.liftTo=m.inner.y+CFG.clawTopY;
+
+  yield beat('抬升',0);
+  yield until(dt=>{ cl.y-=CFG.clawLiftSpeed*dt;
+    const prog=(cl.liftFrom-cl.y)/(cl.liftFrom-cl.liftTo);
+    if(cl.holding){ cl.holding.x=cl.x; cl.holding.y=cl.y+CFG.armLen*0.80; }
+    slipCheck(dt,prog);
+    if(cl.y<=cl.liftTo){cl.y=cl.liftTo;return true;} return false; });
+
+  yield beat('判定',0);
+  if(cl.holding){ world.result='夾中'; flash('夾中',C.bad,0.9);
+    camLookAt(m.x+m.w/2,m.y+m.h*0.30,CFG.zoomClose,false); }
+  else if(world.result!=='差點夾到'){ world.result='空手'; flash('空手',C.inkSoft,0.8); }
+  yield wait(0.55);
+
+  // 結果：出貨賠錢、差點夾到賺錢、連續空手掉信任
+  yield beat('結果',0);
+  if(cl.holding){
+    const p=cl.holding; p.out=true; p.gripped=false; cl.holding=null;
+    const cost=Math.round(7+p.w*3); world.money-=cost; world.missStreak=0;
+    flash('出貨了　-$'+cost,C.bad,1.1);
+  } else if(world.result==='差點夾到'){
+    let g=CFG.coin+mods.bonus; if(def.ability==='crowd') g*=2;
+    if(def.ability==='patient') g+=3;
+    world.money+=g; world.missStreak=0; world.best=Math.max(world.best,g);
+    flash('他不甘心，又投了　+$'+g,C.good,1.1);
+  } else {
+    world.missStreak++;
+    if(world.missStreak>=3){ world.missStreak=0; world.trust=clamp(world.trust-1,0,5);
+      flash('顧客起疑　信任 -1',C.bad,1.2); }
+  }
+  world.log.push(world.result);
+  yield wait(0.95);
+
+  yield beat('鏡頭拉遠',0);
+  world.cust=null; cl.armT=0;
+  camLookAt(machineX(1)+CFG.machineW/2, CFG.machineH*0.45, CFG.zoomWide, true);
+  yield wait(0.45);
+}
+
+function* ending(win){
+  world.screen={kind:'end', win};
+  yield beat('結局',0);
+  camLookAt(machineX(1)+CFG.machineW/2, CFG.machineH*0.45, CFG.zoomWide, true);
+  yield waitClick();
+  boot(); dir.start(runGame());
+}
+
+/* ---------- 10. 出牌 ---------- */
+function playCard(n){
+  if(!world.hand[n]) return;
+  if(!dir.beat.includes('可出牌')) { flash('現在不能出牌',C.inkSoft,0.6); return; }
+  const c=world.hand[n]; world.hand.splice(n,1);
+  world.hand.push(pick(world.deck.length?world.deck:CARDS));
+  world.playedCard={card:c,t:0}; world.cardsThisTurn++;
+  const cu=world.cust;
+  if(cu&&cu.def.ability==='immune'&&world.cardsThisTurn===1){
+    flash('代抓王無視了這張牌',C.inkSoft,1.0); shake(0.2); return;
+  }
+  applyCard(c); flash('出牌：'+c.name,C.accent,0.8); shake(0.3);
+}
+function applyCard(c){
+  const cl=world.claw, m=world.machines[cl.mi];
+  switch(c.id){
+    case 'weak':  mods.grip-=2.0; break;
+    case 'slip':  mods.slip*=1.8; break;
+    case 'shift': cl.targetX=clamp(cl.targetX+rnd(-70,70),m.inner.x+28,m.inner.x+m.inner.w-28); break;
+    case 'nudge': for(const p of m.prizes) if(!p.out&&!p.gripped){p.vx+=rnd(-260,260);p.vy-=rnd(0,120);} shake(0.5); break;
+    case 'coin':  world.money+=CFG.coin; flash('+$'+CFG.coin,C.accent,0.6); break;
+    case 'steal': if(cl.holding){const p=cl.holding;p.gripped=false;p.vy=60;cl.holding=null;
+                    world.result='差點夾到'; flash('偷回來了',C.good,0.9);} break;
+    case 'time':  mods.bonus+=4; break;
+    case 'love':  world.trust=clamp(world.trust+1,0,5); flash('信任 +1',C.good,0.8); break;
+  }
+}
+
+/* ---------- 11. 繪製 ---------- */
+function W2S(){ ctx.setTransform(1,0,0,1,0,0);
+  ctx.translate(CFG.W/2+cam.sx, CFG.H/2+cam.sy); ctx.scale(cam.z,cam.z); ctx.translate(-cam.x,-cam.y); }
+function rr(x,y,w,h,r,fill,stroke,lw){
+  ctx.beginPath(); ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  if(fill){ctx.fillStyle=fill;ctx.fill();}
+  if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||3;ctx.stroke();}
+}
+function txt(s,x,y,size,col,align,weight){
+  ctx.fillStyle=col||C.ink; ctx.textAlign=align||'left';
+  ctx.font=(weight||600)+' '+size+'px "Segoe UI","Microsoft JhengHei",sans-serif';
+  ctx.fillText(s,x,y);
+}
+
+function drawWorld(){
+  const L=LOCATIONS[world.loc];
+  // 背景鋪滿螢幕（不隨鏡頭縮放，只做少量視差）
+  ctx.setTransform(1,0,0,1,0,0);
+  const bg=ART[L.bg];
+  if(bg){ const px=-(cam.x*0.06)%CFG.W;
+    ctx.drawImage(bg,px,0,CFG.W,CFG.H); ctx.drawImage(bg,px-CFG.W,0,CFG.W,CFG.H); }
+  else { ctx.fillStyle=C.paper; ctx.fillRect(0,0,CFG.W,CFG.H);
+    ctx.fillStyle=L.tint; ctx.globalAlpha=.25; ctx.fillRect(0,0,CFG.W,CFG.H); ctx.globalAlpha=1; }
+
+  W2S();
+  for(const m of world.machines) drawMachine(m);
+  const cu=world.cust;
+  if(cu){
+    const m=world.machines[world.claw.mi];
+    const img=ART.cust&&ART.cust[CUSTOMERS.indexOf(cu.def)%(ART.cust.length||1)];
+    // 顧客站在機台「前面」，所以會蓋住機台下半部，這是對的。
+    // 但撲滿之前畫在 m.h-hgt-34，那個高度落在玻璃內腔裡，看起來像浮在機台裡。
+    // 改成貼著頭頂正上方，並加一塊白底板讓數字在任何底色上都讀得到。
+    const hgt=214, w=hgt*0.60, footY=m.y+m.h+14;
+    if(img) ctx.drawImage(img, cu.x-w/2, footY-hgt, w, hgt);
+    else { rr(cu.x-20,footY-120,40,120,10,C.inkSoft,C.ink,3);
+           ctx.beginPath(); ctx.arc(cu.x,footY-134,22,0,7); ctx.fillStyle=C.cream; ctx.fill();
+           ctx.strokeStyle=C.ink; ctx.lineWidth=3; ctx.stroke(); }
+    const headY=footY-hgt;
+    const label=String(cu.wallet);
+    ctx.font='700 20px "Segoe UI","Microsoft JhengHei",sans-serif';
+    const tw=ctx.measureText(label).width;
+    const bw=tw+70, bx=cu.x-bw/2, by=headY-46;
+    rr(bx,by,bw,40,14,'#fffdf7',C.ink,2.5);
+    if(ART.UI_piggy) ctx.drawImage(ART.UI_piggy, bx+5, by+3, 34, 34);
+    txt(label, bx+46, by+27, 20, C.accent, 'left', 700);
+  }
+}
+function drawMachine(m){
+  const img = (ART.machineTint && ART.machineTint[m.i%4]) || ART.MACHINE_body;
+  if(img){
+    ctx.drawImage(img, m.x, m.y, m.w, m.h);
+  } else {
+    rr(m.x,m.y,m.w,m.h,14,m.tint,C.ink,3);
+    rr(m.inner.x,m.inner.y,m.inner.w,m.inner.h,8,'#ffffffcc',C.ink,2);
+  }
+  for(const p of m.prizes) if(!p.out) drawPrize(p);
+  // 機台上方：機率與星級
+  const o=odds(m), showAll=cam.z<CFG.zoomMed;
+  if(world.claw.mi===m.i||showAll){
+    txt(o+'%', m.x+m.w/2, m.y-22, 30, o===0?C.bad:C.accent, 'center', 800);
+    const stars=Math.max(1,Math.round(o/25));
+    for(let s=0;s<3;s++){ const sx=m.x+m.w/2-24+s*24;
+      ctx.beginPath(); ctx.arc(sx,m.y-10,7,0,7);
+      ctx.fillStyle=s<stars?C.accent:'#ffffff88'; ctx.fill();
+      ctx.strokeStyle=C.ink; ctx.lineWidth=2; ctx.stroke(); }
+  }
+  if(world.claw.mi===m.i) drawClaw(m);
+}
+function drawPrize(p){
+  const img=ART.prize&&ART.prize[p.kind%(ART.prize.length||1)];
+  if(img) ctx.drawImage(img, p.x-p.r*1.15, p.y-p.r*1.15, p.r*2.3, p.r*2.3);
+  else { ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7);
+    ctx.fillStyle=p.col; ctx.fill(); ctx.strokeStyle=C.ink; ctx.lineWidth=2.5; ctx.stroke(); }
+}
+function drawClaw(m){
+  const cl=world.claw, t=armTips();
+  ctx.strokeStyle=C.ink; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(cl.x,m.inner.y+8); ctx.lineTo(cl.x,cl.y); ctx.stroke();
+  rr(cl.x-15,cl.y-11,30,18,5,C.cream,C.ink,3);
+  ctx.lineCap='round'; ctx.lineWidth=7; ctx.strokeStyle=C.ink;
+  ctx.beginPath(); ctx.moveTo(t.L.px,t.L.py); ctx.lineTo(t.L.tx,t.L.ty);
+  ctx.moveTo(t.R.px,t.R.py); ctx.lineTo(t.R.tx,t.R.ty); ctx.stroke();
+  ctx.lineWidth=4; ctx.strokeStyle=C.cream;
+  ctx.beginPath(); ctx.moveTo(t.L.px,t.L.py); ctx.lineTo(t.L.tx,t.L.ty);
+  ctx.moveTo(t.R.px,t.R.py); ctx.lineTo(t.R.tx,t.R.ty); ctx.stroke();
+  ctx.lineCap='butt';
+}
+
+/* ---------- 12. UI ---------- */
+const HAND_GEO={cw:104,ch:150,spread:96,y:CFG.H-64};
+function handRect(i,n){
+  const off=i-(n-1)/2;
+  return {x:CFG.W/2+off*HAND_GEO.spread-HAND_GEO.cw/2,
+          y:HAND_GEO.y-HAND_GEO.ch/2+Math.abs(off)*7, w:HAND_GEO.cw, h:HAND_GEO.ch, rot:off*0.05};
+}
+function drawCardFace(x,y,w,h,card,hl){
+  const f=ART.UI_cardframe;
+  if(f) ctx.drawImage(f,x,y,w,h); else rr(x,y,w,h,10,C.panel,hl?C.accent:C.inkSoft,hl?4:3);
+  if(hl){ rr(x-2,y-2,w+4,h+4,12,null,C.accent,4); }
+  txt(card.name, x+w/2, y+h*0.22, Math.round(w*0.17), C.ink, 'center', 700);
+  const ic=ART.icon&&ART.icon[card.icon%(ART.icon.length||1)];
+  const s=w*0.44;
+  if(ic) ctx.drawImage(ic, x+w/2-s/2, y+h*0.28, s, s);
+  else rr(x+w/2-s/2,y+h*0.28,s,s,8,C.mint,C.ink,2);
+  ctx.save(); ctx.font='500 '+Math.round(w*0.095)+'px "Segoe UI","Microsoft JhengHei",sans-serif';
+  ctx.fillStyle=C.inkSoft; ctx.textAlign='center';
+  ctx.fillText(card.desc, x+w/2, y+h*0.84, w-30); ctx.restore();
+}
+function drawUI(){
+  ctx.setTransform(1,0,0,1,0,0);
+  if(world.screen){ drawScreen(); drawOverlay(); return; }
+
+  // 頂端狀態
+  rr(14,12,352,44,12,'#ffffffd8',C.ink,2.5);
+  const L=LOCATIONS[world.loc];
+  txt(`${L.name}　第 ${world.day}/${CFG.daysPerLocation} 天`,28,40,16,C.ink,'left',700);
+  txt(`$${world.money}/${L.goal}`,232,40,16, world.money>=L.goal?C.good:C.ink,'left',700);
+  // 信任
+  rr(CFG.W-186,12,172,44,12,'#ffffffd8',C.ink,2.5);
+  txt('信任',CFG.W-172,40,15,C.inkSoft,'left',600);
+  for(let i=0;i<5;i++){ ctx.beginPath(); ctx.arc(CFG.W-118+i*22,33,8,0,7);
+    ctx.fillStyle=i<world.trust?C.coral:'#ffffff'; ctx.fill();
+    ctx.strokeStyle=C.ink; ctx.lineWidth=2; ctx.stroke(); }
+
+  // 出的大卡（右側滑入→停留→滑出）
+  const pc=world.playedCard;
+  if(pc){ pc.t+=1/60;
+    const total=CFG.cardSlide*2+CFG.cardHold;
+    let k = pc.t<CFG.cardSlide ? pc.t/CFG.cardSlide
+          : pc.t<CFG.cardSlide+CFG.cardHold ? 1
+          : 1-(pc.t-CFG.cardSlide-CFG.cardHold)/CFG.cardSlide;
+    k=clamp(k,0,1);
+    const w=208,h=292, x=lerp(CFG.W+20,CFG.W-w-40,k), y=CFG.H*0.20;
+    ctx.globalAlpha=k; drawCardFace(x,y,w,h,pc.card,true); ctx.globalAlpha=1;
+    if(pc.t>=total) world.playedCard=null; }
+
+  // 手牌
+  const n=world.hand.length, canPlay=dir.beat.includes('可出牌');
+  for(let i=0;i<n;i++){
+    const r=handRect(i,n);
+    ctx.save(); ctx.translate(r.x+r.w/2,r.y+r.h/2); ctx.rotate(r.rot);
+    ctx.globalAlpha=canPlay?1:0.62;
+    if(hover===i&&canPlay) ctx.translate(0,-14);
+    drawCardFace(-r.w/2,-r.h/2,r.w,r.h,world.hand[i],hover===i&&canPlay);
+    ctx.globalAlpha=1; ctx.restore();
+  }
+  if(canPlay) txt('點卡出牌　'+(world.cardsThisTurn?`本回合已出 ${world.cardsThisTurn} 張`:'趁現在'),
+                  CFG.W/2, CFG.H-152, 15, C.ink, 'center', 700);
+  drawOverlay();
+}
+function drawOverlay(){
+  if(dir.bannerT>0){ const a=clamp(dir.bannerT,0,1);
+    ctx.globalAlpha=a*0.94; rr(CFG.W/2-370,CFG.H*0.36,740,104,18,C.panel,C.ink,3);
+    ctx.globalAlpha=a; txt(dir.banner,CFG.W/2,CFG.H*0.36+62,30,C.ink,'center',800); ctx.globalAlpha=1; }
+  // 閃字放在畫面下三分之一並加底板：機台上方的機率數字在 0.24 附近，會撞在一起
+  if(dir.flashT>0){ const a=clamp(dir.flashT,0,1);
+    ctx.save(); ctx.globalAlpha=a;
+    ctx.font='800 32px "Segoe UI","Microsoft JhengHei",sans-serif'; ctx.textAlign='center';
+    const w=ctx.measureText(dir.flashTxt).width+56, y=CFG.H*0.60;
+    ctx.globalAlpha=a*0.92; rr(CFG.W/2-w/2,y-40,w,58,16,'#fffdf7',C.ink,3);
+    ctx.globalAlpha=a; ctx.fillStyle=dir.flashCol;
+    ctx.fillText(dir.flashTxt,CFG.W/2,y); ctx.restore(); }
+}
+
+function drawScreen(){
+  const s=world.screen;
+
+  if(s.kind==='cg'){
+    ctx.fillStyle='#1a1614'; ctx.fillRect(0,0,CFG.W,CFG.H);
+    const img=ART['CG_'+String(s.i+1).padStart(2,'0')];
+    // 極慢推近：預告片的鏡頭是真 zoom，靜止圖會顯得死。1.00 -> 1.05
+    const k=1+0.05*clamp(s.t/CG_HOLD,0,1);
+    if(img){ const w=CFG.W*k, h=CFG.H*k;
+      ctx.drawImage(img, (CFG.W-w)/2, (CFG.H-h)/2, w, h); }
+    else { ctx.fillStyle=C.cream; ctx.fillRect(0,0,CFG.W,CFG.H); }
+    // 底部字卡
+    const bh=104;
+    ctx.globalAlpha=0.93; rr(60,CFG.H-bh-46,CFG.W-120,bh,18,C.panel,C.ink,3); ctx.globalAlpha=1;
+    txt(s.line, CFG.W/2, CFG.H-bh-46+62, 27, C.ink, 'center', 700);
+    txt((s.i+1)+' / '+CUTSCENE.length, CFG.W-84, CFG.H-24, 14, '#fffdf7cc', 'right', 600);
+    txt('點擊跳下一張', 84, CFG.H-24, 14, '#fffdf7cc', 'left', 600);
+    return;
+  }
+
+  if(s.kind==='clear'){
+    const img=ART.END_win;
+    if(img) ctx.drawImage(img,0,0,CFG.W,CFG.H);
+    else { ctx.fillStyle='#FEE5A7'; ctx.fillRect(0,0,CFG.W,CFG.H); }
+    rr(CFG.W/2-380,CFG.H/2-142,760,284,22,'#fffdf7f0',C.ink,4);
+    txt('這家店　撐過去了',CFG.W/2,CFG.H/2-62,40,C.good,'center',800);
+    txt(s.name,CFG.W/2,CFG.H/2-16,22,C.inkSoft,'center',600);
+    txt(`營收 $${s.money} / 目標 $${s.goal}`,CFG.W/2,CFG.H/2+32,28,C.accent,'center',800);
+    txt('信任還剩 '+world.trust+' / 5',CFG.W/2,CFG.H/2+70,18,C.inkSoft,'center',600);
+    txt('點擊前往下一家店',CFG.W/2,CFG.H/2+114,17,C.ink,'center',700);
+    return;
+  }
+
+  if(s.kind==='title'){
+    const k=ART.KEY_title;
+    if(k) ctx.drawImage(k,0,0,CFG.W,CFG.H);
+    else { ctx.fillStyle=C.sky; ctx.fillRect(0,0,CFG.W,CFG.H); }
+    rr(CFG.W/2-330,CFG.H*0.56,660,150,20,'#fffdf7e8',C.ink,3.5);
+    txt('差 一 點 就 抓 到',CFG.W/2,CFG.H*0.56+62,44,C.ink,'center',800);
+    txt('So Close · 原創重製',CFG.W/2,CFG.H*0.56+98,17,C.inkSoft,'center',600);
+    txt('你是黑心店長。讓他們一直差一點，就是不出貨。',CFG.W/2,CFG.H*0.56+128,16,C.ink,'center',600);
+    txt('點擊開始',CFG.W/2,CFG.H*0.92,20,C.accent,'center',800);
+    return;
+  }
+  if(s.kind==='chapter'){
+    ctx.fillStyle=C.paper; ctx.fillRect(0,0,CFG.W,CFG.H);
+    const L=LOCATIONS[world.loc], bg=ART[L.bg];
+    if(bg){ ctx.globalAlpha=.35; ctx.drawImage(bg,0,0,CFG.W,CFG.H); ctx.globalAlpha=1; }
+    rr(CFG.W/2-380,CFG.H/2-118,760,236,22,'#fffdf7ee',C.ink,3.5);
+    txt(s.title,CFG.W/2,CFG.H/2-38,44,C.ink,'center',800);
+    txt(s.sub,CFG.W/2,CFG.H/2+8,18,C.inkSoft,'center',600);
+    txt(s.foot,CFG.W/2,CFG.H/2+56,22,C.accent,'center',800);
+    txt('點擊繼續',CFG.W/2,CFG.H/2+98,15,C.inkSoft,'center',600);
+    return;
+  }
+  if(s.kind==='draft'){
+    ctx.fillStyle=C.cream; ctx.fillRect(0,0,CFG.W,CFG.H);
+    txt(s.title,CFG.W/2,92,36,C.ink,'center',800);
+    const w=210,h=294,gap=56,n=s.cards.length,x0=CFG.W/2-(n*w+(n-1)*gap)/2;
+    s.cards.forEach((c,i)=>{ const x=x0+i*(w+gap), y=CFG.H/2-h/2+14;
+      drawCardFace(x,y,w,h,c, hover==='draft'+i); });
+    txt('點一張帶走',CFG.W/2,CFG.H-70,17,C.inkSoft,'center',600);
+    return;
+  }
+  if(s.kind==='build'){
+    const m=world.machines[s.mi];
+    drawWorld(); ctx.setTransform(1,0,0,1,0,0);
+    rr(CFG.W/2-330,26,660,60,14,'#fffdf7ee',C.ink,3);
+    txt(`佈置機台　已放 ${m.prizes.length}/${CFG.maxPlaced}`,CFG.W/2,64,24,C.ink,'center',800);
+    txt('在機台裡點一下放獎品　放愈滿愈難夾　放好按下方按鈕開店',CFG.W/2,CFG.H-96,16,C.ink,'center',600);
+    const bw=232,bh=54,bx=CFG.W/2-bw/2,by=CFG.H-78;
+    const on=m.prizes.length>0;
+    rr(bx,by,bw,bh,14,on?C.accent:'#ffffffcc',C.ink,3);
+    txt(on?'開店！':'至少放一件',CFG.W/2,by+35,21,on?'#fff':C.inkSoft,'center',800);
+    s._btn={x:bx,y:by,w:bw,h:bh,on};
+    return;
+  }
+  if(s.kind==='shop'){
+    ctx.fillStyle='#E4F9F0'; ctx.fillRect(0,0,CFG.W,CFG.H);
+    txt('商店',CFG.W/2,86,36,C.ink,'center',800);
+    txt(`持有 $${world.money}　買零件會降低出貨率`,CFG.W/2,120,17,C.inkSoft,'center',600);
+    const w=230,h=270,gap=52,n=s.offer.length,x0=CFG.W/2-(n*w+(n-1)*gap)/2;
+    s.offer.forEach((p,i)=>{
+      const x=x0+i*(w+gap), y=CFG.H/2-h/2+20, got=s.bought.includes(i);
+      const afford=world.money>=p.price;
+      rr(x,y,w,h,14, got?'#e8e8e4':C.panel, hover==='shop'+i&&!got&&afford?C.accent:C.inkSoft,3);
+      txt(p.name,x+w/2,y+52,26,got?C.inkSoft:C.ink,'center',800);
+      txt('插槽：'+p.slot,x+w/2,y+86,15,C.inkSoft,'center',600);
+      txt(`出貨率 ${p.dOdds}%`,x+w/2,y+132,20,C.good,'center',700);
+      if(p.dGrip) txt(`握力 ${p.dGrip}`,x+w/2,y+162,16,C.inkSoft,'center',600);
+      if(p.dSlip) txt(`手滑 +${p.dSlip}`,x+w/2,y+162,16,C.inkSoft,'center',600);
+      txt(got?'已買':(afford?`$${p.price}`:`$${p.price}（錢不夠）`),
+          x+w/2,y+h-30,22,got?C.inkSoft:(afford?C.accent:C.bad),'center',800);
+    });
+    const bw=200,bh=52,bx=CFG.W/2-bw/2,by=CFG.H-92;
+    rr(bx,by,bw,bh,14,C.accent,C.ink,3);
+    txt('離開商店',CFG.W/2,by+34,20,'#fff','center',800);
+    s._btn={x:bx,y:by,w:bw,h:bh,on:true};
+    return;
+  }
+  if(s.kind==='end'){
+    const img=s.win?ART.END_all:ART.END_lose;
+    if(img) ctx.drawImage(img,0,0,CFG.W,CFG.H);
+    else { ctx.fillStyle=s.win?'#AFD3E8':'#E8CFCF'; ctx.fillRect(0,0,CFG.W,CFG.H); }
+    rr(CFG.W/2-400,CFG.H/2-160,800,320,24,'#fffdf7f2',C.ink,4);
+    txt(s.win?'三家店　全部撐過去了':'撐不下去了',CFG.W/2,CFG.H/2-84,42,
+        s.win?C.good:C.bad,'center',800);
+    const cnt={}; for(const r of world.log) cnt[r]=(cnt[r]||0)+1;
+    const tot=world.log.length||1;
+    txt(`總營收 $${world.totalMoney+world.money}`,CFG.W/2,CFG.H/2-26,26,C.ink,'center',700);
+    txt(`夾取 ${tot} 次　夾中 ${cnt['夾中']||0}　差點夾到 ${cnt['差點夾到']||0}　空手 ${cnt['空手']||0}`,
+        CFG.W/2,CFG.H/2+18,19,C.inkSoft,'center',600);
+    txt(`「差點夾到」佔 ${Math.round(100*(cnt['差點夾到']||0)/tot)}%　那才是你賺錢的地方`,
+        CFG.W/2,CFG.H/2+56,18,C.accent,'center',700);
+    txt('點擊重來',CFG.W/2,CFG.H/2+120,20,C.ink,'center',800);
+  }
+}
+
+/* ---------- 13. 互動 ---------- */
+function spawnPrize(m,x,y){
+  const kind=rndi(0,5);
+  m.prizes.push({x,y,vx:0,vy:0,r:CFG.prizeR+rnd(-3,4),
+    w:1+kind*0.5, kind, col:[C.coral,C.butter,C.mint,C.sky,C.pink,C.lilac][kind],
+    gripped:false,out:false});
+}
+function screenToWorld(sx,sy){
+  return { x:(sx-CFG.W/2-cam.sx)/cam.z+cam.x, y:(sy-CFG.H/2-cam.sy)/cam.z+cam.y };
+}
+function onClick(sx,sy){
+  clicked=true;
+  const s=world.screen;
+  if(s){
+    if(s.kind==='draft'){
+      const w=210,h=294,gap=56,n=s.cards.length,x0=CFG.W/2-(n*w+(n-1)*gap)/2,y=CFG.H/2-h/2+14;
+      for(let i=0;i<n;i++){ const x=x0+i*(w+gap);
+        if(sx>=x&&sx<=x+w&&sy>=y&&sy<=y+h){ s.picked=i; return; } }
+    }
+    if(s.kind==='build'){
+      const m=world.machines[s.mi], b=s._btn;
+      if(b&&b.on&&sx>=b.x&&sx<=b.x+b.w&&sy>=b.y&&sy<=b.y+b.h){ s.done=true; return; }
+      const wp=screenToWorld(sx,sy);
+      if(m.prizes.length<CFG.maxPlaced &&
+         wp.x>m.inner.x+CFG.prizeR && wp.x<m.inner.x+m.inner.w-CFG.prizeR &&
+         wp.y>m.inner.y && wp.y<m.inner.y+m.inner.h-CFG.prizeR){
+        spawnPrize(m,wp.x,wp.y); shake(0.12); }
+      return;
+    }
+    if(s.kind==='shop'){
+      const b=s._btn;
+      if(b&&sx>=b.x&&sx<=b.x+b.w&&sy>=b.y&&sy<=b.y+b.h){ s.done=true; return; }
+      const w=230,h=270,gap=52,n=s.offer.length,x0=CFG.W/2-(n*w+(n-1)*gap)/2,y=CFG.H/2-h/2+20;
+      for(let i=0;i<n;i++){ const x=x0+i*(w+gap);
+        if(sx>=x&&sx<=x+w&&sy>=y&&sy<=y+h&&!s.bought.includes(i)){
+          const p=s.offer[i];
+          if(world.money>=p.price){ world.money-=p.price; s.bought.push(i);
+            installPart(world.machines[1],p); flash('裝上「'+p.name+'」',C.good,0.9); }
+          else flash('錢不夠',C.bad,0.7);
+          return; } }
+    }
+    return;
+  }
+  // 遊玩中：點手牌
+  const n=world.hand.length;
+  for(let i=0;i<n;i++){ const r=handRect(i,n);
+    if(sx>=r.x&&sx<=r.x+r.w&&sy>=r.y-16&&sy<=r.y+r.h){ playCard(i); return; } }
+}
+function updateHover(sx,sy){
+  hover=null; const s=world.screen;
+  if(s&&s.kind==='draft'){
+    const w=210,h=294,gap=56,n=s.cards.length,x0=CFG.W/2-(n*w+(n-1)*gap)/2,y=CFG.H/2-h/2+14;
+    for(let i=0;i<n;i++){ const x=x0+i*(w+gap);
+      if(sx>=x&&sx<=x+w&&sy>=y&&sy<=y+h){ hover='draft'+i; return; } } return; }
+  if(s&&s.kind==='shop'){
+    const w=230,h=270,gap=52,n=s.offer.length,x0=CFG.W/2-(n*w+(n-1)*gap)/2,y=CFG.H/2-h/2+20;
+    for(let i=0;i<n;i++){ const x=x0+i*(w+gap);
+      if(sx>=x&&sx<=x+w&&sy>=y&&sy<=y+h){ hover='shop'+i; return; } } return; }
+  if(s) return;
+  const n=world.hand.length;
+  for(let i=0;i<n;i++){ const r=handRect(i,n);
+    if(sx>=r.x&&sx<=r.x+r.w&&sy>=r.y-16&&sy<=r.y+r.h){ hover=i; return; } }
+}
+
+/* ---------- 14. 主迴圈 ---------- */
+let last=0;
+function frame(ts){
+  requestAnimationFrame(frame);
+  if(!last) last=ts;
+  let dt=clamp((ts-last)/1000,0,0.05); last=ts;      // 必須夾在 [0,0.05]，負值會讓物理倒退
+  if(paused) dt=0;
+  T+=dt;
+  dir.update(dt); physics(dt); camUpdate(dt);
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.fillStyle=C.paper; ctx.fillRect(0,0,CFG.W,CFG.H);
+  if(!world.screen || world.screen.kind==='build') drawWorld();
+  drawUI();
+}
+
+/* ---------- 15. 啟動 ---------- */
+function boot(){ world=makeWorld(); cam=makeCam(); dir=makeDirector();
+  camLookAt(machineX(1)+CFG.machineW/2, CFG.machineH*0.45, CFG.zoomWide, true); }
+function fit(){ const s=Math.min(innerWidth/CFG.W, innerHeight/CFG.H);
+  cv.style.width=(CFG.W*s)+'px'; cv.style.height=(CFG.H*s)+'px'; }
+
+cv=document.getElementById('cv'); ctx=cv.getContext('2d');
+addEventListener('resize',fit);
+cv.addEventListener('mousemove',e=>{ const r=cv.getBoundingClientRect();
+  mouse.x=(e.clientX-r.left)*(CFG.W/r.width); mouse.y=(e.clientY-r.top)*(CFG.H/r.height);
+  updateHover(mouse.x,mouse.y); });
+cv.addEventListener('click',e=>{ const r=cv.getBoundingClientRect();
+  onClick((e.clientX-r.left)*(CFG.W/r.width),(e.clientY-r.top)*(CFG.H/r.height)); });
+addEventListener('keydown',e=>{ if(e.key>='1'&&e.key<='5'){ playCard(+e.key-1); }
+  if(e.key==='p'||e.key==='P') paused=!paused; });
+
+fit(); boot();
+loadArt(()=>{ document.getElementById('boot').style.display='none';
+  dir.start(runGame()); requestAnimationFrame(frame); });
+</script>
