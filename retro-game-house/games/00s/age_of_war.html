@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 文明推進戰</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   文明推進戰 — 致敬 Age of War (Max Games, 2007)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. **把整部文明史壓縮進一條線**。沒有地圖、沒有視野、沒有建造，
+      只有一條左右兩端各有一座基地的線。
+      在 2007 年的 Flash 平台上，這是「用最小的介面撐起最大的題材」的示範。
+   2. **剋制關係是唯一的深度來源**。三種兵石頭剪刀布，
+      所以玩家真正在做的事是「看對面出什麼，再決定自己出什麼」——
+      **同樣的錢，出對兵種可以打出兩倍效益**。
+   3. 時代升級是節奏器：每一次升級都讓雙方的數值重新洗牌，
+      玩家因此不會一直用同一套打到底。
+   4. 金錢只從擊殺來，所以「防守反擊」是可行策略——
+      這讓「什麼都不做」與「亂出兵」都輸給「等對面先出」。
+   5. 特殊攻擊每場兩次，是用來打破僵局的鑰匙。
+      兵線推進到後期一定會在中線卡住（雙方兵力相當時誰都推不動），
+      沒有清場手段的話最後一場會變成永遠打不完的拉鋸——實測就是這樣。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'age_of_war',
+    title: '文明推進戰',
+    tagline: '一條線上的一整部文明史',
+    original: 'Age of War (Louissi, 2007)',
+    decade: '00s', year: 2007, platform: 'Flash / 瀏覽器', genre: '兵線推進',
+    developer: 'Louissi', bgm: '00s',
+    width: 560, height: 400,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'gold', label: '金錢', init: 0 },
+        { key: 'age', label: '時代', init: '1/5' },
+        { key: 'hp', label: '基地', init: '100%' }
+    ],
+    touch: 'none',
+    controls: [
+        { keys: ['1', '2', '3'], desc: '出兵（左鍵點下方按鈕也可以）' },
+        { keys: ['4'], desc: '升級時代（要足夠經驗）' },
+        { keys: ['5'], desc: '特殊攻擊（每個時代一次）' }
+    ],
+    howto: '按 1／2／3 出兵，兵會自己往前走。' +
+           '<strong>三種兵剋制循環</strong>：矛剋騎、騎剋弓、弓剋矛，打對可以多五成傷害。' +
+           '金錢只從擊殺敵人來，所以別亂出兵。' +
+           '經驗夠了按 4 升級時代，雙方的數值會重新洗牌。按 5 放特殊攻擊。' +
+           '每場限時 200 秒；基地完整度相同時，由<strong>越過中線、控制敵方半場</strong>的一方獲勝。',
+    lesson: {
+        verb: '觀察敵方編成與兵線位置，選擇出兵、等待、升級或用特殊攻擊打破僵局。',
+        innovation: '把即時戰略壓縮成單一路線與自動作戰，讓生產時機和文明升級取代複雜的單位微操。',
+        mission: '不要一開始就連續出兵；先看敵方第一個兵種，再派出剋制單位，完成一次少量兵力的反擊，並比較亂出兵時剩餘的金錢。',
+        evolution: '《Lemmings》用職業間接引導自動行走的群體；《Age of War》改由生產與升級指揮自動作戰；《Plants vs. Zombies》再把單線擴成多線防守。',
+        reflection: '如果可以直接控制每一名士兵移動與攻擊，玩家還會把注意力放在生產時機與時代演進嗎？'
+    },
+    design: 'Flash 瀏覽器遊戲的設計問題是：如何在短時間、低門檻介面裡呈現即時戰略與文明演進，而不要求玩家先學地圖、建造、編隊和大量快捷鍵。' +
+            '《Age of War》的解法是把戰場壓成一條線：單位自動前進與交戰，玩家只決定何時生產、何時等待、何時升級時代，以及何時使用大範圍能力。' +
+            '五個時代讓同一條兵線反覆重設力量關係，也把「從史前打到未來」濃縮成一局可見的進度。' +
+            '本站復刻再把兵種差異整理成明確的矛、騎、弓剋制循環，目的是讓學生能直接量到「看敵出兵」比盲目連按更有效；這是教學化處理，不冒充原作的明文規則。' +
+            '**間接控制不是少做決策，而是把決策從單位操作移到生產節奏與長期轉折。**' +
+            '它承接本站《Lemmings》的群體引導，並往後連到《Plants vs. Zombies》的多線部署。',
+    history: '獨立開發者 Louis-Simon Ménard 以 Louissi 名義製作《Age of War》，並於 2007 年 10 月 31 日上傳 Newgrounds；原始頁面列出 CyprusX 協助製作多個單位，作品翌日登上首頁，並取得當週第二與當月第四。' +
+             'Louissi 在 2009 年訪談中回憶，原案先是一款防守遊戲，後來受到《StarCraft》自訂地圖中「EVOLVE」玩法影響，改成跨時代進化；整個專案約用十天、每天近十五小時完成，當時他仍在上學。' +
+             '原始頁面也記錄它贏得 Max Games 比賽，顯示 2000 年代 Flash 入口網站如何同時扮演發布、評分、競賽與迭代回饋平台。' +
+             '本站不再沿用缺乏可追溯依據的「數千萬次遊玩」與「後續大量作品原型」說法。',
+    sources: [
+        { label: 'Newgrounds：Age of War 原始發布頁', url: 'https://www.newgrounds.com/portal/view/408209' },
+        { label: 'Newgrounds：Louissi 開發者訪談', url: 'https://www.newgrounds.com/bbs/topic/1127801' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(400);
+var FT = new RE.FloatText();
+var AGE_ART = { image: new Image(), manifest: null };
+AGE_ART.image.src = '../../assets/games/age_of_war/flash-era-atlas.png';
+fetch('../../assets/games/age_of_war/flash-era-manifest.json')
+    .then(function (r) { if (!r.ok) throw new Error('age art manifest ' + r.status); return r.json(); })
+    .then(function (m) { AGE_ART.manifest = m; })
+    .catch(function () { AGE_ART.manifest = null; });
+
+// ======================================================================
+var GROUND = 300;
+var MY_BASE = 46, EN_BASE = W - 46;
+
+/* 三種兵的剋制循環。這是整款遊戲唯一的深度來源，所以倍率給得明顯——
+   1.55 倍是實測後訂的：太低玩家感覺不到，太高會變成「只要猜對就贏」。 */
+var COUNTER = { spear: 'cav', cav: 'arch', arch: 'spear' };
+var COUNTER_MUL = 1.55;
+var BASE_DMG_MUL = 4.6;      // 兵打基地的傷害倍率，理由見 updateUnits
+/* 每場的時限。兵線推進到雙方兵力相當時一定會在中線卡住，
+   實測最後一場有一半的場次在四分鐘內分不出勝負，機器人跑滿三十分鐘還在拉鋸。
+   時間到就比基地血量百分比，高的一方獲勝——
+   **會僵持的玩法一定要準備一個收斂條件**，
+   worms 用海面上升、這裡用計時判定，道理一樣。 */
+var BATTLE_TIME = 200;
+
+var UNIT_KIND = {
+    spear: { name: '矛兵', short: '矛', color: '#7dd3fc', reach: 26 },
+    cav:   { name: '騎兵', short: '騎', color: '#ff9ec4', reach: 22 },
+    arch:  { name: '弓兵', short: '弓', color: '#a7f3a0', reach: 96 }
+};
+
+/* ----------------------------------------------------------------------
+   五個時代。每個時代三種兵，數值同步成長。
+   敵方的 aggr 決定它多快出兵、smart 決定它多常出剋制兵種——
+   難度靠這兩個數字收緊，而不是單純加血。
+
+   aggr 的下限是被「僵局」逼出來的，而且要逐場重算：
+   第五場的敵兵有 410 血，玩家滿級矛兵打剋制是 128 dps，殺一隻要 3.2 秒；
+   敵方原本 2.2 秒就補一隻——補得比殺得快，於是永遠有防守方擋在基地門口，
+   實測打滿 200 秒敵方基地一滴血都沒掉。
+   **兵線推進類的第一條約束是「殺得比對面生得快」**，
+   而且要拿「該時代的兵血量 ÷ 該時代的玩家 dps」去對每一場的 aggr，
+   不能只在第一場算過就套用到底。
+   ---------------------------------------------------------------------- */
+var AGES = [
+    { name: '石器時代', hint: '矛剋騎、騎剋弓、弓剋矛。看對面出什麼再決定',
+      cost: [22, 34, 42], hp: [46, 62, 38], atk: [8, 12, 9], spd: [26, 40, 22],
+      baseHp: 620, income: 5.5, enemy: { aggr: 2.2, smart: 0.0, gold: 1.0 }, need: 0 },
+    { name: '古代', hint: '敵人開始挑你的弱點出兵了',
+      cost: [30, 46, 56], hp: [78, 104, 62], atk: [13, 19, 15], spd: [28, 43, 23],
+      baseHp: 820, income: 6.5, enemy: { aggr: 1.95, smart: 0.25, gold: 1.1 }, need: 240 },
+    { name: '中世紀', hint: '弓兵射程長，但被騎兵貼上就完了',
+      cost: [40, 62, 74], hp: [124, 168, 96], atk: [20, 30, 24], spd: [30, 46, 24],
+      baseHp: 1080, income: 7.5, enemy: { aggr: 1.75, smart: 0.45, gold: 1.2 }, need: 560 },
+    { name: '現代', hint: '雙方數值都翻倍，剋制的價值也跟著翻倍',
+      cost: [54, 84, 98], hp: [196, 268, 152], atk: [31, 46, 38], spd: [32, 49, 26],
+      baseHp: 1400, income: 8.5, enemy: { aggr: 1.8, smart: 0.5, gold: 1.3 }, need: 980 },
+    { name: '未來', hint: '最後一個時代。對面幾乎都會挑你的弱點',
+      cost: [72, 112, 132], hp: [300, 410, 232], atk: [48, 72, 60], spd: [34, 52, 28],
+      baseHp: 1780, income: 10, enemy: { aggr: 1.95, smart: 0.62, gold: 1.4 }, need: 1500 }
+];
+
+var KINDS = ['spear', 'cav', 'arch'];
+
+var s = {};
+
+// ======================================================================
+function reset() {
+    s = {
+        battle: 0, mode: 'play',
+        age: 0, enemyAge: 0,
+        gold: 120, exp: 0,
+        units: [], shots: [],
+        myHp: 0, myMax: 0, enHp: 0, enMax: 0,
+        enemyTimer: 2.5, special: 2, specialFx: 0, battleT: 0,
+        score: 0, over: false, win: false,
+        resultT: 0, resultText: '', resultWon: false,
+        msg: '', msgT: 0
+    };
+    loadBattle(0);
+    G.setStat('score', 0);
+}
+
+function cfg() { return AGES[Math.min(s.age, AGES.length - 1)]; }
+function enemyCfg() { return AGES[Math.min(s.enemyAge, AGES.length - 1)]; }
+
+/* 第 n 場戰役：雙方都從第 n 個時代開始（玩家還可以再往上升）。
+   這樣每一場的手感都不同，也不必從石器時代重打一次。 */
+function loadBattle(n) {
+    s.battle = n;
+    s.age = n; s.enemyAge = n;
+    s.mode = 'play';
+    s.units = []; s.shots = [];
+    s.gold = 120 + n * 40;
+    s.exp = 0;
+    s.special = 2;
+    s.enemyTimer = 2.5;
+    s.battleT = BATTLE_TIME;
+    s.resultT = 0;
+    var c = AGES[n];
+    s.myMax = s.myHp = c.baseHp;
+    s.enMax = s.enHp = Math.round(c.baseHp * (1 + n * 0.02));
+    G.setStat('age', (s.age + 1) + '/5');
+    G.setStat('gold', Math.floor(s.gold));
+    G.setStat('hp', '100%');
+}
+
+// ======================================================================
+function update(dt) {
+    P.update(dt); FT.update(dt);
+    if (s.over) return;
+
+    if (s.mode === 'result') {
+        s.resultT -= dt;
+        if (s.resultT <= 0) nextBattle();
+        return;
+    }
+
+    var c = cfg();
+    if (s.msgT > 0) s.msgT -= dt;
+    if (s.specialFx > 0) s.specialFx -= dt;
+
+    // ---- 收入：基礎收入很低，主要靠擊殺。所以亂出兵會直接窮死 ----
+    s.gold += c.income * dt;
+    G.setStat('gold', Math.floor(s.gold));
+
+    handleInput();
+    updateEnemyAI(dt);
+    updateUnits(dt);
+    updateShots(dt);
+
+    s.battleT -= dt;
+    if (s.enHp <= 0) { battleWin(); return; }
+    if (s.myHp <= 0) { battleLose(); return; }
+    if (s.battleT <= 0) {
+        // 時間到先比基地完整度；完全相同時看戰線控制，避免明明把敵軍
+        // 壓在基地門口，卻因雙方基地都沒掉血而被判輸。
+        var myRatio = s.myHp / s.myMax, enRatio = s.enHp / s.enMax;
+        if (myRatio > enRatio + 1e-6) battleWin(true);
+        else if (enRatio > myRatio + 1e-6) battleLose(true);
+        else if (playerControlsField()) battleWin(true, true);
+        else battleLose(true);
+    }
+}
+
+function playerControlsField() {
+    var myFront = MY_BASE, enemyFront = EN_BASE;
+    for (var i = 0; i < s.units.length; i++) {
+        var u = s.units[i];
+        if (u.mine) myFront = Math.max(myFront, u.x);
+        else enemyFront = Math.min(enemyFront, u.x);
+    }
+    return (myFront + enemyFront) / 2 > W / 2;
+}
+
+function handleInput() {
+    if (s.keyBuf === undefined) s.keyBuf = -1;
+    if (s.keyBuf >= 0) {
+        var k = s.keyBuf; s.keyBuf = -1;
+        if (k < 3) spawnUnit(true, KINDS[k]);
+        else if (k === 3) upgradeAge();
+        else if (k === 4) useSpecial();
+    }
+}
+
+function spawnUnit(mine, kind) {
+    var c = mine ? cfg() : enemyCfg();
+    var idx = KINDS.indexOf(kind);
+    var cost = c.cost[idx];
+    if (mine) {
+        if (s.gold < cost) { say('金錢不夠（需要 ' + cost + '）'); return false; }
+        s.gold -= cost;
+        G.setStat('gold', Math.floor(s.gold));
+    }
+    s.units.push({
+        mine: mine, kind: kind, idx: idx,
+        x: mine ? MY_BASE + 16 : EN_BASE - 16,
+        hp: c.hp[idx], maxHp: c.hp[idx], atk: c.atk[idx], spd: c.spd[idx],
+        reach: UNIT_KIND[kind].reach, cd: 0, anim: RE.rand(0, 6), flash: 0,
+        cost: cost, age: mine ? s.age : s.enemyAge
+    });
+    if (mine) RetroAudio.play('select');
+    return true;
+}
+
+function upgradeAge() {
+    if (s.age >= AGES.length - 1) { say('已經是最後一個時代'); return; }
+    var need = AGES[s.age + 1].need;
+    if (s.exp < need) { say('經驗不夠（' + Math.floor(s.exp) + '/' + need + '）'); return; }
+    s.exp -= need;
+    s.age++;
+    s.myMax = Math.round(s.myMax * 1.25);
+    s.myHp = Math.min(s.myMax, s.myHp + s.myMax * 0.25);
+    RetroAudio.play('levelUp');
+    RE.juice.flash('rgba(255,209,102,0.3)', 0.35);
+    FT.add(W / 2, 120, '進入' + cfg().name + '！', { color: '#ffd166', size: 20, life: 2 });
+    G.setStat('age', (s.age + 1) + '/5');
+    addScore(400);
+}
+
+function useSpecial() {
+    if (s.special <= 0) { say('特殊攻擊已經用過了'); return; }
+    s.special--;
+    s.specialFx = 0.6;
+    RetroAudio.play('bigExplosion');
+    RE.juice.flash('rgba(255,255,255,0.5)', 0.3);
+    RE.juice.shake(0.8);
+    RE.juice.slowmo(0.35, 0.8);
+    var dmg = 60 + s.age * 55;
+    for (var i = s.units.length - 1; i >= 0; i--) {
+        var u = s.units[i];
+        if (u.mine) continue;
+        hurtUnit(u, dmg, true);
+    }
+    FT.add(W / 2, 140, '特殊攻擊！', { color: '#ff6b6b', size: 22, life: 1.4 });
+}
+
+function say(m) { s.msg = m; s.msgT = 1.5; RetroAudio.play('cancel'); }
+
+// ---------- 敵方 AI ----------
+function updateEnemyAI(dt) {
+    var e = enemyCfg().enemy;
+    s.enemyTimer -= dt;
+    if (s.enemyTimer > 0) return;
+    s.enemyTimer = e.aggr * RE.rand(0.8, 1.2);
+
+    // smart 決定它多常挑玩家的弱點出兵：這是難度曲線的主軸
+    var kind;
+    if (Math.random() < e.smart) {
+        // 找玩家場上最多的兵種，出剋制它的
+        var count = { spear: 0, cav: 0, arch: 0 };
+        for (var i = 0; i < s.units.length; i++) {
+            if (s.units[i].mine) count[s.units[i].kind]++;
+        }
+        var most = 'spear', mc = -1;
+        for (var k in count) { if (count[k] > mc) { mc = count[k]; most = k; } }
+        // 剋制 most 的兵種：找出 COUNTER[x] === most 的 x
+        kind = 'spear';
+        for (var q in COUNTER) { if (COUNTER[q] === most) { kind = q; break; } }
+    } else {
+        kind = RE.pick(KINDS);
+    }
+    spawnUnit(false, kind);
+}
+
+// ---------- 單位 ----------
+function updateUnits(dt) {
+    var i, j;
+    for (i = s.units.length - 1; i >= 0; i--) {
+        var u = s.units[i];
+        u.anim += dt * 6;
+        if (u.flash > 0) u.flash -= dt;
+        if (u.cd > 0) u.cd -= dt;
+
+        // 找前方最近的敵人
+        var target = null, bd = 1e9;
+        for (j = 0; j < s.units.length; j++) {
+            var o = s.units[j];
+            if (o.mine === u.mine) continue;
+            var d = u.mine ? (o.x - u.x) : (u.x - o.x);
+            if (d < -6) continue;                       // 已經交錯過去的不算
+            if (d < bd) { bd = d; target = o; }
+        }
+        // 沒有敵人就打基地
+        var baseDist = u.mine ? (EN_BASE - u.x) : (u.x - MY_BASE);
+
+        if (target && bd <= u.reach) {
+            if (u.cd <= 0) {
+                u.cd = u.kind === 'arch' ? 0.85 : 0.58;
+                if (u.kind === 'arch') {
+                    s.shots.push({ x: u.x, y: GROUND - 22, tx: target.x, mine: u.mine,
+                                   dmg: dmgAgainst(u, target), t: 0 });
+                    RetroAudio.play('shoot');
+                } else {
+                    hurtUnit(target, dmgAgainst(u, target), false);
+                    RetroAudio.play('hit');
+                    // 近戰命中要有頓幀。這款場上同時很多隻，所以取小值，
+                    // 不然一堆兵互砍會讓整個畫面卡住
+                    RE.juice.hitstop(0.02);
+                }
+            }
+        } else if (baseDist <= u.reach) {
+            /* 條件只能看「基地在不在射程內」，不能加上「場上沒有敵人」。
+               第一版寫成 !target && baseDist <= reach，而 target 是
+               「前方最近的敵人」不論多遠都算——於是只要對面還剩一隻兵在遠處，
+               我方的兵站在敵方基地門口也不會出手。
+               實測最後一場打滿 200 秒，敵基地 2100 血一滴都沒掉。 */
+            if (u.cd <= 0) {
+                u.cd = 0.8;
+                /* 打基地的傷害要放大。
+                   兵對兵的數值是拿來比剋制的，但拿同一組數字去啃基地，
+                   矛兵只有 10 dps、基地卻有 900 血——實測一場打十六分鐘還沒結束，
+                   雙方在中線互相消耗，變成純粹的僵局。
+                   放大到 3.5 倍後一場約 60~90 秒，推進感才出得來。 */
+                var bd = u.atk * BASE_DMG_MUL;
+                if (u.mine) { s.enHp -= bd; hitBase(EN_BASE, false); }
+                else { s.myHp -= bd; hitBase(MY_BASE, true); }
+            }
+        } else {
+            // 前進，但不要疊在自己人身上
+            var blocked = false;
+            for (j = 0; j < s.units.length; j++) {
+                var f = s.units[j];
+                if (f === u || f.mine !== u.mine) continue;
+                var fd = u.mine ? (f.x - u.x) : (u.x - f.x);
+                // 間距要小到「前兩三隻都打得到同一個目標」。
+                // 第一版間距 18、矛兵射程 26，等於永遠只有最前面那一隻在輸出，
+                // 玩家的有效 dps 只有帳面的三分之一，怎麼算都推不動。
+                if (fd > 0 && fd < 11) { blocked = true; break; }
+            }
+            if (!blocked) u.x += (u.mine ? 1 : -1) * u.spd * dt;
+        }
+
+        if (u.hp <= 0) {
+            // 擊殺才有金錢與經驗——所以亂出兵會直接窮死
+            if (!u.mine) {
+                var gain = Math.round(u.cost * 0.85 * enemyCfg().enemy.gold);
+                s.gold += gain;
+                s.exp += u.cost * 0.9;
+                addScore(u.cost * 2);
+                FT.add(u.x, GROUND - 40, '+' + gain, { color: '#ffd166', size: 12 });
+                G.setStat('gold', Math.floor(s.gold));
+            }
+            P.burst(u.x, GROUND - 16, 10, { colors: [UNIT_KIND[u.kind].color, '#ffffff'],
+                speedMin: 40, speedMax: 160, gravity: 300, lifeMin: 0.2, lifeMax: 0.5, sizeMax: 3 });
+            RetroAudio.play('explosion');
+            s.units.splice(i, 1);
+        }
+    }
+    G.setStat('hp', Math.max(0, Math.round(s.myHp / s.myMax * 100)) + '%');
+}
+
+/** 剋制倍率：這一行就是整款遊戲的深度所在 */
+function dmgAgainst(u, target) {
+    var mul = COUNTER[u.kind] === target.kind ? COUNTER_MUL : 1;
+    return u.atk * mul;
+}
+
+function hurtUnit(u, dmg, silent) {
+    u.hp -= dmg;
+    u.flash = 0.1;
+    if (!silent) {
+        FT.add(u.x, GROUND - 34, String(Math.round(dmg)),
+            { color: dmg > u.atk ? '#ffd166' : '#ffffff', size: 11 });
+    }
+    P.burst(u.x, GROUND - 16, 3, { colors: ['#ffffff'], speedMin: 20, speedMax: 70,
+        gravity: 200, lifeMin: 0.08, lifeMax: 0.2, sizeMax: 2 });
+}
+
+function hitBase(x, mine) {
+    RE.juice.shake(0.16);
+    RetroAudio.play('heavyHit');
+    P.burst(x, GROUND - 40, 5, { colors: [mine ? '#ff6b6b' : '#ffd166'],
+        speedMin: 30, speedMax: 110, gravity: 260, lifeMin: 0.1, lifeMax: 0.3, sizeMax: 3 });
+}
+
+function updateShots(dt) {
+    for (var i = s.shots.length - 1; i >= 0; i--) {
+        var b = s.shots[i];
+        b.t += dt * 2.4;
+        if (b.t >= 1) {
+            // 箭到位才結算，中途目標死了就落空——弓兵的代價
+            var hit = null, bd = 26;
+            for (var j = 0; j < s.units.length; j++) {
+                var u = s.units[j];
+                if (u.mine === b.mine) continue;
+                var d = Math.abs(u.x - b.tx);
+                if (d < bd) { bd = d; hit = u; }
+            }
+            if (hit) hurtUnit(hit, b.dmg, false);
+            s.shots.splice(i, 1);
+        }
+    }
+}
+
+// ---------- 結算 ----------
+function battleWin(byTime, byField) {
+    s.mode = 'result';
+    s.resultT = 1.8;
+    s.resultWon = true;
+    s.resultText = byField ? '時間到，你控制了敵方半場'
+                 : byTime ? '時間到，你的基地比較完整' : '攻陷敵方基地';
+    addScore(1000 + s.battle * 400);
+    RetroAudio.play('win');
+    RE.juice.flash('rgba(255,209,102,0.25)', 0.3);
+}
+
+function battleLose(byTime) {
+    s.mode = 'result';
+    s.resultT = 1.8;
+    s.resultWon = false;
+    s.resultText = byTime ? '時間到，對面撐得比較久' : '基地被攻陷';
+    RetroAudio.play('gameover');
+}
+
+function nextBattle() {
+    if (!s.resultWon) { finish(false); return; }
+    if (s.battle >= AGES.length - 1) { finish(true); return; }
+    loadBattle(s.battle + 1);
+    G.stageCard(s.battle + 1, cfg().name, cfg().hint);
+}
+
+function addScore(n) { s.score += Math.round(n); G.setStat('score', s.score); }
+
+function finish(win) {
+    s.over = true; s.win = win;
+    if (win) {
+        addScore(2500);
+        G.gameOver({ score: s.score, win: true,
+            body: '五個時代全部推完了。' +
+                  '整場遊戲的介面只有一條線和三顆按鈕，' +
+                  '深度卻全部來自那一組石頭剪刀布——**同樣的錢，出對兵種就多五成傷害**。' +
+                  '用一組剋制關係撐起一整款策略遊戲，是資源有限時最划算的設計投資。' });
+    } else {
+        G.gameOver({ score: s.score, win: false,
+            body: '在第 ' + (s.battle + 1) + ' 場「' + cfg().name + '」被攻陷了。' +
+                  '記住兩件事：**矛剋騎、騎剋弓、弓剋矛**，還有——' +
+                  '金錢只從擊殺來，所以先出兵的人反而虧。' +
+                  '看對面出什麼再決定自己出什麼，那才是這款遊戲真正在玩的東西。' });
+    }
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+var AGE_ART_NAMES = [
+    { spear: 'stone_spear', cav: 'stone_cav', arch: 'stone_arch' },
+    { spear: 'ancient_spear', cav: 'ancient_cav', arch: 'ancient_arch' },
+    { spear: 'medieval_spear', cav: 'medieval_cav', arch: 'medieval_arch' },
+    { spear: 'modern_spear', cav: 'modern_cav', arch: 'modern_arch' },
+    { spear: 'future_spear', cav: 'future_cav', arch: 'future_arch' }
+];
+
+function drawAgeAsset(name, cx, cy, w, h, alpha, flip) {
+    var m = AGE_ART.manifest;
+    if (!m || !m.assets || !m.assets[name] || !AGE_ART.image.complete ||
+        !AGE_ART.image.naturalWidth) return false;
+    var a = m.assets[name];
+    ctx.save();
+    ctx.globalAlpha = alpha === undefined ? 1 : alpha;
+    ctx.translate(cx, cy);
+    if (flip) ctx.scale(-1, 1);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(AGE_ART.image, a.x, a.y, a.w, a.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+}
+
+function render() {
+    var c = cfg();
+    var sky = ctx.createLinearGradient(0, 0, 0, GROUND);
+    var tone = ['#cfe4f5', '#d9e6d0', '#e0dcc8', '#cdd6de', '#c8d0f0'][Math.min(s.age, 4)];
+    sky.addColorStop(0, tone);
+    sky.addColorStop(1, '#f2f6f8');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H);
+
+    G.beginWorld();
+    drawAgeBackdrop();
+    drawGround();
+    drawBase(MY_BASE, true);
+    drawBase(EN_BASE, false);
+    drawUnits();
+    drawShots();
+    P.draw(ctx);
+    FT.draw(ctx);
+    drawHUD(c);
+    if (s.specialFx > 0) {
+        drawAgeAsset('special_blast', W / 2, 145, 150, 150, RE.clamp(s.specialFx / 0.32, 0, 1));
+        ctx.fillStyle = 'rgba(255,107,107,' + (s.specialFx * 0.5) + ')';
+        ctx.fillRect(0, 0, W, H);
+    }
+    if (s.mode === 'result') drawResult();
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.03, vignetteStrength: 0.3 });
+}
+
+/* 每個時代不只換單位數值，也要讓學生一眼看出文明正在演進。
+   遠景保持低對比，避免搶走兵種剋制與基地血條的閱讀焦點。 */
+function drawAgeBackdrop() {
+    var age = Math.min(s.age, 4);
+    var haze = ['#7b9b86', '#8c9b78', '#9a876d', '#77828b', '#776fa6'][age];
+    var far = ['#9eb89b', '#aab59a', '#b4a68e', '#9aa6ad', '#9a94c7'][age];
+    var t = RE.Motion.reduced ? 0 : performance.now() * 0.001;
+
+    // 太陽與大氣光暈
+    var sunX = W * (0.34 + age * 0.07), sunY = 78 - age * 4;
+    var glow = ctx.createRadialGradient(sunX, sunY, 4, sunX, sunY, 64);
+    glow.addColorStop(0, age === 4 ? 'rgba(184,166,255,0.5)' : 'rgba(255,244,190,0.62)');
+    glow.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = glow; ctx.fillRect(sunX - 70, sunY - 70, 140, 140);
+    ctx.fillStyle = age === 4 ? '#c7b8ff' : '#fff0b0';
+    ctx.beginPath(); ctx.arc(sunX, sunY, 13, 0, RE.TAU); ctx.fill();
+
+    // 兩層遠山，以不同波長建立景深
+    ctx.fillStyle = far;
+    ctx.beginPath(); ctx.moveTo(0, GROUND);
+    for (var x = 0; x <= W; x += 28) {
+        ctx.lineTo(x, 190 + Math.sin(x * 0.019 + age) * 24 + Math.sin(x * 0.047) * 9);
+    }
+    ctx.lineTo(W, GROUND); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = 0.64;
+    ctx.fillStyle = haze;
+    ctx.beginPath(); ctx.moveTo(0, GROUND);
+    for (var x2 = 0; x2 <= W; x2 += 24) {
+        ctx.lineTo(x2, 235 + Math.sin(x2 * 0.027 + 1.7) * 18 + Math.cos(x2 * 0.055) * 7);
+    }
+    ctx.lineTo(W, GROUND); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // 緩慢雲層；舒適模式固定位置。
+    ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    for (var i = 0; i < 4; i++) {
+        var cloudX = ((i * 173 + t * (4 + i)) % (W + 100)) - 50;
+        var cloudY = 82 + (i % 2) * 42;
+        ctx.beginPath();
+        ctx.ellipse(cloudX, cloudY, 35, 10, 0, 0, RE.TAU);
+        ctx.ellipse(cloudX + 24, cloudY - 7, 23, 13, 0, 0, RE.TAU);
+        ctx.fill();
+    }
+
+    drawAgeLandmark(age);
+}
+
+function drawAgeLandmark(age) {
+    var x = W / 2, base = GROUND - 24;
+    ctx.save();
+    ctx.globalAlpha = 0.22;
+    ctx.fillStyle = '#26343d';
+    ctx.strokeStyle = '#26343d';
+    ctx.lineWidth = 5;
+    if (age === 0) {
+        ctx.fillRect(x - 50, base - 35, 12, 35); ctx.fillRect(x + 38, base - 35, 12, 35);
+        ctx.fillRect(x - 52, base - 40, 104, 10);
+    } else if (age === 1) {
+        for (var i = -2; i <= 2; i++) ctx.fillRect(x + i * 22 - 6, base - 48, 12, 48);
+        ctx.fillRect(x - 58, base - 55, 116, 9);
+    } else if (age === 2) {
+        ctx.fillRect(x - 54, base - 46, 108, 46);
+        ctx.fillRect(x - 70, base - 70, 28, 70); ctx.fillRect(x + 42, base - 70, 28, 70);
+        for (var c = -3; c <= 3; c++) ctx.fillRect(x + c * 18 - 6, base - 56, 12, 12);
+    } else if (age === 3) {
+        var heights = [38, 66, 48, 82, 54, 72, 42];
+        for (var b = 0; b < heights.length; b++) ctx.fillRect(x - 96 + b * 29, base - heights[b], 22, heights[b]);
+    } else {
+        ctx.beginPath(); ctx.arc(x, base - 12, 58, Math.PI, RE.TAU); ctx.stroke();
+        ctx.beginPath(); ctx.arc(x, base - 12, 34, Math.PI, RE.TAU); ctx.stroke();
+        ctx.fillRect(x - 5, base - 92, 10, 92);
+    }
+    ctx.restore();
+}
+
+function drawGround() {
+    ctx.fillStyle = ['#8fae6f', '#9ab06a', '#a89a6a', '#8f9aa0', '#6a7ba8'][Math.min(s.age, 4)];
+    ctx.fillRect(0, GROUND, W, H - GROUND);
+    ctx.fillStyle = 'rgba(255,255,255,0.16)';
+    ctx.fillRect(0, GROUND, W, 4);
+}
+
+function drawBase(x, mine) {
+    var hp = mine ? s.myHp / s.myMax : s.enHp / s.enMax;
+    var col = mine ? '#7dd3fc' : '#ff9ec4';
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.beginPath(); ctx.ellipse(x, GROUND + 4, 34, 8, 0, 0, RE.TAU); ctx.fill();
+    // 塔身隨時代長高
+    var hgt = 62 + Math.min(s.age, 4) * 10;
+    ctx.fillStyle = col;
+    RE.Draw.roundRect(ctx, x - 26, GROUND - hgt, 52, hgt, 6); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    for (var i = 0; i < 3; i++) ctx.fillRect(x - 18, GROUND - hgt + 14 + i * 16, 36, 6);
+    // 血條
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    RE.Draw.roundRect(ctx, x - 30, GROUND - hgt - 16, 60, 8, 4); ctx.fill();
+    ctx.fillStyle = hp > 0.35 ? col : '#ff6b6b';
+    RE.Draw.roundRect(ctx, x - 30, GROUND - hgt - 16, Math.max(2, 60 * RE.clamp(hp, 0, 1)), 8, 4); ctx.fill();
+    ctx.restore();
+}
+
+function drawUnits() {
+    // 依 x 排序，前後才不會亂疊
+    var list = s.units.slice().sort(function (a, b) { return a.x - b.x; });
+    for (var i = 0; i < list.length; i++) {
+        var u = list[i];
+        var k = UNIT_KIND[u.kind];
+        var bob = Math.sin(u.anim) * 2;
+        var y = GROUND - 16 + bob;
+        ctx.save();
+        ctx.fillStyle = 'rgba(0,0,0,0.16)';
+        ctx.beginPath(); ctx.ellipse(u.x, GROUND + 2, 9, 3.5, 0, 0, RE.TAU); ctx.fill();
+
+        var age = RE.clamp(u.age || 0, 0, 4);
+        var artName = AGE_ART_NAMES[age][u.kind];
+        var artW = u.kind === 'cav' ? 80 : 62;
+        if (!drawAgeAsset(artName, u.x, GROUND - 28 + bob, artW, 68, 1, !u.mine)) {
+            ctx.fillStyle = u.flash > 0 ? '#ffffff' : k.color;
+            ctx.strokeStyle = 'rgba(30,40,50,0.75)'; ctx.lineWidth = 1.5;
+            // 身體：用形狀區分兵種，顏色只是輔助（色盲也分得出來）
+            if (u.kind === 'spear') {
+                RE.Draw.roundRect(ctx, u.x - 6, y - 12, 12, 22, 3); ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = '#5a6675'; ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(u.x + (u.mine ? 4 : -4), y - 6);
+                ctx.lineTo(u.x + (u.mine ? 20 : -20), y - 10);
+                ctx.stroke();
+            } else if (u.kind === 'cav') {
+                RE.Draw.roundRect(ctx, u.x - 10, y - 10, 20, 16, 6); ctx.fill(); ctx.stroke();
+                ctx.fillRect(u.x + (u.mine ? 6 : -10), y - 18, 4, 10);
+                ctx.beginPath(); ctx.arc(u.x + (u.mine ? 8 : -8), y - 20, 5, 0, RE.TAU); ctx.fill();
+            } else {
+                ctx.beginPath();
+                ctx.moveTo(u.x, y - 14); ctx.lineTo(u.x + 8, y + 10); ctx.lineTo(u.x - 8, y + 10);
+                ctx.closePath(); ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = '#5a6675'; ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(u.x + (u.mine ? 6 : -6), y - 2, 7, -1.1, 1.1, !u.mine);
+                ctx.stroke();
+            }
+        }
+        // 血條
+        if (u.hp < u.maxHp) {
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            ctx.fillRect(u.x - 10, y - 20, 20, 3);
+            ctx.fillStyle = u.mine ? '#7dd3fc' : '#ff6b6b';
+            ctx.fillRect(u.x - 10, y - 20, 20 * (u.hp / u.maxHp), 3);
+        }
+        ctx.restore();
+    }
+}
+
+function drawShots() {
+    ctx.strokeStyle = '#5a6675'; ctx.lineWidth = 2;
+    for (var i = 0; i < s.shots.length; i++) {
+        var b = s.shots[i];
+        var t = b.t;
+        var x = b.x + (b.tx - b.x) * t;
+        var y = b.y - Math.sin(t * Math.PI) * 46;
+        ctx.beginPath();
+        ctx.moveTo(x, y); ctx.lineTo(x + (b.mine ? 8 : -8), y + 3);
+        ctx.stroke();
+    }
+}
+
+function drawHUD(c) {
+    // 出兵按鈕：畫成三格，標明剋制關係，玩家才學得會
+    var bw = 96, gap = 10;
+    var total = 3 * bw + 2 * gap;
+    var sx = (W - total) / 2;
+    for (var i = 0; i < 3; i++) {
+        var kind = KINDS[i], k = UNIT_KIND[kind];
+        var x = sx + i * (bw + gap), y = H - 62;
+        var afford = s.gold >= c.cost[i];
+        ctx.fillStyle = afford ? 'rgba(30,40,50,0.75)' : 'rgba(30,40,50,0.35)';
+        RE.Draw.roundRect(ctx, x, y, bw, 46, 8); ctx.fill();
+        ctx.strokeStyle = k.color; ctx.lineWidth = afford ? 2 : 1;
+        ctx.stroke();
+        RE.Draw.text(ctx, (i + 1) + '　' + k.name, x + bw / 2, y + 8,
+            { size: 15, align: 'center', color: afford ? '#ffffff' : '#8b98a5' });
+        RE.Draw.text(ctx, '$' + c.cost[i] + '　剋' + UNIT_KIND[COUNTER[kind]].short,
+            x + bw / 2, y + 28, { size: 15, align: 'center', color: afford ? k.color : '#6b7280', stroke: false });
+    }
+
+    // 升級與特殊
+    var upNeed = s.age < AGES.length - 1 ? AGES[s.age + 1].need : null;
+    RE.Draw.text(ctx, upNeed === null ? '4　已達最終時代'
+        : ('4　升級時代（' + Math.floor(s.exp) + '/' + upNeed + '）'),
+        12, H - 96, { size: 15, color: (upNeed !== null && s.exp >= upNeed) ? '#ffd166' : '#5a6675', stroke: false });
+    RE.Draw.text(ctx, '5　特殊攻擊 ×' + s.special, 12, H - 78,
+        { size: 15, color: s.special > 0 ? '#ff6b6b' : '#5a6675', stroke: false });
+
+    RE.Draw.text(ctx, cfg().name + '　第 ' + (s.battle + 1) + ' 場', W / 2, 12,
+        { size: 15, align: 'center', color: '#2b3440', stroke: false });
+    // 時限：剩不到三十秒才變紅，平常不要製造無謂的壓力
+    var tleft = Math.max(0, Math.ceil(s.battleT));
+    RE.Draw.text(ctx, tleft + ' 秒', W - 14, 12,
+        { size: 15, align: 'right', color: tleft < 30 ? '#ff6b6b' : '#5a6675', stroke: false });
+
+    if (s.msgT > 0) {
+        RE.Draw.text(ctx, s.msg, W / 2, H - 112, { size: 15, align: 'center', color: '#ff6b6b' });
+    }
+}
+
+function drawResult() {
+    ctx.save();
+    ctx.fillStyle = 'rgba(20,30,40,0.72)';
+    ctx.fillRect(0, 0, W, H);
+    var ok = s.resultWon;
+    RE.Draw.text(ctx, s.resultText, W / 2, H / 2 - 16,
+        { size: 30, align: 'center', color: ok ? '#ffd166' : '#ff6b6b' });
+    RE.Draw.text(ctx, ok ? (s.battle >= AGES.length - 1 ? '五個時代全部推完' : '下一場：' + AGES[s.battle + 1].name)
+                         : '再試一次，記得看對面出什麼',
+        W / 2, H / 2 + 22, { size: 14, align: 'center', color: '#cfe3f0' });
+    ctx.restore();
+}
+
+// ======================================================================
+window.addEventListener('keydown', function (e) {
+    if (s.over || s.mode !== 'play') return;
+    var m = { Digit1: 0, Digit2: 1, Digit3: 2, Digit4: 3, Digit5: 4 };
+    if (m[e.code] !== undefined) { e.preventDefault(); s.keyBuf = m[e.code]; }
+});
+
+// 滑鼠／觸控點按鈕
+G.canvas.addEventListener('pointerdown', function (e) {
+    if (s.over || s.mode !== 'play') return;
+    var r = G.canvas.getBoundingClientRect();
+    var x = (e.clientX - r.left) / r.width * W, y = (e.clientY - r.top) / r.height * H;
+    if (y < H - 62 || y > H - 16) return;
+    var bw = 96, gap = 10, sx = (W - (3 * bw + 2 * gap)) / 2;
+    for (var i = 0; i < 3; i++) {
+        var bx = sx + i * (bw + gap);
+        if (x >= bx && x <= bx + bw) { s.keyBuf = i; return; }
+    }
+});
+
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '按 1／2／3 出兵，兵會自己往前走。矛剋騎、騎剋弓、弓剋矛，打對多五成傷害。' +
+          '金錢只從擊殺來，所以別亂出兵。經驗夠了按 4 升級時代，按 5 放特殊攻擊。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+{
+  "version": 1,
+  "kind": "game-art-atlas",
+  "game": "age_of_war",
+  "source": "art-production/batch-07/age_of_war/source/flash-era-atlas-v003-transparent-imagegen.png",
+  "sourceSha256": "6443ceeb2476c0c873d05a5b11b2f83a428a6901e9da61d60eb1cc5c9ec3efad",
+  "postprocess": "source alpha; 4x4 equal-cell slice; aspect-fit resize; no drawing or recolor",
+  "alphaMode": "source-alpha",
+  "atlas": "flash-era-atlas.png",
+  "atlasSha256": "6c2e2c9401cedf4f77a45d6adbc5804e6d8eb2eeebcccd53aaa4e53a565f034f",
+  "cellWidth": 128,
+  "cellHeight": 128,
+  "columns": 4,
+  "rows": 4,
+  "assets": {
+    "stone_spear": {
+      "index": 0,
+      "row": 0,
+      "column": 0,
+      "x": 0,
+      "y": 0,
+      "w": 128,
+      "h": 128
+    },
+    "stone_cav": {
+      "index": 1,
+      "row": 0,
+      "column": 1,
+      "x": 128,
+      "y": 0,
+      "w": 128,
+      "h": 128
+    },
+    "stone_arch": {
+      "index": 2,
+      "row": 0,
+      "column": 2,
+      "x": 256,
+      "y": 0,
+      "w": 128,
+      "h": 128
+    },
+    "ancient_spear": {
+      "index": 3,
+      "row": 0,
+      "column": 3,
+      "x": 384,
+      "y": 0,
+      "w": 128,
+      "h": 128
+    },
+    "ancient_cav": {
+      "index": 4,
+      "row": 1,
+      "column": 0,
+      "x": 0,
+      "y": 128,
+      "w": 128,
+      "h": 128
+    },
+    "ancient_arch": {
+      "index": 5,
+      "row": 1,
+      "column": 1,
+      "x": 128,
+      "y": 128,
+      "w": 128,
+      "h": 128
+    },
+    "medieval_spear": {
+      "index": 6,
+      "row": 1,
+      "column": 2,
+      "x": 256,
+      "y": 128,
+      "w": 128,
+      "h": 128
+    },
+    "medieval_cav": {
+      "index": 7,
+      "row": 1,
+      "column": 3,
+      "x": 384,
+      "y": 128,
+      "w": 128,
+      "h": 128
+    },
+    "medieval_arch": {
+      "index": 8,
+      "row": 2,
+      "column": 0,
+      "x": 0,
+      "y": 256,
+      "w": 128,
+      "h": 128
+    },
+    "modern_spear": {
+      "index": 9,
+      "row": 2,
+      "column": 1,
+      "x": 128,
+      "y": 256,
+      "w": 128,
+      "h": 128
+    },
+    "modern_cav": {
+      "index": 10,
+      "row": 2,
+      "column": 2,
+      "x": 256,
+      "y": 256,
+      "w": 128,
+      "h": 128
+    },
+    "modern_arch": {
+      "index": 11,
+      "row": 2,
+      "column": 3,
+      "x": 384,
+      "y": 256,
+      "w": 128,
+      "h": 128
+    },
+    "future_spear": {
+      "index": 12,
+      "row": 3,
+      "column": 0,
+      "x": 0,
+      "y": 384,
+      "w": 128,
+      "h": 128
+    },
+    "future_cav": {
+      "index": 13,
+      "row": 3,
+      "column": 1,
+      "x": 128,
+      "y": 384,
+      "w": 128,
+      "h": 128
+    },
+    "future_arch": {
+      "index": 14,
+      "row": 3,
+      "column": 2,
+      "x": 256,
+      "y": 384,
+      "w": 128,
+      "h": 128
+    },
+    "special_blast": {
+      "index": 15,
+      "row": 3,
+      "column": 3,
+      "x": 384,
+      "y": 384,
+      "w": 128,
+      "h": 128
+    }
+  },
+  "qa": {
+    "assetCount": 16,
+    "edgePixels": 0,
+    "emptyCells": 0,
+    "minOccupiedPixels": 3459,
+    "maxOccupiedPixels": 7453,
+    "alphaMode": "source-alpha",
+    "sourceHadTransparency": true,
+    "removedPixels": 0
+  }
+}

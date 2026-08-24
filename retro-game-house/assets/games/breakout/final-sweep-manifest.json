@@ -1,0 +1,61 @@
+{
+  "version": 2,
+  "kind": "runtime-integrated-art-candidate",
+  "status": "final-gate-pending",
+  "countedInLedger": false,
+  "game": "breakout",
+  "set": "fidelity-rebuild-2026-08-25",
+  "tool": "Codex built-in ImageGen",
+  "model": "ImageGen（服務端版本未揭露）",
+  "generatedAt": "2026-08-25",
+  "prompt": "art-production/fidelity-rebuild-2026-08-25/breakout/prompt-v003.md",
+  "source": "art-production/fidelity-rebuild-2026-08-25/breakout/source/breakout-media-faithful-v003-imagegen.png",
+  "sourceSha256": "063e2775444c6efeaa046851ab018cffbddefc034135bf3937a0378aebe885a5",
+  "supersedes": "art-production/fidelity-rebuild-2026-08-25/breakout/rejected/breakout-final-sweep-manifest-2026-08-24.json",
+  "supersededReason": "媒材年代不符；原候選保留於 rejected，不計正式帳。",
+  "postprocess": "固定格裁切、等比例縮放、透明留白與 4x4 圖集排版；未去背、未補畫、未修改模型內容。點陣媒材採 nearest-neighbor，向量／網頁媒材採 Lanczos 縮放。",
+  "atlas": "final-sweep-atlas.png",
+  "atlasSha256": "c544ca7295c61b47536ffd10eda4f52fed39d36f70abb1f54d0bb7f7828471e3",
+  "cellWidth": 128,
+  "cellHeight": 128,
+  "assets": {
+    "circuit_brick": {
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "1976 平面磚塊"
+    },
+    "crt_backboard": {
+      "index": 1,
+      "x": 128,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "CRT 場框"
+    },
+    "clear_burst": {
+      "index": 2,
+      "x": 256,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "磚塊破裂演出"
+    }
+  },
+  "runtimePresentation": "RetroShell 開場的美術候選圖譜；正常流程可見，不介入遊戲亂數、碰撞或更新。",
+  "qa": {
+    "assetCount": 3,
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceAlphaMin": 0,
+    "sourceAlphaMax": 255,
+    "edgePixels": 0,
+    "emptyCells": 0,
+    "mediumFidelityPreScreen": true,
+    "humanFinalGate": false
+  }
+}

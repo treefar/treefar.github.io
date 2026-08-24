@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 沙漠王子</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   沙漠王子 — 致敬 Prince of Persia (Brøderbund, 1989)
+   --------------------------------------------------------------------------
+   這款要復刻的不是「玩法」，是**動畫本身就是難度**這個設計立場。
+
+   一般平台遊戲把角色當成一個可以隨時改變速度的方塊：想停就停、想轉就轉。
+   《波斯王子》反過來——它先用真人轉描做出有重量的動畫，
+   然後讓**動畫的每一格都真的算數**：
+     · 轉身要花 0.26 秒，這段時間你不能做任何事
+     · 跳之前一定會先蹲下蓄力，蹲到一半不能反悔
+     · 全速奔跑後放開方向，你還會往前滑掉大半格
+   於是「我看到危險了」跟「我停得下來」之間出現一段真空，
+   那段真空就是這款遊戲的難度來源。它不靠敵人多、不靠關卡刁，
+   只是讓你為每一個按鍵負責。
+
+   墜落規則同理：一層樓內安全、兩層樓內扣血、再高直接摔死。
+   所以每個高低差都要先算，不能用跳的試錯——這也是動畫給的重量。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'prince',
+    title: '沙漠王子',
+    tagline: '動作有重量，於是每個決定都有代價',
+    original: 'Prince of Persia (Brøderbund, 1989)',
+    decade: '90s', year: 1989, platform: 'Apple II / PC', genre: '動作平台',
+    developer: 'Jordan Mechner', bgm: '90s',
+    width: 480, height: 320,
+    hud: [
+        { key: 'stage', label: '層', init: '1' },
+        { key: 'life', label: '生命', init: '♥♥♥' },
+        { key: 'time', label: '剩餘', init: '5:00' },
+        { key: 'score', label: 'SCORE' }
+    ],
+    touch: 'dpad+ab', labelA: '跳/格', labelB: '刺/走',
+    controls: [
+        { keys: ['←', '→'], desc: '輕點走一步；按住則起跑（起跑與煞停都要時間）' },
+        { keys: ['↓'], desc: '在平台邊緣往下垂降，抓住邊緣' },
+        { keys: ['↑'], desc: '懸掛時往上攀爬' },
+        { keys: ['A'], desc: '跳（原地或助跑）；劍鬥時是格擋' },
+        { keys: ['B'], desc: '劍鬥時刺擊；平時是小心慢走' }
+    ],
+    howto: '走到<strong>出口門</strong>。動作有慣性：轉身、起跳與助跑都要提早預判；' +
+           '<strong>B 刺擊、A 格擋</strong>，全程 5 分鐘。',
+    lesson: {
+        verb: '預判距離後承諾一段完整動作：小心走、助跑跳、抓邊、攀爬、刺擊或格擋。',
+        innovation: '把真人轉描的動畫時間變成操作規則；角色不是可任意轉向的方塊，每次輸入都要等動作完成並承擔位移後果。',
+        mission: '在第一個缺口前先全速跑到邊緣再煞停，接著改用小心走停在安全格；跨越缺口時比較原地跳與助跑跳，遇守衛至少完成一次「看見揮劍提示→格擋→趁硬直刺擊」。',
+        evolution: '《Prince of Persia》以動畫承諾建立電影式平台動作；《Tomb Raider》把格距、助跑與抓邊帶入 3D；《Celeste》則以可快速重試的短房間重新定義精準控制。',
+        reflection: '如果轉身、起跳與煞停都能瞬間取消，同一個尖刺與缺口還會要求預判，還是只考驗最後一刻的反應？'
+    },
+    design: '《Prince of Persia》的重量感並非完整模擬真實物理，而是把動作拆成有前搖、有效期與收尾、且不可隨意取消的狀態。' +
+            '起跑需要時間、煞停仍會滑行、跳躍必須先蹲下；因此玩家看到危險時，還得判斷目前動作是否來得及結束。' +
+            '地磚尺度、抓邊範圍、跌落高度與動畫節拍共同形成可學習的空間文法，劍鬥也用提示、格擋與硬直延續同一原則。' +
+            '本站把這些狀態做成可量測秒數，並以較清楚的危險提示呈現現代回饋，但不取消輸入承諾。' +
+            '**動畫不只是結果的表演；當每一格都有時間與位移，動畫本身就是關卡。**',
+    history: 'Jordan Mechner 於 1985 至 1989 年間在 Apple II 上創作並程式設計《Prince of Persia》，原版於 1989 年推出。' +
+             'Mechner 保存的開發日誌記錄了作品從概念、動畫測試到發行的過程；他的官方素材庫也公開 1985 年拍攝、由當時 15 歲的弟弟 David 示範跑、跳與攀爬的影像。' +
+             '由於 Apple II 無法直接輸入影片，他逐格擷取並轉描成人物動畫，再把這些動作放回格狀關卡與即時劍鬥。Mechner 後來也公開原始碼與移植技術文件，使這套類比影像轉數位動作的流程仍可被研究。',
+    sources: [
+        { label: 'Jordan Mechner：《The Making of Prince of Persia》開發日誌', url: 'https://www.jordanmechner.com/en/books/journals/' },
+        { label: 'Jordan Mechner 官方素材庫：轉描影片與 Apple II 技術文件', url: 'https://www.jordanmechner.com/en/library/' },
+        { label: 'Jordan Mechner：Apple II 原始碼典藏', url: 'https://github.com/jmechner/Prince-of-Persia-Apple-II' }
+    ]
+});
+
+var ctx = G.ctx, VW = G.width, VH = G.height;
+var P = new RE.Particles(300);
+var FT = new RE.FloatText();
+var PRINCE_ART = { image: new Image(), manifest: null };
+PRINCE_ART.image.src = '../../assets/games/prince/rotoscope-pixel-atlas.png';
+fetch('../../assets/games/prince/rotoscope-pixel-manifest.json')
+    .then(function (r) { if (!r.ok) throw new Error('prince art manifest ' + r.status); return r.json(); })
+    .then(function (m) { PRINCE_ART.manifest = m; })
+    .catch(function () { PRINCE_ART.manifest = null; });
+
+var TW = 40, TH = 64, COLS = 12, ROWS = 5;
+var TOTAL_TIME = 300;          // 五分鐘。原作是六十分鐘，這裡壓縮成一場的長度
+
+// ======================================================================
+// 手感參數。這一份表就是這款遊戲的全部個性——
+// 每一個「Time」都是玩家收不回來的時間。
+// ======================================================================
+var TUNE = {
+    turnTime: 0.26,            // 轉身：這 0.26 秒你什麼都不能做
+    stepTime: 0.38, stepDist: TW,
+    runStartTime: 0.24,        // 起跑加速
+    runSpeed: 172,
+    runStopTime: 0.32, runStopDist: 30,   // 煞停還會滑出去大半格
+
+    // 起跳前的蹲。蹲下去就不能反悔了。
+    // 水平初速是量出來的：原地跳要能從「格子正中央」跨過一格缺口（>40px 還要留餘裕），
+    // 助跑跳要能跨兩格（>80px）。第一版原地跳只有 56px，站在格子中央起跳會直接掉進洞裡。
+    jumpPrep: 0.20,
+    standJumpVX: 132, standJumpVY: -270,
+    runJumpVX: 205, runJumpVY: -285,
+
+    gravity: 900, maxFall: 470,
+    safeFall: TH * 1.25,       // 一層樓內：安全
+    hurtFall: TH * 2.35,       // 兩層樓內：扣一顆心。再高就摔死
+
+    landTime: 0.22, landHardTime: 0.60,
+    grabRange: 24, climbTime: 0.62,
+    hangDropTime: 0.30,
+
+    // 劍鬥
+    strikeStart: 0.18, strikeActive: 0.12, strikeEnd: 0.30,
+    parryStart: 0.08, parryActive: 0.30, parryEnd: 0.16,
+    fightStep: 26, fightStepTime: 0.26,
+    guardTell: 0.50, guardActive: 0.14, guardRecover: 0.55, guardStagger: 0.75,
+    fightRange: 46
+};
+
+// ======================================================================
+// 地圖圖例（12 欄 × 5 列，每格 40×64）
+//   .空　#石板　L鬆脫的磚　^尖刺　P壓板　G閘門　E出口門
+//   S起點　g守衛　h回血藥　C鍘刀
+// ======================================================================
+// 每一層都是照實測數字擺的，不是憑感覺畫的：
+//   一步＝1 格　原地跳＝1.9 格　助跑跳＝3.2 格
+//   跳躍高度只有 38px，一層樓 64px ——**跳不上一層樓**，往上只能抓邊再爬，
+//   但王子身高 52px，站著時頭頂離上一層地板只差 12px，所以搆得到。
+//   掉落：一層樓內安全、兩層樓內扣心、三層摔死。
+var LEVELS = [
+    {
+        name: '第一層 · 地牢', hint: '轉身要花時間，跳之前會先蹲。先習慣這副身體。',
+        rows: [
+            '............',
+            '............',
+            '............',
+            'S..........E',
+            '####.#######'
+        ]
+    },
+    {
+        // 第 7 欄落地後，第 8 欄的石堆頂端正好高一層 —— 跳上去搆得到邊，抓住再爬。
+        name: '第二層 · 井道', hint: '跳不上去就跳起來抓住邊緣，再按 ↑ 爬上來。',
+        rows: [
+            '............',
+            '............',
+            '........h..E',
+            '........####',
+            '#####..#####'
+        ]
+    },
+    {
+        name: '第三層 · 鬆脫的磚', hint: '淺色的磚踩上去就開始塌。別停下來。',
+        rows: [
+            '............',
+            '............',
+            '............',
+            'S..........E',
+            '###LLL.LL###'
+        ]
+    },
+    {
+        name: '第四層 · 尖刺與閘門', hint: '踩壓板開門，門只開四秒。中間那段要重新加速。',
+        rows: [
+            '............',
+            '............',
+            '............',
+            'S..G.......E',
+            '##P#^^###^^#'
+        ]
+    },
+    {
+        name: '第五層 · 守衛', hint: '它舉劍那一下按 A 格擋，架開之後才刺得到。',
+        rows: [
+            '............',
+            '............',
+            '............',
+            'S......g...E',
+            '############'
+        ]
+    },
+    {
+        // 收尾：鬆脫磚 → 尖刺 → 守衛 → 兩段抓邊攀爬。前面教的東西全部各來一次。
+        name: '第六層 · 出塔', hint: '全部一起來。時間不多了。',
+        rows: [
+            '............',
+            '..........hE',
+            '.........###',
+            'S......g##..',
+            '##L#^#######'
+        ]
+    }
+];
+
+// ======================================================================
+// 狀態
+// ======================================================================
+var s = null;
+
+function reset() {
+    s = {
+        lv: 0, score: 0, life: 3, maxLife: 3,
+        time: TOTAL_TIME, timeShown: -1, over: false
+    };
+    P.clear(); FT.clear();
+    G.setStat('score', 0);
+    setLifeHud();
+    loadLevel(0);
+}
+
+function setLifeHud() {
+    var t = '';
+    for (var i = 0; i < s.maxLife; i++) t += (i < s.life ? '♥' : '·');
+    G.setStat('life', t);
+}
+
+function loadLevel(n) {
+    var def = LEVELS[n];
+    var solid = {}, spikes = {}, loose = [], gates = [], plates = [], guards = [], potions = [];
+    var start = null, exit = null;
+
+    for (var r = 0; r < def.rows.length; r++) {
+        var row = def.rows[r];
+        for (var c = 0; c < row.length; c++) {
+            var ch = row[c], k = c + ',' + r;
+            if (ch === '#') solid[k] = 1;
+            else if (ch === '^') { solid[k] = 1; spikes[k] = 1; }
+            else if (ch === 'L') loose.push({ c: c, r: r, state: 0, t: 0, y: 0 });
+            else if (ch === 'P') { solid[k] = 1; plates.push({ c: c, r: r, t: 0 }); }
+            else if (ch === 'G') gates.push({ c: c, r: r, open: 0 });
+            else if (ch === 'E') exit = { c: c, r: r };
+            else if (ch === 'S') start = { c: c, r: r };
+            else if (ch === 'g') guards.push(makeGuard(c, r));
+            else if (ch === 'h') potions.push({ c: c, r: r, t: 0 });
+        }
+    }
+
+    s.lv = n; s.def = def;
+    s.solid = solid; s.spikes = spikes;
+    s.loose = loose; s.gates = gates; s.plates = plates;
+    s.guards = guards; s.potions = potions;
+    s.exit = exit; s.start = start;
+    s.hintT = 3.0; s.doneT = 0;
+    G.setStat('stage', String(n + 1));
+    spawnPlayer();
+}
+
+function spawnPlayer() {
+    var st = s.start || { c: 0, r: 3 };
+    s.p = {
+        x: st.c * TW + TW / 2, y: (st.r + 1) * TH,
+        vx: 0, vy: 0, face: 1,
+        st: 'idle', t: 0, dur: 0,
+        grounded: true, descentY: 0, falling: false,
+        hangC: 0, hangR: 0,
+        sword: false, hurtT: 0, dead: false,
+        w: 22, h: 52
+    };
+    RE.Input.consumeBuffer('a');
+    RE.Input.consumeBuffer('b');
+}
+
+// ---------- 地形查詢 ----------
+function solidAt(c, r) {
+    if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return r >= ROWS ? false : true;   // 左右是牆，底下是深淵
+    if (s.solid[c + ',' + r]) return true;
+    for (var i = 0; i < s.loose.length; i++) {
+        var l = s.loose[i];
+        if (l.c === c && l.r === r && l.state < 2) return true;
+    }
+    for (i = 0; i < s.gates.length; i++) {
+        var g = s.gates[i];
+        if (g.c === c && g.r === r && g.open <= 0) return true;
+    }
+    return false;
+}
+function spikeAt(c, r) { return !!s.spikes[c + ',' + r]; }
+
+/** 腳下那一格（站著時 y 正好是該格的上緣） */
+function footCell(p) { return { c: Math.floor(p.x / TW), r: Math.floor((p.y + 1) / TH) }; }
+
+function groundBelow(p) {
+    var c = Math.floor(p.x / TW);
+    var r = Math.floor((p.y + 1) / TH);
+    return solidAt(c, r);
+}
+
+// ======================================================================
+// 動作狀態機
+// ----------------------------------------------------------------------
+// 這是整款遊戲的核心。每個 setState 都寫死一段時間，
+// 時間走完之前不接受任何輸入——這就是「動畫本身就是難度」。
+// ======================================================================
+function setState(st, dur) {
+    var p = s.p;
+    p.st = st; p.t = 0; p.dur = dur || 0;
+}
+function stProgress() { return s.p.dur > 0 ? RE.clamp(s.p.t / s.p.dur, 0, 1) : 1; }
+
+/** 這些狀態進行中完全不接受輸入 */
+function committed() {
+    var st = s.p.st;
+    return st === 'turn' || st === 'step' || st === 'runStop' || st === 'jumpPrep' ||
+           st === 'land' || st === 'landHard' || st === 'climb' || st === 'hangDrop' ||
+           st === 'strike' || st === 'parry' || st === 'hurt' || st === 'dead' || st === 'exitWalk';
+}
+
+function updatePlayer(dt) {
+    var p = s.p;
+    p.t += dt;
+    if (p.hurtT > 0) p.hurtT -= dt;
+
+    var ax = RE.Input.axisX(), ay = RE.Input.axisY();
+    var jump = RE.Input.buffered('a', 0.14);
+    var stab = RE.Input.buffered('b', 0.14);
+
+    // ---------- 硬直中：只推進動畫，不接受輸入 ----------
+    if (committed()) {
+        advanceCommitted(dt);
+        return;
+    }
+
+    // ---------- 空中 ----------
+    if (p.st === 'air') { updateAir(dt); return; }
+
+    // ---------- 懸掛 ----------
+    if (p.st === 'hang') {
+        if (ay < 0 || jump) {                       // 往上爬
+            RE.Input.consumeBuffer('a');
+            s.climbFrom = p.x;
+            setState('climb', TUNE.climbTime);
+            RetroAudio.play('step');
+        } else if (ay > 0) {                        // 放手
+            p.st = 'air'; p.vy = 20; p.vx = 0;
+            p.falling = true; p.descentY = p.y;
+        }
+        return;
+    }
+
+    // ---------- 劍鬥模式 ----------
+    var foe = nearestFoe();
+    p.sword = !!foe;
+    if (foe) { updateFight(dt, foe, ax, jump, stab); return; }
+
+    // ---------- 地面：站立 / 走 / 跑 ----------
+    if (!groundBelow(p)) { startFall(); return; }
+
+    if (p.st === 'run') {
+        if (ax === p.face) {
+            p.vx = p.face * TUNE.runSpeed;
+            moveH(p.vx * dt);
+            if (jump) { RE.Input.consumeBuffer('a'); s.jumpKind = 'run'; setState('jumpPrep', TUNE.jumpPrep * 0.6); }
+            else if (!groundBelow(p)) startFall();
+            return;
+        }
+        // 放開方向 → 煞停（會滑出去，這段完全不能操作）
+        setState('runStop', TUNE.runStopTime);
+        s.slideFrom = p.x;
+        return;
+    }
+
+    if (p.st === 'runStart') {
+        var u = stProgress();
+        p.vx = p.face * TUNE.runSpeed * u;
+        moveH(p.vx * dt);
+        if (!groundBelow(p)) { startFall(); return; }
+        if (ax !== p.face) { setState('runStop', TUNE.runStopTime * 0.6); s.slideFrom = p.x; return; }
+        if (jump) { RE.Input.consumeBuffer('a'); s.jumpKind = 'run'; setState('jumpPrep', TUNE.jumpPrep * 0.6); return; }
+        if (u >= 1) setState('run', 0);
+        return;
+    }
+
+    // idle
+    p.vx = 0;
+    if (jump) {
+        RE.Input.consumeBuffer('a');
+        s.jumpKind = (ax === p.face && ax !== 0) ? 'stand' : (ax === 0 ? 'up' : 'stand');
+        setState('jumpPrep', TUNE.jumpPrep);
+        return;
+    }
+    if (ay > 0 && canHangDown()) { setState('hangDrop', TUNE.hangDropTime); return; }
+    if (ax !== 0) {
+        if (ax !== p.face) { setState('turn', TUNE.turnTime); return; }   // 轉身要錢
+        // 輕點＝一步；按住＝起跑（一步走完還按著就進入起跑）
+        setState('step', TUNE.stepTime);
+        s.stepFrom = p.x;
+        RetroAudio.play('step');
+    }
+}
+
+/** 硬直狀態的推進：動畫走完之後決定接下來去哪 */
+function advanceCommitted(dt) {
+    var p = s.p, u = stProgress();
+
+    if (p.st === 'turn') {
+        if (u >= 1) { p.face = -p.face; setState('idle', 0); }
+        return;
+    }
+
+    if (p.st === 'step') {
+        // 用 easeInOut 走完剛好一格，中途不能改變主意
+        var e = RE.ease.inOutQuad(u);
+        var target = s.stepFrom + p.face * TUNE.stepDist * e;
+        moveTo(target);
+        if (!groundBelow(p)) { startFall(); return; }
+        if (u >= 1) {
+            if (RE.Input.axisX() === p.face) setState('runStart', TUNE.runStartTime);
+            else setState('idle', 0);
+        }
+        return;
+    }
+
+    if (p.st === 'runStop') {
+        var e2 = RE.ease.outCubic(u);
+        moveTo(s.slideFrom + p.face * TUNE.runStopDist * e2);
+        if (!groundBelow(p)) { startFall(); return; }
+        if (u >= 1) setState('idle', 0);
+        return;
+    }
+
+    if (p.st === 'jumpPrep') {
+        if (u >= 1) {
+            if (s.jumpKind === 'run') { p.vx = p.face * TUNE.runJumpVX; p.vy = TUNE.runJumpVY; }
+            else if (s.jumpKind === 'up') { p.vx = 0; p.vy = TUNE.standJumpVY; }
+            else { p.vx = p.face * TUNE.standJumpVX; p.vy = TUNE.standJumpVY; }
+            p.st = 'air'; p.t = 0; p.falling = false; p.descentY = p.y;
+            RetroAudio.play('jump');
+        }
+        return;
+    }
+
+    if (p.st === 'land' || p.st === 'landHard') {
+        if (u >= 1) setState('idle', 0);
+        return;
+    }
+
+    if (p.st === 'hangDrop') {
+        if (u >= 1) {
+            // 吊在自己剛剛站著的那一格邊緣上，身體垂到下一層去
+            var fc = footCell(p);
+            p.hangC = fc.c; p.hangR = fc.r;
+            var hx = hangXFor(fc.c, fc.r);
+            p.y = fc.r * TH + p.h;
+            if (hx !== null) p.x = hx;
+            setState('hang', 0);
+        }
+        return;
+    }
+
+    if (p.st === 'climb') {
+        if (u >= 1) {
+            p.y = p.hangR * TH;
+            p.x = (p.hangC + 0.5) * TW;
+            p.face = p.x > s.climbFrom ? 1 : -1;
+            setState('land', TUNE.landTime * 0.7);
+        }
+        return;
+    }
+
+    if (p.st === 'strike' || p.st === 'parry') { updateAttackWindow(); if (u >= 1) setState('idle', 0); return; }
+    if (p.st === 'hurt') { if (u >= 1) setState('idle', 0); return; }
+    if (p.st === 'exitWalk') { if (u >= 1) nextLevel(); return; }
+}
+
+function moveH(d) { moveTo(s.p.x + d); }
+
+function moveTo(nx) {
+    var p = s.p;
+    var half = p.w / 2;
+    var r = Math.floor((p.y - 2) / TH);        // 身體所在的那一列
+    var lo = half + 1, hi = COLS * TW - half - 1;
+    // 撞牆（含關著的閘門）
+    var dir = nx > p.x ? 1 : -1;
+    var cNext = Math.floor((nx + dir * half) / TW);
+    if (solidAt(cNext, r)) {
+        nx = dir > 0 ? cNext * TW - half : (cNext + 1) * TW + half;
+    }
+    p.x = RE.clamp(nx, lo, hi);
+}
+
+function startFall() {
+    var p = s.p;
+    p.st = 'air'; p.t = 0; p.vy = 0;
+    p.falling = true; p.descentY = p.y;
+    if (p.st !== 'run' && p.st !== 'runStart') p.vx = p.vx || 0;
+}
+
+function updateAir(dt) {
+    var p = s.p;
+    var wasRising = p.vy < 0;
+    p.vy += TUNE.gravity * dt;
+    if (p.vy > TUNE.maxFall) p.vy = TUNE.maxFall;
+    if (wasRising && p.vy >= 0) { p.falling = true; p.descentY = p.y; }   // 下墜起點＝最高點
+
+    moveH(p.vx * dt);
+    var ny = p.y + p.vy * dt;
+
+    // 撞天花板
+    if (p.vy < 0) {
+        var cTop = Math.floor(p.x / TW), rTop = Math.floor((ny - p.h) / TH);
+        if (solidAt(cTop, rTop)) { ny = (rTop + 1) * TH + p.h; p.vy = 0; }
+    }
+
+    // 落地
+    if (p.vy > 0) {
+        var c = Math.floor(p.x / TW);
+        var r0 = Math.floor((p.y - 1) / TH), r1 = Math.floor(ny / TH);
+        for (var r = r0; r <= r1; r++) {
+            if (solidAt(c, r)) {
+                ny = r * TH;
+                p.y = ny; p.vx = 0; p.vy = 0;
+                landed(r, c);
+                return;
+            }
+        }
+    }
+    // 抓邊：上升與下墜都要能抓（原作要按鍵，這裡放寬讓它好玩）
+    if (tryGrab(ny)) return;
+    p.y = ny;
+
+    if (p.y - p.h > VH + 40) { die('掉進了塔底的黑暗。'); }
+}
+
+function landed(r, c) {
+    var p = s.p;
+    var dist = p.falling ? (p.y - p.descentY) : 0;
+    if (spikeAt(c, r)) { die('尖刺。'); return; }
+    triggerLoose(c, r);
+    if (dist > TUNE.hurtFall) { die('摔得太深了。'); return; }
+    if (dist > TUNE.safeFall) {
+        hurt(1, '落地太重');
+        setState('landHard', TUNE.landHardTime);
+        RetroAudio.play('hurt');
+        RE.juice.shake(0.35); RE.juice.hitstop(0.06);
+    } else {
+        setState('land', TUNE.landTime);
+        RetroAudio.play('land');
+        RE.juice.shake(0.1);
+        P.burst(p.x, p.y, 6, { colors: ['#c9a878', '#8a6b46'], speedMin: 20, speedMax: 70,
+            gravity: 300, lifeMin: 0.2, lifeMax: 0.4, sizeMin: 1.5, sizeMax: 3 });
+    }
+    p.falling = false;
+}
+
+/**
+ * 抓邊。原作的縱向移動全靠它——王子跳不上一層樓（實測跳躍高度 38px，一層是 64px），
+ * 但他身高 52px，所以只要頭頂搆得到上面那一層的地板邊緣就能吊住，再爬上去。
+ * 因此**上升與下墜都要能抓**：往上跳抓住頭頂的邊，往下掉抓住經過的邊。
+ *
+ * 吊掛位置一定要算在實心格「旁邊」，不能算在格子中心——
+ * 那是實心的，人會被塞進石頭裡。
+ */
+function tryGrab(ny) {
+    var p = s.p;
+    var headY = ny - p.h;
+    var r = Math.round(headY / TH);
+    if (r < 0 || r >= ROWS) return false;
+    var edgeY = r * TH;
+    if (Math.abs(headY - edgeY) > TUNE.grabRange) return false;
+
+    var cands = [
+        Math.floor((p.x + p.face * (p.w / 2 + 6)) / TW),   // 面向的那一格優先
+        Math.floor((p.x + p.w / 2 + 6) / TW),
+        Math.floor((p.x - p.w / 2 - 6) / TW)
+    ];
+    for (var i = 0; i < cands.length; i++) {
+        var cc = cands[i];
+        if (cc < 0 || cc >= COLS) continue;
+        if (!solidAt(cc, r) || spikeAt(cc, r)) continue;
+        if (solidAt(cc, r - 1)) continue;                  // 上面被封住就不是「邊」
+        var hx = hangXFor(cc, r);
+        if (hx === null) continue;
+        p.hangC = cc; p.hangR = r;
+        p.y = edgeY + p.h;
+        p.x = hx;
+        p.vx = 0; p.vy = 0; p.falling = false;
+        setState('hang', 0);
+        RetroAudio.play('block');
+        return true;
+    }
+    return false;
+}
+
+/** 吊在 (c,r) 這一格的哪一側？回傳吊掛時的 x，兩側都被塞住就回 null */
+function hangXFor(c, r) {
+    var half = s.p.w / 2;
+    var leftFree = !solidAt(c - 1, r) && c - 1 >= 0;
+    var rightFree = !solidAt(c + 1, r) && c + 1 < COLS;
+    var px = s.p.x;
+    if (leftFree && rightFree) return px < (c + 0.5) * TW ? c * TW - half - 1 : (c + 1) * TW + half + 1;
+    if (leftFree) return c * TW - half - 1;
+    if (rightFree) return (c + 1) * TW + half + 1;
+    return null;
+}
+
+/** 站在平台邊緣、面向外面才垂降得下去 */
+function canHangDown() {
+    var p = s.p;
+    var fc = footCell(p);
+    var c = fc.c + p.face;
+    if (c < 0 || c >= COLS) return false;
+    return !solidAt(c, fc.r);
+}
+
+// ======================================================================
+// 傷害與死亡
+// ======================================================================
+function hurt(n, why) {
+    if (s.p.hurtT > 0 || s.p.dead) return;
+    s.life -= n;
+    s.p.hurtT = 1.0;
+    setLifeHud();
+    RE.juice.flash('rgba(180,40,40,0.28)', 0.12);
+    FT.add(s.p.x, s.p.y - 60, why, { color: '#e8b04a', size: 12 });
+    if (s.life <= 0) die(why);
+}
+
+/**
+ * 原作的失敗模型：死掉只是**重來這一層**，計時器照樣往前走。
+ * 真正的失敗只有一個——時間用完。
+ * 所以陷阱可以做得很致命，代價是時間而不是「重看一次開場」。
+ */
+function die(why) {
+    var p = s.p;
+    if (p.dead) return;
+    p.dead = true;
+    setState('dead', 99);
+    s.deathWhy = why || '';
+    s.life = 0; setLifeHud();
+    RetroAudio.play('gameover');
+    RE.juice.hitstop(0.1); RE.juice.shake(0.5);
+    RE.juice.flash('rgba(160,30,30,0.35)', 0.2);
+    P.burst(p.x, p.y - 24, 18, { colors: ['#b03030', '#e8b04a', '#7a5a3a'],
+        speedMin: 40, speedMax: 160, gravity: 400, lifeMin: 0.4, lifeMax: 0.8 });
+    s.respawnT = 1.1;
+}
+
+function timeUp() {
+    if (s.over) return;
+    s.over = true;
+    G.gameOver({
+        win: false, score: s.score,
+        body: '時間用完了，你停在第 ' + (s.lv + 1) + ' 層。' +
+              '《波斯王子》唯一真正的失敗就是這個——摔死幾次都能再來，' +
+              '但六十分鐘走完就沒了。它把壓力從「還剩幾條命」換成「還剩多少時間」，' +
+              '於是<strong>猶豫本身也開始有代價</strong>：' +
+              '你在平台邊緣多站三秒想清楚要不要跳，那三秒是真的被扣掉的。'
+    });
+}
+
+// ======================================================================
+// 劍鬥
+// ======================================================================
+function makeGuard(c, r) {
+    return {
+        x: c * TW + TW / 2, y: (r + 1) * TH, r: r,
+        hp: 3, face: -1, st: 'idle', t: 0, dur: 0, dead: false, hurtT: 0
+    };
+}
+
+function nearestFoe() {
+    var p = s.p, best = null, bd = 1e9;
+    for (var i = 0; i < s.guards.length; i++) {
+        var g = s.guards[i];
+        if (g.dead) continue;
+        if (Math.abs(g.y - p.y) > 8) continue;                 // 同一層才算
+        // 交戰距離不能拉太遠。第一版是 2.6 倍（約三格），結果玩家在還沒跳過
+        // 前面那排尖刺時就被鎖進劍鬥模式——劍鬥中不能跳，等於卡死在尖刺前面。
+        var d = Math.abs(g.x - p.x);
+        if (d < TUNE.fightRange * 1.9 && d < bd) { bd = d; best = g; }
+    }
+    return best;
+}
+
+function updateFight(dt, g, ax, jump, stab) {
+    var p = s.p;
+    p.face = g.x > p.x ? 1 : -1;
+    var d = Math.abs(g.x - p.x);
+
+    if (stab) {
+        RE.Input.consumeBuffer('b');
+        setState('strike', TUNE.strikeStart + TUNE.strikeActive + TUNE.strikeEnd);
+        s.hitDone = false;
+        RetroAudio.play('slash');
+        return;
+    }
+    if (jump) {
+        RE.Input.consumeBuffer('a');
+        setState('parry', TUNE.parryStart + TUNE.parryActive + TUNE.parryEnd);
+        RetroAudio.play('block');
+        return;
+    }
+    // 劍鬥中只能小步進退，一樣是委身於動畫
+    if (ax !== 0) {
+        var wantIn = (ax === p.face);
+        if (wantIn && d < TUNE.fightRange * 0.8) return;
+        setState('step', TUNE.fightStepTime);
+        s.stepFrom = p.x;
+        s.fightStepDir = ax;
+        p.vx = 0;
+        // 借用 step 狀態但用較短距離
+        s.stepShort = true;
+    }
+}
+
+/** 刺擊的有效幀：只有中間那一小段算數 */
+function updateAttackWindow() {
+    var p = s.p;
+    if (p.st !== 'strike' || s.hitDone) return;
+    var t = p.t;
+    if (t < TUNE.strikeStart || t > TUNE.strikeStart + TUNE.strikeActive) return;
+    for (var i = 0; i < s.guards.length; i++) {
+        var g = s.guards[i];
+        if (g.dead) continue;
+        if (Math.abs(g.y - p.y) > 8) continue;
+        var d = (g.x - p.x) * p.face;
+        if (d > 0 && d < TUNE.fightRange + 12) {
+            s.hitDone = true;
+            if (g.st === 'parry') {
+                RetroAudio.play('block');
+                RE.juice.shake(0.18);
+                FT.add((p.x + g.x) / 2, p.y - 50, '被架開', { color: '#cfd6e6', size: 12 });
+            } else {
+                g.hp--; g.hurtT = 0.4;
+                g.st = 'stagger'; g.t = 0; g.dur = TUNE.guardStagger;
+                RetroAudio.play('heavyHit');
+                RE.juice.hitstop(0.07); RE.juice.shake(0.3);
+                P.burst(g.x, g.y - 30, 12, { colors: ['#b03030', '#e8b04a'],
+                    speedMin: 50, speedMax: 160, gravity: 300, lifeMin: 0.25, lifeMax: 0.5 });
+                addScore(200);
+                if (g.hp <= 0) {
+                    g.dead = true;
+                    addScore(500);
+                    FT.add(g.x, g.y - 60, '守衛倒下 +500', { color: '#e8b04a', size: 13 });
+                    RetroAudio.play('levelUp');
+                }
+            }
+        }
+    }
+}
+
+function updateGuards(dt) {
+    var p = s.p;
+    for (var i = 0; i < s.guards.length; i++) {
+        var g = s.guards[i];
+        if (g.dead) continue;
+        g.t += dt;
+        if (g.hurtT > 0) g.hurtT -= dt;
+        g.face = p.x > g.x ? 1 : -1;
+        var d = Math.abs(g.x - p.x);
+        var inRange = d < TUNE.fightRange + 10 && Math.abs(g.y - p.y) < 8;
+
+        if (g.st === 'stagger') { if (g.t >= g.dur) { g.st = 'idle'; g.t = 0; } continue; }
+
+        if (g.st === 'idle') {
+            if (!inRange && d < TUNE.fightRange * 2.6 && Math.abs(g.y - p.y) < 8) {
+                g.x += g.face * 34 * dt;                   // 慢慢逼近
+            } else if (inRange && g.t > 0.35) {
+                g.st = Math.random() < 0.28 ? 'parry' : 'tell';
+                g.t = 0; g.dur = g.st === 'parry' ? 0.55 : TUNE.guardTell;
+            }
+            continue;
+        }
+        if (g.st === 'parry') { if (g.t >= g.dur) { g.st = 'idle'; g.t = 0; } continue; }
+        if (g.st === 'tell') {
+            if (g.t >= g.dur) { g.st = 'swing'; g.t = 0; g.dur = TUNE.guardActive; RetroAudio.play('slash'); }
+            continue;
+        }
+        if (g.st === 'swing') {
+            // 揮劍的有效幀：玩家有沒有在格擋，決定接下來誰吃虧
+            if (!g.resolved && g.t > g.dur * 0.4) {
+                g.resolved = true;
+                var parrying = p.st === 'parry' && p.t >= TUNE.parryStart &&
+                               p.t <= TUNE.parryStart + TUNE.parryActive;
+                if (inRange) {
+                    if (parrying) {
+                        g.st = 'stagger'; g.t = 0; g.dur = TUNE.guardStagger;
+                        RetroAudio.play('block');
+                        RE.juice.hitstop(0.06); RE.juice.shake(0.24);
+                        FT.add(g.x, g.y - 56, '架開了！', { color: '#8fd0ff', size: 13 });
+                        addScore(100);
+                        g.resolved = false;
+                        continue;
+                    } else {
+                        hurt(1, '中劍');
+                        setState('hurt', 0.45);
+                        p.x -= p.face * 16;
+                        RetroAudio.play('hurt');
+                        RE.juice.shake(0.34);
+                    }
+                }
+            }
+            if (g.t >= g.dur) { g.st = 'recover'; g.t = 0; g.dur = TUNE.guardRecover; g.resolved = false; }
+            continue;
+        }
+        if (g.st === 'recover') { if (g.t >= g.dur) { g.st = 'idle'; g.t = 0; } continue; }
+    }
+}
+
+// ======================================================================
+// 機關
+// ======================================================================
+function triggerLoose(c, r) {
+    for (var i = 0; i < s.loose.length; i++) {
+        var l = s.loose[i];
+        if (l.c === c && l.r === r && l.state === 0) {
+            l.state = 1; l.t = 0;
+            RetroAudio.play('blip');
+        }
+    }
+}
+
+function updateTraps(dt) {
+    var i, p = s.p;
+    for (i = 0; i < s.loose.length; i++) {
+        var l = s.loose[i];
+        if (l.state === 1) {
+            l.t += dt;
+            if (l.t >= 0.28) {
+                l.state = 2; l.t = 0;
+                RetroAudio.play('drop');
+                P.burst(l.c * TW + TW / 2, l.r * TH + 10, 10, {
+                    colors: ['#8a6b46', '#5c4630'], speedMin: 30, speedMax: 110,
+                    gravity: 500, lifeMin: 0.3, lifeMax: 0.6 });
+            }
+        } else if (l.state === 2) {
+            l.y += 420 * dt;
+        }
+    }
+    // 壓板
+    for (i = 0; i < s.plates.length; i++) {
+        var pl = s.plates[i];
+        var on = Math.floor(p.x / TW) === pl.c && Math.abs(p.y - pl.r * TH) < 4;
+        if (on && pl.t <= 0) {
+            RetroAudio.play('powerup');
+            FT.add(pl.c * TW + TW / 2, pl.r * TH - 20, '門開了', { color: '#8fd0ff', size: 12 });
+        }
+        if (on) pl.t = 4.0;
+        else if (pl.t > 0) pl.t -= dt;
+        for (var j = 0; j < s.gates.length; j++) s.gates[j].open = pl.t;
+    }
+    // 尖刺：站在尖刺格上就死
+    var fc = footCell(p);
+    if (!p.dead && spikeAt(fc.c, fc.r) && Math.abs(p.y - fc.r * TH) < 4) die('尖刺。');
+    // 鬆脫的磚：用走的踩上去也要塌，不能只在「從空中落地」時觸發
+    if (!p.dead && p.st !== 'air' && Math.abs(p.y - fc.r * TH) < 4) triggerLoose(fc.c, fc.r);
+
+    // 藥水
+    for (i = s.potions.length - 1; i >= 0; i--) {
+        var po = s.potions[i];
+        po.t += dt;
+        var px = po.c * TW + TW / 2, py = (po.r + 1) * TH;
+        if (Math.abs(p.x - px) < 22 && Math.abs(p.y - py) < 26) {
+            s.potions.splice(i, 1);
+            if (s.life < s.maxLife) s.life++;
+            setLifeHud();
+            addScore(300);
+            RetroAudio.play('oneup');
+            FT.add(px, py - 50, '回復一顆心', { color: '#ff8fa8', size: 13 });
+            P.burst(px, py - 24, 14, { colors: ['#ff5c8a', '#ffd166'], speedMin: 40, speedMax: 130,
+                gravity: 200, lifeMin: 0.3, lifeMax: 0.6, glow: true });
+        }
+    }
+}
+
+function addScore(n) { s.score += n; G.setStat('score', s.score); }
+
+// ======================================================================
+// 進關 / 通關
+// ======================================================================
+function checkExit() {
+    var p = s.p;
+    if (!s.exit || s.doneT > 0 || p.dead) return;
+    if (aliveGuardBlocking()) return;
+    var ex = s.exit.c * TW + TW / 2, ey = (s.exit.r + 1) * TH;
+    if (Math.abs(p.x - ex) < 20 && Math.abs(p.y - ey) < 8 && p.st !== 'air') {
+        s.doneT = 0.8;
+        addScore(800);
+        RetroAudio.play('win');
+        RE.juice.flash('rgba(240,220,160,0.3)', 0.16);
+        setState('exitWalk', 0.8);
+    }
+}
+
+function aliveGuardBlocking() {
+    for (var i = 0; i < s.guards.length; i++) {
+        var g = s.guards[i];
+        if (!g.dead && s.exit && Math.abs(g.y - (s.exit.r + 1) * TH) < 8) {
+            // 守衛擋在出口與玩家之間才算擋路
+            var betw = (g.x - s.p.x) * (s.exit.c * TW - s.p.x) > 0 &&
+                       Math.abs(g.x - s.p.x) < Math.abs(s.exit.c * TW + TW / 2 - s.p.x);
+            if (betw) return true;
+        }
+    }
+    return false;
+}
+
+function nextLevel() {
+    if (s.lv < LEVELS.length - 1) {
+        var n = s.lv + 1;
+        G.stageCard(n + 1, LEVELS[n].name, LEVELS[n].hint, function () { loadLevel(n); });
+        return;
+    }
+    finish();
+}
+
+function finish() {
+    var left = Math.max(0, Math.floor(s.time));
+    addScore(left * 12);
+    var mm = Math.floor(left / 60), ss = ('0' + (left % 60)).slice(-2);
+    G.gameOver({
+        win: true, score: s.score,
+        body: '你走出了塔，剩下 ' + mm + ':' + ss + '。' +
+              '回頭想想：讓你死最多次的，從來不是陷阱本身，' +
+              '是<strong>你已經看到陷阱、身體卻還在做上一個動作</strong>那半秒。' +
+              '《波斯王子》把難度放進角色的身體裡，而不是放進關卡的數量裡——' +
+              '這是 1989 年最重要的一個設計決定，之後三十年的動作遊戲都還在用它。'
+    });
+}
+
+// ======================================================================
+// 主迴圈
+// ======================================================================
+function update(dt) {
+    if (!s || !s.p) return;
+    P.update(dt); FT.update(dt);
+    if (s.hintT > 0) s.hintT -= dt;
+
+    // 時間永遠在走，死掉也一樣——這是這款遊戲唯一的真實壓力
+    s.time -= dt;
+    var shown = Math.max(0, Math.floor(s.time));
+    if (shown !== s.timeShown) {
+        s.timeShown = shown;
+        G.setStat('time', Math.floor(shown / 60) + ':' + ('0' + (shown % 60)).slice(-2));
+    }
+    if (s.time <= 0) { timeUp(); return; }
+
+    if (s.respawnT > 0) {
+        s.respawnT -= dt;
+        if (s.respawnT <= 0) { s.life = s.maxLife; setLifeHud(); loadLevel(s.lv); }
+        return;
+    }
+
+    updateTraps(dt);
+    updateGuards(dt);
+    updatePlayer(dt);
+    checkExit();
+}
+
+// ======================================================================
+// 姿勢表：這一段就是「動畫本身就是難度」的具體樣子
+// ----------------------------------------------------------------------
+// 每個關鍵影格是 [軀幹前傾, 前臂上/下, 後臂上/下, 前腿上/下, 後腿上/下, 身體下沉]
+// 角度用度數寫，0 = 垂直向下，正值 = 朝面向方向。
+// ======================================================================
+function K(t, a) { return { t: t, p: a }; }
+var POSES = {
+    idle:      [K(0, [4, 10, -16, -8, -12, 3, -4, -4, -3, 0])],
+    turn:      [K(0, [4, 10, -16, -8, -12, 3, -4, -4, -3, 0]),
+                K(0.5, [0, 30, -40, 30, -40, 0, -6, 0, -6, 6]),
+                K(1, [-4, -10, -16, 8, -12, -3, -4, 4, -3, 0])],
+    step:      [K(0, [5, 8, -14, -6, -12, 2, -3, -3, -3, 0]),
+                K(0.4, [11, -24, -18, 26, -16, 34, -14, -16, -8, 2]),
+                K(0.75, [8, -10, -12, 14, -12, 22, -5, -26, -22, 1]),
+                K(1, [4, 10, -16, -8, -12, 3, -4, -4, -3, 0])],
+    runStart:  [K(0, [6, 6, -14, -4, -12, 4, -4, -4, -3, 1]),
+                K(1, [24, -46, -54, 42, -30, 34, -28, -28, -46, 2])],
+    run:       [K(0, [23, -50, -56, 44, -30, 40, -30, -30, -50, 0]),
+                K(0.25, [23, -20, -40, 20, -30, 10, -8, -8, -70, 3]),
+                K(0.5, [23, 44, -30, -50, -56, -30, -50, 40, -30, 0]),
+                K(0.75, [23, 20, -30, -20, -40, -8, -70, 10, -8, 3]),
+                K(1, [23, -50, -56, 44, -30, 40, -30, -30, -50, 0])],
+    runStop:   [K(0, [22, -40, -50, 36, -30, 30, -26, -24, -44, 1]),
+                K(0.45, [-14, 40, -30, 30, -34, 26, -40, -14, -30, 8]),
+                K(1, [4, 10, -16, -8, -12, 3, -4, -4, -3, 0])],
+    jumpPrep:  [K(0, [6, 8, -14, -6, -12, 3, -4, -4, -3, 0]),
+                K(1, [28, -34, -44, -30, -46, 24, -54, -12, -58, 13])],
+    air:       [K(0, [14, -62, -34, -52, -30, 30, -42, -20, -30, 0]),
+                K(1, [-6, -96, -20, -84, -22, 16, -22, -18, -26, 0])],
+    land:      [K(0, [20, -30, -30, -26, -30, 18, -50, -18, -50, 11]),
+                K(1, [4, 10, -16, -8, -12, 3, -4, -4, -3, 0])],
+    landHard:  [K(0, [30, -20, -60, -18, -60, 22, -70, -20, -70, 18]),
+                K(0.5, [34, 10, -70, 8, -70, 24, -74, -22, -74, 20]),
+                K(1, [4, 10, -16, -8, -12, 3, -4, -4, -3, 0])],
+    hang:      [K(0, [0, -168, -4, -172, 4, 8, -16, -10, -20, 0]),
+                K(0.5, [0, -170, -2, -170, 2, 12, -20, -14, -24, 2]),
+                K(1, [0, -168, -4, -172, 4, 8, -16, -10, -20, 0])],
+    hangDrop:  [K(0, [8, 10, -16, -8, -12, 3, -4, -4, -3, 0]),
+                K(1, [4, -120, -20, -120, -20, 12, -30, -12, -30, 10])],
+    climb:     [K(0, [0, -168, -4, -172, 4, 8, -16, -10, -20, 0]),
+                K(0.45, [10, -140, -60, -144, -58, 40, -70, 20, -66, -14]),
+                K(0.8, [24, -60, -40, -64, -38, 50, -80, 10, -40, -34]),
+                K(1, [6, 10, -16, -8, -12, 3, -4, -4, -3, -46])],
+    strike:    [K(0, [8, -26, -10, 16, -20, 6, -6, -8, -8, 2]),
+                K(0.35, [-6, -50, -20, 30, -30, -6, -8, 12, -12, 4]),
+                K(0.55, [22, 86, 4, -20, -24, 26, -10, -20, -14, 0]),
+                K(1, [8, -20, -14, 12, -18, 5, -6, -6, -8, 2])],
+    parry:     [K(0, [4, -20, -16, 10, -18, 4, -6, -6, -8, 2]),
+                K(0.3, [-8, -74, -34, -30, -20, 2, -10, -10, -12, 4]),
+                K(1, [4, -20, -16, 10, -18, 4, -6, -6, -8, 2])],
+    hurt:      [K(0, [-18, 40, -20, 34, -24, -12, -10, 10, -14, 4]),
+                K(1, [4, 10, -16, -8, -12, 3, -4, -4, -3, 0])],
+    dead:      [K(0, [-30, 60, -20, 50, -24, -20, -20, 16, -20, 8]),
+                K(0.25, [-80, 92, -10, 86, -12, -60, -10, -50, -10, 34]),
+                K(1, [-86, 96, -6, 90, -8, -70, -6, -58, -6, 38])],
+    exitWalk:  [K(0, [6, -20, -16, 20, -14, 26, -12, -16, -10, 0]),
+                K(1, [4, 8, -14, -8, -12, 4, -5, -4, -4, 0])]
+};
+
+function poseFor(st, u) {
+    var arr = POSES[st] || POSES.idle;
+    if (arr.length === 1) return arr[0].p;
+    for (var i = 0; i < arr.length - 1; i++) {
+        if (u <= arr[i + 1].t) {
+            var a = arr[i], b = arr[i + 1];
+            var k = (u - a.t) / Math.max(0.0001, b.t - a.t);
+            var out = [];
+            for (var j = 0; j < a.p.length; j++) out.push(RE.lerp(a.p[j], b.p[j], k));
+            return out;
+        }
+    }
+    return arr[arr.length - 1].p;
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function drawPrinceAsset(name, cx, cy, w, h, alpha, flip) {
+    var m = PRINCE_ART.manifest;
+    if (!m || !m.assets || !m.assets[name] || !PRINCE_ART.image.complete ||
+        !PRINCE_ART.image.naturalWidth) return false;
+    var a = m.assets[name];
+    ctx.save();
+    ctx.globalAlpha = alpha === undefined ? 1 : alpha;
+    ctx.translate(cx, cy);
+    if (flip) ctx.scale(-1, 1);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(PRINCE_ART.image, a.x, a.y, a.w, a.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+}
+
+function render() {
+    if (!s || !s.p) return;
+    G.beginWorld();
+    drawBack();
+    drawTiles();
+    drawTraps();
+    drawExit();
+    drawPotions();
+    for (var i = 0; i < s.guards.length; i++) drawGuard(s.guards[i]);
+    drawPrince();
+    P.draw(ctx);
+    FT.draw(ctx);
+    G.endWorld();
+    drawHUD();
+    G.postFX({ scanAlpha: 0.06, vignetteStrength: 0.5 });
+}
+
+function drawBack() {
+    var g = ctx.createLinearGradient(0, 0, 0, VH);
+    g.addColorStop(0, '#241a14');
+    g.addColorStop(1, '#100b09');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, VW, VH);
+    // 拱門與磚牆：每一層畫一排拱，讓塔的縱深看得出來
+    for (var r = 0; r < ROWS; r++) {
+        var y = r * TH;
+        ctx.fillStyle = 'rgba(255,225,180,0.028)';
+        for (var c = 0; c < COLS; c += 3) {
+            var x = c * TW + 6;
+            ctx.beginPath();
+            ctx.moveTo(x, y + TH - 6);
+            ctx.lineTo(x, y + 26);
+            ctx.quadraticCurveTo(x + 54, y - 8, x + 108, y + 26);
+            ctx.lineTo(x + 108, y + TH - 6);
+            ctx.closePath();
+            ctx.fill();
+        }
+        ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(VW, y); ctx.stroke();
+    }
+    // 火把
+    for (var i = 0; i < 3; i++) {
+        var tx = 60 + i * 170, ty = 40 + (i % 2) * 128;
+        var fl = 0.7 + Math.sin(Date.now() * 0.008 + i * 2) * 0.3;
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        var rg = ctx.createRadialGradient(tx, ty, 2, tx, ty, 54 * fl);
+        rg.addColorStop(0, 'rgba(255,190,90,0.5)');
+        rg.addColorStop(1, 'rgba(255,150,50,0)');
+        ctx.fillStyle = rg;
+        ctx.fillRect(tx - 60, ty - 60, 120, 120);
+        ctx.restore();
+        ctx.fillStyle = '#3a2a1c';
+        ctx.fillRect(tx - 2, ty, 4, 14);
+        ctx.fillStyle = 'rgba(255,190,90,' + (0.7 + fl * 0.3) + ')';
+        ctx.beginPath(); ctx.ellipse(tx, ty - 3, 3.5, 6 * fl, 0, 0, RE.TAU); ctx.fill();
+    }
+}
+
+function drawSlab(x, y, w) {
+    if (drawPrinceAsset('palace_slab', x + w / 2, y + TH / 2, w + 12, TH + 8)) return;
+    ctx.fillStyle = '#6b5236';
+    ctx.fillRect(x, y, w, TH);
+    ctx.fillStyle = '#9b7c53';
+    ctx.fillRect(x, y, w, 7);
+    ctx.fillStyle = 'rgba(255,230,180,0.16)';
+    ctx.fillRect(x, y, w, 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.30)';
+    ctx.fillRect(x, y + TH - 5, w, 5);
+    ctx.strokeStyle = 'rgba(0,0,0,0.28)';
+    ctx.lineWidth = 1;
+    for (var k = 1; k < 3; k++) {
+        ctx.beginPath();
+        ctx.moveTo(x, y + 7 + k * 18); ctx.lineTo(x + w, y + 7 + k * 18);
+        ctx.stroke();
+    }
+    ctx.beginPath(); ctx.moveTo(x + w * 0.5, y + 7); ctx.lineTo(x + w * 0.5, y + 25); ctx.stroke();
+}
+
+function drawTiles() {
+    for (var r = 0; r < ROWS; r++) {
+        for (var c = 0; c < COLS; c++) {
+            var k = c + ',' + r;
+            if (!s.solid[k]) continue;
+            drawSlab(c * TW, r * TH, TW);
+            if (s.spikes[k]) drawSpikes(c * TW, r * TH);
+        }
+    }
+    // 閘門
+    for (var i = 0; i < s.gates.length; i++) {
+        var g = s.gates[i];
+        var open = RE.clamp(g.open / 4, 0, 1);
+        var x = g.c * TW, y = g.r * TH;
+        var h = TH * (1 - open * 0.92);
+        ctx.save();
+        ctx.beginPath(); ctx.rect(x, y, TW, TH); ctx.clip();
+        if (drawPrinceAsset('iron_gate', x + TW / 2, y + TH / 2 - TH * open * 0.92,
+            TW + 18, TH + 24)) { ctx.restore(); continue; }
+        ctx.restore();
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.fillRect(x + 4, y, TW - 8, TH);
+        ctx.fillStyle = '#8c8f9c';
+        for (var b = 0; b < 4; b++) ctx.fillRect(x + 6 + b * 8, y, 4, h);
+        ctx.fillStyle = '#5f6270';
+        ctx.fillRect(x + 4, y + h - 5, TW - 8, 5);
+    }
+}
+
+function drawSpikes(x, y) {
+    if (drawPrinceAsset('spike_trap', x + TW / 2, y - 8, TW + 14, 42)) return;
+    ctx.fillStyle = '#cfd6e6';
+    ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+    ctx.lineWidth = 1;
+    for (var i = 0; i < 4; i++) {
+        var ox = x + 4 + i * 9;
+        ctx.beginPath();
+        ctx.moveTo(ox, y); ctx.lineTo(ox + 4, y - 15); ctx.lineTo(ox + 8, y);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+}
+
+function drawTraps() {
+    for (var i = 0; i < s.loose.length; i++) {
+        var l = s.loose[i];
+        if (l.state === 2 && l.y > TH * 3) continue;
+        var sh = l.state === 1 ? Math.sin(l.t * 70) * 2 : 0;
+        var x = l.c * TW + sh, y = l.r * TH + (l.state === 2 ? l.y : 0);
+        ctx.save();
+        if (l.state === 2) ctx.globalAlpha = Math.max(0, 1 - l.y / (TH * 3));
+        ctx.fillStyle = '#8a6b46';
+        ctx.fillRect(x, y, TW, TH * 0.5);
+        ctx.fillStyle = '#b89468';
+        ctx.fillRect(x, y, TW, 6);
+        ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1;
+        ctx.strokeRect(x + 1, y + 1, TW - 2, TH * 0.5 - 2);
+        ctx.restore();
+    }
+    for (i = 0; i < s.plates.length; i++) {
+        var p = s.plates[i];
+        var down = p.t > 0 ? 3 : 0;
+        ctx.fillStyle = p.t > 0 ? '#8fd0ff' : '#a89272';
+        ctx.fillRect(p.c * TW + 7, p.r * TH + down, TW - 14, 5);
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.fillRect(p.c * TW + 7, p.r * TH + 5 + down, TW - 14, 2);
+    }
+}
+
+function drawExit() {
+    if (!s.exit) return;
+    var x = s.exit.c * TW, y = (s.exit.r + 1) * TH;
+    var glow = 0.55 + Math.sin(Date.now() * 0.004) * 0.2;
+    ctx.save();
+    ctx.shadowBlur = 14; ctx.shadowColor = 'rgba(255,205,120,' + glow + ')';
+    ctx.fillStyle = '#3d2b1a';
+    ctx.beginPath();
+    ctx.moveTo(x + 8, y);
+    ctx.lineTo(x + 8, y - 34);
+    ctx.quadraticCurveTo(x + TW / 2, y - 58, x + TW - 8, y - 34);
+    ctx.lineTo(x + TW - 8, y);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = 'rgba(255,205,120,' + (0.18 + glow * 0.2) + ')';
+    ctx.fillRect(x + 12, y - 32, TW - 24, 32);
+    ctx.strokeStyle = '#8a6b46'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x + 8, y); ctx.lineTo(x + 8, y - 34);
+    ctx.quadraticCurveTo(x + TW / 2, y - 58, x + TW - 8, y - 34);
+    ctx.lineTo(x + TW - 8, y);
+    ctx.stroke();
+}
+
+function drawPotions() {
+    for (var i = 0; i < s.potions.length; i++) {
+        var p = s.potions[i];
+        var x = p.c * TW + TW / 2, y = (p.r + 1) * TH - 12 + Math.sin(p.t * 2.4) * 2;
+        if (drawPrinceAsset('healing_potion', x, y - 2, 30, 38)) continue;
+        ctx.save();
+        ctx.shadowBlur = 8; ctx.shadowColor = '#ff5c8a';
+        ctx.fillStyle = '#d8425f';
+        ctx.beginPath(); ctx.ellipse(x, y, 5, 7, 0, 0, RE.TAU); ctx.fill();
+        ctx.restore();
+        ctx.fillStyle = '#cfd6e6';
+        ctx.fillRect(x - 2, y - 12, 4, 5);
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.fillRect(x - 3, y - 3, 2, 3);
+    }
+}
+
+/** 用關節角度畫一個有重量的人形。這裡多花的每一行都是為了讓「硬直」看得見。 */
+function drawFigure(x, y, face, pose, col, swordDrawn, swordExtend) {
+    var d = Math.PI / 180;
+    var lean = pose[0] * d, aFU = pose[1] * d, aFL = pose[2] * d;
+    var aBU = pose[3] * d, aBL = pose[4] * d;
+    var lFU = pose[5] * d, lFL = pose[6] * d, lBU = pose[7] * d, lBL = pose[8] * d;
+    var yOff = pose[9];
+
+    ctx.save();
+    ctx.translate(x, y - yOff);
+    ctx.scale(face, 1);
+
+    var hipY = -24, thigh = 12, shin = 12, upper = 10, fore = 10, torso = 22;
+    var shX = Math.sin(lean) * torso, shY = hipY - Math.cos(lean) * torso;
+
+    function limb(px, py, a1, l1, a2, l2, w, c) {
+        var jx = px + Math.sin(a1) * l1, jy = py + Math.cos(a1) * l1;
+        var ex = jx + Math.sin(a1 + a2) * l2, ey = jy + Math.cos(a1 + a2) * l2;
+        ctx.strokeStyle = c; ctx.lineWidth = w; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(jx, jy); ctx.lineTo(ex, ey); ctx.stroke();
+        return { x: ex, y: ey };
+    }
+
+    // 後側肢體先畫（深一階，做出前後層次）
+    limb(0, hipY, lBU, thigh, lBL, shin, 7, col.legBack);
+    var handB = limb(shX, shY, aBU, upper, aBL, fore, 5.5, col.armBack);
+
+    // 軀幹：束腰長袍
+    ctx.fillStyle = col.robe;
+    ctx.beginPath();
+    ctx.moveTo(-7, hipY + 4);
+    ctx.lineTo(shX - 7, shY);
+    ctx.lineTo(shX + 7, shY);
+    ctx.lineTo(7, hipY + 4);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = col.sash;
+    ctx.fillRect(-7, hipY - 2, 14, 4);
+
+    // 前側肢體
+    limb(0, hipY, lFU, thigh, lFL, shin, 7.5, col.legFront);
+    var handF = limb(shX, shY, aFU, upper, aFL, fore, 6, col.armFront);
+
+    // 頭與頭巾
+    var hx = shX + Math.sin(lean) * 8, hy = shY - Math.cos(lean) * 8;
+    ctx.fillStyle = col.skin;
+    ctx.beginPath(); ctx.arc(hx, hy, 6, 0, RE.TAU); ctx.fill();
+    ctx.fillStyle = col.hair;
+    ctx.beginPath(); ctx.arc(hx, hy - 1.5, 6, Math.PI * 1.05, Math.PI * 2.1); ctx.fill();
+    ctx.fillStyle = '#1a1208';
+    ctx.fillRect(hx + 2, hy - 1, 2, 2);
+
+    // 劍
+    if (swordDrawn) {
+        var ang = Math.atan2(handF.y - shY, handF.x - shX);
+        ctx.save();
+        ctx.translate(handF.x, handF.y);
+        ctx.rotate(ang + (swordExtend ? -0.15 : -0.9));
+        ctx.strokeStyle = '#d6dbe8'; ctx.lineWidth = 2.5; ctx.lineCap = 'butt';
+        ctx.beginPath(); ctx.moveTo(-2, 0); ctx.lineTo(24, 0); ctx.stroke();
+        ctx.strokeStyle = '#f2f5ff'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(0, -0.8); ctx.lineTo(23, -0.8); ctx.stroke();
+        ctx.fillStyle = '#8a6b46';
+        ctx.fillRect(-5, -2.5, 5, 5);
+        ctx.restore();
+    }
+    ctx.restore();
+}
+
+var PRINCE_COL = {
+    robe: '#e8e2d4', sash: '#c8433f', skin: '#e2b48a', hair: '#2b2018',
+    armFront: '#e8e2d4', armBack: '#b8b2a4', legFront: '#dcd6c8', legBack: '#a8a294'
+};
+var GUARD_COL = {
+    robe: '#5a6a86', sash: '#2f3a4e', skin: '#c99a72', hair: '#221a14',
+    armFront: '#5a6a86', armBack: '#44506a', legFront: '#4e5c76', legBack: '#3a4458'
+};
+
+function drawPrince() {
+    var p = s.p;
+    var u = p.dur > 0 ? RE.clamp(p.t / p.dur, 0, 1) : (p.st === 'run' ? (p.t * 2.6) % 1 : (p.t * 0.7) % 1);
+    if (p.st === 'hang') u = (p.t * 0.8) % 1;
+    var pose = poseFor(p.st, u);
+    var col = PRINCE_COL;
+    if (p.hurtT > 0 && Math.floor(p.hurtT * 16) % 2 === 0) {
+        col = { robe: '#ffd0d0', sash: '#ff8080', skin: '#ffd0b0', hair: '#503028',
+                armFront: '#ffd0d0', armBack: '#e8b0b0', legFront: '#ffc8c8', legBack: '#d8a0a0' };
+    }
+    var extend = p.st === 'strike' && p.t > TUNE.strikeStart * 0.7;
+    var art = 'hero_idle';
+    if (p.st === 'dead') art = 'hero_dead';
+    else if (p.st === 'hurt' || p.hurtT > 0) art = 'hero_hurt';
+    else if (p.st === 'strike' || p.st === 'parry') art = 'hero_attack';
+    else if (p.st === 'climb') art = 'hero_climb';
+    else if (p.st === 'hang' || p.st === 'hangDrop') art = 'hero_hang';
+    else if (p.st === 'air' || p.st === 'jumpPrep' || p.st === 'land' || p.st === 'landHard') art = 'hero_jump';
+    else if (p.st === 'run' || p.st === 'runStart' || p.st === 'runStop' || p.st === 'step') art = 'hero_run';
+    if (!drawPrinceAsset(art, p.x, p.y - 29, 76, 86, 1, p.face < 0)) {
+        drawFigure(p.x, p.y, p.face, pose, col, p.sword, extend);
+    }
+
+    // 硬直提示：動作進行中在腳邊畫一圈進度弧，讓「現在不能操作」看得出來
+    if (committed() && p.st !== 'dead' && p.dur > 0 && p.dur < 2) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,205,120,0.35)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y - 2, 13, -Math.PI / 2, -Math.PI / 2 + RE.TAU * u);
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
+function drawGuard(g) {
+    if (g.dead) return;
+    var st = 'idle', u = 0;
+    if (g.st === 'tell') { st = 'parry'; u = 0.3 * (g.t / g.dur); }
+    else if (g.st === 'swing') { st = 'strike'; u = 0.35 + 0.3 * (g.t / g.dur); }
+    else if (g.st === 'recover') { st = 'strike'; u = 0.7 + 0.3 * (g.t / g.dur); }
+    else if (g.st === 'parry') { st = 'parry'; u = 0.3; }
+    else if (g.st === 'stagger') { st = 'hurt'; u = RE.clamp(g.t / g.dur, 0, 1); }
+    var col = GUARD_COL;
+    if (g.hurtT > 0 && Math.floor(g.hurtT * 16) % 2 === 0) {
+        col = { robe: '#ffb0b0', sash: '#ff8080', skin: '#ffd0b0', hair: '#503028',
+                armFront: '#ffb0b0', armBack: '#e09090', legFront: '#ffa8a8', legBack: '#d09090' };
+    }
+    var guardArt = g.st === 'tell' ? 'guard_tell' :
+        ((g.st === 'swing' || g.st === 'recover') ? 'guard_attack' :
+        (g.st === 'parry' ? 'guard_parry' : 'guard_idle'));
+    if (!drawPrinceAsset(guardArt, g.x, g.y - 30, 78, 88, 1, g.face < 0)) {
+        drawFigure(g.x, g.y, g.face, poseFor(st, u), col, true, g.st === 'swing');
+    }
+
+    // 血量與「即將揮劍」的預告
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillRect(g.x - 16, g.y - 74, 32, 5);
+    ctx.fillStyle = '#c8433f';
+    ctx.fillRect(g.x - 15, g.y - 73, 30 * (g.hp / 3), 3);
+    if (g.st === 'tell') {
+        var k = g.t / g.dur;
+        ctx.fillStyle = 'rgba(255,120,90,' + (0.35 + k * 0.5) + ')';
+        ctx.fillRect(g.x - 15, g.y - 82, 30 * k, 3);
+        RE.Draw.text(ctx, '!', g.x, g.y - 100, { size: 15, align: 'center', color: '#ff9060' });
+    }
+}
+
+function drawHUD() {
+    if (s.hintT > 0) {
+        var a = Math.min(1, s.hintT / 0.7);
+        ctx.globalAlpha = a;
+        RE.Draw.text(ctx, s.def.name, VW / 2, 12, { size: 15, align: 'center', color: '#e8c27a' });
+        RE.Draw.text(ctx, s.def.hint, VW / 2, 34, { size: 11, align: 'center', color: '#e6dcc8' });
+        ctx.globalAlpha = 1;
+    }
+    if (s.time < 30 && !s.p.dead) {
+        var blink = Math.floor(s.time * 3) % 2 === 0;
+        if (blink) RE.Draw.text(ctx, '時間快到了', VW / 2, VH - 22, { size: 13, align: 'center', color: '#ff8060' });
+    }
+}
+
+// ======================================================================
+function openPause() {
+    G._state = 'paused';
+    RetroAudio.play('pause');
+    G.showOverlay({
+        title: '暫停中',
+        body: '這個王子的動作都收不回來——轉身 0.26 秒、起跳前要先蹲。危險要提早看。',
+        buttons: [
+            { label: '▶ 繼續', onClick: function () { G.resume(); } },
+            { label: '↻ 重新開始', cls: 'ghost', onClick: function () { G.restart(); } }
+        ],
+        press: '按 P 或 ESC 繼續'
+    });
+}
+G.pause = openPause;
+
+function showTitleScreen() {
+    G._state = 'title';
+    G.showOverlay({
+        title: '沙漠王子',
+        body: G.cfg.howto,
+        buttons: [{ label: '▶ 進入塔中', onClick: function () { G.hideOverlay(); G._state = 'playing'; reset(); } }],
+        press: '按 空白鍵 或 Enter 開始'
+    });
+    var onKey = function (e) {
+        if (G._state !== 'title') return;
+        if (e.code === 'Space' || e.code === 'Enter') {
+            e.preventDefault();
+            window.removeEventListener('keydown', onKey);
+            RetroAudio.play('confirm');
+            G.hideOverlay(); G._state = 'playing'; reset();
+        }
+    };
+    window.addEventListener('keydown', onKey);
+}
+
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+showTitleScreen();
+</script>
+</body>
+</html>

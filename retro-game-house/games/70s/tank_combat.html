@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 鋼鐵對峙</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   鋼鐵對峙 — 致敬 Combat (Atari 2600, 1977) / Tank (Kee Games, 1974)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. 牆面跳彈：砲彈碰牆會反射，把射擊從「瞄準」變成「幾何計算」。
+      這是本作最核心的樂趣——用一發子彈打到看不見的敵人。
+   2. 坦克的移動是「前進 + 轉向」而非八方向，操作笨重感是刻意保留的。
+   3. 五張手繪地圖，牆的配置決定每張圖的戰術性格（開闊、迷宮、對稱走廊…）。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'tank_combat',
+    title: '鋼鐵對峙',
+    tagline: '牆面跳彈，讓射擊變成一道幾何題',
+    original: 'Combat (Atari, 1977)',
+    decade: '70s', year: 1977, platform: 'Atari 2600', genre: '對戰射擊',
+    developer: 'Atari', bgm: '70s',
+    width: 480, height: 360,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'you', label: '你', init: 0 },
+        { key: 'cpu', label: 'CPU', init: 0 },
+        { key: 'map', label: '地圖', init: 1 }
+    ],
+    touch: 'dpad+ab', labelA: '開砲', maxScale: 2,
+    controls: [
+        { keys: ['←', '→'], desc: '轉向' },
+        { keys: ['↑', '↓'], desc: '前進 / 後退' },
+        { keys: ['空白'], desc: '開砲' }
+    ],
+    howto: '先擊中對手 5 次者贏得該地圖。<strong>砲彈會在牆面反彈三次</strong>，' +
+           '所以你可以打到轉角後面的敵人——但小心，你自己的跳彈也會打到你。' +
+           '同時只能有一發砲彈在場，開砲前要想清楚。',
+    lesson: {
+        verb: '轉向、推進、後退與開砲；用牆面改寫砲彈路線，而不是只把砲口對準敵人。',
+        innovation: '把兩人同機競技、迷宮掩體與跳彈組成可反覆對局的家用主機文法；有限彈藥在場時間，讓每一次射擊也是位置承諾。',
+        mission: '先躲在牆角後方，完成一次看不見對手的反彈命中；再嘗試直線追射，比較哪一種打法更容易暴露車身或被自己的跳彈反傷。',
+        evolution: '《Pong》以兩支旋鈕建立面對面競技；《Combat》把對抗放進可轉向、可掩蔽的戰場，《Battle City》再加入基地防守與可破壞地形。',
+        reflection: '如果砲彈碰牆就消失，這些迷宮牆面還是戰術工具，還是只剩下妨礙移動的障礙？'
+    },
+    design: '《Combat》的突破不在於坦克畫得多真實，而是把極少量規則組成可讀、可反制的雙人戰術。' +
+            '坦克必須先轉向再推進，砲口因此同時暴露移動意圖；迷宮牆面會遮蔽直射，卻能讓砲彈反彈，掩體遂同時是防線與武器。' +
+            '本站版本限定同時只有一發砲彈在場，且砲彈最多反彈三次：亂射會暫時失去攻擊權，精準跳彈則能繞過視線。' +
+            '五張地圖依序改變開闊地、窄道與包抄路線，讓玩家看見同一組操控如何因空間拓樸產生不同解法。' +
+            '現代化資訊以雷達、彈道光跡與清楚比分呈現，但勝負仍由 1970 年代那個樸素問題決定：你能不能預判另一名玩家和下一次反彈。',
+    history: 'Atari 官方資料把《Combat》列為 1977 年推出、編號 CX26500 的雙人競技遊戲；同年 VCS 隨九款遊戲上市，《Combat》是這批早期卡帶作品之一，而不是寫死在主機裡的內建遊戲。' +
+             '原作不只包含坦克，還以多種場地、直射或導引飛彈，以及雙翼機、噴射機等載具構成大量規則變體。' +
+             '它把街機常見的短局對抗帶進家庭客廳，也示範卡帶如何用同一套硬體交換不同規則；本站聚焦其中最能說明空間戰術的 Tank-Pong 跳彈。',
+    sources: [
+        { label: 'Atari：《Combat》官方遊戲與規則資料', url: 'https://atari.com/pages/combat' },
+        { label: 'Atari：1977 年 VCS 與九款首發遊戲歷史', url: 'https://atari.com/pages/history' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(360);
+var FT = new RE.FloatText();
+
+var TILE = 24;
+var COLS = Math.floor(W / TILE), ROWS = Math.floor(H / TILE);
+
+// 五張手繪地圖：# 為牆，. 為空地，1/2 為出生點
+var MAPS = [
+    { name: '開闊平原', rows: [
+        '####################',
+        '#..................#',
+        '#..1...........2...#',
+        '#..................#',
+        '#.....##....##.....#',
+        '#.....##....##.....#',
+        '#..................#',
+        '#..................#',
+        '#..................#',
+        '#..................#',
+        '#..................#',
+        '#..................#',
+        '#..................#',
+        '#..................#',
+        '####################'
+    ]},
+    { name: '中央堡壘', rows: [
+        '####################',
+        '#..................#',
+        '#.1..............2.#',
+        '#..................#',
+        '#....##########....#',
+        '#....#........#....#',
+        '#....#..####..#....#',
+        '#....#..#..#..#....#',
+        '#....#..####..#....#',
+        '#....#........#....#',
+        '#....##########....#',
+        '#..................#',
+        '#..................#',
+        '#..................#',
+        '####################'
+    ]},
+    { name: '對稱走廊', rows: [
+        '####################',
+        '#....#........#....#',
+        '#.1..#........#..2.#',
+        '#....#........#....#',
+        '#....#..####..#....#',
+        '#.......#..#.......#',
+        '######..#..#..######',
+        '#.......#..#.......#',
+        '######..####..######',
+        '#..................#',
+        '#..####......####..#',
+        '#..................#',
+        '#..................#',
+        '#..................#',
+        '####################'
+    ]},
+    { name: '迷宮', rows: [
+        '####################',
+        '#.1..#....#....#..2#',
+        '#....#....#....#...#',
+        '#.####.##.#.##.###.#',
+        '#......#..#..#.....#',
+        '####.#.#.###.#.#.###',
+        '#....#.#.....#.#...#',
+        '#.####.#####.#.###.#',
+        '#......#...#.#.....#',
+        '#.######.#.#.#####.#',
+        '#........#.#.......#',
+        '#.########.#######.#',
+        '#..................#',
+        '#..................#',
+        '####################'
+    ]},
+    { name: '跳彈場', rows: [
+        '####################',
+        '#..................#',
+        '#.1..............2.#',
+        '#..................#',
+        '#..##..##..##..##..#',
+        '#..................#',
+        '#....##......##....#',
+        '#..................#',
+        '#..##..##..##..##..#',
+        '#..................#',
+        '#....##......##....#',
+        '#..................#',
+        '#..##..##..##..##..#',
+        '#..................#',
+        '####################'
+    ]}
+];
+
+// AI 隨地圖推進而變強
+var AI_LEVELS = [
+    { aim: 0.42, react: 0.9,  move: 0.6, name: '新兵' },
+    { aim: 0.55, react: 0.72, move: 0.7, name: '老兵' },
+    { aim: 0.68, react: 0.56, move: 0.8, name: '士官' },
+    { aim: 0.80, react: 0.42, move: 0.9, name: '指揮官' },
+    { aim: 0.90, react: 0.3,  move: 1.0, name: '鋼鐵之心' }
+];
+
+var s = {};
+
+function parseMap(m) {
+    var walls = [], spawn1 = null, spawn2 = null;
+    for (var r = 0; r < m.rows.length; r++) {
+        for (var c = 0; c < m.rows[r].length; c++) {
+            var ch = m.rows[r][c];
+            if (ch === '#') walls.push({ x: c * TILE, y: r * TILE, w: TILE, h: TILE });
+            else if (ch === '1') spawn1 = { x: c * TILE + TILE / 2, y: r * TILE + TILE / 2 };
+            else if (ch === '2') spawn2 = { x: c * TILE + TILE / 2, y: r * TILE + TILE / 2 };
+        }
+    }
+    return { walls: walls, s1: spawn1, s2: spawn2, name: m.name };
+}
+
+function reset() {
+    s = { map: 1, score: 0, you: 0, cpu: 0, over: false };
+    loadMap(1);
+    G.setStat('score', 0); G.setStat('you', 0); G.setStat('cpu', 0); G.setStat('map', 1);
+}
+
+function loadMap(n) {
+    var m = parseMap(MAPS[Math.min(n - 1, MAPS.length - 1)]);
+    s.walls = m.walls;
+    s.mapName = m.name;
+    s.ai = AI_LEVELS[Math.min(n - 1, AI_LEVELS.length - 1)];
+    s.spawn1 = m.s1; s.spawn2 = m.s2;
+    s.you = 0; s.cpu = 0;
+    G.setStat('you', 0); G.setStat('cpu', 0); G.setStat('map', n);
+    respawn();
+}
+
+function respawn() {
+    s.p1 = { x: s.spawn1.x, y: s.spawn1.y, a: 0, r: 8, cool: 0, invuln: 1.2, hitFlash: 0 };
+    s.p2 = { x: s.spawn2.x, y: s.spawn2.y, a: Math.PI, r: 8, cool: 0, invuln: 1.2, hitFlash: 0,
+             think: 0, strafe: 1, wander: 0 };
+    s.shots = [];
+    s.freeze = 0.7;
+}
+
+function wallAt(x, y, r) {
+    for (var i = 0; i < s.walls.length; i++) {
+        var w = s.walls[i];
+        if (x + r > w.x && x - r < w.x + w.w && y + r > w.y && y - r < w.y + w.h) return w;
+    }
+    return null;
+}
+
+function moveTank(t, forward, dt) {
+    var nx = t.x + Math.cos(t.a) * forward * dt;
+    var ny = t.y + Math.sin(t.a) * forward * dt;
+    // 分軸判定，撞牆時仍能沿牆滑動，操作不會卡死
+    if (!wallAt(nx, t.y, t.r)) t.x = nx;
+    if (!wallAt(t.x, ny, t.r)) t.y = ny;
+}
+
+function fire(t, owner) {
+    if (t.cool > 0) return;
+    // 每方同時只能有一發，這是原作的核心限制
+    for (var i = 0; i < s.shots.length; i++) if (s.shots[i].owner === owner) return;
+    t.cool = 0.32;
+    s.shots.push({
+        x: t.x + Math.cos(t.a) * 13, y: t.y + Math.sin(t.a) * 13,
+        vx: Math.cos(t.a) * 265, vy: Math.sin(t.a) * 265,
+        owner: owner, bounces: 3, life: 4.5, trail: []
+    });
+    RetroAudio.play('shoot');
+    RE.juice.shake(owner === 1 ? 0.1 : 0.05);
+    P.sparks(t.x + Math.cos(t.a) * 14, t.y + Math.sin(t.a) * 14, t.a, 7, '#ffd166');
+    // 後座力
+    t.x -= Math.cos(t.a) * 2; t.y -= Math.sin(t.a) * 2;
+}
+
+// ======================================================================
+function update(dt) {
+    if (s.over) return;
+    if (s.freeze > 0) { s.freeze -= dt; P.update(dt); FT.update(dt); return; }
+
+    // ---- 玩家 ----
+    var p = s.p1;
+    p.a += RE.Input.axisX() * 3.1 * dt;
+    var fwd = -RE.Input.axisY();
+    if (fwd !== 0) {
+        moveTank(p, fwd > 0 ? 92 : -58, dt);
+        if (Math.random() < 0.25) P.spawn({
+            x: p.x - Math.cos(p.a) * 9, y: p.y - Math.sin(p.a) * 9,
+            size: 2.4, sizeEnd: 0, color: '#4a5a54', life: 0.4, gravity: 0, drag: 0.93
+        });
+    }
+    if (p.cool > 0) p.cool -= dt;
+    if (p.invuln > 0) p.invuln -= dt;
+    if (p.hitFlash > 0) p.hitFlash -= dt;
+    if (RE.Input.pressed('a')) fire(p, 1);
+
+    // ---- CPU ----
+    updateAI(dt);
+
+    // ---- 砲彈 ----
+    // hit() 會呼叫 respawn() 直接清空 s.shots，因此命中後必須立刻結束本幀的
+    // 砲彈迭代，否則外層迴圈會拿到已失效的索引。
+    for (var i = s.shots.length - 1; i >= 0; i--) {
+        if (i >= s.shots.length) break;
+        var sh = s.shots[i];
+        sh.life -= dt;
+        if (sh.life <= 0) { s.shots.splice(i, 1); continue; }
+
+        var steps = 4;
+        for (var st = 0; st < steps; st++) {
+            var nx = sh.x + sh.vx * dt / steps;
+            var ny = sh.y + sh.vy * dt / steps;
+
+            // 分軸反彈，才能正確處理角落
+            if (wallAt(nx, sh.y, 2)) { sh.vx = -sh.vx; bounce(sh); nx = sh.x; }
+            if (wallAt(sh.x, ny, 2)) { sh.vy = -sh.vy; bounce(sh); ny = sh.y; }
+            sh.x = nx; sh.y = ny;
+
+            if (sh.bounces < 0) { s.shots.splice(i, 1); break; }
+
+            // 命中判定：自己的砲彈在第一次反彈後也會傷到自己
+            var t1 = s.p1, t2 = s.p2;
+            if (t1 && t1.invuln <= 0 && (sh.owner !== 1 || sh.bounces < 3) &&
+                RE.dist(sh.x, sh.y, t1.x, t1.y) < t1.r + 3) {
+                hit(1);
+                P.update(dt); FT.update(dt);
+                return;
+            }
+            if (t2 && t2.invuln <= 0 && (sh.owner !== 2 || sh.bounces < 3) &&
+                RE.dist(sh.x, sh.y, t2.x, t2.y) < t2.r + 3) {
+                hit(2);
+                P.update(dt); FT.update(dt);
+                return;
+            }
+        }
+        if (s.shots.indexOf(sh) >= 0) {
+            sh.trail.push({ x: sh.x, y: sh.y });
+            if (sh.trail.length > 7) sh.trail.shift();
+        }
+    }
+
+    P.update(dt);
+    FT.update(dt);
+}
+
+function bounce(sh) {
+    sh.bounces--;
+    RetroAudio.play('blip');
+    P.burst(sh.x, sh.y, 4, { colors: ['#ffd166', '#fff8e7'], speedMin: 30, speedMax: 100,
+        gravity: 0, drag: 0.9, lifeMin: 0.1, lifeMax: 0.25, sizeMax: 2.5 });
+}
+
+/**
+ * CPU 坦克：
+ * 1. 有視線就瞄準射擊（瞄準精度由 aim 決定）。
+ * 2. 沒視線就朝玩家方向繞行，遇牆改變迂迴方向。
+ * 3. 會躲避正在飛行的敵方砲彈。
+ */
+function updateAI(dt) {
+    var me = s.p2, foe = s.p1;
+    if (me.cool > 0) me.cool -= dt;
+    if (me.invuln > 0) me.invuln -= dt;
+    if (me.hitFlash > 0) me.hitFlash -= dt;
+    me.think -= dt;
+
+    var los = hasLineOfSight(me, foe);
+    var targetA = Math.atan2(foe.y - me.y, foe.x - me.x);
+
+    // 閃避：若有敵方砲彈接近，優先橫移
+    var danger = null;
+    for (var i = 0; i < s.shots.length; i++) {
+        var sh = s.shots[i];
+        if (sh.owner === 2 && sh.bounces === 3) continue;
+        if (RE.dist(sh.x, sh.y, me.x, me.y) < 70) { danger = sh; break; }
+    }
+
+    if (danger) {
+        var away = Math.atan2(me.y - danger.y, me.x - danger.x);
+        me.a = turnToward(me.a, away, 3.4 * dt);
+        moveTank(me, 96 * s.ai.move, dt);
+    } else if (los) {
+        // 有視線：轉向瞄準並射擊
+        var err = (1 - s.ai.aim) * 0.6;
+        me.a = turnToward(me.a, targetA + Math.sin(performance.now() / 400) * err, 2.8 * dt);
+        var diff = Math.abs(angleDiff(me.a, targetA));
+        if (diff < 0.16 && me.cool <= 0 && me.think <= 0) {
+            fire(me, 2);
+            me.think = s.ai.react;
+        }
+        // 保持中距離：太近會被撞，太遠打不準
+        var d = RE.dist(me.x, me.y, foe.x, foe.y);
+        if (d > 150) moveTank(me, 72 * s.ai.move, dt);
+        else if (d < 70) moveTank(me, -52 * s.ai.move, dt);
+    } else {
+        // 無視線：朝玩家方向迂迴前進
+        me.wander -= dt;
+        if (me.wander <= 0) { me.wander = RE.rand(0.5, 1.4); me.strafe = RE.pick([-1, 1]); }
+        me.a = turnToward(me.a, targetA + me.strafe * 0.7, 2.4 * dt);
+        var before = { x: me.x, y: me.y };
+        moveTank(me, 82 * s.ai.move, dt);
+        // 卡住就換方向
+        if (Math.abs(me.x - before.x) < 0.2 && Math.abs(me.y - before.y) < 0.2) {
+            me.a += RE.pick([-1, 1]) * 0.9;
+            me.wander = 0;
+        }
+        // 偶爾對牆打跳彈，讓 AI 看起來有在思考
+        if (me.cool <= 0 && me.think <= 0 && Math.random() < dt * 0.5 * s.ai.aim) {
+            fire(me, 2);
+            me.think = s.ai.react * 1.6;
+        }
+    }
+}
+
+function angleDiff(a, b) {
+    var d = (b - a) % RE.TAU;
+    if (d > Math.PI) d -= RE.TAU;
+    if (d < -Math.PI) d += RE.TAU;
+    return d;
+}
+
+function turnToward(cur, target, maxStep) {
+    var d = angleDiff(cur, target);
+    return cur + RE.clamp(d, -maxStep, maxStep);
+}
+
+function hasLineOfSight(a, b) {
+    var steps = Math.ceil(RE.dist(a.x, a.y, b.x, b.y) / 6);
+    for (var i = 1; i < steps; i++) {
+        var t = i / steps;
+        if (wallAt(RE.lerp(a.x, b.x, t), RE.lerp(a.y, b.y, t), 1)) return false;
+    }
+    return true;
+}
+
+function hit(who) {
+    var t = who === 1 ? s.p1 : s.p2;
+    t.hitFlash = 0.4;
+    t.invuln = 1;
+
+    RE.juice.impact(3);
+    RE.juice.flash(who === 1 ? 'rgba(255,107,107,0.4)' : 'rgba(112,228,181,0.35)', 0.12);
+    RetroAudio.play('bigExplosion');
+    P.burst(t.x, t.y, 28, {
+        colors: who === 1 ? ['#ff6b6b', '#ffd166'] : ['#70e4b5', '#ffd166', '#fff8e7'],
+        speedMin: 50, speedMax: 230, gravity: 0, drag: 0.93, lifeMin: 0.3, lifeMax: 0.8
+    });
+    P.ring(t.x, t.y, '#ffd166', 62);
+
+    if (who === 2) {
+        s.you++;
+        s.score += 200;
+        G.setStat('you', s.you);
+        G.setStat('score', s.score);
+        FT.add(t.x, t.y - 20, '命中！', { color: '#70e4b5', size: 18, life: 1 });
+    } else {
+        s.cpu++;
+        G.setStat('cpu', s.cpu);
+        FT.add(t.x, t.y - 20, '被擊中', { color: '#ff6b6b', size: 18, life: 1 });
+    }
+
+    if (s.you >= 5) { winMap(); return; }
+    if (s.cpu >= 5) {
+        s.over = true;
+        G.gameOver({ score: s.score,
+            body: '在「' + s.mapName + '」被 ' + s.ai.name + ' 擊敗。' +
+                  '別忘了砲彈會反彈三次——有時候繞路才是直線。' });
+        return;
+    }
+    respawn();
+}
+
+function winMap() {
+    s.score += 1200 * s.map;
+    G.setStat('score', s.score);
+    s.map++;
+    RE.Save.unlockLevel('tank_combat', s.map);
+    if (s.map > MAPS.length) {
+        s.over = true;
+        G.gameOver({ score: s.score, win: true,
+            body: '五張地圖全數攻克。1977 年，這款遊戲隨 Atari 2600 一起進入千萬個家庭。' });
+        return;
+    }
+    loadMap(s.map);
+    G.stageCard(s.map, s.mapName, '對手：' + s.ai.name + '　先擊中 5 次者獲勝');
+}
+
+// ======================================================================
+function render() {
+    G.clear('#0d1512');
+    G.beginWorld();
+
+    // 地面紋理
+    ctx.fillStyle = '#131f1a';
+    ctx.fillRect(0, 0, W, H);
+    ctx.save();
+    ctx.globalAlpha = 0.4;
+    for (var y = 0; y < ROWS; y++) {
+        for (var x = 0; x < COLS; x++) {
+            if ((x + y) % 2 === 0) {
+                ctx.fillStyle = '#16241d';
+                ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+            }
+        }
+    }
+    ctx.restore();
+    drawTacticalBackdrop();
+
+    // 牆
+    for (var i = 0; i < s.walls.length; i++) {
+        var w = s.walls[i];
+        ctx.fillStyle = '#3a2a1c';
+        ctx.fillRect(w.x, w.y, w.w, w.h);
+        ctx.fillStyle = '#553d28';
+        ctx.fillRect(w.x + 2, w.y + 2, w.w - 4, w.h - 4);
+        ctx.fillStyle = 'rgba(255,209,102,0.14)';
+        ctx.fillRect(w.x + 2, w.y + 2, w.w - 4, 3);
+    }
+
+    drawTank(s.p1, '#70e4b5', '#2f7a5c');
+    drawTank(s.p2, '#ff9ebb', '#8f3f57');
+
+    // 砲彈
+    for (var i = 0; i < s.shots.length; i++) {
+        var sh = s.shots[i];
+        for (var t = 0; t < sh.trail.length; t++) {
+            var a = (t + 1) / sh.trail.length;
+            ctx.globalAlpha = a * 0.45;
+            ctx.fillStyle = sh.owner === 1 ? '#a7f3d0' : '#ffc4d6';
+            ctx.fillRect(sh.trail[t].x - 1.5, sh.trail[t].y - 1.5, 3, 3);
+        }
+        ctx.globalAlpha = 1;
+        ctx.save();
+        ctx.shadowBlur = 10; ctx.shadowColor = '#ffd166';
+        ctx.fillStyle = '#fff8e7';
+        ctx.beginPath(); ctx.arc(sh.x, sh.y, 3, 0, RE.TAU); ctx.fill();
+        ctx.restore();
+        // 剩餘反彈次數
+        RE.Draw.text(ctx, String(sh.bounces), sh.x, sh.y - 14,
+            { size: 9, align: 'center', color: '#ffd166', stroke: false });
+    }
+
+    P.draw(ctx);
+    FT.draw(ctx);
+
+    if (s.freeze > 0) {
+        RE.Draw.text(ctx, '準備', W / 2, H / 2 - 10, { size: 24, align: 'center', color: '#ffd166' });
+    }
+
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.09, vignetteStrength: 0.5 });
+}
+
+/* 1977 原作的戰場必須維持硬邊、低彩度與大量留白；現代化放在資訊回饋，
+   不把它重畫成寫實戰車。雷達掃描只提供空間深度，不影響碰撞或 AI 判斷。 */
+function drawTacticalBackdrop() {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(112,228,181,0.075)';
+    ctx.lineWidth = 1;
+    for (var x = TILE; x < W; x += TILE) {
+        ctx.beginPath(); ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, H); ctx.stroke();
+    }
+    for (var y = TILE; y < H; y += TILE) {
+        ctx.beginPath(); ctx.moveTo(0, y + 0.5); ctx.lineTo(W, y + 0.5); ctx.stroke();
+    }
+
+    var cx = W / 2, cy = H / 2;
+    ctx.translate(cx, cy);
+    ctx.strokeStyle = 'rgba(112,228,181,0.11)';
+    for (var r = TILE * 2; r < Math.max(W, H); r += TILE * 2) {
+        ctx.beginPath(); ctx.arc(0, 0, r, 0, RE.TAU); ctx.stroke();
+    }
+    var a = RE.Motion.reduced ? -0.72 : (performance.now() * 0.00038) % RE.TAU;
+    var radius = Math.hypot(W, H);
+    ctx.fillStyle = 'rgba(112,228,181,0.035)';
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, radius, a - 0.22, a); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(167,243,208,0.24)';
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * radius, Math.sin(a) * radius); ctx.stroke();
+    ctx.restore();
+
+    RE.Draw.text(ctx, 'A1', 7, H - 17, { size: 9, color: 'rgba(112,228,181,0.38)', stroke: false });
+    RE.Draw.text(ctx, COLS + '×' + ROWS, W - 7, H - 17,
+        { size: 9, color: 'rgba(112,228,181,0.38)', align: 'right', stroke: false });
+}
+
+function drawTank(t, light, dark) {
+    if (!t) return;
+    if (t.invuln > 0 && Math.floor(t.invuln * 12) % 2 === 0) return;
+    ctx.save();
+    ctx.translate(t.x, t.y);
+    ctx.fillStyle = 'rgba(0,0,0,0.34)';
+    ctx.beginPath(); ctx.ellipse(0, 6, 12, 6, 0, 0, RE.TAU); ctx.fill();
+    ctx.rotate(t.a);
+    var body = t.hitFlash > 0 ? '#ffffff' : dark;
+    // 履帶
+    ctx.fillStyle = '#2a2018';
+    ctx.fillRect(-9, -9, 18, 4);
+    ctx.fillRect(-9, 5, 18, 4);
+    // 車身
+    ctx.fillStyle = body;
+    ctx.fillRect(-8, -6, 16, 12);
+    ctx.fillStyle = t.hitFlash > 0 ? '#ffffff' : light;
+    ctx.fillRect(-6, -4, 12, 8);
+    ctx.fillStyle = '#d8f5e8';
+    ctx.fillRect(-2, -2, 4, 4);
+    // 砲管
+    ctx.fillStyle = t.hitFlash > 0 ? '#ffffff' : dark;
+    ctx.fillRect(4, -2, 12, 4);
+    ctx.restore();
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '砲彈會在牆面反彈三次——可以打到轉角後面的敵人。同時只能有一發在場。先命中 5 次獲勝。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

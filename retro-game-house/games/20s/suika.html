@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 果實合成塔</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   果實合成塔 — 致敬 Suika Game / スイカゲーム (Aladdin X, 2021)
+   --------------------------------------------------------------------------
+   規則只有一條：**兩顆一樣的果實碰到就合成一顆更大的**。
+   這是 2048 的合併規則。但 2048 在格子裡，這款在**真正的圓形剛體物理**裡。
+
+   換掉載體之後，同一條規則長出完全不同的樂趣：
+   1. **合成會製造空間**。兩顆大的合成一顆更大的，總體積反而變小，
+      整座塔會塌陷、重新排列——你等於在做一場連鎖爆破。
+   2. **落點是連續的，不是離散的**。2048 只有四個方向；
+      這裡你要決定的是「差幾個像素」，而那幾個像素決定了球會滾去哪。
+   3. **失敗是慢慢逼近的**。塔一格一格長高，你看得到自己正在輸，
+      但每一次合成又把它壓下去一點——這種拉鋸是這款遊戲上癮的來源。
+
+   物理是自己寫的圓形剛體求解器（順序脈衝 + 位置修正 + 睡眠），
+   關鍵取捨都寫在 solve() 的註解裡。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'suika',
+    title: '果實合成塔',
+    tagline: '2048 的規則，放進真正會滾的物理裡',
+    original: 'Suika Game / スイカゲーム (Aladdin X, 2021)',
+    decade: '20s', year: 2021, platform: 'Nintendo Switch / 多平台', genre: '物理益智',
+    developer: 'Aladdin X', bgm: '20s',
+    width: 480, height: 320,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'best', label: '最高', init: 0 },
+        { key: 'chain', label: '連鎖', init: 0 },
+        { key: 'top', label: '最大', init: '—' }
+    ],
+    touch: 'none',
+    controls: [
+        { keys: ['←', '→'], desc: '移動投放位置' },
+        { keys: ['A / 空白鍵'], desc: '投下果實' },
+        { keys: ['滑鼠 / 觸控'], desc: '點哪裡就從哪裡投下' },
+        { keys: ['P'], desc: '暫停' }
+    ],
+    howto: '投放相同果實讓它們合成；果實會滾動、擠壓並造成塌陷連鎖。' +
+           '頂線停留兩秒就輸，下一顆會預告；目標是<strong>大西瓜</strong>。',
+    lesson: {
+        verb: '預測落點、保留合成路徑，再利用滾動、碰撞與塌陷製造連鎖。',
+        innovation: '把固定的同級合成鏈放進連續物理空間，讓每次投放同時具有可規劃的升級與不可完全控制的堆疊結果。',
+        mission: '利用下一顆預告，在合出水梨前至少安排一次兩段連鎖；每次投放前先說出預期落點，結束後記錄偏差是由滾動、碰撞還是合成塌陷造成。',
+        evolution: '《Tetris》要求配置落下物來管理空間，《2048》用同級合成推進數值；《Suika Game》承接兩者，再用圓形物理讓位置與合成都出現連鎖變化。',
+        reflection: '如果所有果實落地後都吸附到固定格子、不再滾動或擠壓，這款遊戲還剩下哪些不同於《2048》的決策？'
+    },
+    design: '落下式益智的共同問題是：規則必須一眼看懂，但每次放置又要有足夠的長期後果。' +
+            '《Suika Game》把《2048》的同級合成鏈與《Tetris》的空間管理接在一起，關鍵改變是把格子換成<strong>連續的圓形物理</strong>。' +
+            '玩家能控制水平投放位置，卻不能直接指定果實最後停在哪裡；滾動、碰撞與大小差會把幾個像素的落點差放大。' +
+            '兩顆相同果實合成後，原本的接觸面與支撐關係消失，整座果塔可能塌陷並觸發下一次合成；' +
+            '因此一次成功既是前面留位的結果，也帶有物理重新排列的驚喜。' +
+            '下一顆預告則把純運氣轉成可規劃資訊：玩家可以替未來留槽，而不是只對當下反應。' +
+            '本站《Tetris》讓方塊鎖在離散格子、《2048》讓結果可完全推演；《Suika Game》承接兩者，' +
+            '用物理把「我知道會合成什麼」與「我不知道會滾到哪裡」放進同一個決策。',
+    history: '《Suika Game》由日本 popIn 的 popIn Aladdin 團隊開發，後由 Aladdin X 經營；' +
+             '官方資料記錄，它在 2021 年 4 月先作為照明投影機的內建應用推出。' +
+             '因投影機使用者反應良好，團隊於同年 12 月 9 日把遊戲移植到日本 Nintendo Switch eShop，定價 240 日圓；' +
+             '並不是到 2023 年 9 月才上架。' +
+             '真正的第二次起飛發生在 2023 年秋季：官方統計從 9 月初至 10 月 6 日增加一百萬次下載，10 月 18 日突破日本國內兩百萬，10 月 20 日開始向海外多個地區發行。' +
+             '2024 年，日本遊戲大賞將「Movement Award」頒給本作，肯定它從裝置內建小品轉成跨平台社會現象的路徑。',
+    sources: [
+        { label: 'Aladdin X：2021 年 Switch 版發行公告與開發背景', url: 'https://www.aladdinx.jp/blogs/news/suika_switch' },
+        { label: 'Suika Game 官方：2023 年海外發行與兩百萬下載公告', url: 'https://suikagame.jp/news/405/' },
+        { label: '日本遊戲大賞 2024：Movement Award 得獎紀錄', url: 'https://awards.cesa.or.jp/2024/year/prize/' }
+    ]
+});
+
+var ctx = G.ctx, VW = G.width, VH = G.height;
+var P = new RE.Particles(300);
+var FT = new RE.FloatText();
+
+// ======================================================================
+// 盒子與果實
+// ======================================================================
+// 盒子與果實的比例是實測校準過的。
+// 第一版盒子 224×232、最大果實半徑 90，一場只撐得住 35~40 投就滿了，
+// 玩家連水梨都很難超過——上層那些果實等於是擺設。
+// 現在盒子加大、果實整體縮小約兩成，一場可以玩到六七十投，
+// 高階果實才真的有機會出現。
+var BOX = { x: 112, y: 60, w: 256, h: 246 };      // 內壁
+var DROP_Y = BOX.y - 20;
+var TOP_LINE = BOX.y + 12;                         // 越線且停留兩秒就結束
+
+var FRUITS = [
+    { r: 8,  name: '櫻桃',   c1: '#e8455f', c2: '#ff8a9e', score: 1 },
+    { r: 11, name: '草莓',   c1: '#e0355a', c2: '#ff7f96', score: 3 },
+    { r: 15, name: '葡萄',   c1: '#8a5ad0', c2: '#b48cf0', score: 6 },
+    { r: 19, name: '橘子',   c1: '#ef8b28', c2: '#ffb45c', score: 10 },
+    { r: 24, name: '柿子',   c1: '#e2661f', c2: '#ff9450', score: 15 },
+    { r: 30, name: '蘋果',   c1: '#d8324a', c2: '#ff6f80', score: 21 },
+    { r: 36, name: '水梨',   c1: '#c8cf58', c2: '#e8ef8c', score: 28 },
+    { r: 43, name: '水蜜桃', c1: '#f0899f', c2: '#ffc0cf', score: 36 },
+    { r: 51, name: '鳳梨',   c1: '#e8c22a', c2: '#ffe06a', score: 45 },
+    { r: 61, name: '哈密瓜', c1: '#7bc46a', c2: '#a8e498', score: 55 },
+    { r: 72, name: '大西瓜', c1: '#2f8f3c', c2: '#5cc46c', score: 100 }
+];
+var SPAWNABLE = 5;                                  // 只會投出前五種，後面全靠合成
+
+var PHYS = {
+    gravity: 900,
+    restitution: 0.12,      // 果實幾乎不彈，這樣塔才堆得起來
+    friction: 0.22,
+    iterations: 7,          // 順序脈衝的迭代次數
+    posPercent: 0.55,       // 位置修正的比例。太大會抖、太小會陷進去
+    posSlop: 0.4,
+    sleepVel: 7, sleepTime: 0.45,
+    maxSpeed: 900
+};
+
+// ======================================================================
+// 狀態
+// ======================================================================
+var s = null;
+
+function reset() {
+    s = {
+        balls: [], nextId: 1,
+        cur: RE.randInt(0, SPAWNABLE - 1),
+        nxt: RE.randInt(0, SPAWNABLE - 1),
+        dropX: VW / 2, cool: 0,
+        score: 0, best: RE.Save.bestScore('suika') || 0,
+        chain: 0, chainT: 0, maxTier: -1,
+        overT: 0, over: false, shakeLine: 0,
+        pointerDownSeen: false
+    };
+    P.clear(); FT.clear();
+    G.setStat('score', 0);
+    G.setStat('best', s.best);
+    G.setStat('chain', 0);
+    G.setStat('top', '—');
+}
+
+function makeBall(tier, x, y) {
+    var f = FRUITS[tier];
+    return {
+        id: s.nextId++, tier: tier, x: x, y: y,
+        vx: 0, vy: 0, r: f.r,
+        m: f.r * f.r * 0.0016,          // 質量正比於面積
+        rot: RE.rand(0, RE.TAU), vr: 0,
+        sleep: 0, awake: true, born: 0, merged: false
+    };
+}
+
+// ======================================================================
+// 物理：圓形剛體求解器
+// ----------------------------------------------------------------------
+// 用順序脈衝（sequential impulses）解接觸，再做位置修正把重疊推開。
+// 三個實作重點都是踩過坑才定下來的：
+//  1. **速度解與位置解要分開**。只用位置修正會讓塔抖個不停；
+//     只用脈衝則會慢慢陷進彼此裡面。
+//  2. **位置修正要留 slop**。允許一點點重疊，否則接觸點會在
+//     「碰到／沒碰到」之間反覆跳，整座塔嗡嗡震。
+//  3. **睡眠要「整團一起睡」**。逐顆判斷會把支撐鏈拆散——
+//     底下那顆睡著了、上面那顆還醒著，於是它就穿過去了。
+//     這裡用「有醒著的鄰居就叫醒自己」來保持整團同步。
+// ======================================================================
+function stepPhysics(dt) {
+    var b, i, j, n = s.balls.length;
+
+    // 積分
+    for (i = 0; i < n; i++) {
+        b = s.balls[i];
+        b.born += dt;
+        if (!b.awake) continue;
+        b.vy += PHYS.gravity * dt;
+        var sp = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+        if (sp > PHYS.maxSpeed) { b.vx *= PHYS.maxSpeed / sp; b.vy *= PHYS.maxSpeed / sp; }
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+        b.rot += b.vr * dt;
+        b.vr *= Math.pow(0.94, dt * 60);
+    }
+
+    // 迭代求解
+    for (var it = 0; it < PHYS.iterations; it++) {
+        // 牆
+        for (i = 0; i < n; i++) {
+            b = s.balls[i];
+            if (b.x - b.r < BOX.x) { resolveWall(b, 1, 0, BOX.x - (b.x - b.r)); }
+            if (b.x + b.r > BOX.x + BOX.w) { resolveWall(b, -1, 0, (b.x + b.r) - (BOX.x + BOX.w)); }
+            if (b.y + b.r > BOX.y + BOX.h) { resolveWall(b, 0, -1, (b.y + b.r) - (BOX.y + BOX.h)); }
+        }
+        // 果實之間
+        for (i = 0; i < n; i++) {
+            for (j = i + 1; j < n; j++) {
+                var a = s.balls[i], c = s.balls[j];
+                var dx = c.x - a.x, dy = c.y - a.y;
+                var rr = a.r + c.r;
+                var d2 = dx * dx + dy * dy;
+                if (d2 >= rr * rr || d2 < 0.0001) continue;
+                var d = Math.sqrt(d2);
+                var nx = dx / d, ny = dy / d;
+                var pen = rr - d;
+
+                // 同階相碰 → 合成（只在第一次迭代判定，避免同一幀合成兩次）
+                if (it === 0 && a.tier === c.tier && !a.merged && !c.merged &&
+                    a.tier < FRUITS.length - 1 && pen > 1.5) {
+                    mergeBalls(a, c);
+                    return;
+                }
+
+                resolvePair(a, c, nx, ny, pen);
+            }
+        }
+    }
+
+    // 睡眠：整團一起睡，不逐顆判斷
+    for (i = 0; i < n; i++) {
+        b = s.balls[i];
+        var v = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+        if (v < PHYS.sleepVel) { b.sleep += dt; if (b.sleep > PHYS.sleepTime) b.awake = false; }
+        else { b.sleep = 0; b.awake = true; }
+    }
+    // 有「真的在動」的鄰居才跟著醒——支撐鏈不能被拆散。
+    // 這裡的判斷條件要是「速度真的超過門檻」，不能只看 awake 旗標：
+    // 一整團同時靜止時，大家的睡眠計時器會差幾幀才到期，
+    // 先睡著的那顆會被還沒睡著的鄰居叫醒並歸零計時，於是整團輪流醒著，永遠睡不成。
+    for (it = 0; it < 2; it++) {
+        for (i = 0; i < n; i++) {
+            var x1 = s.balls[i];
+            if (!x1.awake) continue;
+            if (x1.vx * x1.vx + x1.vy * x1.vy < PHYS.sleepVel * PHYS.sleepVel) continue;
+            for (j = 0; j < n; j++) {
+                if (i === j) continue;
+                var x2 = s.balls[j];
+                if (x2.awake) continue;
+                var ddx = x2.x - x1.x, ddy = x2.y - x1.y;
+                var rr2 = x1.r + x2.r + 3;
+                if (ddx * ddx + ddy * ddy < rr2 * rr2) { x2.awake = true; x2.sleep = 0; }
+            }
+        }
+    }
+}
+
+function resolveWall(b, nx, ny, pen) {
+    var vn = b.vx * nx + b.vy * ny;
+    // 只有「真的撞上來」才喚醒。靜止接觸每幀都會進到這裡，
+    // 如果無條件喚醒，整座塔永遠睡不著，睡眠系統等於沒寫。
+    if (vn < -20) { b.awake = true; b.sleep = 0; }
+    if (vn < 0) {
+        var jimp = -(1 + PHYS.restitution) * vn;
+        b.vx += jimp * nx; b.vy += jimp * ny;
+        // 切向摩擦：讓球沿著牆滾而不是滑
+        var tx = -ny, ty = nx;
+        var vt = b.vx * tx + b.vy * ty;
+        var jt = -vt * PHYS.friction;
+        b.vx += jt * tx; b.vy += jt * ty;
+        b.vr += -vt * 0.02 * (nx !== 0 ? 1 : -1);
+    }
+    var corr = Math.max(pen - PHYS.posSlop, 0) * PHYS.posPercent;
+    b.x += nx * corr; b.y += ny * corr;
+}
+
+function resolvePair(a, c, nx, ny, pen) {
+    var im1 = 1 / a.m, im2 = 1 / c.m, imSum = im1 + im2;
+    var rvx = c.vx - a.vx, rvy = c.vy - a.vy;
+    var vn = rvx * nx + rvy * ny;
+    if (vn < 0) {
+        var jimp = -(1 + PHYS.restitution) * vn / imSum;
+        a.vx -= jimp * nx * im1; a.vy -= jimp * ny * im1;
+        c.vx += jimp * nx * im2; c.vy += jimp * ny * im2;
+        // 切向摩擦 + 讓它們互相帶動旋轉，堆疊看起來才像真的
+        var tx = -ny, ty = nx;
+        var vt = rvx * tx + rvy * ty;
+        var jt = -vt * PHYS.friction / imSum;
+        a.vx -= jt * tx * im1; a.vy -= jt * ty * im1;
+        c.vx += jt * tx * im2; c.vy += jt * ty * im2;
+        a.vr -= vt * 0.012; c.vr += vt * 0.012;
+    }
+    var corr = Math.max(pen - PHYS.posSlop, 0) / imSum * PHYS.posPercent;
+    a.x -= nx * corr * im1; a.y -= ny * corr * im1;
+    c.x += nx * corr * im2; c.y += ny * corr * im2;
+    // 同上：靜止堆疊時的接觸不算喚醒，否則永遠不會安定下來
+    if (vn < -20) { a.awake = true; c.awake = true; a.sleep = 0; c.sleep = 0; }
+}
+
+// ======================================================================
+// 合成
+// ======================================================================
+function mergeBalls(a, c) {
+    var tier = a.tier + 1;
+    var mx = (a.x + c.x) / 2, my = (a.y + c.y) / 2;
+    a.merged = true; c.merged = true;
+    removeBall(a); removeBall(c);
+
+    var nb = makeBall(tier, mx, my);
+    nb.vx = (a.vx + c.vx) * 0.5;
+    nb.vy = (a.vy + c.vy) * 0.5 - 40;      // 往上彈一下，讓塔有機會塌陷重排
+    s.balls.push(nb);
+    wakeAll();
+
+    var f = FRUITS[tier];
+    s.chain++; s.chainT = 1.1;
+    G.setStat('chain', s.chain);
+    var gain = f.score * (1 + (s.chain - 1) * 0.5);
+    addScore(Math.round(gain));
+
+    if (tier > s.maxTier) {
+        s.maxTier = tier;
+        G.setStat('top', f.name);
+    }
+
+    RetroAudio.play(tier >= 7 ? 'levelUp' : 'coin');
+    RE.juice.hitstop(0.02 + tier * 0.006);
+    RE.juice.shake(0.06 + tier * 0.03);
+    if (tier >= 6) RE.juice.flash('rgba(255,240,190,0.22)', 0.1);
+    P.ring(mx, my, f.c2, f.r * 1.8);
+    P.burst(mx, my, 8 + tier * 2, {
+        colors: [f.c1, f.c2, '#fff3c4'],
+        speedMin: 40, speedMax: 60 + tier * 22, gravity: 300,
+        lifeMin: 0.25, lifeMax: 0.55, glow: tier >= 5
+    });
+    FT.add(mx, my - f.r - 6, f.name + (s.chain > 1 ? ' ×' + s.chain : ''),
+        { color: f.c2, size: 11 + Math.min(6, tier) });
+
+    if (tier === FRUITS.length - 1) {
+        addScore(1000);
+        FT.add(VW / 2, 140, '大西瓜！', { color: '#5cc46c', size: 22 });
+        RE.juice.flash('rgba(180,255,180,0.35)', 0.2);
+        RE.juice.slowmo(0.35, 0.9);
+    }
+}
+
+function removeBall(b) {
+    var i = s.balls.indexOf(b);
+    if (i >= 0) s.balls.splice(i, 1);
+}
+
+/**
+ * 合成或投放時把整盒叫醒。
+ * 睡著的球不做積分，所以當它腳下那顆被合成掉的時候，
+ * 它會直接懸在半空中——支撐鏈斷了但沒人通知它。
+ * 球數很少（不到 40 顆），整盒叫醒最便宜也最不會出錯。
+ */
+function wakeAll() {
+    for (var i = 0; i < s.balls.length; i++) { s.balls[i].awake = true; s.balls[i].sleep = 0; }
+}
+
+function addScore(n) {
+    s.score += n;
+    G.setStat('score', s.score);
+    if (s.score > s.best) { s.best = s.score; G.setStat('best', s.best); }
+}
+
+// ======================================================================
+// 投放
+// ======================================================================
+function drop() {
+    if (s.cool > 0 || s.over) return;
+    var f = FRUITS[s.cur];
+    var x = RE.clamp(s.dropX, BOX.x + f.r + 1, BOX.x + BOX.w - f.r - 1);
+    var b = makeBall(s.cur, x, DROP_Y);
+    b.vy = 60;
+    s.balls.push(b);
+    s.cur = s.nxt;
+    s.nxt = RE.randInt(0, SPAWNABLE - 1);
+    s.cool = 0.34;
+    s.chain = 0; G.setStat('chain', 0);
+    wakeAll();
+    RetroAudio.play('drop');
+}
+
+/*
+ * 觸控放開時，瀏覽器可能已先清掉 released，但 down 曾在前一幀存在；
+ * 若只看 released，玩家會看到瞄準線移動，放手卻沒有果實。記住 down 的
+ * 邊緣，在 transition 到 up 時補一次投放，並於消費後清回 false。
+ */
+function pointerReleaseFresh() {
+    var pt = RE.Input.pointer;
+    if (pt.down) { s.pointerDownSeen = true; return false; }
+    var fresh = pt.released || s.pointerDownSeen;
+    if (fresh) s.pointerDownSeen = false;
+    return fresh;
+}
+
+// ======================================================================
+// 主迴圈
+// ======================================================================
+function update(dt) {
+    if (!s) return;
+    P.update(dt); FT.update(dt);
+    if (s.cool > 0) s.cool -= dt;
+    if (s.chainT > 0) { s.chainT -= dt; if (s.chainT <= 0) { s.chain = 0; G.setStat('chain', 0); } }
+
+    // 輸入
+    var ax = RE.Input.axisX();
+    if (ax !== 0) s.dropX += ax * 260 * dt;
+    if (RE.Input.pointer.down) s.dropX = RE.Input.pointer.x;
+    var pointerReleased = pointerReleaseFresh();
+    var f = FRUITS[s.cur];
+    s.dropX = RE.clamp(s.dropX, BOX.x + f.r + 1, BOX.x + BOX.w - f.r - 1);
+    if (RE.Input.buffered('a', 0.12) || pointerReleased) {
+        RE.Input.consumeBuffer('a');
+        drop();
+    }
+
+    if (!s.over) stepPhysics(dt);
+
+    // 越線判定：**要停留兩秒才算輸**。
+    // 只判斷「有沒有碰到線」的話，投下去的球在空中經過頂線就直接判負，
+    // 玩家會覺得莫名其妙。要的是「你已經堆太高了」，不是「你剛剛丟過那裡」。
+    var over = false;
+    for (var i = 0; i < s.balls.length; i++) {
+        var b = s.balls[i];
+        if (b.born < 0.7) continue;                 // 剛投下的不算
+        if (b.y - b.r < TOP_LINE && b.awake === false) over = true;
+        else if (b.y - b.r < TOP_LINE - 6) over = true;
+    }
+    if (over) {
+        s.overT += dt;
+        s.shakeLine = 1;
+        if (s.overT > 2.0 && !s.over) gameOver();
+    } else {
+        s.overT = Math.max(0, s.overT - dt * 0.8);
+        s.shakeLine = Math.max(0, s.shakeLine - dt * 3);
+    }
+}
+
+function gameOver() {
+    s.over = true;
+    RE.Save.submitScore('suika', s.score);
+    RetroAudio.play('gameover');
+    RE.juice.shake(0.5);
+    var top = s.maxTier >= 0 ? FRUITS[s.maxTier].name : '什麼都沒合成到';
+    G.gameOver({
+        win: s.maxTier >= FRUITS.length - 1,
+        score: s.score,
+        body: '塔堆到頂了。你做到的最大果實是<strong>' + top + '</strong>。' +
+              '注意到了嗎——你真正在操作的只有「往左偏幾個像素」，' +
+              '剩下的全是物理替你決定的。' +
+              '《2048》的合併規則本身沒有樂趣，' +
+              '<strong>樂趣來自它被放進一個會滾、會塌、會連鎖的世界裡</strong>。' +
+              '同一條規則換一個載體，就是一款全新的遊戲。'
+    });
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function render() {
+    if (!s) return;
+    G.beginWorld();
+    drawBack();
+    drawBox();
+    for (var i = 0; i < s.balls.length; i++) drawFruit(s.balls[i]);
+    drawDropper();
+    P.draw(ctx);
+    FT.draw(ctx);
+    G.endWorld();
+    drawSide();
+    G.postFX({ scanAlpha: 0.04, vignetteStrength: 0.4 });
+}
+
+function drawBack() {
+    var g = ctx.createLinearGradient(0, 0, 0, VH);
+    g.addColorStop(0, '#2a2338');
+    g.addColorStop(1, '#141020');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, VW, VH);
+    ctx.fillStyle = 'rgba(255,220,160,0.03)';
+    for (var i = 0; i < 5; i++) ctx.fillRect(0, 30 + i * 62, VW, 22);
+}
+
+function drawBox() {
+    // 盒子：木紋色的三面牆
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.fillRect(BOX.x, BOX.y, BOX.w, BOX.h);
+    ctx.fillStyle = '#8a6b46';
+    ctx.fillRect(BOX.x - 8, BOX.y - 6, 8, BOX.h + 14);
+    ctx.fillRect(BOX.x + BOX.w, BOX.y - 6, 8, BOX.h + 14);
+    ctx.fillRect(BOX.x - 8, BOX.y + BOX.h, BOX.w + 16, 8);
+    ctx.fillStyle = '#a8855a';
+    ctx.fillRect(BOX.x - 8, BOX.y - 6, 8, 4);
+    ctx.fillRect(BOX.x + BOX.w, BOX.y - 6, 8, 4);
+    ctx.fillRect(BOX.x - 8, BOX.y + BOX.h, BOX.w + 16, 3);
+
+    // 頂線：越線超過兩秒就結束，所以它必須一直看得見
+    var danger = s.overT > 0.15;
+    ctx.save();
+    ctx.setLineDash([7, 6]);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = danger
+        ? 'rgba(255,90,90,' + (0.6 + Math.sin(Date.now() * 0.02) * 0.35) + ')'
+        : 'rgba(255,255,255,0.22)';
+    ctx.beginPath();
+    ctx.moveTo(BOX.x, TOP_LINE); ctx.lineTo(BOX.x + BOX.w, TOP_LINE);
+    ctx.stroke();
+    ctx.restore();
+    if (danger) {
+        RE.Draw.text(ctx, Math.max(0, (2.0 - s.overT)).toFixed(1),
+            BOX.x + BOX.w - 6, TOP_LINE - 18, { size: 13, align: 'right', color: '#ff8060' });
+    }
+}
+
+function drawFruit(b) {
+    var f = FRUITS[b.tier];
+    ctx.save();
+    ctx.translate(b.x, b.y);
+    ctx.rotate(b.rot);
+    // 本體
+    var g = ctx.createRadialGradient(-b.r * 0.32, -b.r * 0.36, b.r * 0.15, 0, 0, b.r);
+    g.addColorStop(0, f.c2);
+    g.addColorStop(1, f.c1);
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(0, 0, b.r, 0, RE.TAU); ctx.fill();
+    // 邊光
+    ctx.strokeStyle = 'rgba(0,0,0,0.22)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(0, 0, b.r - 0.8, 0, RE.TAU); ctx.stroke();
+    // 高光
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.beginPath(); ctx.ellipse(-b.r * 0.34, -b.r * 0.4, b.r * 0.24, b.r * 0.16, -0.5, 0, RE.TAU); ctx.fill();
+    // 大西瓜加條紋，讓最終目標一眼認得出來
+    if (b.tier === FRUITS.length - 1) {
+        ctx.strokeStyle = 'rgba(20,80,30,0.55)'; ctx.lineWidth = 3;
+        for (var k = -2; k <= 2; k++) {
+            ctx.beginPath();
+            ctx.arc(k * b.r * 0.42, 0, b.r * 0.95, -1.15, 1.15);
+            ctx.stroke();
+        }
+    }
+    // 蒂頭
+    if (b.r > 16) {
+        ctx.fillStyle = '#5c8a3a';
+        ctx.fillRect(-1.5, -b.r - 3, 3, 5);
+        ctx.beginPath();
+        ctx.ellipse(4, -b.r - 1, 5, 2.5, -0.5, 0, RE.TAU);
+        ctx.fill();
+    }
+    // 臉：果實的招牌，睡著時閉眼
+    var eo = b.r * 0.3;
+    ctx.fillStyle = 'rgba(40,25,20,0.75)';
+    if (b.awake) {
+        ctx.beginPath(); ctx.arc(-eo, -b.r * 0.05, Math.max(1.2, b.r * 0.09), 0, RE.TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(eo, -b.r * 0.05, Math.max(1.2, b.r * 0.09), 0, RE.TAU); ctx.fill();
+    } else {
+        ctx.lineWidth = Math.max(1, b.r * 0.07);
+        ctx.strokeStyle = 'rgba(40,25,20,0.7)';
+        ctx.beginPath();
+        ctx.arc(-eo, -b.r * 0.02, b.r * 0.13, Math.PI * 0.15, Math.PI * 0.85);
+        ctx.arc(eo, -b.r * 0.02, b.r * 0.13, Math.PI * 0.15, Math.PI * 0.85);
+        ctx.stroke();
+    }
+    if (b.r > 13) {
+        ctx.strokeStyle = 'rgba(40,25,20,0.55)';
+        ctx.lineWidth = Math.max(1, b.r * 0.06);
+        ctx.beginPath();
+        ctx.arc(0, b.r * 0.06, b.r * 0.2, 0.25, Math.PI - 0.25);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawDropper() {
+    if (s.over) return;
+    var f = FRUITS[s.cur];
+    var x = s.dropX;
+    // 落點導引線：連續控制的遊戲一定要把「我會掉在哪」畫出來
+    ctx.save();
+    ctx.setLineDash([3, 6]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.20)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, DROP_Y + f.r); ctx.lineTo(x, BOX.y + BOX.h); ctx.stroke();
+    ctx.restore();
+
+    var ghost = { x: x, y: DROP_Y, r: f.r, tier: s.cur, rot: 0, awake: true };
+    ctx.save();
+    ctx.globalAlpha = s.cool > 0 ? 0.35 : 1;
+    drawFruit(ghost);
+    ctx.restore();
+    // 吊臂
+    ctx.strokeStyle = '#a8855a'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(x, DROP_Y - f.r); ctx.lineTo(x, 40); ctx.stroke();
+    ctx.fillStyle = '#8a6b46';
+    ctx.fillRect(BOX.x - 10, 36, BOX.w + 20, 6);
+}
+
+function drawSide() {
+    // 480px 畫布在手機約縮成 75%，11px 標籤實際只剩 8px；
+    // 右側「下一顆／合成順序」是玩家規劃投放的教育資訊，放大後仍落在各自欄寬內。
+    // 下一顆
+    RE.Draw.text(ctx, '下一顆', 62, 88, { size: 14, align: 'center', color: '#f1dfb0', stroke: '#211a2c', strokeWidth: 2 });
+    var f = FRUITS[s.nxt];
+    ctx.save();
+    ctx.translate(62, 120);
+    var g = ctx.createRadialGradient(-f.r * 0.3, -f.r * 0.35, f.r * 0.15, 0, 0, f.r);
+    g.addColorStop(0, f.c2); g.addColorStop(1, f.c1);
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(0, 0, Math.min(f.r, 22), 0, RE.TAU); ctx.fill();
+    ctx.restore();
+
+    // 進化表：讓玩家知道自己走到哪一階了
+    RE.Draw.text(ctx, '合成順序', 418, 88, { size: 14, align: 'center', color: '#f1dfb0', stroke: '#211a2c', strokeWidth: 2 });
+    for (var i = 0; i < FRUITS.length; i++) {
+        var ff = FRUITS[i];
+        var cx = 392 + (i % 2) * 34, cy = 112 + Math.floor(i / 2) * 32;
+        var got = i <= s.maxTier;
+        ctx.save();
+        ctx.globalAlpha = got ? 1 : 0.24;
+        ctx.fillStyle = ff.c1;
+        ctx.beginPath(); ctx.arc(cx, cy, Math.min(11, 4 + i * 0.85), 0, RE.TAU); ctx.fill();
+        if (got) {
+            ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.arc(cx, cy, Math.min(11, 4 + i * 0.85) + 2, 0, RE.TAU); ctx.stroke();
+        }
+        ctx.restore();
+    }
+}
+
+// ======================================================================
+function openPause() {
+    G._state = 'paused';
+    RetroAudio.play('pause');
+    G.showOverlay({
+        title: '暫停中',
+        body: '兩顆一樣的碰到就合成。合成會讓總體積變小，所以整座塔會塌下來重排。',
+        buttons: [
+            { label: '▶ 繼續', onClick: function () { G.resume(); } },
+            { label: '↻ 重新開始', cls: 'ghost', onClick: function () { G.restart(); } }
+        ],
+        press: '按 P 或 ESC 繼續'
+    });
+}
+G.pause = openPause;
+
+function showTitleScreen() {
+    G._state = 'title';
+    G.showOverlay({
+        title: '果實合成塔',
+        body: G.cfg.howto,
+        buttons: [{ label: '▶ 開始', onClick: function () { G.hideOverlay(); G._state = 'playing'; reset(); } }],
+        press: '按 空白鍵 或 Enter 開始'
+    });
+    var onKey = function (e) {
+        if (G._state !== 'title') return;
+        if (e.code === 'Space' || e.code === 'Enter') {
+            e.preventDefault();
+            window.removeEventListener('keydown', onKey);
+            RetroAudio.play('confirm');
+            G.hideOverlay(); G._state = 'playing'; reset();
+        }
+    };
+    window.addEventListener('keydown', onKey);
+}
+
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+showTitleScreen();
+</script>
+</body>
+</html>

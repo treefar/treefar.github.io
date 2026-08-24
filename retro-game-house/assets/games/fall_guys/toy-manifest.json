@@ -1,0 +1,169 @@
+{
+  "version": 1,
+  "kind": "game-art-atlas",
+  "game": "fall_guys",
+  "source": "art-production/batch-05/fall_guys/source/fall-toy-atlas-v002-imagegen.png",
+  "sourceSha256": "02b9482773c552e03d6304e17a3ccb0538d74f478873f0d310f2e42dfc3031f7",
+  "postprocess": "4x4 equal-cell slice; source alpha or chroma-distance-to-alpha; aspect-fit resize; no drawing or recolor",
+  "alphaMode": "source-alpha",
+  "atlas": "toy-atlas.png",
+  "atlasSha256": "e393afe3aea94fe6c4c38b9f0e400debaf496d2dc133d9dc87a7e0863e7c34ee",
+  "cellWidth": 128,
+  "cellHeight": 128,
+  "columns": 4,
+  "rows": 4,
+  "assets": {
+    "player_run": {
+      "index": 0,
+      "row": 0,
+      "column": 0,
+      "x": 0,
+      "y": 0,
+      "w": 128,
+      "h": 128
+    },
+    "player_dive": {
+      "index": 1,
+      "row": 0,
+      "column": 1,
+      "x": 128,
+      "y": 0,
+      "w": 128,
+      "h": 128
+    },
+    "player_tumble": {
+      "index": 2,
+      "row": 0,
+      "column": 2,
+      "x": 256,
+      "y": 0,
+      "w": 128,
+      "h": 128
+    },
+    "player_ready": {
+      "index": 3,
+      "row": 0,
+      "column": 3,
+      "x": 384,
+      "y": 0,
+      "w": 128,
+      "h": 128
+    },
+    "rival_cactus": {
+      "index": 4,
+      "row": 1,
+      "column": 0,
+      "x": 0,
+      "y": 128,
+      "w": 128,
+      "h": 128
+    },
+    "rival_explorer": {
+      "index": 5,
+      "row": 1,
+      "column": 1,
+      "x": 128,
+      "y": 128,
+      "w": 128,
+      "h": 128
+    },
+    "rival_dragon": {
+      "index": 6,
+      "row": 1,
+      "column": 2,
+      "x": 256,
+      "y": 128,
+      "w": 128,
+      "h": 128
+    },
+    "rival_pudding": {
+      "index": 7,
+      "row": 1,
+      "column": 3,
+      "x": 384,
+      "y": 128,
+      "w": 128,
+      "h": 128
+    },
+    "spinner_bar": {
+      "index": 8,
+      "row": 2,
+      "column": 0,
+      "x": 0,
+      "y": 256,
+      "w": 128,
+      "h": 128
+    },
+    "rolling_ball": {
+      "index": 9,
+      "row": 2,
+      "column": 1,
+      "x": 128,
+      "y": 256,
+      "w": 128,
+      "h": 128
+    },
+    "pendulum": {
+      "index": 10,
+      "row": 2,
+      "column": 2,
+      "x": 256,
+      "y": 256,
+      "w": 128,
+      "h": 128
+    },
+    "hex_tile": {
+      "index": 11,
+      "row": 2,
+      "column": 3,
+      "x": 384,
+      "y": 256,
+      "w": 128,
+      "h": 128
+    },
+    "crown": {
+      "index": 12,
+      "row": 3,
+      "column": 0,
+      "x": 0,
+      "y": 384,
+      "w": 128,
+      "h": 128
+    },
+    "finish_arch": {
+      "index": 13,
+      "row": 3,
+      "column": 1,
+      "x": 128,
+      "y": 384,
+      "w": 128,
+      "h": 128
+    },
+    "confetti": {
+      "index": 14,
+      "row": 3,
+      "column": 2,
+      "x": 256,
+      "y": 384,
+      "w": 128,
+      "h": 128
+    },
+    "knockout_puff": {
+      "index": 15,
+      "row": 3,
+      "column": 3,
+      "x": 384,
+      "y": 384,
+      "w": 128,
+      "h": 128
+    }
+  },
+  "qa": {
+    "assetCount": 16,
+    "edgePixels": 0,
+    "emptyCells": 0,
+    "minOccupiedPixels": 3059,
+    "maxOccupiedPixels": 7910,
+    "sourceHadTransparency": true
+  }
+}

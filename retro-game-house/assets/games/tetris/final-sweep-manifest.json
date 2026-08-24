@@ -1,0 +1,53 @@
+{
+  "version": 2,
+  "kind": "runtime-integrated-art-candidate",
+  "status": "final-gate-pending",
+  "countedInLedger": false,
+  "game": "tetris",
+  "set": "fidelity-rebuild-2026-08-25",
+  "tool": "Codex built-in ImageGen",
+  "model": "ImageGen（服務端版本未揭露）",
+  "generatedAt": "2026-08-25",
+  "prompt": "art-production/fidelity-rebuild-2026-08-25/tetris/prompt-v001.md",
+  "source": "art-production/fidelity-rebuild-2026-08-25/tetris/source/tetris-media-faithful-v001-imagegen.png",
+  "sourceSha256": "46566aa14fe3e5f4722cf226ce3844a05545d3e6bda6bb28552f95cca5d3b26d",
+  "supersedes": "art-production/fidelity-rebuild-2026-08-25/tetris/rejected/tetris-final-sweep-manifest-2026-08-24.json",
+  "supersededReason": "媒材年代不符；原候選保留於 rejected，不計正式帳。",
+  "postprocess": "固定格裁切、等比例縮放、透明留白與 4x4 圖集排版；未去背、未補畫、未修改模型內容。點陣媒材採 nearest-neighbor，向量／網頁媒材採 Lanczos 縮放。",
+  "atlas": "final-sweep-atlas.png",
+  "atlasSha256": "f67c0de903f2c56cc156c79924abf4b51de00077064ad41c370f02d229e134d7",
+  "cellWidth": 128,
+  "cellHeight": 128,
+  "assets": {
+    "block_cluster": {
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "1980 年代平面方塊組"
+    },
+    "line_clear": {
+      "index": 1,
+      "x": 128,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "掃線消除演出"
+    }
+  },
+  "runtimePresentation": "RetroShell 開場的美術候選圖譜；正常流程可見，不介入遊戲亂數、碰撞或更新。",
+  "qa": {
+    "assetCount": 2,
+    "sourceSize": [
+      1774,
+      887
+    ],
+    "sourceAlphaMin": 0,
+    "sourceAlphaMax": 255,
+    "edgePixels": 0,
+    "emptyCells": 0,
+    "mediumFidelityPreScreen": true,
+    "humanFinalGate": false
+  }
+}

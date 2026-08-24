@@ -1,0 +1,61 @@
+{
+  "version": 2,
+  "kind": "runtime-integrated-art-candidate",
+  "status": "final-gate-pending",
+  "countedInLedger": false,
+  "game": "game_2048",
+  "set": "fidelity-rebuild-2026-08-25",
+  "tool": "Codex built-in ImageGen",
+  "model": "ImageGen（服務端版本未揭露）",
+  "generatedAt": "2026-08-25",
+  "prompt": "art-production/fidelity-rebuild-2026-08-25/game_2048/prompt-v001.md",
+  "source": "art-production/fidelity-rebuild-2026-08-25/game_2048/source/game_2048-media-faithful-v001-imagegen.png",
+  "sourceSha256": "76e2e3bdf2b4f4af5eae7f19abef65e91cfebbb516c5db4ac4158d99953d8390",
+  "supersedes": "art-production/fidelity-rebuild-2026-08-25/game_2048/rejected/game_2048-final-sweep-manifest-2026-08-24.json",
+  "supersededReason": "媒材年代不符；原候選保留於 rejected，不計正式帳。",
+  "postprocess": "固定格裁切、等比例縮放、透明留白與 4x4 圖集排版；未去背、未補畫、未修改模型內容。點陣媒材採 nearest-neighbor，向量／網頁媒材採 Lanczos 縮放。",
+  "atlas": "final-sweep-atlas.png",
+  "atlasSha256": "d9fc7f69f537fddb6523749159273b4d8aea36f9cd5cd9a2f17d3bc0713b7855",
+  "cellWidth": 128,
+  "cellHeight": 128,
+  "assets": {
+    "material_tiles": {
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "2014 扁平層級方塊"
+    },
+    "cork_board": {
+      "index": 1,
+      "x": 128,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "HTML／CSS 盤面"
+    },
+    "merge_ripple": {
+      "index": 2,
+      "x": 256,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "合併回饋"
+    }
+  },
+  "runtimePresentation": "RetroShell 開場的美術候選圖譜；正常流程可見，不介入遊戲亂數、碰撞或更新。",
+  "qa": {
+    "assetCount": 3,
+    "sourceSize": [
+      2172,
+      724
+    ],
+    "sourceAlphaMin": 0,
+    "sourceAlphaMax": 255,
+    "edgePixels": 0,
+    "emptyCells": 0,
+    "mediumFidelityPreScreen": true,
+    "humanFinalGate": false
+  }
+}

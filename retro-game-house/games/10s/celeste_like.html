@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 登峰之路</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   登峰之路 — 致敬 Celeste (Maddy Makes Games, 2018)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. **單畫面房間 + 即時重生**。死掉不扣命、不回讀進度、不看載入畫面，
+      0.4 秒後你就站回這個房間的起點。懲罰趨近於零，所以難度可以拉到很高。
+   2. **一次衝刺**。八方向、落地才回復。整套關卡語言都長在「這一次要往哪衝」
+      這個唯一資源上。
+   3. **輔助模式是設計論述，不是可有可無的選項**。它就放在標題畫面上，
+      和「開始遊戲」平起平坐；死太多次時遊戲還會主動把它推到你面前。
+      這款遊戲的立場是：山不在乎你怎麼爬上來的。
+   4. 頭髮顏色就是 UI：紅色代表衝刺還在，灰藍色代表用掉了。
+      不需要任何數字或圖示，玩家兩秒就學會。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'celeste_like',
+    title: '登峰之路',
+    tagline: '難度可以很高，前提是失敗要很便宜',
+    original: 'Celeste (Maddy Makes Games, 2018)',
+    decade: '10s', year: 2018, platform: 'PC / 多平台', genre: '精準平台',
+    developer: 'Maddy Thorson · Noel Berry', bgm: '10s',
+    width: 480, height: 320,
+    hud: [
+        { key: 'stage', label: '路段', init: '1-1' },
+        { key: 'deaths', label: '摔落', init: 0 },
+        { key: 'berry', label: '草莓', init: 0 },
+        { key: 'score', label: 'SCORE' }
+    ],
+    touch: 'dpad+ab', labelA: '跳', labelB: '衝',
+    controls: [
+        { keys: ['←', '→'], desc: '移動；貼著牆壁下滑' },
+        { keys: ['A'], desc: '跳；貼牆時是牆跳' },
+        { keys: ['B'], desc: '衝刺（八方向，落地才會回復）' },
+        { keys: ['P'], desc: '暫停，可隨時開啟輔助模式' }
+    ],
+    howto: '到<strong>木門</strong>前進；每次離地有一次方向衝刺，落地或吃水晶回復。' +
+           '撞刺不扣命、0.4 秒回房間起點；可在暫停開輔助模式。',
+    lesson: {
+        verb: '跑、跳、貼牆，再把每次離地後僅有的一次八方向衝刺用在最關鍵的位置。',
+        innovation: '用單畫面房間、極短重生與輔助模式承接高難度；挑戰可以精準，失敗成本與參與門檻卻不必一起升高。',
+        mission: '在第一章主動撞一次尖刺，確認重生仍留在同房間；接著觀察紅髮代表可衝、灰藍髮代表已用，跨過必須消耗衝刺的深谷。',
+        evolution: '《Super Meat Boy》以快速重生支撐高密度死亡；《Celeste》在此基礎加入一次八方向衝刺、可選收藏與輔助模式，讓難度也能表達角色的攀登歷程。',
+        reflection: '如果每次失敗都扣命並退回整章起點，完全相同的尖刺與跳躍距離還會被感受成公平的挑戰嗎？'
+    },
+    design: '《Celeste》解決的問題是：如何讓精準平台遊戲維持高難度，卻不把玩家拒於門外。' +
+            '它的精準不只來自狹窄地形，而是把「高難度」和「高懲罰」拆開。' +
+            '八方向衝刺是一個離地後通常只用一次的資源，頭髮顏色直接顯示是否可用；落地或碰到水晶便重置，讓房間能圍繞一次清楚的路線決策設計。' +
+            '死亡後快速回到同一房間，使玩家保留剛才的肌肉記憶，失敗遂成為頻繁回饋而不是漫長處罰。' +
+            '本站版本以 0.4 秒重生、十五個單畫面房間和隨時可開的輔助選項，集中呈現這套「難，但讓你願意再試一次」的結構。',
+    history: '《Celeste》官方將作品描述為一款手工打造、操作緊密的登山平台遊戲，玩家協助 Madeline 登上 Celeste Mountain。' +
+             '作品於 2018 年推出；同年 The Game Awards 的官方紀錄顯示，它獲得最佳獨立遊戲與 Games for Impact。' +
+             '官方更新紀錄也持續調整 Assist Mode、Dash Assist、震動與螢幕晃動等選項，顯示可近用設計不是遊戲之外的附加說明，而是持續維護的系統。',
+    sources: [
+        { label: '《Celeste》官方網站與製作團隊資料', url: 'https://www.celestegame.com/' },
+        { label: '《Celeste》官方更新紀錄：Assist Mode 與操作選項', url: 'https://www.celestegame.com/changelog.html' },
+        { label: 'The Game Awards：2018 年得獎紀錄', url: 'https://thegameawards.com/rewind/year-2018' }
+    ]
+});
+
+var ctx = G.ctx, VW = G.width, VH = G.height;
+var P = new RE.Particles(420);
+var FT = new RE.FloatText();
+var CELESTE_ART = { image: new Image(), manifest: null };
+CELESTE_ART.image.src = '../../assets/games/celeste_like/mountain-atlas.png';
+fetch('../../assets/games/celeste_like/mountain-manifest.json')
+    .then(function (r) { if (!r.ok) throw new Error('celeste art manifest ' + r.status); return r.json(); })
+    .then(function (m) { CELESTE_ART.manifest = m; })
+    .catch(function () { CELESTE_ART.manifest = null; });
+
+var T = 20, COLS = 24, ROWS = 16;   // 一個房間剛好就是一個畫面
+
+// ======================================================================
+// 手感參數。整份數值集中在這裡，調難度不用翻程式碼。
+// ======================================================================
+var PHYS = {
+    accel: 1100, accelAir: 820, friction: 1500, frictionAir: 420,
+    maxRun: 132,
+    gravity: 900, gravityFall: 1250, maxFall: 380,
+    jumpVel: -290, jumpCut: 0.42, coyote: 0.10, buffer: 0.14,
+    wallSlide: 74, wallJumpX: 178, wallJumpY: -278, wallLock: 0.16,
+    dashSpeed: 300, dashTime: 0.16, dashEnd: 168,
+    springVel: -430
+};
+
+// ======================================================================
+// 地圖圖例
+//   .空　X實體　^地刺　v天花板刺　>左牆刺　<右牆刺
+//   o衝刺水晶　S彈簧　C崩落方塊　B草莓　P起點　D出口
+// ======================================================================
+var CHAPTERS = [
+    {
+        name: '第一段 · 山腳', hint: '往右走。跨過裂縫就到門了。',
+        sky: ['#2b3f63', '#16203a'], rock: '#4a5f8c', rockTop: '#7d95c6',
+        rooms: [
+            { name: '起步', hint: '←→ 移動，A 跳。',
+              rows: [
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '.....B..................',
+                '........................',
+                '..P..................D..',
+                'XXXXXXXXXX...XXXXXXXXXXX',
+                'XXXXXXXXXX...XXXXXXXXXXX',
+                'XXXXXXXXXX^^^XXXXXXXXXXX'
+              ] },
+            { name: '第一次衝刺', hint: 'B 衝刺。方向由你按著的方向鍵決定。',
+              rows: [
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '..................B.....',
+                '........................',
+                '........................',
+                '..P..................D..',
+                'XXXXXXXXX......XXXXXXXXX',
+                'XXXXXXXXX......XXXXXXXXX',
+                'XXXXXXXXX^^^^^^XXXXXXXXX'
+              ] },
+            { name: '煙囪', hint: '貼著牆會自動下滑，這時按 A 就是牆跳。',
+              rows: [
+                '........................',
+                '......D.................',
+                '......XXXXXXXXXXXXXXXXXX',
+                '...X..XXXXXXXXXXXXXXXXXX',
+                '...X..XXXXXXXXXXXXXXXXXX',
+                '...X..XXXXXXXXXXXXXXXXXX',
+                '...X..XXXXXXXXXXXXXXXXXX',
+                '...XB.XXXXXXXXXXXXXXXXXX',
+                '...X..XXXXXXXXXXXXXXXXXX',
+                '...X..XXXXXXXXXXXXXXXXXX',
+                '...X..XXXXXXXXXXXXXXXXXX',
+                '...X..XXXXXXXXXXXXXXXXXX',
+                '...XP.XXXXXXXXXXXXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX'
+              ] }
+        ]
+    },
+    {
+        name: '第二段 · 碎石坡', hint: '會塌的石板不能久站；彈簧能送你上去。',
+        sky: ['#3a3350', '#1c1830'], rock: '#5b5070', rockTop: '#9186ab',
+        rooms: [
+            { name: '塌落', hint: '踩上去就開始崩，不要停。',
+              rows: [
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '.........B..............',
+                '........................',
+                '........................',
+                '..P..................D..',
+                'XXXXXX.CC..CC..CCXXXXXXX',
+                'XXXXXX..................',
+                'XXXXXX^^^^^^^^^^^XXXXXXX'
+              ] },
+            // 每一階都是量出來的：兩格高、一格出頭的水平間距。
+            // 第一版的落差是三格，機器人跑一百五十次都上不去——
+            // 這是第二章第二間，還在教東西，不該要求那種精度。
+            /* 右下角原本是一塊地面（col18～23）。它離最近的平台 160px，
+               而跳躍只上升 46.7px——**站上去就再也上不來，而且不會死**。
+               人往右跑、跳過缺口、落在那裡，然後永遠卡著：機器人在那裡
+               來回走了 150 秒零死亡，人類玩家則是只能自己按重來。
+               這一款的正解是踩彈簧往上爬，右邊那塊地根本不在路線上，
+               它唯一的作用就是接住走錯的人並把他關起來。改成深淵：
+               走錯會死、會重生，而不是被關住。 */
+            { name: '彈簧', hint: '彈簧會把衝刺一起還給你。',
+              rows: [
+                '........................',
+                '........................',
+                '........................',
+                '..................B.....',
+                '......................D.',
+                '.....................XXX',
+                '........................',
+                '................XXXXX...',
+                '........................',
+                '........XXXXXXX.........',
+                '........................',
+                '........................',
+                '..P.......S.............',
+                'XXXXXXXXXXXXXX..........',
+                'XXXXXXXXXXXXXX..........',
+                'XXXXXXXXXXXXXX^^^^^^^^^^'
+              ] },
+            { name: '一口氣', hint: '崩落的石板加彈簧，節奏不能斷。',
+              rows: [
+                '........................',
+                '........................',
+                '........................',
+                '.....................D..',
+                '..................XXXXXX',
+                '........................',
+                '..............CCC.......',
+                '........................',
+                '.........CCC............',
+                '.......B................',
+                '.....CCC................',
+                '........................',
+                '..P.......S.............',
+                'XXXXXXXXXXXXX...........',
+                'XXXXXXXXXXXXX...........',
+                'XXXXXXXXXXXXX^^^^^^^^^^^'
+              ] }
+        ]
+    },
+    {
+        name: '第三段 · 風口', hint: '牆跳連段。有些牆面帶刺，看清楚再貼。',
+        sky: ['#173f4a', '#0d2129'], rock: '#3d6b70', rockTop: '#74a8a8',
+        rooms: [
+            // 這一間踩過兩個坑。第一版把天花板刺塞在豎井正中央，而刺本身是實心的，
+            // 等於直接把豎井封死；第二版把起點放在豎井外面，可是豎井的牆是直接坐在地板上的，
+            // 玩家根本走不進去。豎井類的房間，起點一定要在豎井裡面。
+            { name: '窄縫', hint: '有刺的那一面貼不得，換一邊爬。',
+              rows: [
+                '........................',
+                '................D.......',
+                'XXXXXXXXXXXXXXXXX.......',
+                'XXXXXXXXXXXXXXXXX..X....',
+                'XXXXXXXXXXXXXXXXX..X....',
+                'XXXXXXXXXXXXXXXXX..X....',
+                'XXXXXXXXXXXXXXXXX..X....',
+                'XXXXXXXXXXXXXXXXX.B<....',
+                'XXXXXXXXXXXXXXXXX..X....',
+                'XXXXXXXXXXXXXXXXX..X....',
+                'XXXXXXXXXXXXXXXXX..X....',
+                'XXXXXXXXXXXXXXXXX..X....',
+                'XXXXXXXXXXXXXXXXX.PX....',
+                'XXXXXXXXXXXXXXXXXXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX'
+              ] },
+            // 第一版是一面孤牆。牆跳每一下都把你推離牆面，
+            // 只有一面牆是爬不上去的——要爬就一定要有兩面對望的牆。
+            // 這一版改成左右交錯的岩階，落差兩格、水平間距一格，全在跳躍範圍內。
+            { name: '踏階', hint: '左右交錯的岩階，一階兩格。',
+              rows: [
+                '........................',
+                '.....B..........D.......',
+                '..............XXXXXXXXXX',
+                '.........XXXX...........',
+                '........................',
+                '....XXXX................',
+                '........................',
+                '.........XXXX...........',
+                '........................',
+                '....XXXX................',
+                '........................',
+                '.........XXXX...........',
+                '..P.....................',
+                'XXXXXXXX................',
+                'XXXXXXXX................',
+                'XXXXXXXX^^^^^^^^^^^^^^^^'
+              ] },
+            { name: '長爬', hint: '一路往上。中途沒有地面可以回復衝刺。',
+              rows: [
+                '.......D................',
+                '.......XXXXXXXXXXXXXXXXX',
+                '....X..XXXXXXXXXXXXXXXXX',
+                '....X..XXXXXXXXXXXXXXXXX',
+                '....X..XXXXXXXXXXXXXXXXX',
+                '....X.BXXXXXXXXXXXXXXXXX',
+                '....X..XXXXXXXXXXXXXXXXX',
+                '....X..XXXXXXXXXXXXXXXXX',
+                '....X..XXXXXXXXXXXXXXXXX',
+                '....X..XXXXXXXXXXXXXXXXX',
+                '....X..XXXXXXXXXXXXXXXXX',
+                '....X..XXXXXXXXXXXXXXXXX',
+                '....XP.XXXXXXXXXXXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX'
+              ] }
+        ]
+    },
+    {
+        name: '第四段 · 冰壁', hint: '水晶會把衝刺還給你。連起來就是一條路。',
+        sky: ['#1d3358', '#0e1a30'], rock: '#41648f', rockTop: '#7ea3cc',
+        rooms: [
+            // 水晶的位置是照「跳躍頂點的身體中心」算出來的，不是憑感覺擺。
+            // 第一版兩顆水晶隔了四格又同高，衝過去時已經掉出取用範圍。
+            { name: '接力', hint: '衝到水晶上，衝刺就回來了。',
+              rows: [
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '...........B............',
+                '........................',
+                '.........o..............',
+                '............o...........',
+                '..P..................D..',
+                'XXXXXXX........XXXXXXXXX',
+                'XXXXXXX........XXXXXXXXX',
+                'XXXXXXX^^^^^^^^XXXXXXXXX'
+              ] },
+            // 每一顆水晶都是「上一顆斜上衝刺剛好會經過的位置」：右兩格、上兩格。
+            // 第一版是右三格上兩格，衝到時已經掉出取用範圍，整條梯子接不起來。
+            // 收尾也不能讓玩家直接衝上高台的邊緣——斜上衝刺結束時還在上升，
+            // 會撞到高台底面被打下來。中間補一塊落腳台，落地順便回復衝刺。
+            { name: '上行', hint: '一顆接一顆往上，中途沒有地面。',
+              rows: [
+                '........................',
+                '.....................D..',
+                '...................XXXXX',
+                '........................',
+                '...............XXX......',
+                '........................',
+                '...........XXX..........',
+                '.........o..............',
+                '...........B............',
+                '.......o................',
+                '........................',
+                '........................',
+                '..P.....................',
+                'XXXXXX..................',
+                'XXXXXX..................',
+                'XXXXXX^^^^^^^^^^^^^^^^^^'
+              ] },
+            { name: '之字', hint: '先爬上去，再一口氣衝過斷崖。',
+              rows: [
+                '........................',
+                '...................D....',
+                '.................XXXXXXX',
+                '...X..XXXXXXXX..........',
+                '...X..X.................',
+                '...X..X.................',
+                '...X..X.................',
+                '...X..X.................',
+                '...XB.X.................',
+                '...X..X.................',
+                '...X..X.................',
+                '...X..X.................',
+                '...XP.X.................',
+                'XXXXXXXXXXXXXXXXXXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX'
+              ] }
+        ]
+    },
+    {
+        name: '第五段 · 山頂', hint: '前面教過的東西，這裡全部一起來。',
+        sky: ['#4a2c4e', '#1d1226'], rock: '#6b4166', rockTop: '#a97ba1',
+        rooms: [
+            { name: '匯流', hint: '彈簧上去、踩著崩落的石板、再用水晶接上去。',
+              rows: [
+                '........................',
+                '........................',
+                '........................',
+                '.....................D..',
+                '...................XXXXX',
+                '............o...........',
+                '...............XXXX.....',
+                '........................',
+                '.......CCC..............',
+                '.....B..................',
+                '........................',
+                '........................',
+                '..P...S.................',
+                'XXXXXXXXX...............',
+                'XXXXXXXXX...............',
+                'XXXXXXXXX^^^^^^^^^^^^^^^'
+              ] },
+            { name: '刺牆', hint: '有刺的那一面不能貼。',
+              rows: [
+                '........................',
+                '....D...................',
+                '....XXXXXXXXXXXXXXXXXXXX',
+                '.X..XXXXXXXXXXXXXXXXXXXX',
+                '.X..XXXXXXXXXXXXXXXXXXXX',
+                '.>..XXXXXXXXXXXXXXXXXXXX',
+                '.X.BXXXXXXXXXXXXXXXXXXXX',
+                '.X..XXXXXXXXXXXXXXXXXXXX',
+                '.>..XXXXXXXXXXXXXXXXXXXX',
+                '.X..XXXXXXXXXXXXXXXXXXXX',
+                '.X..XXXXXXXXXXXXXXXXXXXX',
+                '.>..XXXXXXXXXXXXXXXXXXXX',
+                '.XP.XXXXXXXXXXXXXXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX'
+              ] },
+            { name: '登頂', hint: '最後一段。慢慢來，反正死了也只退到這個房間的起點。',
+              rows: [
+                '........................',
+                '.....................D..',
+                '...................XXXXX',
+                '................o.......',
+                '..............XXX.......',
+                '........................',
+                '..........CCC...........',
+                '........................',
+                '......XXXX..............',
+                '.....B..................',
+                '........................',
+                '........................',
+                '..P...S.................',
+                'XXXXXXXXX...............',
+                'XXXXXXXXX...............',
+                'XXXXXXXXX^^^^^^^^^^^^^^^'
+              ] }
+        ]
+    }
+];
+
+// ======================================================================
+// 輔助模式：這是本作的設計論述，所以它是一級公民，不是設定選單第三層的東西
+// ======================================================================
+var SPEEDS = [1.0, 0.8, 0.65, 0.5];
+var assist = {
+    on: false,
+    speedIdx: 0,
+    infDash: false,
+    invuln: false
+};
+
+function assistActive() {
+    return assist.speedIdx > 0 || assist.infDash || assist.invuln;
+}
+
+function showAssistMenu(back) {
+    G._state = 'paused';
+    var rows = [
+        { label: '遊戲速度：' + Math.round(SPEEDS[assist.speedIdx] * 100) + '%',
+          onClick: function () { assist.speedIdx = (assist.speedIdx + 1) % SPEEDS.length; showAssistMenu(back); } },
+        { label: '無限衝刺：' + (assist.infDash ? '開' : '關'),
+          onClick: function () { assist.infDash = !assist.infDash; showAssistMenu(back); } },
+        { label: '無敵：' + (assist.invuln ? '開' : '關'),
+          onClick: function () { assist.invuln = !assist.invuln; showAssistMenu(back); } },
+        { label: '◀ 返回', cls: 'ghost', onClick: back }
+    ];
+    G.showOverlay({
+        title: '輔 助 模 式',
+        body: '這些選項隨時可以開、隨時可以關，開了也不會影響結局。' +
+              '《Celeste》把輔助模式放在最顯眼的地方，就是想說一件事：' +
+              '<strong>山不在乎你怎麼爬上來的。</strong>',
+        buttons: rows
+    });
+}
+
+function openPause() {
+    G._state = 'paused';
+    RetroAudio.play('pause');
+    G.showOverlay({
+        title: '暫停中',
+        body: '爬不動了？輔助模式就在下面，不必為此道歉。',
+        buttons: [
+            { label: '▶ 繼續', onClick: function () { G.resume(); } },
+            { label: '⚙ 輔助模式', onClick: function () { showAssistMenu(openPause); } },
+            { label: '↻ 重新開始', cls: 'ghost', onClick: function () { G.restart(); } },
+            { label: '⚑ 放棄下山', cls: 'ghost', onClick: function () { giveUp(); } }
+        ],
+        press: '按 P 或 ESC 繼續'
+    });
+}
+G.pause = openPause;   // 讓 P 鍵、暫停鈕與自動暫停全部走這一份選單
+
+function showTitleScreen() {
+    G._state = 'title';
+    G.showOverlay({
+        title: '登峰之路',
+        body: G.cfg.howto,
+        buttons: [
+            { label: '▶ 開始攀登', onClick: function () { G.hideOverlay(); G._state = 'playing'; reset(); } },
+            { label: '⚙ 輔助模式', onClick: function () { showAssistMenu(showTitleScreen); } }
+        ],
+        press: '按 空白鍵 或 Enter 開始'
+    });
+    var onKey = function (e) {
+        if (G._state !== 'title') return;
+        if (e.code === 'Space' || e.code === 'Enter') {
+            e.preventDefault();
+            window.removeEventListener('keydown', onKey);
+            RetroAudio.play('confirm');
+            G.hideOverlay(); G._state = 'playing'; reset();
+        }
+    };
+    window.addEventListener('keydown', onKey);
+}
+
+// ======================================================================
+// 狀態
+// ======================================================================
+var s = null;
+
+function reset() {
+    s = { ch: 0, room: 0, deaths: 0, berries: 0, score: 0, totalRooms: 0 };
+    P.clear(); FT.clear();
+    G.setStat('deaths', 0); G.setStat('berry', 0); G.setStat('score', 0);
+    s.berryTaken = {};
+    loadRoom(0, 0);
+}
+
+function roomDef(ch, r) { return CHAPTERS[ch].rooms[r]; }
+
+function loadRoom(ch, r) {
+    var def = roomDef(ch, r);
+    var solid = {}, hazard = {}, crumbles = [], crystals = [], springs = [], berries = [], door = null, start = null;
+
+    for (var y = 0; y < def.rows.length; y++) {
+        var row = def.rows[y];
+        for (var x = 0; x < row.length; x++) {
+            var c = row[x], k = x + ',' + y;
+            if (c === 'X') solid[k] = 1;
+            else if (c === '^' || c === 'v' || c === '>' || c === '<') { solid[k] = 1; hazard[k] = c; }
+            else if (c === 'C') crumbles.push({ x: x, y: y, state: 0, t: 0 });
+            else if (c === 'o') crystals.push({ x: x, y: y, t: 0 });
+            else if (c === 'S') springs.push({ x: x, y: y, t: 0 });
+            else if (c === 'B') berries.push({ x: x, y: y, id: ch + '-' + r + '-' + x + '-' + y, t: Math.random() * 6 });
+            else if (c === 'D') door = { x: x, y: y };
+            else if (c === 'P') start = { x: x, y: y };
+        }
+    }
+
+    s.ch = ch; s.room = r;
+    s.def = def;
+    s.cfg = CHAPTERS[ch];
+    s.solid = solid; s.hazard = hazard;
+    s.crumbles = crumbles; s.crystals = crystals; s.springs = springs;
+    s.berries = berries; s.door = door; s.start = start;
+    s.clearT = 0; s.roomDeaths = 0; s.hintT = 2.6;
+    s.assistNagged = false;
+    G.setStat('stage', (ch + 1) + '-' + (r + 1));
+    spawn();
+}
+
+function spawn() {
+    var st = s.start || { x: 2, y: 12 };
+    s.p = {
+        x: st.x * T + 4, y: st.y * T + 4, w: 12, h: 16,
+        vx: 0, vy: 0, grounded: false, coyote: 0, face: 1,
+        jumping: false, dash: 1, dashT: 0, dashX: 0, dashY: 0, dashCd: 0,
+        wall: 0, lock: 0, dead: 0, anim: 0, trail: [], hairT: 0
+    };
+    for (var i = 0; i < s.crumbles.length; i++) { s.crumbles[i].state = 0; s.crumbles[i].t = 0; }
+    for (i = 0; i < s.crystals.length; i++) s.crystals[i].t = 0;
+    RE.Input.consumeBuffer('a');
+    RE.Input.consumeBuffer('b');
+}
+
+// ---------- 地形查詢 ----------
+function solidAt(cx, cy) {
+    if (s.solid[cx + ',' + cy]) return true;
+    for (var i = 0; i < s.crumbles.length; i++) {
+        var c = s.crumbles[i];
+        if (c.x === cx && c.y === cy && c.state < 2) return true;
+    }
+    return false;
+}
+function hazardAt(cx, cy) { return s.hazard[cx + ',' + cy] || null; }
+
+// 尖刺只有「朝向你的那一面」會殺人。這樣玩家可以安全站在刺牆的頂上，
+// 也讓「哪一面不能貼」變成看得出來的資訊，而不是碰運氣。
+function hazardKills(dir, o) {
+    if (dir === '^') return o.vy >= 0;
+    if (dir === 'v') return o.vy <= 0;
+    if (dir === '>') return o.vx <= 0;
+    if (dir === '<') return o.vx >= 0;
+    return false;
+}
+
+/**
+ * 移動並解算 tilemap 碰撞。X、Y 一定要分兩階段——
+ * 兩軸一起解算時，落地那一幀角色已經陷進地板，
+ * 水平解算會把它誤判成撞牆而從側面推開。
+ */
+function moveAndCollide(o, dt) {
+    var grounded = false, hitWallDir = 0, ceil = false, r, c;
+    o.deadlyHit = null;
+
+    o.x += o.vx * dt;
+    var r0 = Math.floor(o.y / T), r1 = Math.floor((o.y + o.h - 1) / T);
+    var c0 = Math.floor(o.x / T), c1 = Math.floor((o.x + o.w - 1) / T);
+    for (r = r0; r <= r1; r++) {
+        for (c = c0; c <= c1; c++) {
+            if (!solidAt(c, r)) continue;
+            var hz = hazardAt(c, r);
+            if (hz && hazardKills(hz, o)) o.deadlyHit = hz;
+            if (o.vx > 0) { o.x = c * T - o.w; o.vx = 0; hitWallDir = 1; }
+            else if (o.vx < 0) { o.x = (c + 1) * T; o.vx = 0; hitWallDir = -1; }
+        }
+    }
+
+    o.y += o.vy * dt;
+    c0 = Math.floor(o.x / T); c1 = Math.floor((o.x + o.w - 1) / T);
+    r0 = Math.floor(o.y / T); r1 = Math.floor((o.y + o.h - 1) / T);
+    for (r = r0; r <= r1; r++) {
+        for (c = c0; c <= c1; c++) {
+            if (!solidAt(c, r)) continue;
+            var hz2 = hazardAt(c, r);
+            if (hz2 && hazardKills(hz2, o)) o.deadlyHit = hz2;
+            if (o.vy > 0) { o.y = r * T - o.h; o.vy = 0; grounded = true; landOn(c, r); }
+            else if (o.vy < 0) { o.y = (r + 1) * T; o.vy = 0; ceil = true; }
+        }
+    }
+    // 貼地探測。解算會把角色的腳「剛好」放在磚塊上緣，
+    // 而下一幀的檢查範圍是 y+h-1，正好差那一像素碰不到磚塊——
+    // 結果站著不動時 grounded 會每隔一幀閃一次。
+    // 這會讓衝刺回復、土狼時間、落地動畫全部跟著抖，實測時也讓測試機器人完全跳不起來。
+    if (!grounded && o.vy >= 0) {
+        var pr = Math.floor((o.y + o.h + 1) / T);
+        var pc0 = Math.floor(o.x / T), pc1 = Math.floor((o.x + o.w - 1) / T);
+        for (c = pc0; c <= pc1; c++) if (solidAt(c, pr)) { grounded = true; break; }
+    }
+    o.grounded = grounded; o.wallDir = hitWallDir; o.ceil = ceil;
+    return grounded;
+}
+
+function landOn(cx, cy) {
+    for (var i = 0; i < s.crumbles.length; i++) {
+        var c = s.crumbles[i];
+        if (c.x === cx && c.y === cy && c.state === 0) {
+            c.state = 1; c.t = 0;
+            RetroAudio.play('blip');
+        }
+    }
+}
+
+// 貼牆判定：往前探 2px，看看那裡是不是實體
+function wallSide(o, dir) {
+    var x = dir > 0 ? o.x + o.w + 2 : o.x - 2;
+    var cx = Math.floor(x / T);
+    var r0 = Math.floor((o.y + 2) / T), r1 = Math.floor((o.y + o.h - 3) / T);
+    for (var r = r0; r <= r1; r++) if (solidAt(cx, r)) return true;
+    return false;
+}
+// 這一面牆是不是帶刺（帶刺就不能貼）
+function wallSpiked(o, dir) {
+    var x = dir > 0 ? o.x + o.w + 2 : o.x - 2;
+    var cx = Math.floor(x / T);
+    var r0 = Math.floor((o.y + 2) / T), r1 = Math.floor((o.y + o.h - 3) / T);
+    for (var r = r0; r <= r1; r++) if (hazardAt(cx, r)) return true;
+    return false;
+}
+
+// ======================================================================
+// 玩家
+// ======================================================================
+function updatePlayer(dt) {
+    var p = s.p;
+    if (p.dead > 0) {
+        p.dead -= dt;
+        if (p.dead <= 0) spawn();
+        return;
+    }
+
+    var ax = RE.Input.axisX(), ay = RE.Input.axisY();
+    if (p.lock > 0) { p.lock -= dt; ax = p.lockDir; }
+
+    // ---------- 衝刺 ----------
+    if (p.dashCd > 0) p.dashCd -= dt;
+    if (p.dashT > 0) {
+        p.dashT -= dt;
+        p.vx = p.dashX * PHYS.dashSpeed;
+        p.vy = p.dashY * PHYS.dashSpeed;
+        p.trail.push({ x: p.x, y: p.y, t: 0, face: p.face });
+        if (p.dashT <= 0) {
+            p.vx = p.dashX * PHYS.dashEnd;
+            p.vy = p.dashY * (p.dashY < 0 ? PHYS.dashEnd * 0.62 : PHYS.dashEnd * 0.3);
+        }
+        moveAndCollide(p, dt);
+        afterMove(dt);
+        return;
+    }
+
+    if (RE.Input.buffered('b', 0.1) && (p.dash > 0 || assist.infDash) && p.dashCd <= 0) {
+        RE.Input.consumeBuffer('b');
+        var dx = ax, dy = ay;
+        if (dx === 0 && dy === 0) { dx = p.face; dy = 0; }
+        var len = Math.sqrt(dx * dx + dy * dy);
+        p.dashX = dx / len; p.dashY = dy / len;
+        p.dashT = PHYS.dashTime;
+        p.dashCd = 0.18;
+        if (!assist.infDash) p.dash = 0;
+        if (dx !== 0) p.face = dx > 0 ? 1 : -1;
+        RetroAudio.play('dash');
+        RE.juice.hitstop(0.045);
+        RE.juice.shake(0.13);
+        P.burst(p.x + p.w / 2, p.y + p.h / 2, 12, {
+            angle: Math.atan2(-p.dashY, -p.dashX), spread: 0.7,
+            speedMin: 60, speedMax: 190, gravity: 0, drag: 0.86,
+            colors: ['#ff5c8a', '#ffd166', '#fff3c4'], lifeMin: 0.15, lifeMax: 0.32, shape: 'spark', glow: true
+        });
+        return;
+    }
+
+    // ---------- 水平移動 ----------
+    var accel = p.grounded ? PHYS.accel : PHYS.accelAir;
+    var fric = p.grounded ? PHYS.friction : PHYS.frictionAir;
+    if (ax !== 0) {
+        p.vx += ax * accel * dt;
+        if (Math.abs(p.vx) > PHYS.maxRun) p.vx = ax * PHYS.maxRun;
+        p.face = ax > 0 ? 1 : -1;
+    } else {
+        if (p.vx > 0) p.vx = Math.max(0, p.vx - fric * dt);
+        else if (p.vx < 0) p.vx = Math.min(0, p.vx + fric * dt);
+    }
+
+    // ---------- 貼牆下滑 ----------
+    var onWall = 0;
+    if (!p.grounded) {
+        if (ax > 0 && wallSide(p, 1) && !wallSpiked(p, 1)) onWall = 1;
+        else if (ax < 0 && wallSide(p, -1) && !wallSpiked(p, -1)) onWall = -1;
+    }
+    p.wall = onWall;
+
+    // ---------- 重力 ----------
+    var g = p.vy < 0 ? PHYS.gravity : PHYS.gravityFall;
+    p.vy += g * dt;
+    var maxFall = onWall ? PHYS.wallSlide : PHYS.maxFall;
+    if (p.vy > maxFall) p.vy = maxFall;
+
+    // ---------- 跳躍：土狼時間 + 輸入緩衝 + 可變高度 ----------
+    if (p.grounded) p.coyote = PHYS.coyote;
+    else if (p.coyote > 0) p.coyote -= dt;
+
+    if (RE.Input.buffered('a', PHYS.buffer)) {
+        if (p.coyote > 0) {
+            RE.Input.consumeBuffer('a');
+            p.vy = PHYS.jumpVel; p.jumping = true; p.coyote = 0;
+            RetroAudio.play('jump');
+            P.burst(p.x + p.w / 2, p.y + p.h, 6, { angle: -Math.PI / 2, spread: 1.1,
+                speedMin: 30, speedMax: 90, gravity: 260, colors: ['#dfe9ff', '#9fb6e0'], lifeMin: 0.15, lifeMax: 0.3 });
+        } else if (onWall !== 0) {
+            RE.Input.consumeBuffer('a');
+            p.vy = PHYS.wallJumpY;
+            p.vx = -onWall * PHYS.wallJumpX;
+            p.lock = PHYS.wallLock; p.lockDir = -onWall;
+            p.face = -onWall;
+            p.jumping = true;
+            RetroAudio.play('doubleJump');
+            RE.juice.shake(0.08);
+            P.burst(p.x + (onWall > 0 ? p.w : 0), p.y + p.h / 2, 8, {
+                angle: onWall > 0 ? 0 : Math.PI, spread: 0.9,
+                speedMin: 40, speedMax: 130, gravity: 200,
+                colors: ['#dfe9ff', '#7ea3cc'], lifeMin: 0.15, lifeMax: 0.32 });
+        }
+    }
+    if (p.jumping && !RE.Input.down('a') && p.vy < 0) { p.vy *= PHYS.jumpCut; p.jumping = false; }
+    if (p.vy >= 0) p.jumping = false;
+
+    moveAndCollide(p, dt);
+    afterMove(dt);
+}
+
+function afterMove(dt) {
+    var p = s.p;
+    p.anim += dt;
+    if (p.grounded) { p.dash = 1; p.coyote = PHYS.coyote; }
+
+    if (p.deadlyHit && !assist.invuln) { die(); return; }
+    if (p.y > VH + 40) { die(); return; }
+
+    // 彈簧
+    for (var i = 0; i < s.springs.length; i++) {
+        var sp = s.springs[i];
+        var sx = sp.x * T, sy = sp.y * T;
+        if (p.x + p.w > sx + 2 && p.x < sx + T - 2 &&
+            p.y + p.h > sy + 6 && p.y + p.h < sy + T + 8 && p.vy >= 0) {
+            p.vy = PHYS.springVel;
+            p.dash = 1; p.dashT = 0;
+            // 這裡千萬不能設 p.jumping = true。
+            // 設了之後「放開跳躍鍵就砍掉上升速度」的可變跳躍規則會套到彈簧上，
+            // 沒按著跳的玩家只會被彈起 1.5 格（實測），而不是設計好的 5 格。
+            p.jumping = false;
+            sp.t = 0.35;
+            RetroAudio.play('bounce');
+            RE.juice.shake(0.16);
+            P.ring(sx + T / 2, sy + T / 2, '#7de0a0', 34);
+        }
+    }
+
+    // 衝刺水晶
+    for (i = 0; i < s.crystals.length; i++) {
+        var cr = s.crystals[i];
+        if (cr.t > 0) continue;
+        var cx = cr.x * T + T / 2, cy = cr.y * T + T / 2;
+        if (Math.abs(p.x + p.w / 2 - cx) < 15 && Math.abs(p.y + p.h / 2 - cy) < 16) {
+            cr.t = 2.0;
+            p.dash = 1;
+            RetroAudio.play('pickup');
+            RE.juice.flash('rgba(180,230,255,0.22)', 0.07);
+            P.ring(cx, cy, '#8fe8ff', 30);
+            P.burst(cx, cy, 10, { colors: ['#8fe8ff', '#ffffff'], speedMin: 40, speedMax: 140,
+                gravity: 0, drag: 0.9, lifeMin: 0.2, lifeMax: 0.4, glow: true });
+        }
+    }
+
+    // 草莓
+    for (i = s.berries.length - 1; i >= 0; i--) {
+        var b = s.berries[i];
+        var bx = b.x * T + T / 2, by = b.y * T + T / 2;
+        if (Math.abs(p.x + p.w / 2 - bx) < 14 && Math.abs(p.y + p.h / 2 - by) < 15) {
+            s.berries.splice(i, 1);
+            s.berryTaken[b.id] = true;
+            s.berries_got = true;
+            addBerry(bx, by);
+        }
+    }
+
+    // 出口
+    if (s.door && s.clearT <= 0) {
+        var dx2 = s.door.x * T, dy2 = s.door.y * T;
+        if (p.x + p.w > dx2 + 2 && p.x < dx2 + T - 2 &&
+            p.y + p.h > dy2 + 2 && p.y < dy2 + T + 2) clearRoom();
+    }
+
+    // 衝刺殘影
+    for (i = p.trail.length - 1; i >= 0; i--) {
+        p.trail[i].t += dt;
+        if (p.trail[i].t > 0.24) p.trail.splice(i, 1);
+    }
+}
+
+function addBerry(x, y) {
+    s.berries_n = (s.berries_n || 0) + 1;
+    s.berries_total = s.berries_total || 0;
+    s.berriesCount = (s.berriesCount || 0) + 1;
+    G.setStat('berry', s.berriesCount);
+    addScore(500);
+    RetroAudio.play('coin');
+    RE.juice.hitstop(0.05);
+    RE.juice.punchZoom(0.05);
+    FT.add(x, y - 8, '草莓 +500', { color: '#ff8fa8', size: 13 });
+    P.burst(x, y, 16, { colors: ['#ff5c8a', '#ffd166', '#fff3c4'],
+        speedMin: 50, speedMax: 170, gravity: 160, lifeMin: 0.3, lifeMax: 0.6, glow: true });
+}
+
+function addScore(n) { s.score += n; G.setStat('score', s.score); }
+
+function die() {
+    var p = s.p;
+    if (p.dead > 0) return;
+    p.dead = 0.4;
+    p.vx = 0; p.vy = 0; p.dashT = 0;
+    s.deaths++; s.roomDeaths++;
+    G.setStat('deaths', s.deaths);
+    RetroAudio.play('hurt');
+    RE.juice.hitstop(0.07);
+    RE.juice.shake(0.34);
+    RE.juice.flash('rgba(255,120,150,0.3)', 0.12);
+    P.burst(p.x + p.w / 2, p.y + p.h / 2, 22, {
+        colors: ['#ff5c8a', '#ffd166', '#dfe9ff'],
+        speedMin: 70, speedMax: 210, gravity: 0, drag: 0.9,
+        lifeMin: 0.25, lifeMax: 0.5, glow: true
+    });
+
+    // 原作在你死太多次之後會主動把輔助模式推到你面前。
+    // 這不是施捨，是設計者表明立場：卡住不是你的錯，也不必是你的事。
+    if (s.roomDeaths === 20 && !s.assistNagged && !assistActive()) {
+        s.assistNagged = true;
+        setTimeout(function () {
+            if (G.state() !== 'playing') return;
+            showAssistMenu(function () { G.resume(); });
+        }, 500);
+    }
+}
+
+function clearRoom() {
+    s.clearT = 0.75;
+    RetroAudio.play('win');
+    RE.juice.flash('rgba(255,255,255,0.35)', 0.14);
+    RE.juice.punchZoom(0.07);
+    addScore(300);
+    var p = s.p;
+    P.burst(p.x + p.w / 2, p.y + p.h / 2, 24, {
+        colors: ['#ffd166', '#fff3c4', '#8fe8ff'],
+        speedMin: 60, speedMax: 200, gravity: 90, lifeMin: 0.35, lifeMax: 0.7, glow: true
+    });
+}
+
+function nextRoom() {
+    var ch = s.ch, r = s.room;
+    s.totalRooms++;
+    if (r < CHAPTERS[ch].rooms.length - 1) { loadRoom(ch, r + 1); return; }
+    addScore(1000);
+    if (ch < CHAPTERS.length - 1) {
+        var n = ch + 1;
+        G.stageCard(n + 1, CHAPTERS[n].name, CHAPTERS[n].hint, function () { loadRoom(n, 0); });
+        return;
+    }
+    finish();
+}
+
+function finish() {
+    var bonus = Math.max(0, 4000 - s.deaths * 25);
+    addScore(bonus);
+    var body;
+    if (assistActive()) {
+        body = '你登頂了，摔落 ' + s.deaths + ' 次，帶回 ' + (s.berriesCount || 0) + ' 顆草莓。' +
+               '你開了輔助模式——這個結局和沒開是同一個，因為它本來就該是同一個。' +
+               '《Celeste》把輔助模式放在標題畫面上，就是要讓「怎麼爬」這件事回到玩家手上。' +
+               '山不在乎你怎麼上來的。';
+    } else {
+        body = '你登頂了，摔落 ' + s.deaths + ' 次，帶回 ' + (s.berriesCount || 0) + ' 顆草莓。' +
+               '這 ' + s.deaths + ' 次失敗總共只花了你幾分鐘——' +
+               '這就是為什麼它敢把關卡做這麼難。' +
+               '<strong>難度不是關卡決定的，是失敗的代價決定的。</strong>';
+    }
+    G.gameOver({ win: true, score: s.score, body: body });
+}
+
+function giveUp() {
+    G.hideOverlay();
+    G._state = 'playing';
+    G.gameOver({
+        win: false, score: s.score,
+        body: '你在第 ' + (s.ch + 1) + ' 段轉身下山，摔落 ' + s.deaths + ' 次。' +
+              '《Celeste》唯一真正的失敗狀態就是關掉遊戲——它沒有生命值、沒有退關、沒有 Game Over。' +
+              '所以下次卡住的時候，請先打開輔助模式再說。'
+    });
+}
+
+// ======================================================================
+// 主迴圈
+// ======================================================================
+function update(dt) {
+    if (!s) return;
+    dt *= SPEEDS[assist.speedIdx];
+    P.update(dt); FT.update(dt);
+    if (s.hintT > 0) s.hintT -= dt;
+
+    var i;
+    for (i = 0; i < s.crumbles.length; i++) {
+        var c = s.crumbles[i];
+        if (c.state === 1) {
+            c.t += dt;
+            if (c.t >= 0.35) {
+                c.state = 2; c.t = 0;
+                P.burst(c.x * T + T / 2, c.y * T + T / 2, 10, {
+                    colors: [s.cfg.rock, s.cfg.rockTop], speedMin: 30, speedMax: 110,
+                    gravity: 420, lifeMin: 0.3, lifeMax: 0.6 });
+                RetroAudio.play('drop');
+            }
+        } else if (c.state === 2) {
+            c.t += dt;
+            if (c.t >= 1.6) {
+                // 玩家正好站在原位時不要把他卡進石頭裡
+                var px = Math.floor((s.p.x + s.p.w / 2) / T), py = Math.floor((s.p.y + s.p.h / 2) / T);
+                if (!(px === c.x && py === c.y)) { c.state = 0; c.t = 0; }
+            }
+        }
+    }
+    for (i = 0; i < s.crystals.length; i++) if (s.crystals[i].t > 0) s.crystals[i].t -= dt;
+    for (i = 0; i < s.springs.length; i++) if (s.springs[i].t > 0) s.springs[i].t -= dt;
+    for (i = 0; i < s.berries.length; i++) s.berries[i].t += dt;
+
+    if (s.clearT > 0) {
+        s.clearT -= dt;
+        if (s.clearT <= 0) { nextRoom(); return; }
+        return;
+    }
+    updatePlayer(dt);
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function render() {
+    if (!s || !s.p) return;
+    G.beginWorld();
+    drawSky();
+    drawTiles();
+    drawCrumbles();
+    drawSprings();
+    drawCrystals();
+    drawBerries();
+    drawDoor();
+    drawPlayer();
+    P.draw(ctx);
+    FT.draw(ctx);
+    G.endWorld();
+    drawHUD();
+    G.postFX({ scanAlpha: 0.05, vignetteStrength: 0.42 });
+}
+
+function drawCelesteAsset(name, cx, cy, w, h, alpha, flip, rotation) {
+    var m = CELESTE_ART.manifest;
+    if (!m || !m.assets || !m.assets[name] || !CELESTE_ART.image.complete ||
+        !CELESTE_ART.image.naturalWidth) return false;
+    var a = m.assets[name];
+    ctx.save();
+    ctx.globalAlpha = alpha === undefined ? 1 : alpha;
+    ctx.translate(cx, cy);
+    if (rotation) ctx.rotate(rotation);
+    if (flip) ctx.scale(-1, 1);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(CELESTE_ART.image, a.x, a.y, a.w, a.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+}
+
+function drawSky() {
+    var g = ctx.createLinearGradient(0, 0, 0, VH);
+    g.addColorStop(0, s.cfg.sky[0]);
+    g.addColorStop(1, s.cfg.sky[1]);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, VW, VH);
+    // 遠山剪影，讓每一段的畫面不會只是純色背景
+    ctx.fillStyle = 'rgba(255,255,255,0.045)';
+    ctx.beginPath();
+    ctx.moveTo(0, VH);
+    for (var x = 0; x <= VW; x += 40) {
+        ctx.lineTo(x, VH * 0.55 + Math.sin((x + s.ch * 90) * 0.011) * 34 + Math.cos(x * 0.03) * 12);
+    }
+    ctx.lineTo(VW, VH); ctx.closePath(); ctx.fill();
+    drawCelesteAsset('foreground_pine', 36, VH - 61, 76, 116, 0.34);
+    drawCelesteAsset('foreground_pine', VW - 32, VH - 55, 66, 104, 0.24, true);
+    // 飄雪
+    for (var i = 0; i < 26; i++) {
+        var t = (Date.now() * 0.00004 + i * 0.37) % 1;
+        var sx = (i * 97 % VW) + Math.sin(t * 6.28 + i) * 12;
+        ctx.fillStyle = 'rgba(255,255,255,' + (0.10 + (i % 3) * 0.05) + ')';
+        ctx.fillRect(sx, t * VH, 2, 2);
+    }
+}
+
+function drawTiles() {
+    for (var y = 0; y < ROWS; y++) {
+        for (var x = 0; x < COLS; x++) {
+            var k = x + ',' + y;
+            if (!s.solid[k]) continue;
+            var hz = s.hazard[k];
+            if (hz) { drawSpike(x, y, hz); continue; }
+            drawRock(x, y);
+        }
+    }
+}
+
+function drawRock(x, y) {
+    var px = x * T, py = y * T;
+    ctx.fillStyle = s.cfg.rock;
+    ctx.fillRect(px, py, T, T);
+    if (!solidStatic(x, y - 1)) { ctx.fillStyle = s.cfg.rockTop; ctx.fillRect(px, py, T, 4); }
+    ctx.fillStyle = 'rgba(0,0,0,0.16)';
+    ctx.fillRect(px, py + T - 3, T, 3);
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    ctx.fillRect(px + 3, py + 7, 5, 3);
+    ctx.fillRect(px + 11, py + 12, 4, 2);
+    drawCelesteAsset(!solidStatic(x, y - 1) ? 'rock_top' : 'rock_face',
+        px + T / 2, py + T / 2, T + 4, T + 4, 0.92);
+}
+function solidStatic(x, y) { return !!s.solid[x + ',' + y]; }
+
+function drawSpike(x, y, dir) {
+    var px = x * T, py = y * T;
+    ctx.fillStyle = s.cfg.rock;
+    ctx.fillRect(px, py, T, T);
+    var turn = dir === 'v' ? Math.PI : dir === '>' ? Math.PI / 2 : dir === '<' ? -Math.PI / 2 : 0;
+    if (drawCelesteAsset('spike_up', px + T / 2, py + T / 2, T + 5, T + 5, 1, false, turn)) return;
+    ctx.fillStyle = '#e7edf7';
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+    ctx.lineWidth = 1;
+    for (var i = 0; i < 3; i++) {
+        var o = i * (T / 3);
+        ctx.beginPath();
+        if (dir === '^') {
+            ctx.moveTo(px + o, py + T); ctx.lineTo(px + o + T / 6, py + 2); ctx.lineTo(px + o + T / 3, py + T);
+        } else if (dir === 'v') {
+            ctx.moveTo(px + o, py); ctx.lineTo(px + o + T / 6, py + T - 2); ctx.lineTo(px + o + T / 3, py);
+        } else if (dir === '>') {
+            ctx.moveTo(px, py + o); ctx.lineTo(px + T - 2, py + o + T / 6); ctx.lineTo(px, py + o + T / 3);
+        } else {
+            ctx.moveTo(px + T, py + o); ctx.lineTo(px + 2, py + o + T / 6); ctx.lineTo(px + T, py + o + T / 3);
+        }
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+}
+
+function drawCrumbles() {
+    for (var i = 0; i < s.crumbles.length; i++) {
+        var c = s.crumbles[i];
+        if (c.state === 2) {
+            // 消失中也要留一個輪廓，玩家才知道它會回來
+            ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(c.x * T + 2, c.y * T + 2, T - 4, T - 4);
+            continue;
+        }
+        var sh = c.state === 1 ? Math.sin(c.t * 60) * 1.6 : 0;
+        var px = c.x * T + sh, py = c.y * T;
+        if (drawCelesteAsset(c.state === 1 ? 'crumble_cracked' : 'crumble_intact',
+            px + T / 2, py + T / 2, T + 5, T + 5)) continue;
+        ctx.fillStyle = c.state === 1 ? '#b58b5e' : '#8d6b46';
+        ctx.fillRect(px, py, T, T);
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+        ctx.fillRect(px, py, T, 3);
+        ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(px + 4, py + 3); ctx.lineTo(px + 8, py + 11); ctx.lineTo(px + 5, py + T - 2);
+        ctx.moveTo(px + 13, py + 2); ctx.lineTo(px + 11, py + 9); ctx.lineTo(px + 16, py + T - 3);
+        ctx.stroke();
+    }
+}
+
+function drawSprings() {
+    for (var i = 0; i < s.springs.length; i++) {
+        var sp = s.springs[i];
+        var px = sp.x * T, py = sp.y * T;
+        var sq = sp.t > 0 ? sp.t / 0.35 : 0;
+        var h = 10 - sq * 6;
+        if (drawCelesteAsset('spring', px + T / 2, py + T - 7, T + 5, (T + 5) * (1 - sq * 0.28))) continue;
+        ctx.fillStyle = '#3f8f60';
+        ctx.fillRect(px + 2, py + T - 4, T - 4, 4);
+        ctx.strokeStyle = '#7de0a0'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (var k = 0; k < 4; k++) {
+            var yy = py + T - 4 - (k + 1) * (h / 4);
+            ctx.moveTo(px + 3, yy); ctx.lineTo(px + T - 3, yy);
+        }
+        ctx.stroke();
+        ctx.fillStyle = '#a8f0c4';
+        ctx.fillRect(px + 1, py + T - 5 - h, T - 2, 3);
+    }
+}
+
+function drawCrystals() {
+    for (var i = 0; i < s.crystals.length; i++) {
+        var c = s.crystals[i];
+        var cx = c.x * T + T / 2, cy = c.y * T + T / 2;
+        if (c.t > 0) {
+            ctx.strokeStyle = 'rgba(143,232,255,0.28)';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.arc(cx, cy, 7, 0, Math.PI * 2); ctx.stroke();
+            continue;
+        }
+        var b = Math.sin(Date.now() * 0.005 + i) * 1.6;
+        if (drawCelesteAsset('dash_crystal', cx, cy + b, 25, 25)) continue;
+        ctx.save();
+        ctx.translate(cx, cy + b);
+        ctx.rotate(Date.now() * 0.002);
+        ctx.shadowBlur = 10; ctx.shadowColor = '#8fe8ff';
+        ctx.fillStyle = '#8fe8ff';
+        ctx.beginPath();
+        ctx.moveTo(0, -9); ctx.lineTo(7, 0); ctx.lineTo(0, 9); ctx.lineTo(-7, 0);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(0, -4.5); ctx.lineTo(3.5, 0); ctx.lineTo(0, 4.5); ctx.lineTo(-3.5, 0);
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+    }
+}
+
+function drawBerries() {
+    for (var i = 0; i < s.berries.length; i++) {
+        var b = s.berries[i];
+        var bx = b.x * T + T / 2, by = b.y * T + T / 2 + Math.sin(b.t * 2.6) * 3;
+        if (drawCelesteAsset('berry', bx, by, 24, 24)) continue;
+        ctx.save();
+        ctx.shadowBlur = 8; ctx.shadowColor = '#ff5c8a';
+        ctx.fillStyle = '#ff5c8a';
+        ctx.beginPath(); ctx.arc(bx, by + 1, 5.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.beginPath(); ctx.arc(bx - 2, by - 1, 1.6, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+        ctx.fillStyle = '#4fb060';
+        ctx.fillRect(bx - 4, by - 7, 8, 2.5);
+        ctx.fillRect(bx - 1, by - 10, 2, 4);
+    }
+}
+
+function drawDoor() {
+    if (!s.door) return;
+    var px = s.door.x * T, py = s.door.y * T;
+    var glow = 0.5 + Math.sin(Date.now() * 0.004) * 0.2;
+    if (drawCelesteAsset('summit_door', px + T / 2, py + T / 2 - 3, 34, 38, 0.84 + glow * 0.16)) return;
+    ctx.save();
+    ctx.shadowBlur = 12; ctx.shadowColor = 'rgba(255,209,102,' + glow + ')';
+    ctx.fillStyle = '#6b4a2a';
+    RE.Draw.roundRect(ctx, px + 2, py + 1, T - 4, T - 1, 3); ctx.fill();
+    ctx.fillStyle = '#8d6238';
+    ctx.fillRect(px + 4, py + 3, T - 8, T - 5);
+    ctx.fillStyle = '#ffd166';
+    ctx.beginPath(); ctx.arc(px + T - 6, py + T / 2, 1.8, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+}
+
+function drawPlayer() {
+    var p = s.p;
+    if (p.dead > 0) return;
+
+    // 衝刺殘影
+    for (var i = 0; i < p.trail.length; i++) {
+        var t = p.trail[i];
+        ctx.globalAlpha = (1 - t.t / 0.24) * 0.42;
+        ctx.fillStyle = '#8fe8ff';
+        RE.Draw.roundRect(ctx, t.x, t.y, p.w, p.h, 3); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    var sx = 1, sy = 1;
+    if (p.dashT > 0) { sx = 1.25; sy = 0.8; }
+    else if (!p.grounded && p.vy < -60) { sx = 0.86; sy = 1.16; }
+    else if (p.grounded && Math.abs(p.vx) > 40) { sx = 1 + Math.sin(p.anim * 18) * 0.05; sy = 1 - Math.sin(p.anim * 18) * 0.05; }
+
+    var ready = p.dash > 0 || assist.infDash;
+    var artName = p.dashT > 0 ? 'climber_dash' :
+        (!p.grounded && p.vy < -60 && ready ? 'climber_jump' : (ready ? 'climber_ready' : 'climber_spent'));
+    if (p.dashT > 0) drawCelesteAsset('dash_burst', p.x + p.w / 2 - p.face * 13,
+        p.y + p.h / 2, 38, 28, 0.62, p.face < 0);
+    var drewFormal = drawCelesteAsset(artName, p.x + p.w / 2, p.y + p.h - 16,
+        38 * sx, 38 * sy, 1, p.face < 0);
+    if (!drewFormal) {
+        ctx.save();
+        ctx.translate(p.x + p.w / 2, p.y + p.h);
+        ctx.scale(sx, sy);
+
+        // 身體
+        ctx.fillStyle = '#3f6fd8';
+        RE.Draw.roundRect(ctx, -p.w / 2, -p.h, p.w, p.h, 3); ctx.fill();
+        ctx.fillStyle = '#2a4fa0';
+        ctx.fillRect(-p.w / 2, -4, p.w, 4);
+        // 臉
+        ctx.fillStyle = '#f2d3b3';
+        ctx.fillRect(-p.w / 2 + (p.face > 0 ? 4 : 1), -p.h + 3, 7, 6);
+        ctx.fillStyle = '#1a1a24';
+        ctx.fillRect(-p.w / 2 + (p.face > 0 ? 8 : 3), -p.h + 5, 2, 2);
+
+        // ★ 頭髮就是 UI：紅＝衝刺還在，灰藍＝用掉了。
+        //   一個顏色取代掉一整組數值與圖示，玩家兩秒學會。
+        var hair = ready ? '#ff4d6d' : '#8fb3d9';
+        ctx.fillStyle = hair;
+        var hx = -p.face * 3;
+        for (var k = 0; k < 3; k++) {
+            var w2 = 8 - k * 1.6;
+            var off = Math.sin(p.anim * 8 + k) * 1.2;
+            RE.Draw.roundRect(ctx, hx - p.face * (k * 3.2) - w2 / 2 + off, -p.h + 1 + k * 1.4, w2, 6 - k, 2.5);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    // 貼牆時在牆面上畫一道摩擦光，讓「我正在貼牆」看得出來
+    if (p.wall !== 0) {
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.fillRect(p.wall > 0 ? p.x + p.w : p.x - 2, p.y + 2, 2, p.h - 4);
+        if (Math.random() < 0.4) {
+            P.burst(p.wall > 0 ? p.x + p.w : p.x, p.y + p.h - 2, 1, {
+                colors: ['#dfe9ff'], speedMin: 10, speedMax: 40, gravity: -60,
+                lifeMin: 0.2, lifeMax: 0.4, sizeMin: 1, sizeMax: 2 });
+        }
+    }
+}
+
+function drawHUD() {
+    // 房間名與提示：只在剛進房間時出現，之後讓畫面乾淨
+    if (s.hintT > 0) {
+        var a = Math.min(1, s.hintT / 0.6);
+        ctx.globalAlpha = a;
+        RE.Draw.text(ctx, s.def.name, VW / 2, 14, { size: 15, align: 'center', color: '#ffd166' });
+        RE.Draw.text(ctx, s.def.hint, VW / 2, 36, { size: 13, align: 'center', color: '#cfe0ff' });
+        ctx.globalAlpha = 1;
+    }
+    if (assistActive()) {
+        RE.Draw.text(ctx, '輔助模式', VW - 8, VH - 18, { size: 13, align: 'right', color: 'rgba(143,232,255,0.75)' });
+    }
+    if (s.roomDeaths >= 8) {
+        RE.Draw.text(ctx, '這個房間摔了 ' + s.roomDeaths + ' 次　按 P 可開輔助模式',
+            VW / 2, VH - 18, { size: 13, align: 'center', color: 'rgba(255,255,255,0.45)', stroke: false });
+    }
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+showTitleScreen();
+</script>
+</body>
+</html>

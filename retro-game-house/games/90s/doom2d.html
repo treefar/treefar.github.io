@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 深淵迷宮</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   深淵迷宮 — 致敬 Doom (id Software, 1993)
+   --------------------------------------------------------------------------
+   本作用「光線投射（raycasting）」重現 1993 年的偽 3D 技術，
+   這正是 90 年代技術轉折的核心——它讓 386 電腦跑得出流暢的第一人稱空間。
+
+   技術原理（教學重點）：
+   1. 對畫面的每一欄像素射出一條射線，用 DDA 演算法找出它撞到的第一面牆。
+   2. 牆的高度 = 螢幕高 / 撞擊距離。距離越遠，畫得越矮——透視就出現了。
+   3. 用「垂直於攝影機平面的距離」而非直線距離，才不會產生魚眼變形。
+   4. 敵人與道具是永遠面向玩家的公告板（billboard），依距離排序後繪製。
+
+   這套方法畫不出「牆上有洞」或「上下兩層樓」——因為它本質上是 2D 地圖。
+   要突破這個限制，就得等到 1996 年的《Quake》真 3D 幾何。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'doom2d',
+    title: '深淵迷宮',
+    tagline: '用光線投射，在 1993 年的機器上畫出第一人稱空間',
+    original: 'Doom (id Software, 1993)',
+    decade: '90s', year: 1993, platform: 'MS-DOS', genre: '第一人稱射擊',
+    developer: 'id Software · John Carmack', bgm: 'tense',
+    width: 480, height: 320,
+    lives: 1,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'level', label: '關卡', init: 1 },
+        { key: 'ammo', label: '彈藥', init: 30 },
+        { key: 'kills', label: '擊殺', init: 0 }
+    ],
+    touch: 'dpad+ab', labelA: '射擊', labelB: '衝刺',
+    controls: [
+        { keys: ['↑', '↓'], desc: '前進 / 後退' },
+        { keys: ['←', '→'], desc: '轉向' },
+        { keys: ['A', 'D'], desc: '左右平移' },
+        { keys: ['空白'], desc: '射擊' },
+        { keys: ['Shift'], desc: '衝刺' }
+    ],
+    howto: '找到並擊敗所有敵人，然後走到<strong>發光的出口</strong>。' +
+           '地上的綠色補給是彈藥、紅色是生命。彈藥有限，別亂開槍。' +
+           '敵人會朝你射擊，<strong>躲到牆後可以阻斷它們的視線</strong>。',
+    lesson: {
+        verb: '前進、轉向與橫移，在射線與牆角之間維持可攻可退的位置。',
+        innovation: '把高速第一人稱移動、空間探索與資源路線綁在一起，讓射擊不只是瞄準，也是在讀取立體環境。',
+        mission: '挑一名敵人完成一次「橫移躲彈、牆後斷視線、重新探頭射擊」，並比較站在原地互射時的生命消耗。',
+        evolution: '《Battle City》先用俯視角教玩家讀取牆面與射線；《Doom》把同一種空間攻防放進第一人稱速度，《Hades》再以斜視角整合走位與技能組合。',
+        reflection: '如果玩家只需站在門口射完所有敵人，不必橫移、探路或利用牆角，第一人稱空間還有設計意義嗎？'
+    },
+    design: '早期個人電腦難以即時繪製完整 3D 世界；《Doom》的解法不是單純提高畫面規格，而是用 sector 描述地板、天花板、高度與亮度，再以 BSP 結構快速決定可見區域。' +
+            '地圖仍受平面拓樸限制，不能真正把兩個可走樓層疊在同一座標，但高低差、門、狹道、轉角與聲音仍能讓玩家感到立體空間正在包圍自己。' +
+            '射擊因此不只比準度：橫移躲彈、退到牆後切斷視線、搜尋鑰匙與彈藥，才是第一人稱位置感的核心。' +
+            '資料又被整理進可替換的 WAD，讓關卡與圖像能和執行程式分離。' +
+            '**現代技術感不只來自更多多邊形，也來自高效率的空間表達與可擴充資料設計。**' +
+            '這條線承接《Battle City》的牆角攻防，並把它推進成高速、可探索的第一人稱迷宮。',
+    history: 'id Software 在 1993 年以共享軟體方式推出《Doom》，讓玩家免費取得第一章，再決定是否購買完整內容；同時加入區域網路合作與 deathmatch 對戰。' +
+             'John Carmack 從開發初期就主張讓 WAD 資料可被替換，玩家很快以自製工具建立新關卡、圖像與聲音。' +
+             '1997 年，id 又公開 Linux 版原始碼；官方保存的 README 仍可看到 Carmack 鼓勵社群移植與擴充。' +
+             '因此，把《Doom》稱為「光線投射引擎」會掩蓋它和《Wolfenstein 3D》的重要差異；較精確的教材說法，是以 BSP 加速、sector 地圖與 WAD 資料共同構成的 2.5D 系統。',
+    sources: [
+        { label: 'id Software：DOOM Open Source Release', url: 'https://github.com/id-Software/DOOM' },
+        { label: 'WIRED：John Carmack 回顧 Doom 與模組設計', url: 'https://www.wired.com/2013/12/john-carmack-doom/' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(300);
+var FT = new RE.FloatText();
+
+var LEVELS = [
+    { name: '入口大廳', enemies: 4, ammo: 40, hpPacks: 2, map: [
+        '################',
+        '#..............#',
+        '#.####..####...#',
+        '#.#........#...#',
+        '#.#.######.#...#',
+        '#...#....#.....#',
+        '#####.##.#.###.#',
+        '#.....##...#...#',
+        '#.#########.##.#',
+        '#..............#',
+        '#.####.#####.###',
+        '#....#.....#...#',
+        '####.#####.#.#.#',
+        '#..............#',
+        '#..............#',
+        '################'
+    ]},
+    { name: '循環走廊', enemies: 6, ammo: 44, hpPacks: 2, map: [
+        '################',
+        '#....#.........#',
+        '#.##.#.#######.#',
+        '#.#..#.#.....#.#',
+        '#.#.##.#.###.#.#',
+        '#.#....#.#...#.#',
+        '#.######.#.###.#',
+        '#........#...#.#',
+        '########.###.#.#',
+        '#............#.#',
+        '#.##########.#.#',
+        '#.#........#.#.#',
+        '#.#.######.#.#.#',
+        // (4,13) 原本是牆，把 (5,13)~(8,13) 與 (5,14)(6,14) 六格封成孤島。
+        // 這一關的出口條件是「殺光所有敵人」，敵人生在那裡就永遠打不到——
+        // 整關變成不可能通過，而且玩家完全不知道為什麼。
+        '#........#...#.#',
+        '#####..###.....#',
+        '################'
+    ]},
+    { name: '交錯迷宮', enemies: 8, ammo: 48, hpPacks: 3, map: [
+        '####################',
+        '#..#...............#',
+        '#.##.#####.#####.#.#',
+        '#....#...#.#...#.#.#',
+        '####.#.#.#.#.#.#.#.#',
+        '#....#.#...#.#.#...#',
+        '#.####.#####.#.#####',
+        '#......#.....#.....#',
+        '######.#.#########.#',
+        '#......#.#.......#.#',
+        '#.######.#.#####.#.#',
+        '#........#.#...#...#',
+        '#.########.#.#.#####',
+        '#..........#.#.....#',
+        '##########.#.#####.#',
+        '#..........#.......#',
+        '#.################.#',
+        '#..................#',
+        '#..................#',
+        '####################'
+    ]},
+    /* 這一關第 7 列原本最後一格是 '.'，右邊界破了一個洞，玩家會走出地圖外。
+       已補成 '#'。格狀地圖的邊界密封與連通性用 `node tools/audit_maps.js` 驗，
+       不要用眼睛看——20×20 的圖裡少一個字元，肉眼幾乎不可能發現。 */
+    { name: '深層核心', enemies: 10, ammo: 52, hpPacks: 3, map: [
+        '####################',
+        '#........#.........#',
+        '#.######.#.#######.#',
+        '#.#....#.#.#.....#.#',
+        '#.#.##.#.#.#.###.#.#',
+        '#.#.#..#...#.#...#.#',
+        '#.#.#.######.#.#####',
+        '#...#........#.....#',
+        '#.###########.####.#',
+        '#.#.........#....#.#',
+        '#.#.#######.####.#.#',
+        '#.#.#.....#....#.#.#',
+        '#.#.#.###.####.#.#.#',
+        '#...#...#......#...#',
+        '#####.#.########.###',
+        '#.....#........#...#',
+        '#.#############.##.#',
+        '#..................#',
+        '#..................#',
+        '####################'
+    ]},
+    /* 第五關。品質底線是五關，這一款原本只有四關。
+       彈藥對敵人的比例延續前四關的收緊：10 → 7.3 → 6 → 5.2 → 4.5，
+       所以難度是靠「每一發都要算」而不是靠敵人變硬。 */
+    { name: '反應爐', enemies: 12, ammo: 54, hpPacks: 3, map: [
+        '####################',
+        '#..................#',
+        '#.####.####.#####..#',
+        '#.#......#.....#...#',
+        '#.#.####.#.###.#.###',
+        '#...#..#...#...#...#',
+        '###.#..#####.###.#.#',
+        '#...#......#.....#.#',
+        '#.#####.##.#.#####.#',
+        '#.....#.#..#.#.....#',
+        '#####.#.#.##.#.###.#',
+        '#...#.#.#....#.#...#',
+        '#.#.#.#.######.#.###',
+        '#.#...#........#...#',
+        '#.#############.##.#',
+        '#..................#',
+        '#.####.#####.#####.#',
+        '#....#.....#.....#.#',
+        '#..................#',
+        '####################'
+    ]}
+];
+
+var FOV = Math.PI / 3;
+var MAX_DEPTH = 22;
+
+var s = {};
+
+function reset() {
+    s = { level: 1, score: 0, over: false, totalKills: 0 };
+    loadLevel(1);
+}
+
+function loadLevel(n) {
+    var cfg = LEVELS[Math.min(n - 1, LEVELS.length - 1)];
+    s.cfg = cfg;
+    s.level = n;
+    s.map = cfg.map;
+    s.mw = cfg.map[0].length;
+    s.mh = cfg.map.length;
+
+    var free = [];
+    for (var y = 1; y < s.mh - 1; y++)
+        for (var x = 1; x < s.mw - 1; x++)
+            if (cfg.map[y][x] === '.') free.push([x + 0.5, y + 0.5]);
+
+    s.p = { x: free[0][0], y: free[0][1], a: 0, hp: 100, ammo: cfg.ammo, bob: 0, kick: 0, hurt: 0 };
+    s.enemies = [];
+    var used = [0];
+    for (var i = 0; i < cfg.enemies; i++) {
+        var idx = pickFar(free, used, s.p);
+        used.push(idx);
+        s.enemies.push({
+            x: free[idx][0], y: free[idx][1], hp: 30, alive: true,
+            cool: RE.rand(1, 3), anim: RE.rand(0, 6), flash: 0, dead: 0, state: 'idle'
+        });
+    }
+    s.items = [];
+    for (var i = 0; i < cfg.hpPacks; i++) {
+        var idx2 = pickFar(free, used, s.p);
+        used.push(idx2);
+        s.items.push({ x: free[idx2][0], y: free[idx2][1], type: 'hp' });
+    }
+    for (var i = 0; i < 4; i++) {
+        var idx3 = pickFar(free, used, s.p);
+        used.push(idx3);
+        s.items.push({ x: free[idx3][0], y: free[idx3][1], type: 'ammo' });
+    }
+    var exIdx = pickFar(free, used, s.p);
+    s.exit = { x: free[exIdx][0], y: free[exIdx][1] };
+
+    s.bullets = [];
+    s.kills = 0;
+    s.clearTimer = 0;
+    s.fireCool = 0;
+    G.setStat('level', n);
+    G.setStat('ammo', s.p.ammo);
+    G.setStat('kills', s.totalKills);
+    G.setLives(1);
+}
+
+/** 從空地中挑一個離玩家夠遠、且沒被用過的位置 */
+function pickFar(free, used, p) {
+    var best = -1, bestD = -1;
+    for (var i = 0; i < free.length; i++) {
+        if (used.indexOf(i) >= 0) continue;
+        var d = RE.dist(free[i][0], free[i][1], p.x, p.y) + Math.random() * 3;
+        if (d > bestD) { bestD = d; best = i; }
+    }
+    return best < 0 ? 0 : best;
+}
+
+function isWall(x, y) {
+    var mx = Math.floor(x), my = Math.floor(y);
+    if (my < 0 || my >= s.mh || mx < 0 || mx >= s.mw) return true;
+    return s.map[my][mx] === '#';
+}
+
+// ======================================================================
+function update(dt) {
+    if (s.over) return;
+    if (s.clearTimer > 0) {
+        s.clearTimer -= dt;
+        P.update(dt); FT.update(dt);
+        if (s.clearTimer <= 0) nextLevel();
+        return;
+    }
+
+    var p = s.p;
+
+    // ---- 移動 ----
+    var run = RE.Input.down('b') ? 1.6 : 1;
+    var fwd = -RE.Input.axisY() * 2.4 * run * dt;
+    var turn = RE.Input.axisX() * 2.4 * dt;
+    // A/D 平移：現代 FPS 的標準，讓走位比原作 1993 年更好操作
+    var strafe = 0;
+    if (RE.Input.down('left') && RE.Input.down('down')) strafe = 0;
+
+    if (fwd !== 0) {
+        var nx = p.x + Math.cos(p.a) * fwd;
+        var ny = p.y + Math.sin(p.a) * fwd;
+        if (!isWall(nx, p.y)) p.x = nx;
+        if (!isWall(p.x, ny)) p.y = ny;
+        p.bob += Math.abs(fwd) * 9;
+    }
+    p.a += turn;
+
+    if (p.kick > 0) p.kick -= dt * 5;
+    if (p.hurt > 0) p.hurt -= dt * 2;
+
+    // ---- 射擊 ----
+    s.fireCool -= dt;
+    if ((RE.Input.pressed('a')) && s.fireCool <= 0 && p.ammo > 0) {
+        s.fireCool = 0.22;
+        p.ammo--;
+        G.setStat('ammo', p.ammo);
+        p.kick = 1;
+        RetroAudio.play('shoot');
+        RE.juice.shake(0.16);
+        RE.juice.hitstop(0.018);
+        hitscan();
+    } else if (RE.Input.pressed('a') && p.ammo <= 0) {
+        RetroAudio.play('error');
+        FT.add(W / 2, H - 90, '沒有彈藥了', { color: '#ff6b6b', size: 14, life: 1 });
+    }
+
+    // ---- 敵人 ----
+    for (var i = s.enemies.length - 1; i >= 0; i--) {
+        var e = s.enemies[i];
+        if (e.dead > 0) { e.dead -= dt; if (e.dead <= 0) s.enemies.splice(i, 1); continue; }
+        if (!e.alive) continue;
+        e.anim += dt * 4;
+        if (e.flash > 0) e.flash -= dt;
+
+        var d = RE.dist(e.x, e.y, p.x, p.y);
+        var los = lineOfSight(e.x, e.y, p.x, p.y);
+        e.state = los ? 'chase' : 'idle';
+
+        if (los) {
+            // 有視線就逼近並射擊
+            if (d > 1.6) {
+                var ang = Math.atan2(p.y - e.y, p.x - e.x);
+                var mx = e.x + Math.cos(ang) * 1.1 * dt;
+                var my = e.y + Math.sin(ang) * 1.1 * dt;
+                if (!isWall(mx, e.y)) e.x = mx;
+                if (!isWall(e.x, my)) e.y = my;
+            }
+            e.cool -= dt;
+            if (e.cool <= 0) {
+                e.cool = RE.rand(1.4, 2.6);
+                var dmg = Math.round(RE.rand(6, 13));
+                p.hp -= dmg;
+                p.hurt = 1;
+                RE.juice.shake(0.24);
+                RE.juice.flash('rgba(255,60,60,0.28)', 0.14);
+                RetroAudio.play('laser');
+                FT.add(W / 2 + RE.rand(-60, 60), H / 2, '-' + dmg, { color: '#ff6b6b', size: 16 });
+                if (p.hp <= 0) { die(); return; }
+            }
+        }
+    }
+
+    // ---- 道具 ----
+    for (var i = s.items.length - 1; i >= 0; i--) {
+        var it = s.items[i];
+        if (RE.dist(it.x, it.y, p.x, p.y) < 0.55) {
+            s.items.splice(i, 1);
+            if (it.type === 'hp') { p.hp = Math.min(100, p.hp + 30); FT.add(W / 2, H - 110, '+30 生命', { color: '#70e4b5', size: 16, life: 1.2 }); }
+            else { p.ammo += 12; G.setStat('ammo', p.ammo); FT.add(W / 2, H - 110, '+12 彈藥', { color: '#ffd166', size: 16, life: 1.2 }); }
+            RetroAudio.play('powerup');
+            RE.juice.flash('rgba(255,209,102,0.2)', 0.1);
+        }
+    }
+
+    // ---- 出口 ----
+    var aliveN = s.enemies.filter(function (e) { return e.alive; }).length;
+    if (aliveN === 0 && RE.dist(s.exit.x, s.exit.y, p.x, p.y) < 0.7) {
+        clearLevel();
+        return;
+    }
+
+    P.update(dt);
+    FT.update(dt);
+}
+
+/** 即時命中判定（hitscan）：沿著視線前進，先撞到牆就打不到人 */
+function hitscan() {
+    var p = s.p;
+    var step = 0.06;
+    for (var t = 0.2; t < 16; t += step) {
+        var x = p.x + Math.cos(p.a) * t;
+        var y = p.y + Math.sin(p.a) * t;
+        if (isWall(x, y)) {
+            P.burst(W / 2, H / 2, 4, { colors: ['#c9d6d0'], speedMin: 20, speedMax: 70,
+                gravity: 80, lifeMin: 0.1, lifeMax: 0.25, sizeMax: 2 });
+            return;
+        }
+        for (var i = 0; i < s.enemies.length; i++) {
+            var e = s.enemies[i];
+            if (!e.alive) continue;
+            if (RE.dist(x, y, e.x, e.y) < 0.32) {
+                e.hp -= 15;
+                e.flash = 0.16;
+                RetroAudio.play('heavyHit');
+                RE.juice.hitstop(0.035);
+                RE.juice.shake(0.2);
+                // 命中的視覺回饋畫在螢幕中央（因為敵人是公告板）
+                P.burst(W / 2, H / 2 - 10, 10, {
+                    colors: ['#ff6b6b', '#ffd166'], speedMin: 40, speedMax: 140,
+                    gravity: 120, lifeMin: 0.15, lifeMax: 0.4, sizeMax: 4
+                });
+                if (e.hp <= 0) {
+                    e.alive = false;
+                    e.dead = 0.5;
+                    s.kills++;
+                    s.totalKills++;
+                    s.score += 250;
+                    G.setStat('score', s.score);
+                    G.setStat('kills', s.totalKills);
+                    RetroAudio.play('bigExplosion');
+                    RE.juice.impact(2);
+                    FT.add(W / 2, H / 2 - 40, '擊殺！+250', { color: '#ffd166', size: 17, life: 1 });
+                }
+                return;
+            }
+        }
+    }
+}
+
+function lineOfSight(x1, y1, x2, y2) {
+    var d = RE.dist(x1, y1, x2, y2);
+    var steps = Math.ceil(d / 0.12);
+    for (var i = 1; i < steps; i++) {
+        var t = i / steps;
+        if (isWall(RE.lerp(x1, x2, t), RE.lerp(y1, y2, t))) return false;
+    }
+    return true;
+}
+
+function die() {
+    s.over = true;
+    RE.juice.impact(3);
+    RE.juice.flash('rgba(255,0,0,0.6)', 0.4);
+    RetroAudio.play('gameover');
+    G.gameOver({
+        score: s.score,
+        body: '在第 ' + s.level + ' 關「' + s.cfg.name + '」倒下，累計擊殺 ' + s.totalKills + ' 隻。' +
+              '躲到牆後可以切斷敵人的視線——那是 1993 年就有的戰術。'
+    });
+}
+
+function clearLevel() {
+    s.clearTimer = 1.8;
+    s.score += 1500 * s.level + s.p.hp * 10;
+    G.setStat('score', s.score);
+    RetroAudio.play('win');
+    RE.juice.flash('rgba(112,228,181,0.3)', 0.2);
+    FT.add(W / 2, H / 2, '關卡完成', { color: '#70e4b5', size: 26, life: 1.8 });
+    FT.add(W / 2, H / 2 + 26, '生命獎勵 +' + (s.p.hp * 10), { color: '#a7f3d0', size: 14, life: 1.8, vy: -24 });
+}
+
+function nextLevel() {
+    var n = s.level + 1;
+    RE.Save.unlockLevel('doom2d', n);
+    if (n > LEVELS.length) {
+        s.over = true;
+        G.gameOver({ score: s.score, win: true,
+            body: '五層迷宮全數清空，累計擊殺 ' + s.totalKills + ' 隻。' +
+                  '你剛剛玩的每一幀，都是逐欄射線計算出來的——1993 年的機器就能做到。' });
+        return;
+    }
+    var keepHp = s.p.hp, keepAmmo = s.p.ammo;
+    loadLevel(n);
+    s.p.hp = Math.min(100, keepHp + 25);
+    s.p.ammo = keepAmmo + s.cfg.ammo;
+    G.setStat('ammo', s.p.ammo);
+    G.stageCard(n, s.cfg.name, '敵人 ' + s.cfg.enemies + ' 隻　✦ 清空後前往出口');
+}
+
+// ======================================================================
+// 光線投射渲染
+// ======================================================================
+var zBuffer = new Float32Array(W);
+
+function render() {
+    var p = s.p;
+
+    // 天花板與地板漸層
+    var skyG = ctx.createLinearGradient(0, 0, 0, H / 2);
+    skyG.addColorStop(0, '#1a1f2e');
+    skyG.addColorStop(1, '#2e3648');
+    ctx.fillStyle = skyG;
+    ctx.fillRect(0, 0, W, H / 2);
+    var flG = ctx.createLinearGradient(0, H / 2, 0, H);
+    flG.addColorStop(0, '#2a2620');
+    flG.addColorStop(1, '#4a4238');
+    ctx.fillStyle = flG;
+    ctx.fillRect(0, H / 2, W, H / 2);
+
+    G.beginWorld();
+
+    var bob = Math.sin(p.bob) * 3;
+    drawPerspectiveSurfaces(bob);
+
+    // ---- 逐欄射線 ----
+    for (var col = 0; col < W; col++) {
+        // 攝影機平面座標 -1 ~ 1
+        var camX = 2 * col / W - 1;
+        var rayA = p.a + Math.atan(camX * Math.tan(FOV / 2));
+        var rdx = Math.cos(rayA), rdy = Math.sin(rayA);
+
+        // DDA：沿著網格線推進，一次跨一格
+        var mapX = Math.floor(p.x), mapY = Math.floor(p.y);
+        var deltaX = Math.abs(1 / (rdx || 1e-9)), deltaY = Math.abs(1 / (rdy || 1e-9));
+        var stepX, stepY, sideX, sideY;
+        if (rdx < 0) { stepX = -1; sideX = (p.x - mapX) * deltaX; }
+        else { stepX = 1; sideX = (mapX + 1 - p.x) * deltaX; }
+        if (rdy < 0) { stepY = -1; sideY = (p.y - mapY) * deltaY; }
+        else { stepY = 1; sideY = (mapY + 1 - p.y) * deltaY; }
+
+        var hit = false, side = 0, guard = 0;
+        while (!hit && guard++ < 64) {
+            if (sideX < sideY) { sideX += deltaX; mapX += stepX; side = 0; }
+            else { sideY += deltaY; mapY += stepY; side = 1; }
+            if (mapY < 0 || mapY >= s.mh || mapX < 0 || mapX >= s.mw) break;
+            if (s.map[mapY][mapX] === '#') hit = true;
+        }
+        if (!hit) { zBuffer[col] = MAX_DEPTH; continue; }
+
+        // 用垂直於攝影機平面的距離，避免魚眼變形
+        var perp = side === 0 ? (sideX - deltaX) : (sideY - deltaY);
+        if (perp < 0.02) perp = 0.02;
+        zBuffer[col] = perp;
+
+        var lineH = Math.round(H / perp);
+        var y0 = Math.round(-lineH / 2 + H / 2 + bob);
+        var y1 = Math.round(lineH / 2 + H / 2 + bob);
+
+        // 距離霧化：越遠越暗，這是最省成本的深度線索
+        var fog = RE.clamp(1 - perp / MAX_DEPTH * 1.6, 0.08, 1);
+        // 南北向與東西向的牆用不同亮度，立體感立刻出現
+        var shade = side === 1 ? 0.66 : 1;
+        var cellTone = ((mapX * 17 + mapY * 31) % 5 - 2) * 4;
+        var lum = fog * shade;
+        var r = Math.round((139 + cellTone) * lum);
+        var g = Math.round((105 + cellTone * 0.55) * lum);
+        var b = Math.round((82 + cellTone * 0.35) * lum);
+        ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+        ctx.fillRect(col, y0, 1, y1 - y0);
+
+        // 牆面座標來自射線撞擊點。磚縫跟著透視縮放，貼牆時不再只剩一片單色。
+        var wallU = side === 0 ? p.y + perp * rdy : p.x + perp * rdx;
+        wallU -= Math.floor(wallU);
+        var panelU = (wallU * 4) % 1;
+        if (panelU < 0.045 || panelU > 0.955) {
+            ctx.fillStyle = 'rgba(24,18,16,' + (0.28 + fog * 0.35) + ')';
+            ctx.fillRect(col, y0, 1, y1 - y0);
+        } else if ((Math.floor(wallU * 4) + mapX + mapY) % 2 === 0) {
+            ctx.fillStyle = 'rgba(255,224,190,' + (0.018 + fog * 0.025) + ')';
+            ctx.fillRect(col, y0, 1, y1 - y0);
+        }
+        ctx.fillStyle = 'rgba(31,24,21,' + (0.18 + fog * 0.22) + ')';
+        var seamCount = RE.clamp(Math.ceil((y1 - y0) / 36), 4, 24);
+        for (var seam = 1; seam < seamCount; seam++) {
+            var seamY = Math.round(y0 + (y1 - y0) * seam / seamCount);
+            ctx.fillRect(col, seamY, 1, Math.max(1, fog * 1.4));
+        }
+        // 少量青綠機能板讓不同牆格有地標，但只依地圖座標決定，不污染遊戲亂數。
+        if ((mapX * 3 + mapY * 5) % 9 === 0 && wallU > 0.42 && wallU < 0.58) {
+            ctx.fillStyle = 'rgba(112,228,181,' + (0.12 + fog * 0.3) + ')';
+            ctx.fillRect(col, y0 + (y1 - y0) * 0.34, 1, Math.max(2, (y1 - y0) * 0.08));
+        }
+    }
+
+    // ---- 公告板：敵人、道具、出口 ----
+    var sprites = [];
+    s.enemies.forEach(function (e) {
+        if (e.alive || e.dead > 0) sprites.push({ x: e.x, y: e.y, kind: 'enemy', ref: e });
+    });
+    s.items.forEach(function (it) { sprites.push({ x: it.x, y: it.y, kind: it.type }); });
+    if (s.enemies.filter(function (e) { return e.alive; }).length === 0) {
+        sprites.push({ x: s.exit.x, y: s.exit.y, kind: 'exit' });
+    }
+    // 由遠到近排序，近的才會蓋住遠的
+    sprites.forEach(function (sp) { sp.d = RE.dist(sp.x, sp.y, p.x, p.y); });
+    sprites.sort(function (a, b) { return b.d - a.d; });
+
+    sprites.forEach(function (sp) { drawSprite(sp, bob); });
+
+    P.draw(ctx);
+
+    // ---- 武器 ----
+    drawGun(bob);
+
+    // ---- 受傷紅屏 ----
+    if (p.hurt > 0) {
+        ctx.save();
+        ctx.globalAlpha = p.hurt * 0.32;
+        ctx.fillStyle = '#ff0000';
+        ctx.fillRect(0, 0, W, H);
+        ctx.restore();
+    }
+
+    FT.draw(ctx);
+
+    // ---- HUD ----
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(0, H - 34, W, 34);
+    // 生命條
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(12, H - 25, 130, 15);
+    ctx.fillStyle = p.hp > 35 ? '#70e4b5' : '#ff6b6b';
+    ctx.fillRect(13, H - 24, 128 * RE.clamp(p.hp / 100, 0, 1), 13);
+    RE.Draw.text(ctx, '生命 ' + Math.max(0, Math.round(p.hp)), 77, H - 25,
+        { size: 11, align: 'center', color: '#fff8e7' });
+    RE.Draw.text(ctx, '彈藥 ' + p.ammo, W - 12, H - 25, { size: 13, color: '#ffd166', align: 'right' });
+    var left = s.enemies.filter(function (e) { return e.alive; }).length;
+    RE.Draw.text(ctx, left > 0 ? ('剩餘敵人 ' + left) : '前往出口 →', W / 2, H - 25,
+        { size: 12, align: 'center', color: left > 0 ? '#ff9ebb' : '#70e4b5' });
+
+    // 把 1993 年的技術轉折變成即時教材，而不是只藏在頁面下方的長文裡。
+    RE.Draw.text(ctx, W + ' RAYS · DDA', 8, 8,
+        { size: 10, color: 'rgba(167,243,208,0.68)' });
+    RE.Draw.text(ctx, 'SECTOR ' + Math.floor(p.x) + ',' + Math.floor(p.y), 8, 22,
+        { size: 10, color: 'rgba(255,209,102,0.62)' });
+
+    // 準心
+    ctx.strokeStyle = 'rgba(255,255,255,0.65)';
+    ctx.lineWidth = 2;
+    var cs = 7 + p.kick * 6;
+    ctx.beginPath();
+    ctx.moveTo(W / 2 - cs, H / 2); ctx.lineTo(W / 2 - cs + 5, H / 2);
+    ctx.moveTo(W / 2 + cs - 5, H / 2); ctx.lineTo(W / 2 + cs, H / 2);
+    ctx.moveTo(W / 2, H / 2 - cs); ctx.lineTo(W / 2, H / 2 - cs + 5);
+    ctx.moveTo(W / 2, H / 2 + cs - 5); ctx.lineTo(W / 2, H / 2 + cs);
+    ctx.stroke();
+
+    // 小地圖：顯示走過的空間與敵人相對位置
+    drawMinimap();
+
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.14, vignetteStrength: 0.62 });
+}
+
+function drawPerspectiveSurfaces(bob) {
+    ctx.save();
+    var horizon = H / 2 + bob;
+
+    // 地板格線使用透視收斂，讓轉向與橫移即使沒有敵人也有清楚速度感。
+    ctx.strokeStyle = 'rgba(255,209,102,0.075)';
+    ctx.lineWidth = 1;
+    for (var x = -W; x <= W * 2; x += 48) {
+        ctx.beginPath();
+        ctx.moveTo(W / 2, horizon);
+        ctx.lineTo(x, H);
+        ctx.stroke();
+    }
+    for (var i = 1; i <= 9; i++) {
+        var k = i / 9;
+        var fy = horizon + (H - horizon) * k * k;
+        ctx.globalAlpha = 0.35 + k * 0.55;
+        ctx.beginPath(); ctx.moveTo(0, fy); ctx.lineTo(W, fy); ctx.stroke();
+    }
+
+    // 天花板的面板列與地板共用消失點，保持 90 年代工業迷宮語彙。
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = 'rgba(125,211,252,0.052)';
+    for (var c = 1; c <= 5; c++) {
+        var ck = c / 5;
+        var cy = horizon - horizon * ck * ck;
+        ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(W, cy); ctx.stroke();
+    }
+    var glow = ctx.createLinearGradient(0, horizon - 34, 0, horizon + 34);
+    glow.addColorStop(0, 'rgba(125,211,252,0)');
+    glow.addColorStop(0.5, 'rgba(125,211,252,0.08)');
+    glow.addColorStop(1, 'rgba(255,209,102,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, horizon - 34, W, 68);
+    ctx.restore();
+}
+
+function drawSprite(sp, bob) {
+    var p = s.p;
+    var dx = sp.x - p.x, dy = sp.y - p.y;
+    // 轉到攝影機座標系
+    var ang = Math.atan2(dy, dx) - p.a;
+    while (ang < -Math.PI) ang += RE.TAU;
+    while (ang > Math.PI) ang -= RE.TAU;
+    if (Math.abs(ang) > FOV / 2 + 0.35) return;
+
+    var dist = sp.d * Math.cos(ang);
+    if (dist < 0.15) return;
+
+    var size = H / dist;
+    var screenX = W / 2 + Math.tan(ang) / Math.tan(FOV / 2) * (W / 2);
+    var fog = RE.clamp(1 - dist / MAX_DEPTH * 1.6, 0.12, 1);
+
+    ctx.save();
+    ctx.globalAlpha = fog;
+
+    if (sp.kind === 'enemy') {
+        var e = sp.ref;
+        var w = size * 0.44, h = size * 0.62;
+        var y = H / 2 + size / 2 - h + bob;
+        if (e.dead > 0) {
+            // 死亡：往下壓扁
+            var t = 1 - e.dead / 0.5;
+            y += h * t * 0.7;
+            h *= (1 - t * 0.75);
+            ctx.globalAlpha = fog * (1 - t * 0.5);
+        }
+        // 被欄位遮擋時不畫（用 zBuffer 做深度測試）
+        var x0 = Math.round(screenX - w / 2), x1 = Math.round(screenX + w / 2);
+        for (var col = Math.max(0, x0); col < Math.min(W, x1); col++) {
+            if (zBuffer[col] < dist) continue;
+            var frac = (col - x0) / (x1 - x0);
+            var topInset = frac < 0.12 || frac > 0.88 ? h * 0.42 :
+                           (frac < 0.24 || frac > 0.76 ? h * 0.22 : 0);
+            ctx.fillStyle = e.flash > 0 ? '#ffffff' : '#8a3a4a';
+            ctx.fillRect(col, y + topInset, 1, h - topInset);
+            // 胸甲與中軸把公告板從矩形切成可辨識的敵人輪廓。
+            if (frac > 0.22 && frac < 0.78) {
+                ctx.fillStyle = e.flash > 0 ? '#ffffff' : (e.state === 'chase' ? '#ff6b6b' : '#5a2a34');
+                ctx.fillRect(col, y + h * 0.34, 1, h * 0.18);
+            }
+            if (frac > 0.44 && frac < 0.56) {
+                ctx.fillStyle = e.flash > 0 ? '#ffffff' : '#301821';
+                ctx.fillRect(col, y + h * 0.52, 1, h * 0.38);
+            }
+        }
+        // 發現玩家時的眼睛
+        if (e.alive && e.state === 'chase') {
+            ctx.fillStyle = '#ffd166';
+            var eyeS = Math.max(1, size * 0.03);
+            if (zBuffer[Math.round(screenX)] > dist) {
+                ctx.fillRect(screenX - w * 0.18, y + h * 0.14, eyeS, eyeS);
+                ctx.fillRect(screenX + w * 0.12, y + h * 0.14, eyeS, eyeS);
+            }
+        }
+        if (e.alive && size > 26 && zBuffer[RE.clamp(Math.round(screenX), 0, W - 1)] > dist) {
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(screenX - w * 0.32, y - 6, w * 0.64, 3);
+            ctx.fillStyle = e.hp > 10 ? '#ff9ebb' : '#ff6b6b';
+            ctx.fillRect(screenX - w * 0.32, y - 6, w * 0.64 * RE.clamp(e.hp / 30, 0, 1), 3);
+        }
+    } else if (sp.kind === 'exit') {
+        var w2 = size * 0.5, h2 = size * 0.5;
+        var y2 = H / 2 + size / 2 - h2 + bob;
+        if (zBuffer[RE.clamp(Math.round(screenX), 0, W - 1)] > dist) {
+            ctx.shadowBlur = 22; ctx.shadowColor = '#70e4b5';
+            ctx.fillStyle = '#70e4b5';
+            ctx.globalAlpha = fog * (RE.Motion.reduced ? 0.82 : 0.6 + Math.sin(performance.now() / 200) * 0.35);
+            ctx.fillRect(screenX - w2 / 2, y2, w2, h2);
+        }
+    } else {
+        var w3 = size * 0.2, h3 = size * 0.2;
+        var y3 = H / 2 + size / 2 - h3 + bob;
+        if (zBuffer[RE.clamp(Math.round(screenX), 0, W - 1)] > dist) {
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = sp.kind === 'hp' ? '#ff6b6b' : '#ffd166';
+            ctx.fillStyle = sp.kind === 'hp' ? '#ff6b6b' : '#ffd166';
+            ctx.fillRect(screenX - w3 / 2, y3, w3, h3);
+        }
+    }
+    ctx.restore();
+}
+
+function drawGun(bob) {
+    var p = s.p;
+    var k = p.kick;
+    var gx = W / 2, gy = H - 34 + k * 16 + bob * 1.6;
+    ctx.save();
+    ctx.fillStyle = '#3a3f48';
+    ctx.fillRect(gx - 22, gy - 62, 44, 62);
+    ctx.fillStyle = '#565d68';
+    ctx.fillRect(gx - 16, gy - 74, 32, 16);
+    ctx.fillStyle = '#22262c';
+    ctx.fillRect(gx - 7, gy - 86, 14, 16);
+    ctx.fillStyle = '#8a939e';
+    ctx.fillRect(gx - 20, gy - 58, 40, 4);
+    // 槍口火焰
+    if (k > 0.55) {
+        ctx.save();
+        ctx.globalAlpha = (k - 0.55) / 0.45;
+        ctx.shadowBlur = 26; ctx.shadowColor = '#ffd166';
+        ctx.fillStyle = '#fff0aa';
+        ctx.beginPath();
+        ctx.moveTo(gx, gy - 110);
+        ctx.lineTo(gx - 16, gy - 84);
+        ctx.lineTo(gx + 16, gy - 84);
+        ctx.fill();
+        ctx.restore();
+    }
+    ctx.restore();
+}
+
+function drawMinimap() {
+    var scale = 4;
+    var mw = s.mw * scale, mh = s.mh * scale;
+    var ox = W - mw - 8, oy = 8;
+    ctx.save();
+    ctx.globalAlpha = 0.72;
+    ctx.fillStyle = '#0a0d10';
+    ctx.fillRect(ox - 2, oy - 2, mw + 4, mh + 4);
+    for (var y = 0; y < s.mh; y++) {
+        for (var x = 0; x < s.mw; x++) {
+            if (s.map[y][x] === '#') {
+                ctx.fillStyle = '#4a5560';
+                ctx.fillRect(ox + x * scale, oy + y * scale, scale, scale);
+            }
+        }
+    }
+    ctx.fillStyle = '#ff6b6b';
+    s.enemies.forEach(function (e) {
+        if (e.alive) ctx.fillRect(ox + e.x * scale - 1.5, oy + e.y * scale - 1.5, 3, 3);
+    });
+    if (s.enemies.filter(function (e) { return e.alive; }).length === 0) {
+        ctx.fillStyle = '#70e4b5';
+        ctx.fillRect(ox + s.exit.x * scale - 2, oy + s.exit.y * scale - 2, 4, 4);
+    }
+    // 玩家與視線方向
+    ctx.fillStyle = 'rgba(255,209,102,0.12)';
+    ctx.beginPath();
+    ctx.moveTo(ox + s.p.x * scale, oy + s.p.y * scale);
+    ctx.lineTo(ox + (s.p.x + Math.cos(s.p.a - FOV / 2) * 4) * scale,
+               oy + (s.p.y + Math.sin(s.p.a - FOV / 2) * 4) * scale);
+    ctx.lineTo(ox + (s.p.x + Math.cos(s.p.a + FOV / 2) * 4) * scale,
+               oy + (s.p.y + Math.sin(s.p.a + FOV / 2) * 4) * scale);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#ffd166';
+    ctx.fillRect(ox + s.p.x * scale - 1.5, oy + s.p.y * scale - 1.5, 3, 3);
+    ctx.strokeStyle = '#ffd166';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(ox + s.p.x * scale, oy + s.p.y * scale);
+    ctx.lineTo(ox + (s.p.x + Math.cos(s.p.a) * 2) * scale, oy + (s.p.y + Math.sin(s.p.a) * 2) * scale);
+    ctx.stroke();
+    ctx.restore();
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '清空所有敵人後前往發光的出口。彈藥有限，躲到牆後可以切斷敵人的視線。共五層。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 寶石迴響</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   寶石迴響 — 致敬 Bejeweled (PopCap, 2001)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. 三消類型的起點。核心樂趣不在「配對」，而在**連鎖反應帶來的意外獎勵**——
+      你只做了一個決定，卻收到連續好幾波正回饋。本作把連鎖倍率明確顯示出來。
+   2. 消除四顆／五顆會生成特殊寶石（直線炸彈／同色清除），
+      讓玩家從「找配對」升級為「布局製造大招」。
+   3. 每關有目標分數與步數限制，形成有頭有尾的關卡結構，
+      而不是原作的無盡模式。
+   4. 洗牌保護：若盤面無解會自動重排，玩家不會卡死。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'bejeweled',
+    title: '寶石迴響',
+    tagline: '三消類型的起點，也是「小額頻繁正回饋」的教科書',
+    original: 'Bejeweled (PopCap, 2001)',
+    decade: '00s', year: 2001, platform: '瀏覽器 / 多平台', genre: '三消',
+    developer: 'PopCap Games', bgm: '00s',
+    width: 460, height: 520,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'goal', label: '目標', init: 0 },
+        { key: 'moves', label: '步數', init: 0 },
+        { key: 'level', label: 'LV', init: 1 }
+    ],
+    touch: 'none', maxScale: 2,
+    controls: [
+        { keys: ['點擊'], desc: '選取寶石，再點相鄰的寶石交換' },
+        { keys: ['拖曳'], desc: '直接把寶石拖向相鄰位置' }
+    ],
+    howto: '交換相鄰的兩顆寶石，湊成<strong>三顆以上同色連線</strong>即可消除。' +
+           '消除後上方寶石會落下，可能觸發<strong>連鎖</strong>——連鎖倍率會一路疊加。' +
+           '一次消四顆會生成直線寶石，消五顆會生成彩虹寶石（清除全場同色）。' +
+           '在步數用完前達到目標分數即可過關。',
+    lesson: {
+        verb: '交換一對相鄰寶石，安排消除後的落下與連鎖。',
+        innovation: '把短回合、滑鼠操作與連續回饋整合成隨時能開始、又能追求效率的休閒遊戲循環。',
+        mission: '不要只找眼前第一組三連線；先預測消除後上方會落下什麼，再完成一次兩段以上連鎖。',
+        evolution: '《Tetris》要求安排即將落下的形狀；《Bejeweled》把規劃縮成一次交換，《Suika Game》再把落下與連鎖交給物理。',
+        reflection: '若寶石消除後不會下落，也不可能連鎖，交換還會有值得預測的後果嗎？'
+    },
+    design: '《Bejeweled》要解決的問題是：如何讓不熟悉遊戲的人只用滑鼠完成一回合，卻仍看得懂自己造成的後續結果。' +
+            '一次交換先形成三連線，空位再讓上方寶石下落；新的排列可能觸發第二次消除，於是單一決策被展開成一串清楚的視覺因果。' +
+            '連鎖的價值不只是「獎勵很多」，而是讓玩家在立即可讀與無法完全預知之間反覆預測：完全隨機會失去技術感，完全固定則沒有驚喜。' +
+            'PopCap 創辦人回顧時強調，團隊後來學到的不是把規則越做越多，而是把簡單概念執行得極其完整。' +
+            '《Tetris》讓玩家安排持續落下的形狀；本站《Bejeweled》把規劃縮成一次交換，再由《Suika Game》把落下、碰撞與連鎖交給物理系統。',
+    history: 'PopCap 三位創辦人在 2000 年先做出瀏覽器遊戲《Diamond Mine》，之後改名為《Bejeweled》。' +
+             '創辦人 Brian Fiete 與 Jason Kapalka 的訪談指出，它是團隊第一款正式作品，上線 Microsoft Games 站後很快成為流量最高的遊戲；' +
+             '2001 年團隊再推出可離線遊玩的付費下載版，證明免費瀏覽器遊戲也能轉成直接銷售的休閒產品。' +
+             '它確實成為後來三消遊戲的重要參照，但「單款下載數億次」不是現有官方資料能支持的數字，因此本站不再沿用這項說法。',
+    sources: [
+        { label: 'Game Developer：PopCap 創辦人訪談', url: 'https://www.gamedeveloper.com/business/ten-years-of-popcap-the-interview' },
+        { label: 'PopCap：Bejeweled 3 十週年策略指南', url: 'https://images.popcap.com/www/images/product/extras/strategyguides/bejeweled3/1033/bejeweled3strategyguide.pdf' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(600);
+var FT = new RE.FloatText();
+
+var N = 8;
+var CELL = 50;
+var OX = (W - N * CELL) / 2, OY = 76;
+
+var GEMS = [
+    { c: '#ff6b6b', shape: 'diamond' },
+    { c: '#ffd166', shape: 'circle' },
+    { c: '#70e4b5', shape: 'square' },
+    { c: '#7dd3fc', shape: 'hex' },
+    { c: '#c084fc', shape: 'star' },
+    { c: '#ff9ebb', shape: 'drop' }
+];
+
+var LEVELS = [
+    { goal: 2000,  moves: 24, colors: 5, name: '晨曦礦坑' },
+    { goal: 4000,  moves: 24, colors: 5, name: '碧綠洞窟' },
+    { goal: 7000,  moves: 22, colors: 6, name: '深層礦脈' },
+    /* 第四、五關的目標原本是 11000 與 16000，兩關都不可能過。
+       機器人各跑八場滿步數量出來的實得分數是：
+         第三關 8360～10840（目標 7000，八場全過）
+         第四關 6960～10680（目標 11000，**最高分還差 320，八場全掛**）
+         第五關 5160～13440（目標 16000，中位數只有目標的 54%）
+       關鍵在於「每一步能拿多少分」三關都落在 420～445，**不會隨關卡上升**——
+       顏色從五色加到六色之後配對變稀疏，正好抵銷了連鎖變多的收益。
+       原本的曲線卻假設它會跟著目標一起翻八倍。
+       改成照實測的每步分數訂：第四關 391/步、第五關 430/步，
+       絕對目標持平但步數收緊，難度落在「熟練玩家要打得好才過得了」。 */
+    { goal: 8600,  moves: 22, colors: 6, name: '結晶迴廊' },
+    { goal: 8600,  moves: 20, colors: 6, name: '寶石之心' }
+];
+
+var s = {};
+
+function reset() {
+    s = { level: 1, totalScore: 0, over: false };
+    loadLevel(1);
+}
+
+function loadLevel(n) {
+    var cfg = LEVELS[Math.min(n - 1, LEVELS.length - 1)];
+    s.cfg = cfg;
+    s.level = n;
+    s.score = 0;
+    s.moves = cfg.moves;
+    s.grid = [];
+    for (var y = 0; y < N; y++) {
+        s.grid[y] = [];
+        for (var x = 0; x < N; x++) s.grid[y][x] = newGem(x, y);
+    }
+    // 確保開局沒有現成的連線，也確保至少有一步可走
+    var guard = 0;
+    while ((findMatches().length || !hasMove()) && guard++ < 200) {
+        for (var y = 0; y < N; y++) for (var x = 0; x < N; x++) s.grid[y][x] = newGem(x, y);
+    }
+    s.sel = null;
+    s.anim = null;
+    s.chain = 0;
+    s.busy = 0;
+    s.clearTimer = 0;
+    G.setStat('score', 0);
+    G.setStat('goal', cfg.goal);
+    G.setStat('moves', s.moves);
+    G.setStat('level', n);
+}
+
+function newGem(x, y) {
+    return { t: RE.randInt(0, s.cfg.colors - 1), special: 0, y: y, offset: 0, pop: 0, scale: 1 };
+}
+
+function at(x, y) {
+    if (x < 0 || y < 0 || x >= N || y >= N) return null;
+    return s.grid[y][x];
+}
+
+/** 找出所有三顆以上的同色連線 */
+function findMatches() {
+    var found = [];
+    var mark = {};
+    // 橫向
+    for (var y = 0; y < N; y++) {
+        var run = 1;
+        for (var x = 1; x <= N; x++) {
+            var same = x < N && s.grid[y][x] && s.grid[y][x - 1] &&
+                       s.grid[y][x].t === s.grid[y][x - 1].t;
+            if (same) run++;
+            else {
+                if (run >= 3) {
+                    var cells = [];
+                    for (var k = x - run; k < x; k++) { cells.push([k, y]); mark[k + ',' + y] = 1; }
+                    found.push({ cells: cells, dir: 'h' });
+                }
+                run = 1;
+            }
+        }
+    }
+    // 縱向
+    for (var x = 0; x < N; x++) {
+        var run2 = 1;
+        for (var y = 1; y <= N; y++) {
+            var same2 = y < N && s.grid[y][x] && s.grid[y - 1][x] &&
+                        s.grid[y][x].t === s.grid[y - 1][x].t;
+            if (same2) run2++;
+            else {
+                if (run2 >= 3) {
+                    var cells2 = [];
+                    for (var k = y - run2; k < y; k++) { cells2.push([x, k]); mark[x + ',' + k] = 1; }
+                    found.push({ cells: cells2, dir: 'v' });
+                }
+                run2 = 1;
+            }
+        }
+    }
+    return found;
+}
+
+/** 檢查盤面是否還有可行的一步 */
+function hasMove() {
+    for (var y = 0; y < N; y++) {
+        for (var x = 0; x < N; x++) {
+            if (x < N - 1) { swap(x, y, x + 1, y); if (findMatches().length) { swap(x, y, x + 1, y); return true; } swap(x, y, x + 1, y); }
+            if (y < N - 1) { swap(x, y, x, y + 1); if (findMatches().length) { swap(x, y, x, y + 1); return true; } swap(x, y, x, y + 1); }
+        }
+    }
+    return false;
+}
+
+function swap(x1, y1, x2, y2) {
+    var t = s.grid[y1][x1];
+    s.grid[y1][x1] = s.grid[y2][x2];
+    s.grid[y2][x2] = t;
+}
+
+// ======================================================================
+function update(dt) {
+    if (s.over) return;
+    if (s.clearTimer > 0) {
+        s.clearTimer -= dt;
+        P.update(dt); FT.update(dt);
+        if (s.clearTimer <= 0) nextLevel();
+        return;
+    }
+
+    // 寶石落下與彈出動畫
+    var moving = false;
+    for (var y = 0; y < N; y++) {
+        for (var x = 0; x < N; x++) {
+            var g = s.grid[y][x];
+            if (!g) continue;
+            if (g.offset !== 0) {
+                g.offset = RE.approach(g.offset, 0, 620 * dt);
+                if (g.offset !== 0) moving = true;
+                else { RetroAudio.play('step'); }
+            }
+            if (g.pop > 0) { g.pop -= dt * 4; moving = true; }
+            g.scale = RE.lerp(g.scale, 1, 1 - Math.pow(0.001, dt));
+        }
+    }
+
+    /* 倒數結束就掛「該結算了」的旗子，真正的結算等動畫停下來再做。
+       第一版寫成 `if (s.busy <= 0 && !moving) resolveBoard()`，
+       也就是**只有在倒數歸零的那一幀剛好沒有動畫，才會結算**。
+       但補進來的寶石 offset 最多 (N)×CELL = 400px，以 620px/s 落下要 0.65 秒，
+       遠比 s.busy 的 0.22 秒長——只要某一列掉超過約 2.7 格，
+       倒數就會在動畫還沒停的時候歸零，接著 s.busy 變成負值、
+       下一幀走進 else 分支而 pendingResolve 是 false，於是**兩邊都不結算**：
+       盤面連鎖停在半路，永遠不再消除也永遠不會判負，玩家只能重整頁面。
+       機器人稽核就是這樣抓到的：第三關卡在 busy = -0.013、分數凍結兩萬幀。 */
+    if (s.busy > 0) {
+        s.busy -= dt;
+        if (s.busy <= 0) s.pendingResolve = true;
+    }
+    if (s.pendingResolve && !moving) {
+        s.pendingResolve = false;
+        resolveBoard();
+    }
+
+    P.update(dt);
+    FT.update(dt);
+}
+
+/** 消除 → 掉落 → 補新 → 再檢查（連鎖） */
+function resolveBoard() {
+    var matches = findMatches();
+    if (!matches.length) {
+        s.chain = 0;
+        // 沒有可走的步就自動洗牌，玩家不會卡死
+        if (!hasMove()) {
+            FT.add(W / 2, OY - 24, '無解，自動重排', { color: '#ffd166', size: 15, life: 1.6 });
+            RetroAudio.play('powerup');
+            for (var y = 0; y < N; y++) for (var x = 0; x < N; x++) s.grid[y][x] = newGem(x, y);
+            s.pendingResolve = true;
+        } else if (s.moves <= 0 && s.score < s.cfg.goal) {
+            s.over = true;
+            G.gameOver({
+                score: s.totalScore + s.score,
+                body: '在「' + s.cfg.name + '」步數用完，得到 ' + s.score + ' / ' + s.cfg.goal + ' 分。' +
+                      '訣竅是製造連鎖——讓一步棋自己滾出好幾波消除。'
+            });
+        } else if (s.score >= s.cfg.goal) {
+            clearLevel();
+        }
+        return;
+    }
+
+    s.chain++;
+    var cleared = {};
+    var specials = [];
+
+    matches.forEach(function (m) {
+        m.cells.forEach(function (c) { cleared[c[0] + ',' + c[1]] = 1; });
+        // 四顆 → 直線寶石；五顆以上 → 彩虹寶石
+        if (m.cells.length === 4) specials.push({ c: m.cells[1], type: m.dir === 'h' ? 2 : 3 });
+        else if (m.cells.length >= 5) specials.push({ c: m.cells[2], type: 4 });
+    });
+
+    // 觸發特殊寶石效果
+    Object.keys(cleared).forEach(function (k) {
+        var p = k.split(',').map(Number);
+        var g = at(p[0], p[1]);
+        if (!g || !g.special) return;
+        if (g.special === 2) for (var x = 0; x < N; x++) cleared[x + ',' + p[1]] = 1;
+        if (g.special === 3) for (var y = 0; y < N; y++) cleared[p[0] + ',' + y] = 1;
+        if (g.special === 4) {
+            for (var y = 0; y < N; y++) for (var x = 0; x < N; x++)
+                if (s.grid[y][x] && s.grid[y][x].t === g.t) cleared[x + ',' + y] = 1;
+        }
+    });
+
+    var keys = Object.keys(cleared);
+    var mult = Math.min(s.chain, 8);
+    var gain = keys.length * 40 * mult;
+    s.score += gain;
+    G.setStat('score', s.score);
+
+    // 回饋強度隨連鎖遞增
+    RetroAudio.play(s.chain > 1 ? 'combo' : 'hit', s.chain);
+    RE.juice.hitstop(0.02 + s.chain * 0.012);
+    RE.juice.shake(0.12 + s.chain * 0.06);
+    if (s.chain >= 3) RE.juice.flash('rgba(255,209,102,0.22)', 0.12);
+
+    keys.forEach(function (k) {
+        var p = k.split(',').map(Number);
+        var g = at(p[0], p[1]);
+        if (!g) return;
+        var cx = OX + p[0] * CELL + CELL / 2, cy = OY + p[1] * CELL + CELL / 2;
+        P.burst(cx, cy, 9, {
+            colors: [GEMS[g.t].c, '#fff8e7'], speedMin: 45, speedMax: 175,
+            gravity: 300, lifeMin: 0.2, lifeMax: 0.55, sizeMin: 2, sizeMax: 5
+        });
+        P.ring(cx, cy, GEMS[g.t].c, 26);
+        s.grid[p[1]][p[0]] = null;
+    });
+
+    var centerX = OX + N * CELL / 2;
+    var centerY = OY + N * CELL / 2;
+    FT.add(centerX, centerY - 20, '+' + gain, { color: '#fff8e7', size: 20, life: 1 });
+    if (s.chain > 1) {
+        FT.add(centerX, centerY + 8, s.chain + ' 連鎖　×' + mult,
+            { color: '#ffd166', size: 17, life: 1.2, vy: -30 });
+    }
+
+    // 放置特殊寶石
+    specials.forEach(function (sp) {
+        var g = { t: RE.randInt(0, s.cfg.colors - 1), special: sp.type, offset: 0, pop: 1, scale: 1.6 };
+        s.grid[sp.c[1]][sp.c[0]] = g;
+        FT.add(OX + sp.c[0] * CELL + CELL / 2, OY + sp.c[1] * CELL + CELL / 2 - 18,
+            sp.type === 4 ? '彩虹寶石！' : '直線寶石！', { color: '#ffd166', size: 13, life: 1.2 });
+        RetroAudio.play('powerup');
+    });
+
+    // 掉落
+    for (var x = 0; x < N; x++) {
+        var write = N - 1;
+        for (var y = N - 1; y >= 0; y--) {
+            if (s.grid[y][x]) {
+                if (write !== y) {
+                    s.grid[write][x] = s.grid[y][x];
+                    s.grid[write][x].offset = (write - y) * CELL;
+                    s.grid[y][x] = null;
+                }
+                write--;
+            }
+        }
+        for (var y = write; y >= 0; y--) {
+            s.grid[y][x] = newGem(x, y);
+            s.grid[y][x].offset = (write + 1) * CELL;
+        }
+    }
+
+    s.busy = 0.22;
+}
+
+function trySwap(x1, y1, x2, y2) {
+    /* pendingResolve 也要擋。它代表「倒數已經結束，但寶石還在掉，結算等一下才做」，
+       這段時間 s.busy 已經 ≤ 0——只擋 busy 的話，連鎖播到一半時再拖一次就會插隊進去，
+       盤面永遠留著沒結算的配對，於是 resolveBoard 那條「沒有配對才檢查過關」
+       的路徑一次都走不到：分數衝到三十萬、步數扣成負的，關卡卻永遠不會過。 */
+    if (s.busy > 0 || s.clearTimer > 0 || s.pendingResolve) return;
+    if (Math.abs(x1 - x2) + Math.abs(y1 - y2) !== 1) return;
+
+    swap(x1, y1, x2, y2);
+    if (!findMatches().length) {
+        // 無效交換：換回去並給予明確的失敗回饋
+        swap(x1, y1, x2, y2);
+        RetroAudio.play('error');
+        RE.juice.shake(0.1);
+        at(x1, y1).scale = 1.25;
+        at(x2, y2).scale = 1.25;
+        FT.add(OX + x2 * CELL + CELL / 2, OY + y2 * CELL, '無法消除', { color: '#ff6b6b', size: 12, life: 0.7 });
+        return;
+    }
+
+    s.moves--;
+    G.setStat('moves', s.moves);
+    RetroAudio.play('select');
+    s.chain = 0;
+    s.busy = 0.12;
+    s.sel = null;
+}
+
+function clearLevel() {
+    s.clearTimer = 2;
+    s.totalScore += s.score + s.moves * 120;
+    RetroAudio.play('win');
+    RE.juice.flash('rgba(255,209,102,0.35)', 0.2);
+    FT.add(W / 2, H / 2, '達成目標！', { color: '#ffd166', size: 26, life: 2 });
+    FT.add(W / 2, H / 2 + 28, '剩餘步數獎勵 +' + (s.moves * 120),
+        { color: '#70e4b5', size: 14, life: 2, vy: -24 });
+    P.burst(W / 2, H / 2, 44, { colors: ['#ffd166', '#70e4b5', '#ff9ebb', '#7dd3fc'],
+        speedMin: 60, speedMax: 270, gravity: 260, lifeMin: 0.5, lifeMax: 1.2 });
+}
+
+function nextLevel() {
+    var n = s.level + 1;
+    RE.Save.unlockLevel('bejeweled', n);
+    if (n > LEVELS.length) {
+        s.over = true;
+        G.gameOver({ score: s.totalScore, win: true,
+            body: '五關全數達標。連鎖才是這個類型真正的心臟——' +
+                  '你只做一個決定，系統卻回饋你好幾波。' });
+        return;
+    }
+    loadLevel(n);
+    G.stageCard(n, s.cfg.name, '目標 ' + s.cfg.goal + ' 分　✦ 限 ' + s.cfg.moves + ' 步' +
+        (s.cfg.colors > 5 ? '　✦ 寶石種類增加' : ''));
+}
+
+// ======================================================================
+function render() {
+    G.clear('#0d1512');
+    G.beginWorld();
+
+    // 棋盤
+    ctx.fillStyle = '#16241d';
+    RE.Draw.roundRect(ctx, OX - 8, OY - 8, N * CELL + 16, N * CELL + 16, 10);
+    ctx.fill();
+    for (var y = 0; y < N; y++) {
+        for (var x = 0; x < N; x++) {
+            ctx.fillStyle = (x + y) % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.15)';
+            ctx.fillRect(OX + x * CELL, OY + y * CELL, CELL, CELL);
+        }
+    }
+
+    // 寶石
+    for (var y = 0; y < N; y++) {
+        for (var x = 0; x < N; x++) {
+            var g = s.grid[y][x];
+            if (!g) continue;
+            drawGem(g, OX + x * CELL + CELL / 2, OY + y * CELL + CELL / 2 - g.offset);
+        }
+    }
+
+    // 選取框
+    if (s.sel) {
+        ctx.save();
+        ctx.strokeStyle = '#ffd166';
+        ctx.lineWidth = 3;
+        ctx.globalAlpha = 0.6 + Math.sin(performance.now() / 140) * 0.35;
+        RE.Draw.roundRect(ctx, OX + s.sel.x * CELL + 2, OY + s.sel.y * CELL + 2, CELL - 4, CELL - 4, 8);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    P.draw(ctx);
+    FT.draw(ctx);
+
+    // 目標進度條
+    var bw = N * CELL, ratio = RE.clamp(s.score / s.cfg.goal, 0, 1);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fillRect(OX, 40, bw, 12);
+    ctx.fillStyle = ratio >= 1 ? '#70e4b5' : '#ffd166';
+    ctx.fillRect(OX, 40, bw * ratio, 12);
+    RE.Draw.text(ctx, s.score + ' / ' + s.cfg.goal, OX + bw / 2, 38,
+        { size: 12, align: 'center', color: '#fff8e7' });
+    RE.Draw.text(ctx, s.cfg.name, OX, 16, { size: 14, color: '#ffd166' });
+    RE.Draw.text(ctx, '剩 ' + s.moves + ' 步', OX + bw, 16,
+        { size: 14, color: s.moves <= 5 ? '#ff6b6b' : '#a7f3d0', align: 'right' });
+
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.05, vignetteStrength: 0.38 });
+}
+
+function drawGem(g, cx, cy) {
+    var def = GEMS[g.t];
+    var r = CELL * 0.36 * g.scale * (1 + Math.max(0, g.pop) * 0.4);
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.shadowBlur = g.special ? 16 : 7;
+    ctx.shadowColor = def.c;
+    ctx.fillStyle = def.c;
+
+    if (def.shape === 'diamond') {
+        ctx.beginPath();
+        ctx.moveTo(0, -r); ctx.lineTo(r, 0); ctx.lineTo(0, r); ctx.lineTo(-r, 0);
+        ctx.closePath(); ctx.fill();
+    } else if (def.shape === 'circle') {
+        ctx.beginPath(); ctx.arc(0, 0, r, 0, RE.TAU); ctx.fill();
+    } else if (def.shape === 'square') {
+        RE.Draw.roundRect(ctx, -r * 0.85, -r * 0.85, r * 1.7, r * 1.7, 5); ctx.fill();
+    } else if (def.shape === 'hex') {
+        ctx.beginPath();
+        for (var i = 0; i < 6; i++) {
+            var a = i / 6 * RE.TAU - Math.PI / 2;
+            ctx[i ? 'lineTo' : 'moveTo'](Math.cos(a) * r, Math.sin(a) * r);
+        }
+        ctx.closePath(); ctx.fill();
+    } else if (def.shape === 'star') {
+        ctx.beginPath();
+        for (var i = 0; i < 10; i++) {
+            var a2 = i / 10 * RE.TAU - Math.PI / 2;
+            var rr = i % 2 ? r * 0.48 : r;
+            ctx[i ? 'lineTo' : 'moveTo'](Math.cos(a2) * rr, Math.sin(a2) * rr);
+        }
+        ctx.closePath(); ctx.fill();
+    } else {
+        ctx.beginPath();
+        ctx.moveTo(0, -r);
+        ctx.bezierCurveTo(r, -r * 0.2, r * 0.7, r, 0, r);
+        ctx.bezierCurveTo(-r * 0.7, r, -r, -r * 0.2, 0, -r);
+        ctx.fill();
+    }
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.beginPath(); ctx.ellipse(-r * 0.3, -r * 0.38, r * 0.26, r * 0.16, -0.5, 0, RE.TAU); ctx.fill();
+
+    // 特殊寶石標記
+    if (g.special === 2 || g.special === 3) {
+        ctx.strokeStyle = '#fff8e7';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        if (g.special === 2) { ctx.moveTo(-r, 0); ctx.lineTo(r, 0); }
+        else { ctx.moveTo(0, -r); ctx.lineTo(0, r); }
+        ctx.stroke();
+    } else if (g.special === 4) {
+        ctx.strokeStyle = '#fff8e7';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(0, 0, r * 0.55, 0, RE.TAU); ctx.stroke();
+    }
+    ctx.restore();
+}
+
+// ======================================================================
+// 輸入：點擊選取／再點交換，或直接拖曳
+// ======================================================================
+function cellAt(px, py) {
+    var c = Math.floor((px - OX) / CELL), r = Math.floor((py - OY) / CELL);
+    if (c < 0 || r < 0 || c >= N || r >= N) return null;
+    return { x: c, y: r };
+}
+
+var dragFrom = null;
+
+function toLocal(clientX, clientY) {
+    var r = G.canvas.getBoundingClientRect();
+    return { x: (clientX - r.left) / r.width * W, y: (clientY - r.top) / r.height * H };
+}
+
+function pointerDown(px, py) {
+    if (!G.isPlaying() || s.over || s.busy > 0 || s.clearTimer > 0) return;
+    var c = cellAt(px, py);
+    if (!c) { s.sel = null; return; }
+    if (s.sel && Math.abs(s.sel.x - c.x) + Math.abs(s.sel.y - c.y) === 1) {
+        trySwap(s.sel.x, s.sel.y, c.x, c.y);
+        s.sel = null;
+    } else {
+        s.sel = c;
+        dragFrom = c;
+        RetroAudio.play('blip');
+        var g = at(c.x, c.y);
+        if (g) g.scale = 1.22;
+    }
+}
+
+function pointerMove(px, py) {
+    if (!dragFrom || s.busy > 0) return;
+    var c = cellAt(px, py);
+    if (!c) return;
+    if (Math.abs(dragFrom.x - c.x) + Math.abs(dragFrom.y - c.y) === 1) {
+        trySwap(dragFrom.x, dragFrom.y, c.x, c.y);
+        dragFrom = null;
+        s.sel = null;
+    }
+}
+
+G.canvas.addEventListener('mousedown', function (e) {
+    var p = toLocal(e.clientX, e.clientY); pointerDown(p.x, p.y);
+});
+G.canvas.addEventListener('mousemove', function (e) {
+    if (!dragFrom) return;
+    var p = toLocal(e.clientX, e.clientY); pointerMove(p.x, p.y);
+});
+window.addEventListener('mouseup', function () { dragFrom = null; });
+G.canvas.addEventListener('touchstart', function (e) {
+    e.preventDefault();
+    var t = e.changedTouches[0], p = toLocal(t.clientX, t.clientY);
+    pointerDown(p.x, p.y);
+}, { passive: false });
+G.canvas.addEventListener('touchmove', function (e) {
+    e.preventDefault();
+    var t = e.changedTouches[0], p = toLocal(t.clientX, t.clientY);
+    pointerMove(p.x, p.y);
+}, { passive: false });
+G.canvas.addEventListener('touchend', function (e) { e.preventDefault(); dragFrom = null; }, { passive: false });
+
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '交換相鄰寶石湊成三顆以上同色連線。連鎖倍率會一路疊加——製造連鎖才是高分關鍵。共五關。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

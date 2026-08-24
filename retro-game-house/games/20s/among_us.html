@@ -1,0 +1,1878 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 船艙裡的偽裝者</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   船艙裡的偽裝者 — 致敬 Among Us (InnerSloth, 2018)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. 原作的機制本身很單薄——走路、做小遊戲、按按鈕。它真正生產的不是玩法，
+      而是**資訊落差**：每個人看到的世界都不一樣，樂趣發生在會議室的對話裡。
+   2. 單機版沒有真人可以說謊，所以本作把「說謊」做成**可驗證的機制**：
+      誠實船員的證詞永遠對得上你親眼看到的；偽裝者的證詞一定對不上。
+      於是「親眼看到」變成一種可以累積、可以出示的資源。
+   3. 因此本作的核心不是「猜」，而是「舉證」。沒有證據就投票，
+      誠實的船員會亂投，你很可能親手把無辜的人丟出船艙——甚至是你自己。
+   4. 視野限制、通風管、斷電、緊急按鈕、屍體回報都保留，
+      因為那些全都是「製造資訊落差」的裝置，不是裝飾。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'among_us',
+    title: '船艙裡的偽裝者',
+    tagline: '機制只負責製造資訊落差，樂趣發生在會議室',
+    original: 'Among Us (InnerSloth, 2018)',
+    decade: '20s', year: 2018, platform: '多平台', genre: '社交推理',
+    developer: 'InnerSloth', bgm: '20s',
+    width: 520, height: 400,
+    hud: [
+        { key: 'stage', label: '航次', init: '1/5' },
+        { key: 'task', label: '任務', init: '0%' },
+        { key: 'alive', label: '存活', init: 0 },
+        { key: 'score', label: 'SCORE' }
+    ],
+    lives: 3,
+    touch: 'dpad+ab',
+    controls: [
+        { keys: ['↑', '↓', '←', '→'], desc: '在船艙移動' },
+        { keys: ['A'], desc: '互動：做任務 / 回報屍體 / 緊急會議 / 修復電力' },
+        { keys: ['B'], desc: '按住看筆記本；任務中則是離開面板' },
+        { keys: ['←', '→', 'A'], desc: '會議中：選擇與確認' }
+    ],
+    howto: '你是船員。<strong>目標是在被殺掉之前完成自己的任務</strong>，' +
+           '或是把偽裝者投出船艙。走到閃著金光的終端機按 <strong>A</strong> 做任務。' +
+           '你看到誰在哪個房間，遊戲會自動記進<strong>筆記本</strong>（按住 B 查看）。' +
+           '發現屍體時按 A 回報，會議就開始。' +
+           '會議中每個人都會說自己剛才在哪——<strong>誠實的人說的一定對得上你的筆記，' +
+           '偽裝者一定對不上</strong>。指認時記得把那條筆記當證據提出來，' +
+           '否則其他船員只會亂投票。共五個航次。',
+    lesson: {
+        verb: '移動蒐集目擊紀錄、核對證詞矛盾，再用可說明的證據投票。',
+        innovation: '用隱藏身分、有限視野與會議，把不完整資訊轉化成玩家彼此說服與懷疑的社交玩法。',
+        mission: '前兩個航次只在筆記與證詞出現矛盾時投票，並記錄每次指認依據；比較有證據投票與憑直覺猜測的無辜者淘汰數。',
+        evolution: '《Pac-Man》讓玩家看見完整迷宮並推算敵人；《Among Us》刻意切碎每人的資訊。它也承接《Line Rider》把內容留給玩家的想法，只是玩家改為共同創作一場背叛故事。',
+        reflection: '如果所有玩家都能看見完整地圖、角色身分與移動紀錄，會議還會產生推理與說服的樂趣嗎？'
+    },
+    design: '社交推理的設計問題不是「怎麼藏一個敵人」而已，而是<strong>怎麼讓每句話都有可懷疑、也可驗證的依據</strong>。' +
+            '《Among Us》用有限視野、隱藏身分、屍體回報、通風管與破壞事件，把完整真相切成每人只看見一小塊的資訊；' +
+            '再用會議暫停動作，把目擊轉成證詞、把信任轉成投票。' +
+            '任務條同時製造第二條壓力：船員若只聊天不工作會輸，只顧工作又會放棄觀察。' +
+            '原作的矛盾來自真人可能說謊；本站單機版無法複製自由對話，因此把這層抽象成筆記系統：誠實角色的證詞可與目擊對上，偽裝者會留下可抓到的矛盾。' +
+            '這是為了讓學生親手驗證「資訊才是資源」的教材化處理，不代表原作會自動替玩家判定真話。' +
+            '本站《Pac-Man》的危險可以從完整迷宮直接讀取；《Among Us》反過來遮住真相，要求玩家先取得資訊，才有資格說服群體。' +
+            '它也承接《Line Rider》未完成內容的設計：系統只準備條件，真正的戲劇由玩家補完。',
+    history: 'InnerSloth 官方資料指出，Marcus Bromander 的構想結合童年玩過的 Mafia 類遊戲與電影《突變第三型》。' +
+             '《Among Us》於 2018 年 6 月 15 日先以手機區域連線遊戲推出，當時核心團隊為 Forest Willard、Marcus Bromander，以及後來加入美術的 Amy Liu。' +
+             '團隊在 2018 年 8 月才加入線上連線與 PC 版本，並持續追加地圖與裝飾。' +
+             '2020 年 1 月，他們曾公開把作品視為已完成的小型遊戲；同年夏季人氣意外暴增後，團隊一度於 8 月宣布續作，9 月又決定取消《Among Us 2》，改為重整舊程式並把新內容留在原作。' +
+             '這段歷史說明的不是「只要等直播主就會成功」，而是舊作品爆紅後，維護架構與玩家社群本身也會變成新的設計工作。',
+    sources: [
+        { label: 'InnerSloth 官方 Press Kit：Among Us 起源、團隊與發行史', url: 'https://www.innersloth.com/press-kit-among-us/' },
+        { label: 'InnerSloth：2018 年 PC 與線上模式推出公告', url: 'https://www.innersloth.com/pc-and-online-released/' },
+        { label: 'InnerSloth：取消 Among Us 2 並重整原作', url: 'https://www.innersloth.com/new-hotfixes-are-live-2-3/' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(420);
+var FT = new RE.FloatText();
+
+// ======================================================================
+// 難度設定：五個航次。所有難度參數都寫在這裡，不用亂數硬拉。
+// ======================================================================
+var LEVELS = [
+    { name: '第一航次 · 短程補給', crew: 5, imp: 1, tasks: 4, killCd: 17, npcSpeed: 50,
+      npcTask: 22, vision: 136, sabotage: false, emergency: 2,
+      hint: '先熟悉船艙。你看到誰在哪裡會自動記進筆記本。' },
+    { name: '第二航次 · 貨運航線', crew: 6, imp: 1, tasks: 5, killCd: 15, npcSpeed: 54,
+      npcTask: 21, vision: 128, sabotage: true, emergency: 2,
+      hint: '偽裝者學會斷電了。視野變窄時，落單就是送死。' },
+    // 兩名偽裝者是這款遊戲最陡的一階：殺人速度加倍，而一次會議只能送走一個。
+    // 所以這一關反而要把船員人數加上去，讓玩家有犯錯的餘裕，而不是靠減少敵人。
+    { name: '第三航次 · 深空巡邏', crew: 8, imp: 2, tasks: 5, killCd: 17, npcSpeed: 55,
+      npcTask: 21, vision: 124, sabotage: true, emergency: 2,
+      hint: '這次有兩名偽裝者。他們會互相作證，注意證詞對不對得上。' },
+    { name: '第四航次 · 隕石帶',   crew: 9, imp: 2, tasks: 6, killCd: 14, npcSpeed: 59,
+      npcTask: 20, vision: 118, sabotage: true, emergency: 1,
+      hint: '緊急按鈕只剩一次。把它留給你真的握有證據的那一刻。' },
+    { name: '第五航次 · 返航',     crew: 9, imp: 3, tasks: 6, killCd: 12, npcSpeed: 64,
+      npcTask: 19, vision: 112, sabotage: true, emergency: 1,
+      hint: '三名偽裝者。投錯一次就幾乎回不來了。' }
+];
+
+// ======================================================================
+// 船艙地圖：用房間與走廊的矩形拼出來，比手刻 30 行字元陣列安全得多
+// ======================================================================
+var TILE = 16, MAP_W = 44, MAP_H = 30;
+var WORLD_W = MAP_W * TILE, WORLD_H = MAP_H * TILE;
+
+var ROOMS = [
+    { key: 'cockpit', name: '駕駛艙', x: 2,  y: 2,  w: 9,  h: 6,  tint: '#1d2b44' },
+    { key: 'cafe',    name: '餐廳',   x: 17, y: 2,  w: 10, h: 8,  tint: '#26314a' },
+    { key: 'weapons', name: '武器室', x: 33, y: 2,  w: 9,  h: 6,  tint: '#2c2438' },
+    { key: 'engine',  name: '引擎室', x: 2,  y: 12, w: 9,  h: 6,  tint: '#33291f' },
+    { key: 'storage', name: '儲藏室', x: 17, y: 13, w: 10, h: 7,  tint: '#1f2c2c' },
+    { key: 'power',   name: '電力室', x: 33, y: 12, w: 9,  h: 6,  tint: '#33301c' },
+    { key: 'medbay',  name: '醫療室', x: 2,  y: 22, w: 9,  h: 6,  tint: '#1c3140' },
+    { key: 'shield',  name: '護盾室', x: 17, y: 23, w: 10, h: 5,  tint: '#242c3d' },
+    { key: 'comms',   name: '通訊室', x: 33, y: 22, w: 9,  h: 6,  tint: '#2a2632' }
+];
+
+var CORRIDORS = [
+    { x: 11, y: 4,  w: 6, h: 2 }, { x: 27, y: 4,  w: 6, h: 2 },
+    { x: 5,  y: 8,  w: 2, h: 4 }, { x: 5,  y: 18, w: 2, h: 4 },
+    { x: 37, y: 8,  w: 2, h: 4 }, { x: 37, y: 18, w: 2, h: 4 },
+    { x: 21, y: 10, w: 2, h: 3 }, { x: 21, y: 20, w: 2, h: 3 },
+    { x: 11, y: 15, w: 6, h: 2 }, { x: 27, y: 15, w: 6, h: 2 },
+    { x: 11, y: 24, w: 6, h: 2 }, { x: 27, y: 24, w: 6, h: 2 }
+];
+
+// 通風管：分成兩組，同組之間才能互通。偽裝者用它做出「不可能的移動」，
+// 而那正是玩家能拿到的最強證據。
+var VENTS = [
+    { x: 4,  y: 14, g: 0 }, { x: 24, y: 17, g: 0 }, { x: 8,  y: 25, g: 0 },
+    { x: 39, y: 14, g: 1 }, { x: 35, y: 25, g: 1 }, { x: 25, y: 3,  g: 1 }
+];
+
+var TASK_SPOTS = [
+    { room: 'cockpit', x: 4,  y: 4,  type: 'wire',  name: '校正航線' },
+    { room: 'cockpit', x: 9,  y: 6,  type: 'seq',   name: '輸入航行代碼' },
+    { room: 'cafe',    x: 19, y: 7,  type: 'calib', name: '補給食材' },
+    { room: 'cafe',    x: 24, y: 8,  type: 'wire',  name: '修理咖啡機' },
+    { room: 'weapons', x: 35, y: 4,  type: 'calib', name: '校準砲塔' },
+    { room: 'weapons', x: 40, y: 6,  type: 'seq',   name: '清除小行星' },
+    { room: 'engine',  x: 4,  y: 16, type: 'calib', name: '穩定引擎' },
+    { room: 'engine',  x: 9,  y: 13, type: 'wire',  name: '加註燃料' },
+    { room: 'storage', x: 19, y: 15, type: 'seq',   name: '清點貨箱' },
+    { room: 'storage', x: 25, y: 18, type: 'wire',  name: '整理電纜' },
+    { room: 'power',   x: 35, y: 16, type: 'wire',  name: '重接配電盤' },
+    { room: 'power',   x: 40, y: 13, type: 'calib', name: '調整輸出' },
+    { room: 'medbay',  x: 4,  y: 24, type: 'seq',   name: '掃描健康' },
+    { room: 'medbay',  x: 9,  y: 26, type: 'calib', name: '配置藥劑' },
+    { room: 'shield',  x: 19, y: 25, type: 'wire',  name: '修補護盾' },
+    { room: 'shield',  x: 25, y: 26, type: 'seq',   name: '重啟護盾陣列' },
+    { room: 'comms',   x: 35, y: 24, type: 'seq',   name: '下載日誌' },
+    { room: 'comms',   x: 40, y: 26, type: 'calib', name: '對準天線' }
+];
+
+var BUTTON_TILE = { x: 21, y: 5 };      // 餐廳的緊急按鈕
+var FIX_TILE = { x: 37, y: 15 };        // 電力室的斷電修復點
+
+var CREW = [
+    { name: '赤砂', color: '#e05a54' }, { name: '靛青', color: '#4a7de0' },
+    { name: '抹茶', color: '#4fb060' }, { name: '鵝黃', color: '#e0c04a' },
+    { name: '葡萄', color: '#9b5ce0' }, { name: '蜜橘', color: '#e08a3c' },
+    { name: '薄荷', color: '#3fc0c0' }, { name: '櫻花', color: '#e07ab0' },
+    { name: '雪白', color: '#dfe4ea' }
+];
+var PLAYER_COLOR = '#ffd166';
+
+// ---------- 地圖建構 ----------
+var grid = new Uint8Array(MAP_W * MAP_H);       // 0 牆 1 地板
+var roomIdx = new Int8Array(MAP_W * MAP_H);     // -1 走廊，其餘為 ROOMS 索引
+
+(function buildMap() {
+    var i;
+    for (i = 0; i < grid.length; i++) { grid[i] = 0; roomIdx[i] = -1; }
+    function carve(r, idx) {
+        for (var y = r.y; y < r.y + r.h; y++) {
+            for (var x = r.x; x < r.x + r.w; x++) {
+                if (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H) continue;
+                grid[y * MAP_W + x] = 1;
+                roomIdx[y * MAP_W + x] = idx;
+            }
+        }
+    }
+    for (i = 0; i < ROOMS.length; i++) carve(ROOMS[i], i);
+    for (i = 0; i < CORRIDORS.length; i++) carve(CORRIDORS[i], -1);
+})();
+
+function isFloor(tx, ty) {
+    if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return false;
+    return grid[ty * MAP_W + tx] === 1;
+}
+function roomKeyAt(px, py) {
+    var tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
+    if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return 'hall';
+    var r = roomIdx[ty * MAP_W + tx];
+    return r < 0 ? 'hall' : ROOMS[r].key;
+}
+function roomName(key) {
+    if (key === 'hall') return '走廊';
+    for (var i = 0; i < ROOMS.length; i++) if (ROOMS[i].key === key) return ROOMS[i].name;
+    return '船艙';
+}
+function tileCenter(tx, ty) { return { x: tx * TILE + TILE / 2, y: ty * TILE + TILE / 2 }; }
+
+// ---------- BFS 尋路 ----------
+var bfsPrev = new Int32Array(MAP_W * MAP_H);
+var bfsSeen = new Int32Array(MAP_W * MAP_H);
+var bfsQueue = new Int32Array(MAP_W * MAP_H);
+var bfsStamp = 0;
+var DX4 = [1, -1, 0, 0], DY4 = [0, 0, 1, -1];
+
+function findPath(sx, sy, tx, ty) {
+    if (!isFloor(sx, sy) || !isFloor(tx, ty)) return null;
+    bfsStamp++;
+    var head = 0, tail = 0;
+    var start = sy * MAP_W + sx, goal = ty * MAP_W + tx, found = false;
+    bfsQueue[tail++] = start; bfsSeen[start] = bfsStamp; bfsPrev[start] = -1;
+    while (head < tail) {
+        var cur = bfsQueue[head++];
+        if (cur === goal) { found = true; break; }
+        var cx = cur % MAP_W, cy = (cur / MAP_W) | 0;
+        for (var d = 0; d < 4; d++) {
+            var nx = cx + DX4[d], ny = cy + DY4[d];
+            if (nx < 0 || ny < 0 || nx >= MAP_W || ny >= MAP_H) continue;
+            var ni = ny * MAP_W + nx;
+            if (bfsSeen[ni] === bfsStamp || grid[ni] !== 1) continue;
+            bfsSeen[ni] = bfsStamp; bfsPrev[ni] = cur; bfsQueue[tail++] = ni;
+        }
+    }
+    if (!found) return null;
+    var path = [], c = goal;
+    while (c !== -1) { path.push({ x: c % MAP_W, y: (c / MAP_W) | 0 }); c = bfsPrev[c]; }
+    path.reverse();
+    return path;
+}
+
+// ---------- 小工具 ----------
+function dist(x1, y1, x2, y2) { var a = x2 - x1, b = y2 - y1; return Math.sqrt(a * a + b * b); }
+function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+function rnd(a, b) { return a + Math.random() * (b - a); }
+function rndInt(a, b) { return Math.floor(a + Math.random() * (b - a + 1)); }
+function pickOne(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function shuffled(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+}
+function shade(hex, amt) {
+    var n = parseInt(hex.slice(1), 16);
+    var r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    r = clamp(Math.round(r + 255 * amt), 0, 255);
+    g = clamp(Math.round(g + 255 * amt), 0, 255);
+    b = clamp(Math.round(b + 255 * amt), 0, 255);
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+}
+
+// 視線：每 6px 取樣一次，撞到牆就看不到。
+// 這一條就是整個遊戲的資訊落差來源，沒有它就沒有推理空間。
+function losClear(x1, y1, x2, y2) {
+    var d = dist(x1, y1, x2, y2);
+    var steps = Math.ceil(d / 6);
+    if (steps <= 1) return true;
+    for (var i = 1; i < steps; i++) {
+        var t = i / steps;
+        var x = x1 + (x2 - x1) * t, y = y1 + (y2 - y1) * t;
+        if (!isFloor(Math.floor(x / TILE), Math.floor(y / TILE))) return false;
+    }
+    return true;
+}
+
+// ======================================================================
+// 狀態
+// ======================================================================
+var s = null;
+
+function reset() {
+    s = { level: 0, total: 0 };
+    P.clear(); FT.clear();
+    G.setStat('score', 0);
+    G.setLives(3);
+    loadLevel(0);
+}
+
+function loadLevel(li) {
+    var L = LEVELS[li];
+    var i;
+    var prevTotal = s ? (s.total || 0) : 0;
+    var cafe = ROOMS[1];
+
+    s = {
+        level: li, L: L, total: prevTotal,
+        time: 0, phase: 'play',
+        actors: [], bodies: [], notes: [], vents: [],
+        myTasks: [], tasksDone: 0,
+        tasksTotal: L.tasks * (L.crew - L.imp + 1),
+        emergency: L.emergency,
+        dark: 0, fixHold: 0, sabCd: 30, noSightT: 0, ejectSelf: false, firstKill: false,
+        meeting: null, claims: null,
+        alert: '', alertT: 0,
+        deathT: 0, ending: 0, endWin: false, endBody: '',
+        showNotes: false, task: null,
+        levelScore: 0, meetings: 0, ejected: []
+    };
+
+    for (i = 0; i < VENTS.length; i++) s.vents.push({ x: VENTS[i].x, y: VENTS[i].y, g: VENTS[i].g, t: 0 });
+
+    // 角色 0 一律是玩家，讓視線、屍體、投票全部走同一套資料結構
+    var startTiles = spawnTiles(L.crew + 1);
+    s.actors.push({
+        id: 0, isPlayer: true, name: '你', color: PLAYER_COLOR, imp: false,
+        x: startTiles[0].x, y: startTiles[0].y, alive: true, face: 1, walk: 0,
+        taskDone: 0, path: null, pathI: 0, waitT: 0, taskT: 0, killCd: 0, ventT: 0
+    });
+
+    var impSet = {};
+    var order = shuffled([1, 2, 3, 4, 5, 6, 7, 8, 9].slice(0, L.crew));
+    for (i = 0; i < L.imp; i++) impSet[order[i]] = true;
+
+    for (i = 1; i <= L.crew; i++) {
+        var c = CREW[i - 1];
+        s.actors.push({
+            id: i, isPlayer: false, name: c.name, color: c.color, imp: !!impSet[i],
+            x: startTiles[i].x, y: startTiles[i].y, alive: true, face: 1, walk: 0,
+            taskDone: 0, path: null, pathI: 0, waitT: rnd(0, 1.5),
+            taskT: rnd(L.npcTask * 0.5, L.npcTask), repathT: 0, dirty: false,
+            killCd: L.killCd * 1.5, ventT: rnd(12, 22), mode: 'work'
+        });
+    }
+
+    // 玩家的個人任務：完成它們是任務條能到 100% 的必要條件
+    var spots = shuffled(TASK_SPOTS.map(function (t, k) { return k; })).slice(0, L.tasks);
+    for (i = 0; i < spots.length; i++) s.myTasks.push({ spot: spots[i], done: false });
+
+    G.setStat('stage', (li + 1) + '/' + LEVELS.length);
+    G.setStat('task', '0%');
+    G.setStat('alive', L.crew + 1);
+    G.setStat('score', s.total);
+    setAlert(L.name, 2.6);
+
+    function spawnTiles(n) {
+        var out = [];
+        for (var k = 0; k < n; k++) {
+            var tx = cafe.x + 2 + (k % 6), ty = cafe.y + 2 + Math.floor(k / 6);
+            if (!isFloor(tx, ty)) { tx = cafe.x + 1; ty = cafe.y + 1; }
+            out.push(tileCenter(tx, ty));
+        }
+        return out;
+    }
+}
+
+function setAlert(text, t) { s.alert = text; s.alertT = t || 2.0; }
+
+function aliveActors() {
+    var out = [];
+    for (var i = 0; i < s.actors.length; i++) if (s.actors[i].alive) out.push(s.actors[i]);
+    return out;
+}
+function countAlive(imp) {
+    var n = 0;
+    for (var i = 0; i < s.actors.length; i++) {
+        if (s.actors[i].alive && !!s.actors[i].imp === imp) n++;
+    }
+    return n;
+}
+function player() { return s.actors[0]; }
+function visionRadius() { return s.dark > 0 ? 62 : s.L.vision; }
+function canSeePt(x, y) {
+    var p = player();
+    return dist(p.x, p.y, x, y) <= visionRadius() && losClear(p.x, p.y, x, y);
+}
+
+// ======================================================================
+// 筆記本：玩家親眼看到的東西。這是本作唯一能在會議裡當武器的資源。
+// ======================================================================
+function pushNote(n) {
+    s.notes.push(n);
+    if (s.notes.length > 16) s.notes.shift();
+}
+function latestSaw(id, within) {
+    for (var i = s.notes.length - 1; i >= 0; i--) {
+        var n = s.notes[i];
+        if (n.kind === 'saw' && n.who === id) {
+            if (within !== undefined && s.time - n.t > within) return null;
+            return n;
+        }
+    }
+    return null;
+}
+
+function updateSightings(dt) {
+    // 會議剛散場時全員都站在餐廳，這幾秒不記錄，
+    // 否則筆記本會被一整批「在餐廳看到某某」洗掉，證詞比對就失去意義
+    if (s.noSightT > 0) { s.noSightT -= dt; return; }
+    s.sightT = (s.sightT || 0) - dt;
+    if (s.sightT > 0) return;
+    s.sightT = 0.4;
+    for (var i = 1; i < s.actors.length; i++) {
+        var a = s.actors[i];
+        if (!a.alive) continue;
+        if (!canSeePt(a.x, a.y)) continue;
+        var room = roomKeyAt(a.x, a.y);
+        var last = latestSaw(a.id);
+        if (last && last.room === room && s.time - last.t < 8) { last.t = s.time; continue; }
+        pushNote({ kind: 'saw', who: a.id, room: room, t: s.time });
+    }
+}
+
+// ======================================================================
+// 玩家
+// ======================================================================
+var PLAYER_SPEED = 82, PLAYER_R = 6;
+
+function moveWithWalls(a, dx, dy) {
+    a.x += dx;
+    resolveAxis(a, dx, 0);
+    a.y += dy;
+    resolveAxis(a, 0, dy);
+    a.x = clamp(a.x, PLAYER_R, WORLD_W - PLAYER_R);
+    a.y = clamp(a.y, PLAYER_R, WORLD_H - PLAYER_R);
+}
+
+// X、Y 分兩階段解算。兩軸一起解會在貼牆滑行時被誤判成撞牆而卡住。
+function resolveAxis(a, dx, dy) {
+    var r = PLAYER_R;
+    var x0 = Math.floor((a.x - r) / TILE), x1 = Math.floor((a.x + r) / TILE);
+    var y0 = Math.floor((a.y - r) / TILE), y1 = Math.floor((a.y + r) / TILE);
+    for (var ty = y0; ty <= y1; ty++) {
+        for (var tx = x0; tx <= x1; tx++) {
+            if (isFloor(tx, ty)) continue;
+            var left = tx * TILE, top = ty * TILE;
+            if (dx > 0) a.x = left - r - 0.01;
+            else if (dx < 0) a.x = left + TILE + r + 0.01;
+            if (dy > 0) a.y = top - r - 0.01;
+            else if (dy < 0) a.y = top + TILE + r + 0.01;
+        }
+    }
+}
+
+function updatePlayer(dt) {
+    var p = player();
+    if (!p.alive || s.deathT > 0) return;
+
+    if (s.phase === 'task') { updateTaskPanel(dt); return; }
+
+    s.showNotes = RE.Input.down('b');
+
+    if (!s.showNotes) {
+        var ax = RE.Input.axisX(), ay = RE.Input.axisY();
+        var len = Math.sqrt(ax * ax + ay * ay);
+        if (len > 0) {
+            ax /= len; ay /= len;
+            if (ax !== 0) p.face = ax > 0 ? 1 : -1;
+            moveWithWalls(p, ax * PLAYER_SPEED * dt, ay * PLAYER_SPEED * dt);
+            p.walk += dt;
+            s.stepT = (s.stepT || 0) - dt;
+            if (s.stepT <= 0) { s.stepT = 0.3; RetroAudio.play('step'); }
+        } else p.walk = 0;
+    }
+
+    if (RE.Input.pressed('a')) doInteract();
+
+    // 斷電修復：要「按住」，所以修電的人一定會停在原地暴露自己
+    var fix = tileCenter(FIX_TILE.x, FIX_TILE.y);
+    if (s.dark > 0 && dist(p.x, p.y, fix.x, fix.y) < 26 && RE.Input.down('a')) {
+        s.fixHold += dt;
+        if (s.fixHold >= 1.0) {
+            s.dark = 0; s.fixHold = 0;
+            setAlert('電力已恢復', 2.0);
+            RetroAudio.play('powerup');
+            RE.juice.flash('rgba(180,220,255,0.35)', 0.12);
+            addScore(120, p.x, p.y - 16, '+120');
+        }
+    } else s.fixHold = 0;
+}
+
+function nearestInteract() {
+    var p = player(), i;
+    // 優先序：屍體 > 緊急按鈕 > 我的任務終端機
+    for (i = 0; i < s.bodies.length; i++) {
+        var b = s.bodies[i];
+        if (dist(p.x, p.y, b.x, b.y) < 28 && canSeePt(b.x, b.y)) return { kind: 'body', body: b };
+    }
+    var btn = tileCenter(BUTTON_TILE.x, BUTTON_TILE.y);
+    if (dist(p.x, p.y, btn.x, btn.y) < 26) return { kind: 'button' };
+    for (i = 0; i < s.myTasks.length; i++) {
+        var mt = s.myTasks[i];
+        if (mt.done) continue;
+        var sp = TASK_SPOTS[mt.spot];
+        var c = tileCenter(sp.x, sp.y);
+        if (dist(p.x, p.y, c.x, c.y) < 26) return { kind: 'task', idx: i };
+    }
+    if (s.dark > 0) {
+        var fx = tileCenter(FIX_TILE.x, FIX_TILE.y);
+        if (dist(p.x, p.y, fx.x, fx.y) < 26) return { kind: 'fix' };
+    }
+    return null;
+}
+
+function doInteract() {
+    var it = nearestInteract();
+    if (!it) return;
+    if (it.kind === 'body') { reportBody(it.body, player()); return; }
+    if (it.kind === 'button') {
+        if (s.emergency <= 0) { RetroAudio.play('error'); setAlert('緊急按鈕已用完', 1.6); return; }
+        s.emergency--;
+        startMeeting(null, player());
+        return;
+    }
+    if (it.kind === 'task') openTask(it.idx);
+}
+
+// ======================================================================
+// NPC：誠實船員做任務、發現屍體會回報；偽裝者獵殺、鑽管、斷電
+// ======================================================================
+function updateActors(dt) {
+    var L = s.L;
+    for (var i = 1; i < s.actors.length; i++) {
+        // 有人在迭代途中回報屍體就會直接進會議，這時後面的角色不能再動一幀，
+        // 否則他們的位置會和會議上宣稱的行蹤對不上
+        if (s.phase === 'meeting' || s.ending) return;
+        var a = s.actors[i];
+        // 死掉的誠實船員仍以幽靈身分緩慢完成任務——這是原作的規則，
+        // 也讓「被殺光」不等於「任務條凍結」
+        if (!a.alive) {
+            if (!a.imp && a.taskDone < L.tasks) {
+                a.taskT -= dt * 0.55;
+                if (a.taskT <= 0) { a.taskT = L.npcTask; a.taskDone++; s.tasksDone++; refreshTaskStat(); }
+            }
+            continue;
+        }
+        if (a.imp) updateImpostor(a, dt);
+        else updateHonest(a, dt);
+        a.ventT -= dt;
+    }
+}
+
+function walkPath(a, dt, speed) {
+    if (!a.path || a.pathI >= a.path.length) return true;
+    var node = a.path[a.pathI];
+    var c = tileCenter(node.x, node.y);
+    var dx = c.x - a.x, dy = c.y - a.y;
+    var d = Math.sqrt(dx * dx + dy * dy);
+    if (d < 2.5) { a.pathI++; return a.pathI >= a.path.length; }
+    var step = Math.min(d, speed * dt);
+    a.x += dx / d * step; a.y += dy / d * step;
+    if (Math.abs(dx) > 0.5) a.face = dx > 0 ? 1 : -1;
+    a.walk += dt;
+    return false;
+}
+
+function sendTo(a, tx, ty) {
+    var path = findPath(Math.floor(a.x / TILE), Math.floor(a.y / TILE), tx, ty);
+    if (!path) { a.path = null; return false; }
+    a.path = path; a.pathI = 0;
+    return true;
+}
+
+function updateHonest(a, dt) {
+    var L = s.L;
+
+    // 任務進度不分走路或站著都在推進。
+    // 只在「停下來」時才算的話，任務條的速度會被路徑長度綁架，難度無法調。
+    a.taskT -= dt;
+    if (a.taskT <= 0 && a.taskDone < L.tasks) {
+        a.taskT = L.npcTask; a.taskDone++; s.tasksDone++; refreshTaskStat();
+    }
+
+    // 看到屍體就回報。這是玩家最主要的「會議來源」，
+    // 也讓玩家在遠處看到有人跑向某個房間時能推測發生了什麼
+    for (var i = 0; i < s.bodies.length; i++) {
+        var b = s.bodies[i];
+        if (dist(a.x, a.y, b.x, b.y) < 76 && losClear(a.x, a.y, b.x, b.y)) {
+            reportBody(b, a);
+            return;
+        }
+    }
+
+    if (a.waitT > 0) { a.waitT -= dt; a.walk = 0; return; }
+    if (!a.path || a.pathI >= a.path.length) {
+        var sp = pickOne(TASK_SPOTS);
+        if (!sendTo(a, sp.x, sp.y)) { a.waitT = 1; return; }
+    }
+    if (walkPath(a, dt, L.npcSpeed)) { a.waitT = rnd(4, 8); a.path = null; }
+}
+
+// 附近有第三者在看就不動手。這條規則讓「和別人待在一起」變成有效的自保策略，
+// 也讓玩家落單的每一秒都真的有風險。
+function hasWitness(victim, killer) {
+    var range = s.dark > 0 ? 74 : 112;
+    for (var i = 0; i < s.actors.length; i++) {
+        var o = s.actors[i];
+        if (!o.alive || o === victim || o === killer || o.imp) continue;
+        if (dist(o.x, o.y, victim.x, victim.y) < range && losClear(o.x, o.y, victim.x, victim.y)) return true;
+    }
+    return false;
+}
+
+function updateImpostor(a, dt) {
+    var L = s.L;
+    a.killCd -= dt * (s.dark > 0 ? 1.8 : 1.0);
+
+    if (a.mode === 'vent') {
+        if (walkPath(a, dt, L.npcSpeed + 8)) doVent(a);
+        return;
+    }
+
+    // 找一個落單的目標
+    if (a.killCd <= 0) {
+        var best = null, bestD = 1e9;
+        for (var i = 0; i < s.actors.length; i++) {
+            var v = s.actors[i];
+            if (!v.alive || v.imp || v === a) continue;
+            // 玩家絕不會是一個航次的第一個死者。
+            // 實測時最難受的失敗是「開場三十秒被殺，什麼事都還沒發生」——
+            // 那不是難度，是把玩家排除在遊戲外面。先讓他看到第一具屍體，
+            // 遊戲的內容才真正開始，之後他就跟其他人一樣是獵物了。
+            if (v.isPlayer && !s.firstKill) continue;
+            var d = dist(a.x, a.y, v.x, v.y);
+            if (d < bestD && !hasWitness(v, a)) { best = v; bestD = d; }
+        }
+        if (best) {
+            if (bestD < 20) { doKill(a, best); return; }
+            a.repathT -= dt;
+            if (!a.path || a.pathI >= a.path.length || a.repathT <= 0) {
+                a.repathT = 0.6;
+                sendTo(a, Math.floor(best.x / TILE), Math.floor(best.y / TILE));
+            }
+            walkPath(a, dt, L.npcSpeed + 8);
+            return;
+        }
+    }
+
+    // 沒得殺就假裝做任務，偶爾鑽個管製造機會給玩家抓
+    if (a.ventT <= 0 && (!a.path || a.pathI >= a.path.length)) {
+        var vent = nearestVent(a.x, a.y);
+        if (vent) {
+            a.ventT = rnd(16, 26);
+            a.mode = 'vent';
+            if (!sendTo(a, vent.x, vent.y)) a.mode = 'work';
+            return;
+        }
+    }
+    if (L.sabotage && s.dark <= 0) {
+        s.sabCd -= dt;
+        if (s.sabCd <= 0) {
+            s.sabCd = rnd(34, 48);
+            s.dark = 24;
+            setAlert('警告：電力中斷！到電力室按住 A 修復', 3.2);
+            RetroAudio.play('error');
+            RE.juice.shake(0.3);
+            RE.juice.flash('rgba(255,60,60,0.28)', 0.2);
+        }
+    }
+    if (a.waitT > 0) { a.waitT -= dt; a.walk = 0; return; }
+    if (!a.path || a.pathI >= a.path.length) {
+        var sp = pickOne(TASK_SPOTS);
+        if (!sendTo(a, sp.x, sp.y)) { a.waitT = 1; return; }
+    }
+    if (walkPath(a, dt, L.npcSpeed)) { a.waitT = rnd(3, 6); a.path = null; }
+}
+
+function nearestVent(x, y) {
+    var best = null, bd = 170;
+    for (var i = 0; i < s.vents.length; i++) {
+        var d = dist(x, y, s.vents[i].x * TILE + 8, s.vents[i].y * TILE + 8);
+        if (d < bd) { bd = d; best = s.vents[i]; }
+    }
+    return best;
+}
+
+function doVent(a) {
+    a.mode = 'work'; a.path = null; a.waitT = rnd(1, 2.5);
+    var here = nearestVent(a.x, a.y);
+    if (!here) return;
+    a.dirty = true;           // 鑽過管的人講不出一條說得通的行程
+    var group = [];
+    for (var i = 0; i < s.vents.length; i++) {
+        if (s.vents[i].g === here.g && s.vents[i] !== here) group.push(s.vents[i]);
+    }
+    if (!group.length) return;
+    var to = pickOne(group);
+
+    // 玩家親眼看到有人鑽管：決定性證據。船員沒有通風管權限。
+    if (canSeePt(a.x, a.y)) {
+        pushNote({ kind: 'vent', who: a.id, room: roomKeyAt(a.x, a.y), t: s.time });
+        setAlert('你看到 ' + a.name + ' 鑽進通風管！', 2.8);
+        RetroAudio.play('powerup');
+        RE.juice.shake(0.22);
+        RE.juice.hitstop(0.05);
+        addScore(200, a.x, a.y - 18, '目擊！+200');
+    }
+    P.burst(a.x, a.y, 12, { colors: ['#8fa3c8', '#5c6b8a'], speedMin: 30, speedMax: 90, lifeMin: 0.2, lifeMax: 0.4, gravity: 60 });
+    here.t = 0.4; to.t = 0.4;
+    a.x = to.x * TILE + 8; a.y = to.y * TILE + 8;
+}
+
+function doKill(killer, victim) {
+    killer.killCd = s.L.killCd;
+    killer.dirty = true;      // 這一票會議他必須說謊來掩蓋
+    s.firstKill = true;
+    victim.alive = false;
+    victim.path = null;
+    s.bodies.push({ who: victim.id, x: victim.x, y: victim.y, room: roomKeyAt(victim.x, victim.y), t: s.time });
+    G.setStat('alive', countAlive(false) + countAlive(true));
+
+    var seen = canSeePt(victim.x, victim.y);
+    P.burst(victim.x, victim.y, 18, {
+        colors: ['#c8262a', '#8e1418', victim.color],
+        speedMin: 60, speedMax: 190, lifeMin: 0.25, lifeMax: 0.6, gravity: 320
+    });
+
+    if (victim.isPlayer) {
+        RetroAudio.play('heavyHit');
+        RE.juice.hitstop(0.16);
+        RE.juice.shake(0.7);
+        RE.juice.flash('rgba(200,20,30,0.5)', 0.22);
+        RE.juice.slowmo(0.25, 1.0);
+        RE.juice.rumble(0.8, 0.25);
+        s.deathT = 1.5;
+        s.phase = 'play';
+        s.task = null;
+        return;
+    }
+    if (seen) {
+        // 目擊殺人：最強的證據，但你必須活著走進會議室
+        pushNote({ kind: 'kill', who: killer.id, room: roomKeyAt(killer.x, killer.y), t: s.time });
+        setAlert('你看到 ' + killer.name + ' 動手了！', 3.0);
+        RetroAudio.play('heavyHit');
+        RE.juice.hitstop(0.1);
+        RE.juice.shake(0.45);
+        RE.juice.flash('rgba(200,20,30,0.3)', 0.16);
+        addScore(300, killer.x, killer.y - 18, '目擊！+300');
+    } else {
+        RetroAudio.play('hit');
+        RE.juice.shake(0.12);
+    }
+}
+
+function refreshTaskStat() {
+    var pct = Math.min(100, Math.round(s.tasksDone / s.tasksTotal * 100));
+    G.setStat('task', pct + '%');
+}
+
+function addScore(n, x, y, label) {
+    s.levelScore += n;
+    G.setStat('score', s.total + s.levelScore);
+    if (x !== undefined) FT.add(x, y, label || ('+' + n), { color: '#ffd166', size: label ? 13 : 12 });
+}
+
+// ======================================================================
+// 任務小遊戲：三種。做任務時世界仍在跑，你是完全沒有防備的。
+// ======================================================================
+function openTask(myIdx) {
+    var mt = s.myTasks[myIdx];
+    var sp = TASK_SPOTS[mt.spot];
+    var t = { myIdx: myIdx, spot: mt.spot, type: sp.type, name: sp.name, done: 0, err: 0 };
+
+    if (sp.type === 'wire') {
+        var cols = ['#e05a54', '#4a7de0', '#4fb060', '#e0c04a'];
+        t.left = cols.slice();
+        t.right = shuffled(cols);
+        t.linked = [false, false, false, false];
+        t.rightUsed = [false, false, false, false];
+        t.side = 0; t.cur = 0; t.grab = -1;
+    } else if (sp.type === 'calib') {
+        t.pos = 0.1; t.dir = 1; t.speed = 0.85; t.hits = 0;
+        t.zc = rnd(0.25, 0.75); t.zw = 0.13;
+    } else {
+        t.seq = [];
+        for (var i = 0; i < 4; i++) t.seq.push(pickOne(['up', 'down', 'left', 'right']));
+        t.idx = 0;
+    }
+    s.task = t;
+    s.phase = 'task';
+    RetroAudio.play('select');
+}
+
+function closeTask() { s.task = null; s.phase = 'play'; }
+
+function finishTask() {
+    var t = s.task;
+    s.myTasks[t.myIdx].done = true;
+    s.tasksDone++;
+    refreshTaskStat();
+    var p = player();
+    RetroAudio.play('powerup');
+    RE.juice.hitstop(0.05);
+    RE.juice.shake(0.14);
+    RE.juice.flash('rgba(255,225,140,0.28)', 0.1);
+    P.burst(p.x, p.y, 18, { colors: ['#ffd166', '#fff3c4', '#8ce0b0'], speedMin: 50, speedMax: 170, lifeMin: 0.3, lifeMax: 0.7 });
+    addScore(180, p.x, p.y - 18, t.name + ' 完成');
+    closeTask();
+}
+
+function taskError() {
+    s.task.err = 0.25;
+    RetroAudio.play('error');
+    RE.juice.shake(0.1);
+}
+
+function updateTaskPanel(dt) {
+    var t = s.task;
+    if (!t) { s.phase = 'play'; return; }
+    if (t.err > 0) t.err -= dt;
+    if (RE.Input.pressed('b')) { RetroAudio.play('cancel'); closeTask(); return; }
+
+    if (t.type === 'wire') {
+        if (RE.Input.pressed('up')) { t.cur = (t.cur + 3) % 4; RetroAudio.play('blip'); }
+        if (RE.Input.pressed('down')) { t.cur = (t.cur + 1) % 4; RetroAudio.play('blip'); }
+        if (RE.Input.pressed('a')) {
+            if (t.side === 0) {
+                if (t.linked[t.cur]) { taskError(); }
+                else { t.grab = t.cur; t.side = 1; t.cur = 0; RetroAudio.play('select'); }
+            } else {
+                if (t.rightUsed[t.cur] || t.right[t.cur] !== t.left[t.grab]) { taskError(); }
+                else {
+                    t.linked[t.grab] = t.cur;
+                    t.rightUsed[t.cur] = true;
+                    RetroAudio.play('coin');
+                    var all = true;
+                    for (var i = 0; i < 4; i++) if (t.linked[i] === false) all = false;
+                    if (all) { finishTask(); return; }
+                }
+                t.side = 0; t.cur = t.grab; t.grab = -1;
+            }
+        }
+    } else if (t.type === 'calib') {
+        t.pos += t.dir * t.speed * dt;
+        if (t.pos > 1) { t.pos = 1; t.dir = -1; }
+        if (t.pos < 0) { t.pos = 0; t.dir = 1; }
+        if (RE.Input.pressed('a')) {
+            if (Math.abs(t.pos - t.zc) < t.zw) {
+                t.hits++;
+                RetroAudio.play('coin');
+                if (t.hits >= 3) { finishTask(); return; }
+                t.zc = rnd(0.2, 0.8);
+                t.zw = 0.13 - t.hits * 0.025;
+                t.speed += 0.16;
+            } else taskError();
+        }
+    } else {
+        var want = t.seq[t.idx];
+        var got = null;
+        if (RE.Input.pressed('up')) got = 'up';
+        else if (RE.Input.pressed('down')) got = 'down';
+        else if (RE.Input.pressed('left')) got = 'left';
+        else if (RE.Input.pressed('right')) got = 'right';
+        if (got) {
+            if (got === want) {
+                t.idx++;
+                RetroAudio.play('blip');
+                if (t.idx >= t.seq.length) { finishTask(); return; }
+            } else { t.idx = 0; taskError(); }
+        }
+    }
+}
+
+// ======================================================================
+// 會議：整個遊戲真正的主場
+// ======================================================================
+function reportBody(body, reporter) {
+    var idx = s.bodies.indexOf(body);
+    if (idx >= 0) s.bodies.splice(idx, 1);
+    pushNote({ kind: 'body', who: body.who, room: body.room, t: s.time });
+    if (reporter.isPlayer) {
+        addScore(150, player().x, player().y - 18, '回報 +150');
+        RE.juice.hitstop(0.06);
+    }
+    RE.juice.shake(0.3);
+    RE.juice.flash('rgba(255,255,255,0.35)', 0.14);
+    startMeeting(body, reporter);
+}
+
+function startMeeting(body, reporter) {
+    RetroAudio.play('levelUp');
+    s.phase = 'meeting';
+    s.meetings++;
+    s.meetingTime = s.time;
+    s.task = null;
+    s.dark = 0; s.fixHold = 0;
+
+    buildClaims();
+
+    s.meeting = {
+        step: 'talk', timer: 45,
+        body: body, reporter: reporter,
+        cur: 0, target: -1, evIdx: 0, evList: buildEvidence(),
+        votes: null, result: null, resultT: 0, valid: false
+    };
+    // 全員回到餐廳，屍體清空，殺人冷卻重置——會議是節奏上的重開機
+    var cafe = ROOMS[1], k = 0;
+    for (var i = 0; i < s.actors.length; i++) {
+        var a = s.actors[i];
+        a.path = null; a.pathI = 0; a.waitT = rnd(0.5, 2);
+        a.dirty = false;          // 帳算到這裡為止，下一段航程重新計
+        if (!a.alive) continue;
+        var c = tileCenter(cafe.x + 1 + (k % 7), cafe.y + 2 + Math.floor(k / 7));
+        a.x = c.x; a.y = c.y; k++;
+        if (a.imp) a.killCd = s.L.killCd;
+    }
+    s.bodies.length = 0;
+}
+
+// 證詞規則（本作最重要的一條原創設計）：
+//   誠實者的證詞永遠對得上玩家最近一次親眼看到他的地方；
+//   而**做過壞事的偽裝者**（上次會議之後殺過人或鑽過管）一定對不上。
+//
+// 沒做壞事的偽裝者說的是實話——這一點很重要，否則「看到誰就能指認誰」，
+// 推理會退化成掃描。要抓到人，你必須剛好在他犯案後的那段時間裡看到他。
+function buildClaims() {
+    var i, a;
+    s.claims = {};
+    for (i = 0; i < s.actors.length; i++) {
+        a = s.actors[i];
+        if (!a.alive || a.isPlayer) continue;
+        var cur = roomKeyAt(a.x, a.y);
+        var n = latestSaw(a.id, 25);
+        if (!a.imp || !a.dirty) {
+            s.claims[a.id] = { room: n ? n.room : cur, wit: -1, lie: false };
+        } else {
+            var pool = [];
+            for (var r = 0; r < ROOMS.length; r++) {
+                var k = ROOMS[r].key;
+                if (k === cur) continue;
+                if (n && k === n.room) continue;
+                pool.push(k);
+            }
+            s.claims[a.id] = { room: pool.length ? pickOne(pool) : cur, wit: -1, lie: true };
+        }
+    }
+    // 第二輪指定「我和誰在一起」。
+    // 誠實者只有在雙方說法一致時才會這樣說，所以誠實者永遠不會互咬；
+    // 偽裝者則刻意攀附一個說法不同的人，替玩家製造第二種可查證的破綻。
+    var alive = [];
+    for (i = 1; i < s.actors.length; i++) if (s.actors[i].alive) alive.push(s.actors[i]);
+    for (i = 0; i < alive.length; i++) {
+        a = alive[i];
+        var mine = s.claims[a.id];
+        var cand = [];
+        for (var j = 0; j < alive.length; j++) {
+            var o = alive[j];
+            if (o === a) continue;
+            var oc = s.claims[o.id];
+            if (mine.lie) { if (!o.imp && oc.room !== mine.room) cand.push(o.id); }
+            else { if (!oc.lie && oc.room === mine.room) cand.push(o.id); }
+        }
+        if (cand.length && Math.random() < (mine.lie ? 0.62 : 0.4)) mine.wit = pickOne(cand);
+    }
+}
+
+// 可以在會議裡出示的證據。刻意只取每個人「最新的一筆目擊」，
+// 否則玩家會拿一筆過時的目擊去冤枉一個只是走動過的誠實船員。
+function buildEvidence() {
+    var out = [], i, a;
+    for (i = 1; i < s.actors.length; i++) {
+        a = s.actors[i];
+        if (!a.alive) continue;
+        var n = latestSaw(a.id, 25);
+        if (n) out.push({ kind: 'saw', who: a.id, room: n.room, t: n.t });
+    }
+    for (i = 0; i < s.notes.length; i++) {
+        var nn = s.notes[i];
+        if (nn.kind !== 'vent' && nn.kind !== 'kill') continue;
+        if (!s.actors[nn.who] || !s.actors[nn.who].alive) continue;
+        out.push({ kind: nn.kind, who: nn.who, room: nn.room, t: nn.t });
+    }
+    for (i = 1; i < s.actors.length; i++) {
+        a = s.actors[i];
+        if (!a.alive) continue;
+        var c = s.claims[a.id];
+        if (!c || c.wit < 0) continue;
+        var oc = s.claims[c.wit];
+        if (oc && oc.room !== c.room) out.push({ kind: 'cross', who: a.id, other: c.wit });
+    }
+    return out;
+}
+
+function evidenceValid(ev, targetId) {
+    if (!ev || targetId < 0) return false;
+    if (ev.who !== targetId) return false;
+    if (ev.kind === 'vent' || ev.kind === 'kill' || ev.kind === 'cross') return true;
+    if (ev.kind === 'saw') {
+        var c = s.claims[targetId];
+        return !!c && c.room !== ev.room && (s.meetingTime - ev.t) <= 25;
+    }
+    return false;
+}
+
+function evidenceText(ev) {
+    var a = s.actors[ev.who];
+    if (!a) return '（無效線索）';
+    if (ev.kind === 'saw') return '我在' + roomName(ev.room) + '看到 ' + a.name;
+    if (ev.kind === 'vent') return '我看到 ' + a.name + ' 鑽通風管（' + roomName(ev.room) + '）';
+    if (ev.kind === 'kill') return '我親眼看到 ' + a.name + ' 動手';
+    if (ev.kind === 'cross') {
+        var o = s.actors[ev.other];
+        return a.name + ' 說和 ' + (o ? o.name : '?') + ' 在一起，但兩人說法不同';
+    }
+    return '線索';
+}
+
+function resolveVote() {
+    var m = s.meeting;
+    var valid = evidenceValid(m.evList[m.evIdx] || null, m.target);
+    m.valid = valid;
+
+    var votes = {};
+    function cast(voter, target) {
+        var k = target < 0 ? 'skip' : String(target);
+        votes[k] = (votes[k] || 0) + 1;
+        m.ballots.push({ voter: voter, target: target });
+    }
+    m.ballots = [];
+    cast(0, m.target);
+
+    var aliveN = [];
+    for (var i = 1; i < s.actors.length; i++) if (s.actors[i].alive) aliveN.push(s.actors[i]);
+
+    var honestTargets = [];
+    for (i = 0; i < s.actors.length; i++) if (s.actors[i].alive && !s.actors[i].imp) honestTargets.push(s.actors[i].id);
+
+    for (i = 0; i < aliveN.length; i++) {
+        var a = aliveN[i];
+        if (a.imp) {
+            var t;
+            if (valid && s.actors[m.target] && s.actors[m.target].imp) t = 0;         // 咬回玩家
+            else if (m.target >= 0 && s.actors[m.target] && !s.actors[m.target].imp) {
+                // 玩家指認錯人時，偽裝者有兩種好棋：順水推舟送走一個無辜的，
+                // 或是直接把矛頭轉向這個到處亂指的人——調查者被丟出去，這局就穩了。
+                t = Math.random() < 0.45 ? 0 : m.target;
+            } else {
+                var pool = honestTargets.filter(function (x) { return x !== a.id; });
+                t = pool.length ? pickOne(pool) : -1;
+            }
+            cast(a.id, t);
+        } else if (valid) {
+            cast(a.id, m.target);            // 證據成立，誠實者被說服
+        } else {
+            // 沒有證據，誠實者只能亂投。這就是「懷疑不是證據」的機制化。
+            if (Math.random() < 0.34) cast(a.id, -1);
+            else {
+                var pool2 = [];
+                for (var j = 0; j < s.actors.length; j++) {
+                    if (s.actors[j].alive && s.actors[j].id !== a.id) pool2.push(s.actors[j].id);
+                }
+                cast(a.id, pool2.length ? pickOne(pool2) : -1);
+            }
+        }
+    }
+
+    var bestKey = null, bestN = 0, tie = false;
+    for (var k in votes) {
+        if (votes[k] > bestN) { bestN = votes[k]; bestKey = k; tie = false; }
+        else if (votes[k] === bestN) tie = true;
+    }
+    m.votes = votes;
+    m.ejected = (tie || bestKey === null || bestKey === 'skip') ? -1 : parseInt(bestKey, 10);
+    m.step = 'tally';
+    m.resultT = 3.4;
+    RetroAudio.play('select');
+}
+
+function applyEjection() {
+    var m = s.meeting;
+    var id = m.ejected;
+    if (id < 0) {
+        setAlert('沒有人被投出船艙', 2.4);
+        endMeeting();
+        return;
+    }
+    var a = s.actors[id];
+    a.alive = false;
+    s.ejected.push({ name: a.name, imp: a.imp });
+    G.setStat('alive', countAlive(false) + countAlive(true));
+
+    if (a.isPlayer) {
+        s.ejectSelf = true;
+        RetroAudio.play('gameover');
+        RE.juice.flash('rgba(200,20,30,0.45)', 0.25);
+        m.step = 'eject'; m.resultT = 3.2;
+        return;
+    }
+    if (a.imp) {
+        RetroAudio.play('win');
+        RE.juice.flash('rgba(120,255,180,0.35)', 0.2);
+        addScore(800);
+    } else {
+        RetroAudio.play('gameover');
+        RE.juice.flash('rgba(200,20,30,0.3)', 0.2);
+    }
+    m.step = 'eject'; m.resultT = 3.2;
+}
+
+function endMeeting() {
+    s.meeting = null;
+    s.phase = 'play';
+    s.sabCd = rnd(20, 32);
+    s.noSightT = 5;
+    // 目擊記錄在會議上已經兌現過了，散場後歸零；
+    // 只有「鑽通風管」與「目擊殺人」這種決定性證據值得留著等下一次會議。
+    var keep = [];
+    for (var i = 0; i < s.notes.length; i++) {
+        var n = s.notes[i];
+        if (n.kind === 'vent' || n.kind === 'kill') { n.t = s.time; keep.push(n); }
+    }
+    s.notes = keep;
+    if (!checkEnd()) setAlert('會議結束，繼續任務', 1.8);
+}
+
+function updateMeeting(dt) {
+    var m = s.meeting;
+    if (!m) { s.phase = 'play'; return; }
+    m.timer -= dt;
+    s.showNotes = RE.Input.down('b');   // 會議中也能隨時翻筆記本
+
+    if (m.step === 'talk') {
+        if (RE.Input.pressed('a') || m.timer <= 24) {
+            m.step = 'accuse'; m.cur = 0; RetroAudio.play('select');
+        }
+        return;
+    }
+    if (m.step === 'accuse') {
+        var opts = accuseOptions();
+        if (RE.Input.pressed('left') || RE.Input.pressed('up')) { m.cur = (m.cur + opts.length - 1) % opts.length; RetroAudio.play('blip'); }
+        if (RE.Input.pressed('right') || RE.Input.pressed('down')) { m.cur = (m.cur + 1) % opts.length; RetroAudio.play('blip'); }
+        if (RE.Input.pressed('a') || m.timer <= 10) {
+            m.target = opts[m.cur];
+            if (m.target < 0 || !m.evList.length) { m.evIdx = m.evList.length; resolveVote(); }
+            else { m.step = 'evidence'; m.evIdx = 0; RetroAudio.play('select'); }
+        }
+        return;
+    }
+    if (m.step === 'evidence') {
+        var n = m.evList.length + 1;   // 最後一項是「不提出證據」
+        if (RE.Input.pressed('left') || RE.Input.pressed('up')) { m.evIdx = (m.evIdx + n - 1) % n; RetroAudio.play('blip'); }
+        if (RE.Input.pressed('right') || RE.Input.pressed('down')) { m.evIdx = (m.evIdx + 1) % n; RetroAudio.play('blip'); }
+        if (RE.Input.pressed('a') || m.timer <= 4) resolveVote();
+        return;
+    }
+    if (m.step === 'tally') {
+        m.resultT -= dt;
+        if (m.resultT <= 0 || RE.Input.pressed('a')) applyEjection();
+        return;
+    }
+    if (m.step === 'eject') {
+        m.resultT -= dt;
+        if (m.resultT <= 0 || RE.Input.pressed('a')) endMeeting();
+    }
+}
+
+function accuseOptions() {
+    var out = [];
+    for (var i = 1; i < s.actors.length; i++) if (s.actors[i].alive) out.push(s.actors[i].id);
+    out.push(-1);   // 跳過投票
+    return out;
+}
+
+// ======================================================================
+// 勝負
+// ======================================================================
+function checkEnd() {
+    if (s.ending) return true;
+    var impAlive = countAlive(true), crewAlive = countAlive(false);
+
+    if (!player().alive && s.deathT <= 0 && s.meeting === null) {
+        finishLevel(false, s.ejectSelf
+            ? '你被自己召開的會議丟出了船艙。指認之前，先問自己拿得出哪一條筆記。'
+            : '你在船艙裡落單了。偽裝者只需要一個沒有第三者在場的瞬間。');
+        return true;
+    }
+    if (impAlive === 0) {
+        finishLevel(true, '偽裝者全部出局。你是靠證據做到的，不是靠猜。');
+        return true;
+    }
+    if (s.tasksDone >= s.tasksTotal) {
+        finishLevel(true, '全員任務完成，船安全抵港。偽裝者殺得再快也追不上進度條。');
+        return true;
+    }
+    if (impAlive >= crewAlive) {
+        finishLevel(false, '船員人數已經不夠了。剩下的每一次投票，偽裝者都能靠人數輾過去。');
+        return true;
+    }
+    return false;
+}
+
+function finishLevel(win, body) {
+    s.ending = 1;
+    s.endWin = win;
+    s.endBody = body;
+    s.endT = 2.0;
+    s.phase = 'play';
+    s.meeting = null;
+    s.task = null;
+    if (win) {
+        RetroAudio.play('win');
+        RE.juice.flash('rgba(140,255,200,0.35)', 0.22);
+        addScore(1000 + countAlive(false) * 200);
+    } else {
+        RetroAudio.play('gameover');
+        RE.juice.slowmo(0.3, 0.9);
+    }
+}
+
+function afterLevel() {
+    s.total += s.levelScore;
+    G.setStat('score', s.total);
+    if (s.endWin) {
+        if (s.level >= LEVELS.length - 1) {
+            G.gameOver({
+                win: true, score: s.total,
+                body: '五個航次全數返航。回頭看，你每一次成功都不是因為猜對了，' +
+                      '而是因為你剛好在對的時間走進對的房間，並且把那一眼記了下來。' +
+                      '《Among Us》的設計師沒有把樂趣做完——他們只是把「你看到、別人沒看到」' +
+                      '這件事變成可能，剩下的都是玩家自己生產的。'
+            });
+            return;
+        }
+        var n = s.level + 1;
+        G.stageCard(n + 1, LEVELS[n].name, LEVELS[n].hint, function () { loadLevel(n); });
+        return;
+    }
+    G.setLives(G.lives - 1);
+    if (G.lives <= 0) {
+        G.gameOver({
+            win: false, score: s.total,
+            body: '航行中止於第 ' + (s.level + 1) + ' 個航次。' +
+                  '記住兩件事：落單就是送死，而沒有證據的指認等於幫偽裝者投票。'
+        });
+        return;
+    }
+    var i = s.level;
+    G.stageCard(i + 1, LEVELS[i].name, '再來一次。這次先找個人一起行動，並且盯緊通風管。',
+        function () { loadLevel(i); });
+}
+
+// ======================================================================
+// 主迴圈
+// ======================================================================
+function update(dt) {
+    if (!s) return;
+    P.update(dt); FT.update(dt);
+    if (s.alertT > 0) s.alertT -= dt;
+
+    if (s.ending) {
+        s.endT -= dt;
+        if (s.endT <= 0) { s.ending = 2; afterLevel(); }
+        return;
+    }
+    if (s.deathT > 0) {
+        s.deathT -= dt;
+        if (s.deathT <= 0) checkEnd();
+        return;
+    }
+    if (s.phase === 'meeting') { updateMeeting(dt); return; }
+
+    s.time += dt;
+    updatePlayer(dt);
+    updateActors(dt);
+    updateSightings(dt);
+    if (s.dark > 0) {
+        s.dark -= dt;
+        if (s.dark <= 0) { s.dark = 0; setAlert('電力自動恢復', 1.6); }
+    }
+    checkEnd();
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+var camX = 0, camY = 0;
+
+function render() {
+    if (!s) return;
+    var p = player();
+    camX = clamp(p.x - W / 2, 0, WORLD_W - W);
+    camY = clamp(p.y - H / 2, 0, WORLD_H - H);
+
+    G.beginWorld();
+    ctx.fillStyle = '#05070f';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.save();
+    ctx.translate(-Math.round(camX), -Math.round(camY));
+    drawFloor();
+    drawVents();
+    drawTaskSpots();
+    drawButton();
+    drawBodies();
+    drawActors();
+    P.draw(ctx);
+    FT.draw(ctx);
+    ctx.restore();
+
+    drawFog();
+    G.endWorld();
+
+    drawHUD();
+    if (s.phase === 'task') drawTaskPanel();
+    if (s.phase === 'meeting') drawMeeting();
+    if (s.showNotes && (s.phase === 'play' || s.phase === 'meeting')) drawNotebook();
+    if (s.ending) drawEndBanner();
+    G.postFX({ scanAlpha: 0.06, vignetteStrength: 0.42 });
+}
+
+function drawFloor() {
+    // 520px 畫布在手機約縮至 0.66 倍；房名與角色標籤若維持 10～11px 會降到 7px 左右，玩家無法把觀察證據和房間位置連起來。
+    var x0 = Math.max(0, Math.floor(camX / TILE) - 1), x1 = Math.min(MAP_W - 1, Math.ceil((camX + W) / TILE));
+    var y0 = Math.max(0, Math.floor(camY / TILE) - 1), y1 = Math.min(MAP_H - 1, Math.ceil((camY + H) / TILE));
+    var tx, ty;
+    for (ty = y0; ty <= y1; ty++) {
+        for (tx = x0; tx <= x1; tx++) {
+            var i = ty * MAP_W + tx;
+            if (grid[i] !== 1) continue;
+            var r = roomIdx[i];
+            ctx.fillStyle = r < 0 ? '#141b2c' : ROOMS[r].tint;
+            ctx.fillRect(tx * TILE, ty * TILE, TILE, TILE);
+            // 地磚接縫
+            ctx.fillStyle = 'rgba(255,255,255,0.025)';
+            ctx.fillRect(tx * TILE, ty * TILE, TILE, 1);
+        }
+    }
+    // 牆緣：只在地板與牆的交界畫一條亮線，房間輪廓就出來了
+    ctx.fillStyle = '#4a5f8c';
+    for (ty = y0; ty <= y1; ty++) {
+        for (tx = x0; tx <= x1; tx++) {
+            if (grid[ty * MAP_W + tx] !== 1) continue;
+            if (!isFloor(tx, ty - 1)) ctx.fillRect(tx * TILE, ty * TILE - 2, TILE, 3);
+            if (!isFloor(tx, ty + 1)) ctx.fillRect(tx * TILE, ty * TILE + TILE - 1, TILE, 3);
+            if (!isFloor(tx - 1, ty)) ctx.fillRect(tx * TILE - 2, ty * TILE, 3, TILE);
+            if (!isFloor(tx + 1, ty)) ctx.fillRect(tx * TILE + TILE - 1, ty * TILE, 3, TILE);
+        }
+    }
+    // 房間名（只有走進視野範圍才看得到）
+    for (var r2 = 0; r2 < ROOMS.length; r2++) {
+        var R = ROOMS[r2];
+        var cx = (R.x + R.w / 2) * TILE, cy = (R.y + 0.6) * TILE;
+        if (!canSeePt(cx, (R.y + R.h / 2) * TILE)) continue;
+        RE.Draw.text(ctx, R.name, cx, cy, { size: 14, align: 'center', color: 'rgba(255,255,255,0.35)', stroke: false });
+    }
+}
+
+function drawVents() {
+    for (var i = 0; i < s.vents.length; i++) {
+        var v = s.vents[i];
+        var x = v.x * TILE, y = v.y * TILE;
+        if (!canSeePt(x + 8, y + 8)) continue;
+        ctx.fillStyle = '#242e42';
+        RE.Draw.roundRect(ctx, x + 1, y + 3, 14, 11, 3); ctx.fill();
+        ctx.strokeStyle = '#5b6c8e'; ctx.lineWidth = 1;
+        for (var k = 0; k < 3; k++) {
+            ctx.beginPath();
+            ctx.moveTo(x + 3, y + 5.5 + k * 3);
+            ctx.lineTo(x + 13, y + 5.5 + k * 3);
+            ctx.stroke();
+        }
+        if (v.t > 0) {
+            v.t -= 1 / 60;
+            ctx.globalAlpha = clamp(v.t * 2, 0, 1);
+            ctx.fillStyle = '#9fb6e0';
+            ctx.fillRect(x + 1, y + 3, 14, 11);
+            ctx.globalAlpha = 1;
+        }
+    }
+}
+
+function drawTaskSpots() {
+    for (var i = 0; i < TASK_SPOTS.length; i++) {
+        var sp = TASK_SPOTS[i];
+        var c = tileCenter(sp.x, sp.y);
+        if (!canSeePt(c.x, c.y)) continue;
+        var mine = -1;
+        for (var k = 0; k < s.myTasks.length; k++) if (s.myTasks[k].spot === i) mine = k;
+        var pending = mine >= 0 && !s.myTasks[mine].done;
+
+        ctx.fillStyle = '#0f1524';
+        RE.Draw.roundRect(ctx, c.x - 7, c.y - 8, 14, 14, 3); ctx.fill();
+        ctx.fillStyle = pending ? '#ffd166' : (mine >= 0 ? '#3f6b52' : '#37415c');
+        ctx.fillRect(c.x - 4, c.y - 5, 8, 6);
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.fillRect(c.x - 4, c.y - 5, 8, 2);
+
+        if (pending) {
+            var b = Math.sin(s.time * 5) * 2;
+            ctx.globalAlpha = 0.9;
+            ctx.fillStyle = '#ffd166';
+            ctx.beginPath();
+            ctx.moveTo(c.x, c.y - 14 + b);
+            ctx.lineTo(c.x - 5, c.y - 21 + b);
+            ctx.lineTo(c.x + 5, c.y - 21 + b);
+            ctx.closePath(); ctx.fill();
+            ctx.globalAlpha = 1;
+        }
+    }
+    if (s.dark > 0) {
+        var f = tileCenter(FIX_TILE.x, FIX_TILE.y);
+        if (canSeePt(f.x, f.y)) {
+            ctx.strokeStyle = '#ff6b6b'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(f.x, f.y, 10 + Math.sin(s.time * 8) * 2, 0, Math.PI * 2); ctx.stroke();
+        }
+    }
+}
+
+function drawButton() {
+    var c = tileCenter(BUTTON_TILE.x, BUTTON_TILE.y);
+    if (!canSeePt(c.x, c.y)) return;
+    ctx.fillStyle = '#2a3350';
+    RE.Draw.roundRect(ctx, c.x - 9, c.y - 7, 18, 14, 4); ctx.fill();
+    ctx.fillStyle = s.emergency > 0 ? '#e05a54' : '#5a5f6b';
+    ctx.beginPath(); ctx.arc(c.x, c.y - 1, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.beginPath(); ctx.arc(c.x - 1.5, c.y - 2.5, 1.8, 0, Math.PI * 2); ctx.fill();
+}
+
+function drawBean(x, y, color, face, walk, alpha) {
+    ctx.save();
+    ctx.globalAlpha = alpha === undefined ? 1 : alpha;
+    ctx.translate(x, y);
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath(); ctx.ellipse(0, 9, 7, 3, 0, 0, Math.PI * 2); ctx.fill();
+    var bob = walk > 0 ? Math.sin(walk * 11) * 1.3 : 0;
+    ctx.translate(0, bob);
+    // 背包
+    ctx.fillStyle = shade(color, -0.16);
+    RE.Draw.roundRect(ctx, face > 0 ? -9 : 4, -3, 5, 9, 2); ctx.fill();
+    // 身體
+    ctx.fillStyle = color;
+    RE.Draw.roundRect(ctx, -6, -8, 12, 15, 5); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 1.2; ctx.stroke();
+    // 腿
+    ctx.fillStyle = shade(color, -0.12);
+    var sw = walk > 0 ? Math.sin(walk * 11) * 1.6 : 0;
+    ctx.fillRect(-4.5, 6 + sw, 3.5, 3);
+    ctx.fillRect(1, 6 - sw, 3.5, 3);
+    // 面罩
+    ctx.fillStyle = '#bfe6ff';
+    RE.Draw.roundRect(ctx, face > 0 ? -1.5 : -5.5, -5.5, 7, 5, 2.4); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fillRect(face > 0 ? -0.5 : -4.5, -4.8, 2, 1.6);
+    ctx.restore();
+}
+
+function drawActors() {
+    var p = player();
+    for (var i = 1; i < s.actors.length; i++) {
+        var a = s.actors[i];
+        if (!a.alive) continue;
+        if (!canSeePt(a.x, a.y)) continue;
+        drawBean(a.x, a.y, a.color, a.face, a.walk);
+        if (dist(p.x, p.y, a.x, a.y) < 110) {
+            RE.Draw.text(ctx, a.name, a.x, a.y - 20, { size: 14, align: 'center', color: '#e8eef8' });
+        }
+    }
+    if (p.alive) {
+        drawBean(p.x, p.y, PLAYER_COLOR, p.face, p.walk);
+        ctx.strokeStyle = 'rgba(255,240,180,0.5)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(p.x, p.y, 13, 0, Math.PI * 2); ctx.stroke();
+    }
+}
+
+function drawBodies() {
+    for (var i = 0; i < s.bodies.length; i++) {
+        var b = s.bodies[i];
+        if (!canSeePt(b.x, b.y)) continue;
+        var a = s.actors[b.who];
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        ctx.fillStyle = 'rgba(150,20,26,0.55)';
+        ctx.beginPath(); ctx.ellipse(0, 6, 12, 5, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.rotate(Math.PI / 2);
+        ctx.fillStyle = a.color;
+        RE.Draw.roundRect(ctx, -5, -6, 10, 12, 4); ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 1.2; ctx.stroke();
+        ctx.fillStyle = '#dfe6f2';
+        ctx.fillRect(-2, -12, 4, 6);
+        ctx.restore();
+        RE.Draw.text(ctx, '屍體', b.x, b.y - 20, { size: 14, align: 'center', color: '#ff8f8f' });
+    }
+}
+
+function drawFog() {
+    var p = player();
+    var px = p.x - camX, py = p.y - camY;
+    var r = visionRadius();
+    var g = ctx.createRadialGradient(px, py, r * 0.45, px, py, r * 1.12);
+    g.addColorStop(0, 'rgba(4,6,14,0)');
+    g.addColorStop(0.62, 'rgba(4,6,14,0.45)');
+    g.addColorStop(1, 'rgba(4,6,14,1)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+}
+
+// ---------- HUD ----------
+function drawHUD() {
+    /* 520px 畫布在 390px 手機視窗會縮到約 0.66 倍；原本 10～13px 的
+       任務、房間與互動提示會落到 6.6～8.6px。這些是玩家判斷下一步
+       必須讀到的資訊，只放大 HUD，不改地圖比例與偵查節奏。 */
+    // 任務條
+    var pct = Math.min(1, s.tasksDone / s.tasksTotal);
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    RE.Draw.roundRect(ctx, 8, 8, 190, 14, 4); ctx.fill();
+    ctx.fillStyle = '#2ecc8f';
+    RE.Draw.roundRect(ctx, 10, 10, Math.max(0, 186 * pct), 10, 3); ctx.fill();
+    RE.Draw.text(ctx, '任務進度 ' + Math.round(pct * 100) + '%', 12, 10, { size: 14, color: '#eafff4' });
+
+    // 迷你地圖
+    drawMinimap(W - 122, 8, 0.155);
+
+    // 房間名與提示
+    var p = player();
+    RE.Draw.text(ctx, roomName(roomKeyAt(p.x, p.y)), 10, H - 22, { size: 15, color: '#cfe0ff' });
+    if (s.emergency > 0) {
+        RE.Draw.text(ctx, '緊急按鈕 ×' + s.emergency, 10, H - 40, { size: 14, color: '#ffb3ae' });
+    }
+
+    if (s.dark > 0) {
+        ctx.strokeStyle = 'rgba(255,60,60,' + (0.35 + Math.sin(s.time * 8) * 0.2) + ')';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(2, 2, W - 4, H - 4);
+        RE.Draw.text(ctx, '電力中斷 ' + Math.ceil(s.dark) + 's', W / 2, 26, { size: 14, align: 'center', color: '#ff9d9d' });
+        if (s.fixHold > 0) {
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            RE.Draw.roundRect(ctx, W / 2 - 40, 44, 80, 8, 3); ctx.fill();
+            ctx.fillStyle = '#7fd3ff';
+            RE.Draw.roundRect(ctx, W / 2 - 38, 46, 76 * clamp(s.fixHold / 1.0, 0, 1), 4, 2); ctx.fill();
+        }
+    }
+
+    var it = (s.phase === 'play' && !s.showNotes) ? nearestInteract() : null;
+    if (it) {
+        var label = it.kind === 'body' ? 'A：回報屍體'
+            : it.kind === 'button' ? 'A：召開緊急會議'
+            : it.kind === 'fix' ? '按住 A：修復電力'
+            : 'A：' + TASK_SPOTS[s.myTasks[it.idx].spot].name;
+        ctx.fillStyle = 'rgba(8,12,24,0.85)';
+        RE.Draw.roundRect(ctx, W / 2 - 84, H - 46, 168, 24, 6); ctx.fill();
+        RE.Draw.text(ctx, label, W / 2, H - 39, { size: 14, align: 'center', color: '#ffe9a8' });
+    } else if (s.phase === 'play' && !s.showNotes) {
+        RE.Draw.text(ctx, '按住 B 看筆記本', W - 10, H - 20, { size: 14, align: 'right', color: 'rgba(255,255,255,0.4)' });
+    }
+
+    if (s.alertT > 0) {
+        var al = clamp(s.alertT, 0, 1);
+        ctx.globalAlpha = al;
+        ctx.fillStyle = 'rgba(8,12,24,0.85)';
+        var tw = s.alert.length * 13 + 28;
+        RE.Draw.roundRect(ctx, W / 2 - tw / 2, 44, tw, 26, 6); ctx.fill();
+        RE.Draw.text(ctx, s.alert, W / 2, 51, { size: 14, align: 'center', color: '#ffd166' });
+        ctx.globalAlpha = 1;
+    }
+}
+
+function drawMinimap(ox, oy, k) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(4,8,18,0.72)';
+    RE.Draw.roundRect(ctx, ox - 4, oy - 4, WORLD_W * k + 8, WORLD_H * k + 8, 5); ctx.fill();
+    var i;
+    ctx.fillStyle = 'rgba(90,110,150,0.35)';
+    for (i = 0; i < CORRIDORS.length; i++) {
+        var c = CORRIDORS[i];
+        ctx.fillRect(ox + c.x * TILE * k, oy + c.y * TILE * k, c.w * TILE * k, c.h * TILE * k);
+    }
+    for (i = 0; i < ROOMS.length; i++) {
+        var R = ROOMS[i];
+        ctx.fillStyle = 'rgba(120,145,195,0.34)';
+        ctx.fillRect(ox + R.x * TILE * k, oy + R.y * TILE * k, R.w * TILE * k, R.h * TILE * k);
+    }
+    // 我還沒做的任務
+    for (i = 0; i < s.myTasks.length; i++) {
+        if (s.myTasks[i].done) continue;
+        var sp = TASK_SPOTS[s.myTasks[i].spot];
+        ctx.fillStyle = '#ffd166';
+        ctx.fillRect(ox + sp.x * TILE * k - 1, oy + sp.y * TILE * k - 1, 3, 3);
+    }
+    var p = player();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(ox + p.x * k, oy + p.y * k, 2.4, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+}
+
+// ---------- 筆記本 ----------
+function noteText(n) {
+    var a = s.actors[n.who];
+    var who = a ? a.name : '？';
+    var ago = Math.max(0, Math.round(s.time - n.t));
+    var head = ago + ' 秒前　';
+    if (n.kind === 'saw') return head + '在' + roomName(n.room) + '看到 ' + who;
+    if (n.kind === 'vent') return head + who + ' 從' + roomName(n.room) + '的通風管鑽出來';
+    if (n.kind === 'kill') return head + who + ' 動手殺人';
+    if (n.kind === 'body') return head + '在' + roomName(n.room) + '發現 ' + who + ' 的屍體';
+    return head + '？';
+}
+
+function drawNotebook() {
+    // 筆記是會議的證據來源；與畫布上的 HUD 同樣以 14px 作為手機縮放後的最低資訊層級。
+    ctx.fillStyle = 'rgba(6,10,20,0.9)';
+    RE.Draw.roundRect(ctx, 24, 24, W - 48, H - 48, 10); ctx.fill();
+    ctx.strokeStyle = '#3d517c'; ctx.lineWidth = 2; ctx.stroke();
+    RE.Draw.text(ctx, '筆 記 本', W / 2, 36, { size: 16, align: 'center', color: '#ffd166' });
+    RE.Draw.text(ctx, '只記錄你「親眼看到」的事。會議裡只有這些能當證據。',
+        W / 2, 58, { size: 14, align: 'center', color: 'rgba(255,255,255,0.55)' });
+    if (!s.notes.length) {
+        RE.Draw.text(ctx, '還沒有任何觀察。多走幾個房間。', W / 2, H / 2, { size: 14, align: 'center', color: '#9fb0cc' });
+        return;
+    }
+    var start = Math.max(0, s.notes.length - 13);
+    for (var i = start; i < s.notes.length; i++) {
+        var n = s.notes[i];
+        var y = 78 + (i - start) * 19;
+        var a = s.actors[n.who];
+        if (a) { ctx.fillStyle = a.color; ctx.fillRect(38, y + 2, 8, 8); }
+        var col = (n.kind === 'vent' || n.kind === 'kill') ? '#ff9d5c' : (n.kind === 'body' ? '#ff8f8f' : '#dbe6f7');
+        RE.Draw.text(ctx, noteText(n), 52, y, { size: 14, color: col, stroke: false });
+    }
+}
+
+// ---------- 任務面板 ----------
+function drawTaskPanel() {
+    var t = s.task;
+    if (!t) return;
+    var bx = 70, by = 60, bw = W - 140, bh = H - 130;
+    ctx.fillStyle = 'rgba(6,12,24,0.94)';
+    RE.Draw.roundRect(ctx, bx, by, bw, bh, 10); ctx.fill();
+    ctx.strokeStyle = t.err > 0 ? '#e05a54' : '#4d7fb8'; ctx.lineWidth = 2; ctx.stroke();
+    RE.Draw.text(ctx, t.name, bx + bw / 2, by + 10, { size: 15, align: 'center', color: '#ffd166' });
+
+    if (t.type === 'wire') {
+        RE.Draw.text(ctx, '↑↓ 選擇　A 接線　B 離開', bx + bw / 2, by + bh - 20,
+            { size: 14, align: 'center', color: 'rgba(255,255,255,0.5)' });
+        var lx = bx + 40, rx = bx + bw - 40, i;
+        for (i = 0; i < 4; i++) {
+            var y = by + 48 + i * 30;
+            ctx.fillStyle = t.left[i];
+            RE.Draw.roundRect(ctx, lx - 14, y - 8, 22, 16, 4); ctx.fill();
+            ctx.fillStyle = t.right[i];
+            RE.Draw.roundRect(ctx, rx - 8, y - 8, 22, 16, 4); ctx.fill();
+            if (t.linked[i] !== false) {
+                ctx.strokeStyle = t.left[i]; ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(lx + 8, y);
+                ctx.lineTo(rx - 8, by + 48 + t.linked[i] * 30);
+                ctx.stroke();
+            }
+        }
+        var cy = by + 48 + t.cur * 30;
+        ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 2;
+        if (t.side === 0) ctx.strokeRect(lx - 17, cy - 11, 28, 22);
+        else ctx.strokeRect(rx - 11, cy - 11, 28, 22);
+        if (t.grab >= 0) {
+            ctx.strokeStyle = t.left[t.grab]; ctx.lineWidth = 2;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(lx + 8, by + 48 + t.grab * 30);
+            ctx.lineTo(rx - 8, cy);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+    } else if (t.type === 'calib') {
+        RE.Draw.text(ctx, '指針進入綠色區域時按 A，連續三次', bx + bw / 2, by + 36,
+            { size: 14, align: 'center', color: '#cfe0ff' });
+        var tx = bx + 40, tw = bw - 80, ty = by + 82;
+        ctx.fillStyle = '#1a2338';
+        RE.Draw.roundRect(ctx, tx, ty, tw, 26, 5); ctx.fill();
+        ctx.fillStyle = 'rgba(60,220,150,0.65)';
+        ctx.fillRect(tx + tw * (t.zc - t.zw), ty, tw * t.zw * 2, 26);
+        ctx.fillStyle = '#ffd166';
+        ctx.fillRect(tx + tw * t.pos - 2, ty - 5, 4, 36);
+        for (var k = 0; k < 3; k++) {
+            ctx.fillStyle = k < t.hits ? '#2ecc8f' : '#39435c';
+            ctx.beginPath(); ctx.arc(bx + bw / 2 - 22 + k * 22, ty + 62, 7, 0, Math.PI * 2); ctx.fill();
+        }
+        RE.Draw.text(ctx, 'A 確認　B 離開', bx + bw / 2, by + bh - 20,
+            { size: 14, align: 'center', color: 'rgba(255,255,255,0.5)' });
+    } else {
+        RE.Draw.text(ctx, '依序按下這串方向鍵', bx + bw / 2, by + 36,
+            { size: 14, align: 'center', color: '#cfe0ff' });
+        var ARROW = { up: '▲', down: '▼', left: '◀', right: '▶' };
+        for (var j = 0; j < t.seq.length; j++) {
+            var ax2 = bx + bw / 2 - 66 + j * 44, ay2 = by + 80;
+            ctx.fillStyle = j < t.idx ? '#2ecc8f' : (j === t.idx ? '#3d517c' : '#1a2338');
+            RE.Draw.roundRect(ctx, ax2 - 16, ay2 - 16, 32, 32, 6); ctx.fill();
+            RE.Draw.text(ctx, ARROW[t.seq[j]], ax2, ay2 - 9, { size: 16, align: 'center', color: '#fff' });
+        }
+        RE.Draw.text(ctx, '按錯會從頭開始　B 離開', bx + bw / 2, by + bh - 20,
+            { size: 14, align: 'center', color: 'rgba(255,255,255,0.5)' });
+    }
+
+    // 警告與離開提示原本只差 18px；放大到手機可讀字級後會互撞，拉開行距仍保留任務的風險提醒。
+    RE.Draw.text(ctx, '⚠ 做任務時世界仍在運轉，你毫無防備', bx + bw / 2, by + bh - 52,
+        { size: 14, align: 'center', color: 'rgba(255,140,140,0.75)' });
+}
+
+// ---------- 會議 ----------
+function drawMeeting() {
+    var m = s.meeting;
+    if (!m) return;
+    ctx.fillStyle = 'rgba(5,9,18,0.95)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = '#4d7fb8'; ctx.lineWidth = 2;
+    ctx.strokeRect(8, 8, W - 16, H - 16);
+
+    RE.Draw.text(ctx, '緊 急 會 議', W / 2, 18, { size: 18, align: 'center', color: '#ffd166' });
+    var sub = m.body
+        ? (m.reporter.isPlayer ? '你' : m.reporter.name) + ' 在' + roomName(m.body.room) +
+          '發現了 ' + s.actors[m.body.who].name + ' 的屍體'
+        : (m.reporter.isPlayer ? '你' : m.reporter.name) + ' 按下了緊急按鈕';
+    RE.Draw.text(ctx, sub, W / 2, 42, { size: 14, align: 'center', color: '#a8bdd9', stroke: false });
+    RE.Draw.text(ctx, Math.max(0, Math.ceil(m.timer)) + 's', W - 24, 20, { size: 14, align: 'right', color: '#8fa3c8' });
+
+    if (m.step === 'talk') drawTalk(m);
+    else if (m.step === 'accuse') drawAccuse(m);
+    else if (m.step === 'evidence') drawEvidence(m);
+    else if (m.step === 'tally') drawTally(m);
+    else drawEject(m);
+}
+
+function drawTalk(m) {
+    var y = 66, i;
+    RE.Draw.text(ctx, '每個人都說了自己剛才在哪。對照你的筆記本。', W / 2, y,
+        { size: 14, align: 'center', color: 'rgba(255,255,255,0.5)', stroke: false });
+    y += 20;
+    for (i = 1; i < s.actors.length; i++) {
+        var a = s.actors[i];
+        if (!a.alive) continue;
+        var c = s.claims[a.id];
+        ctx.fillStyle = a.color;
+        RE.Draw.roundRect(ctx, 30, y + 1, 10, 10, 2); ctx.fill();
+        var line = a.name + '：「我剛才在' + roomName(c.room) + '」';
+        if (c.wit >= 0 && s.actors[c.wit]) line += '　（和 ' + s.actors[c.wit].name + ' 一起）';
+        RE.Draw.text(ctx, line, 48, y, { size: 14, color: '#e6eefc', stroke: false });
+        y += 21;
+    }
+    RE.Draw.text(ctx, '按 A 進入投票', W / 2, H - 30, { size: 14, align: 'center', color: '#ffd166' });
+}
+
+// 指認畫面必須同時攤開「他說的」與「你看到的」。
+// 第一版只列名字，玩家得把上一頁的九句證詞背下來——
+// 那考的是記憶力，不是推理。線索要看得見，判斷才是玩家自己的。
+function drawAccuse(m) {
+    RE.Draw.text(ctx, '要指認誰？　←→ 選擇　A 確認', W / 2, 62,
+        { size: 14, align: 'center', color: '#cfe0ff' });
+    var opts = accuseOptions();
+    var top = 84, rowH = Math.min(24, (H - 130) / Math.max(1, opts.length));
+    for (var i = 0; i < opts.length; i++) {
+        var id = opts[i];
+        var y = top + i * rowH;
+        var sel = i === m.cur;
+        ctx.fillStyle = sel ? 'rgba(255,209,102,0.16)' : 'rgba(255,255,255,0.035)';
+        RE.Draw.roundRect(ctx, 24, y, W - 48, rowH - 3, 4); ctx.fill();
+        if (sel) { ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 1.5; ctx.stroke(); }
+        if (id < 0) {
+            RE.Draw.text(ctx, '跳過投票（沒有把握就別亂投）', 36, y + 4,
+                { size: 14, color: sel ? '#fff3c4' : '#9fb0cc', stroke: false });
+            continue;
+        }
+        var a = s.actors[id];
+        ctx.fillStyle = a.color;
+        RE.Draw.roundRect(ctx, 32, y + 5, 9, 9, 2); ctx.fill();
+        RE.Draw.text(ctx, a.name, 46, y + 4, { size: 14, color: '#e6eefc', stroke: false });
+        var c = s.claims[id];
+        var say = '說：' + roomName(c.room);
+        if (c.wit >= 0 && s.actors[c.wit]) say += '＋' + s.actors[c.wit].name;
+        RE.Draw.text(ctx, say, 96, y + 4, { size: 14, color: '#b9c9e4', stroke: false });
+        var n = latestSaw(id, 25);
+        if (n) {
+            RE.Draw.text(ctx, '你看到：' + roomName(n.room) + ' ' + Math.round(s.meetingTime - n.t) + 's前',
+                232, y + 4, { size: 14, color: '#ffd8a8', stroke: false });
+        } else {
+            RE.Draw.text(ctx, '你沒看到他', 232, y + 4, { size: 14, color: 'rgba(255,255,255,0.3)', stroke: false });
+        }
+    }
+    RE.Draw.text(ctx, '沒有證據就指認，其他船員只會亂投票——包括投你。', W / 2, H - 30,
+        { size: 14, align: 'center', color: 'rgba(255,150,150,0.8)', stroke: false });
+}
+
+function drawEvidence(m) {
+    var t = s.actors[m.target];
+    var tc = s.claims[m.target];
+    // 把被指認者的說法一起放在標題上。選證據的當下最需要比對的就是這一句，
+    // 讓玩家回頭去記上一頁的內容是沒有必要的認知負擔。
+    RE.Draw.text(ctx, '你指認 ' + t.name + '——他說他在' + roomName(tc.room) + '。要出示哪一條筆記？',
+        W / 2, 68, { size: 14, align: 'center', color: '#cfe0ff' });
+    var n = m.evList.length + 1;
+    var start = Math.max(0, Math.min(m.evIdx - 3, n - 7));
+    var shown = 0;
+    for (var i = start; i < n && shown < 7; i++, shown++) {
+        var y = 96 + shown * 24;
+        var sel = i === m.evIdx;
+        ctx.fillStyle = sel ? 'rgba(255,209,102,0.16)' : 'rgba(255,255,255,0.04)';
+        RE.Draw.roundRect(ctx, 30, y - 4, W - 60, 22, 4); ctx.fill();
+        if (sel) { ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 1.5; ctx.stroke(); }
+        var txt = i < m.evList.length ? evidenceText(m.evList[i]) : '不提出證據（純粹靠感覺）';
+        RE.Draw.text(ctx, txt, 42, y, { size: 14, color: sel ? '#fff3c4' : '#c3d2e8', stroke: false });
+    }
+    RE.Draw.text(ctx, '←→ 選擇　A 提出', W / 2, H - 30, { size: 14, align: 'center', color: '#ffd166' });
+}
+
+function drawTally(m) {
+    RE.Draw.text(ctx, m.valid ? '證據成立，船員被說服了' : '沒有有效證據，大家各投各的',
+        W / 2, 70, { size: 14, align: 'center', color: m.valid ? '#7fe6b0' : '#ff9d9d' });
+    var y = 100;
+    var order = [];
+    for (var k in m.votes) order.push(k);
+    order.sort(function (a, b) { return m.votes[b] - m.votes[a]; });
+    for (var i = 0; i < order.length && i < 7; i++) {
+        var key = order[i];
+        var label = key === 'skip' ? '跳過' : (s.actors[parseInt(key, 10)] ? s.actors[parseInt(key, 10)].name : '?');
+        var cnt = m.votes[key];
+        ctx.fillStyle = key === 'skip' ? '#5a6480' : (s.actors[parseInt(key, 10)] ? s.actors[parseInt(key, 10)].color : '#888');
+        RE.Draw.roundRect(ctx, 60, y, Math.max(10, cnt * 26), 16, 4); ctx.fill();
+        RE.Draw.text(ctx, label + '　' + cnt + ' 票', 64 + Math.max(10, cnt * 26) + 8, y + 2,
+            { size: 14, color: '#e6eefc', stroke: false });
+        y += 24;
+    }
+    RE.Draw.text(ctx, '按 A 繼續', W / 2, H - 30, { size: 14, align: 'center', color: 'rgba(255,255,255,0.5)' });
+}
+
+function drawEject(m) {
+    var id = m.ejected;
+    if (id < 0) {
+        RE.Draw.text(ctx, '票數相同，沒有人被丟出船艙', W / 2, H / 2 - 10,
+            { size: 15, align: 'center', color: '#cfe0ff' });
+    } else {
+        var a = s.actors[id];
+        // 這是整場會議的結算鏡頭，角色要放大到看得清楚是誰被丟出去
+        ctx.save();
+        ctx.translate(W / 2, H / 2 - 56);
+        ctx.rotate(Math.sin(s.time * 1.6) * 0.35);
+        ctx.scale(2.6, 2.6);
+        drawBean(0, 0, a.color, 1, s.time * 2);
+        ctx.restore();
+        RE.Draw.text(ctx, (a.isPlayer ? '你' : a.name) + ' 被丟出了船艙', W / 2, H / 2 - 8,
+            { size: 16, align: 'center', color: '#e6eefc' });
+        RE.Draw.text(ctx, a.imp ? '……他確實是偽裝者。' : '……他不是偽裝者。',
+            W / 2, H / 2 + 18, { size: 14, align: 'center', color: a.imp ? '#7fe6b0' : '#ff8f8f' });
+        if (!a.imp) {
+            RE.Draw.text(ctx, '船員少了一個，偽裝者的人數優勢又近了一步。',
+                W / 2, H / 2 + 44, { size: 14, align: 'center', color: 'rgba(255,255,255,0.5)', stroke: false });
+        }
+    }
+    RE.Draw.text(ctx, '按 A 繼續', W / 2, H - 30, { size: 14, align: 'center', color: 'rgba(255,255,255,0.5)' });
+}
+
+function drawEndBanner() {
+    ctx.fillStyle = 'rgba(5,9,18,0.8)';
+    ctx.fillRect(0, H / 2 - 52, W, 104);
+    RE.Draw.text(ctx, s.endWin ? '航次完成' : '航次失敗', W / 2, H / 2 - 40,
+        { size: 22, align: 'center', color: s.endWin ? '#7fe6b0' : '#ff8f8f' });
+    RE.Draw.text(ctx, s.endBody, W / 2, H / 2 + 2,
+        { size: 14, align: 'center', color: '#dbe6f7', stroke: false });
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '走到金色終端按 A 做任務；偽裝者會趁落單下手。' +
+          '記住房間位置，會議時用筆記找出對不上證詞的人。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

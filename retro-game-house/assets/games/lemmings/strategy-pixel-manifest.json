@@ -1,0 +1,169 @@
+{
+  "version": 1,
+  "kind": "game-art-atlas",
+  "game": "lemmings",
+  "source": "art-production/batch-06/lemmings/source/lemmings-strategy-pixel-atlas-v001-imagegen.png",
+  "sourceSha256": "e9435e55003827777171277c0862541e2da530f7f322948e7c7309e5b0c48965",
+  "postprocess": "4x4 equal-cell slice; source alpha; aspect-fit resize; no drawing or recolor",
+  "alphaMode": "source-alpha",
+  "atlas": "strategy-pixel-atlas.png",
+  "atlasSha256": "5b94f4aca067b8d861007b4af0e830766a4c033069088c8559b66c32dcee34e9",
+  "cellWidth": 128,
+  "cellHeight": 128,
+  "columns": 4,
+  "rows": 4,
+  "assets": {
+    "worker_walk": {
+      "index": 0,
+      "row": 0,
+      "column": 0,
+      "x": 0,
+      "y": 0,
+      "w": 128,
+      "h": 128
+    },
+    "worker_fall": {
+      "index": 1,
+      "row": 0,
+      "column": 1,
+      "x": 128,
+      "y": 0,
+      "w": 128,
+      "h": 128
+    },
+    "worker_splat": {
+      "index": 2,
+      "row": 0,
+      "column": 2,
+      "x": 256,
+      "y": 0,
+      "w": 128,
+      "h": 128
+    },
+    "worker_saved": {
+      "index": 3,
+      "row": 0,
+      "column": 3,
+      "x": 384,
+      "y": 0,
+      "w": 128,
+      "h": 128
+    },
+    "worker_dig": {
+      "index": 4,
+      "row": 1,
+      "column": 0,
+      "x": 0,
+      "y": 128,
+      "w": 128,
+      "h": 128
+    },
+    "worker_bash": {
+      "index": 5,
+      "row": 1,
+      "column": 1,
+      "x": 128,
+      "y": 128,
+      "w": 128,
+      "h": 128
+    },
+    "worker_build": {
+      "index": 6,
+      "row": 1,
+      "column": 2,
+      "x": 256,
+      "y": 128,
+      "w": 128,
+      "h": 128
+    },
+    "worker_block": {
+      "index": 7,
+      "row": 1,
+      "column": 3,
+      "x": 384,
+      "y": 128,
+      "w": 128,
+      "h": 128
+    },
+    "worker_climb": {
+      "index": 8,
+      "row": 2,
+      "column": 0,
+      "x": 0,
+      "y": 256,
+      "w": 128,
+      "h": 128
+    },
+    "worker_float": {
+      "index": 9,
+      "row": 2,
+      "column": 1,
+      "x": 128,
+      "y": 256,
+      "w": 128,
+      "h": 128
+    },
+    "entrance_hatch": {
+      "index": 10,
+      "row": 2,
+      "column": 2,
+      "x": 256,
+      "y": 256,
+      "w": 128,
+      "h": 128
+    },
+    "rescue_exit": {
+      "index": 11,
+      "row": 2,
+      "column": 3,
+      "x": 384,
+      "y": 256,
+      "w": 128,
+      "h": 128
+    },
+    "earth_tile": {
+      "index": 12,
+      "row": 3,
+      "column": 0,
+      "x": 0,
+      "y": 384,
+      "w": 128,
+      "h": 128
+    },
+    "moss_top_tile": {
+      "index": 13,
+      "row": 3,
+      "column": 1,
+      "x": 128,
+      "y": 384,
+      "w": 128,
+      "h": 128
+    },
+    "bridge_brick": {
+      "index": 14,
+      "row": 3,
+      "column": 2,
+      "x": 256,
+      "y": 384,
+      "w": 128,
+      "h": 128
+    },
+    "assignment_ring": {
+      "index": 15,
+      "row": 3,
+      "column": 3,
+      "x": 384,
+      "y": 384,
+      "w": 128,
+      "h": 128
+    }
+  },
+  "qa": {
+    "assetCount": 16,
+    "edgePixels": 0,
+    "emptyCells": 0,
+    "minOccupiedPixels": 3686,
+    "maxOccupiedPixels": 11942,
+    "sourceHadTransparency": true
+  }
+}

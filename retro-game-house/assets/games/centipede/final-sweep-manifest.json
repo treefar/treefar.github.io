@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "kind": "runtime-integrated-art-candidate",
+  "status": "final-gate-pending",
+  "countedInLedger": false,
+  "game": "centipede",
+  "set": "set-03-arcade-pixel-b",
+  "tool": "Codex built-in ImageGen",
+  "model": "ImageGen（服務端版本未揭露）",
+  "generatedAt": "2026-08-24",
+  "prompt": "art-production/final-sweep/set-03-arcade-pixel-b/prompt-v002.md",
+  "source": "art-production/final-sweep/set-03-arcade-pixel-b/source/atlas-v002-imagegen.png",
+  "sourceSha256": "952158b8331197e35674514a95c496df7c538629c54bb5aaae36507d4537d88a",
+  "postprocess": "模型 alpha 保留、連通物件裁切、等比例縮放、透明留白與圖集排版；未補畫內容。Set 05 依固定格裁切保留模型背景，實際呈現以圓角裁切避免方形貼紙感。",
+  "atlas": "final-sweep-atlas.png",
+  "atlasSha256": "991ad6f74c27a31cf4327e07333b22a585dc27b84c33faefcf0bb40d734f0335",
+  "cellWidth": 128,
+  "cellHeight": 128,
+  "assets": {
+    "crawler_walk": {
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "節肢動畫"
+    },
+    "crawler_attack": {
+      "index": 1,
+      "x": 128,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "蘑菇狀態"
+    },
+    "fungus_damaged": {
+      "index": 2,
+      "x": 256,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "射擊特效"
+    },
+    "needle_shot": {
+      "index": 3,
+      "x": 384,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "森林／機台背景"
+    },
+    "forest_vignette": {
+      "index": 4,
+      "x": 0,
+      "y": 128,
+      "w": 128,
+      "h": 128,
+      "label": "結算插圖"
+    }
+  },
+  "runtimePresentation": "RetroShell 開場的美術圖譜層；正常流程可見，不介入遊戲亂數、碰撞或更新。",
+  "qa": {
+    "assetCount": 5,
+    "edgePixels": 0,
+    "emptyCells": 0,
+    "humanFinalGate": false
+  }
+}

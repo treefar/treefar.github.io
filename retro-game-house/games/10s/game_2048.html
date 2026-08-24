@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 2048 魔方</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   2048 魔方 — 致敬 2048 (Gabriele Cirulli, 2014)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. 原作是一個週末做出來的開源作品，規則只有一句：
+      「同數字相撞會合併」。本作完整重現其滑動與合併規則
+      （含「一次滑動中同一格不能合併兩次」這個關鍵細節）。
+   2. 加上滑動與合併的補間動畫、合併時的彈跳與粒子——
+      原作的手感有很大一部分來自 CSS transition，這裡用引擎的補間重現。
+   3. 里程碑系統：達成 256／512／1024／2048 各有一次階段性慶祝，
+      讓長局有階段感。達到 2048 後可選擇繼續挑戰更高。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'game_2048',
+    title: '2048 魔方',
+    tagline: '一個週末做出來的開源作品，規則只有一句話',
+    original: '2048 (Gabriele Cirulli, 2014)',
+    decade: '10s', year: 2014, platform: '瀏覽器', genre: '數字益智',
+    developer: 'Gabriele Cirulli', bgm: '10s',
+    width: 420, height: 500,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'best', label: 'BEST' },
+        { key: 'max', label: '最大方塊', init: 2 },
+        { key: 'moves', label: '步數', init: 0 }
+    ],
+    touch: 'dpad', maxScale: 2,
+    controls: [
+        { keys: ['↑', '↓', '←', '→'], desc: '往該方向推所有方塊' },
+        { keys: ['滑動'], desc: '手機上直接滑動畫面' },
+        { keys: ['U'], desc: '悔一步（每局限三次）' }
+    ],
+    howto: '往任一方向滑動，所有方塊會朝該方向靠攏。' +
+           '<strong>相同數字相撞會合併成兩倍</strong>。每次移動後會隨機出現一個新方塊。' +
+           '目標是做出 2048。注意：<strong>一次滑動中，同一個方塊不能合併兩次</strong>。',
+    lesson: {
+        verb: '滑動整個盤面、把相同數字合併，同時維持角落的大數字、單調排列與足夠空格。',
+        innovation: '把合併、隨機生成與空間管理壓進 4×4 網格；每一步都立即有回饋，卻會消耗下一步的可能性，讓「保持秩序」比「追求眼前分數」更重要。',
+        mission: '先把最大數字固定在一個角落，再完成 128、512 與 2048 三個里程碑；每次卡死前記錄剩餘空格與最後一次破壞單調性的滑動，說明它為何讓後續無法合併。',
+        evolution: '《Threes!》先建立不同數字合併的節奏；《2048》把規則簡化並開源到瀏覽器；《Suika Game》再把同階合併放進物理容器，將網格秩序轉成碰撞與落點管理。',
+        reflection: '如果每次滑動不會生成新方塊，或允許隨時無限悔棋，盤面還會迫使玩家規劃未來嗎？'
+    },
+    design: '《2048》解決了「簡單滑動如何產生長期規劃」的問題。每次滑動都同時移動全盤、合併同值方塊並在空格生成新數字；4×4 的小空間讓玩家不能只追眼前合併，而要維持角落、單調性與空格。這種把未來可能性當資源的設計，使操作看似比《Threes!》更少，卻能形成更清楚的策略語言；後來《Suika Game》延續這個核心，把同階合併從網格秩序推向物理落點與碰撞管理。玩家因此能在一局內觀察「保留空間」如何比「立刻得分」更有價值，這正是本作適合拿來教策略思考的地方。',
+    history: 'Gabriele Cirulli 的原始 GitHub 倉庫與遊戲頁記錄，《2048》在 2014 年以週末製作的開源網頁遊戲形式出現，直接說明它基於 Veewo Studio 的《1024》、參考 Saming 的 2048，並概念上接近 Asher Vollmer 的《Threes!》。它的歷史價值不只在爆紅，而在於原始碼、規則與衍生版本都能被玩家與開發者直接閱讀、修改與再發佈。',
+    sources: [
+        { label: 'Gabriele Cirulli：原始 2048 遊戲頁', url: 'https://gabrielecirulli.github.io/2048/' },
+        { label: 'GitHub：2048 原始碼與作者說明', url: 'https://github.com/gabrielecirulli/2048' },
+        { label: '2048 官方 About：開發背景與來源', url: 'https://play2048.co/about' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(400);
+var FT = new RE.FloatText();
+
+var N = 4;
+var CELL = 88, GAP = 10;
+var BOARD = N * CELL + (N + 1) * GAP;
+var OX = (W - BOARD) / 2, OY = 74;
+
+var COLORS = {
+    2:    ['#3a4d44', '#dfe9e4'], 4:    ['#46604f', '#dfe9e4'],
+    8:    ['#c9843f', '#fff8e7'], 16:   ['#d97a3d', '#fff8e7'],
+    32:   ['#e05b47', '#fff8e7'], 64:   ['#e0453e', '#fff8e7'],
+    128:  ['#e0b93e', '#fff8e7'], 256:  ['#e0c53e', '#fff8e7'],
+    512:  ['#d4c93a', '#fff8e7'], 1024: ['#c084fc', '#fff8e7'],
+    2048: ['#70e4b5', '#12201a'], 4096: ['#7dd3fc', '#12201a'],
+    8192: ['#ff9ebb', '#12201a']
+};
+
+var MILESTONES = [
+    { name: '初步合成', goalTile: 128 },
+    { name: '漸入佳境', goalTile: 256 },
+    { name: '融會貫通', goalTile: 512 },
+    { name: '傳奇境界', goalTile: 1024 },
+    { name: '終極 2048', goalTile: 2048 }
+];
+
+var s = {};
+
+function reset() {
+    s = {
+        grid: [], score: 0, moves: 0, over: false,
+        tiles: [], anim: 0, undos: 3, history: [],
+        maxTile: 2, hitMilestones: {}, won: false
+    };
+    for (var y = 0; y < N; y++) { s.grid[y] = []; for (var x = 0; x < N; x++) s.grid[y][x] = 0; }
+    addTile(); addTile();
+    G.setStat('score', 0); G.setStat('moves', 0); G.setStat('max', 2);
+}
+
+function addTile() {
+    var free = [];
+    for (var y = 0; y < N; y++) for (var x = 0; x < N; x++) if (!s.grid[y][x]) free.push([x, y]);
+    if (!free.length) return null;
+    var c = RE.pick(free);
+    var v = Math.random() < 0.9 ? 2 : 4;
+    s.grid[c[1]][c[0]] = v;
+    s.tiles.push({ x: c[0], y: c[1], v: v, fx: c[0], fy: c[1], pop: 1, merged: false, isNew: true });
+    return c;
+}
+
+function tileAt(x, y) {
+    for (var i = 0; i < s.tiles.length; i++) {
+        if (s.tiles[i].x === x && s.tiles[i].y === y && !s.tiles[i].dead) return s.tiles[i];
+    }
+    return null;
+}
+
+/** 重建 tiles 陣列，讓它和 grid 一致（用於悔棋後） */
+function syncTiles() {
+    s.tiles = [];
+    for (var y = 0; y < N; y++) {
+        for (var x = 0; x < N; x++) {
+            if (s.grid[y][x]) s.tiles.push({ x: x, y: y, v: s.grid[y][x], fx: x, fy: y, pop: 0, merged: false });
+        }
+    }
+}
+
+/**
+ * 滑動。dir: 0=左 1=上 2=右 3=下
+ * 關鍵細節：mergedFlag 確保一次滑動中，同一格不會被合併兩次
+ * （例如 [2,2,4] 往左推應該是 [4,4]，不是 [8]）。
+ */
+function slide(dir) {
+    if (s.over || s.anim > 0) return;
+
+    var before = JSON.stringify(s.grid);
+    s.history.push({ grid: JSON.parse(before), score: s.score });
+    if (s.history.length > 6) s.history.shift();
+
+    var moved = false, gained = 0;
+    var mergedThisMove = [];
+
+    // 統一轉成「往左推」的問題，處理完再轉回去
+    function getLine(i) {
+        var line = [];
+        for (var k = 0; k < N; k++) {
+            if (dir === 0) line.push({ x: k, y: i });
+            else if (dir === 2) line.push({ x: N - 1 - k, y: i });
+            else if (dir === 1) line.push({ x: i, y: k });
+            else line.push({ x: i, y: N - 1 - k });
+        }
+        return line;
+    }
+
+    for (var i = 0; i < N; i++) {
+        var cells = getLine(i);
+        var vals = cells.map(function (c) { return s.grid[c.y][c.x]; });
+        var srcTiles = cells.map(function (c) { return tileAt(c.x, c.y); });
+
+        var out = [], outTiles = [], mergedFlag = [];
+        for (var k = 0; k < N; k++) {
+            if (!vals[k]) continue;
+            var last = out.length - 1;
+            if (last >= 0 && out[last] === vals[k] && !mergedFlag[last]) {
+                out[last] *= 2;
+                mergedFlag[last] = true;
+                gained += out[last];
+                // 兩個方塊都往合併位置移動，其中一個之後消失
+                if (srcTiles[k]) {
+                    srcTiles[k].targetX = cells[last].x;
+                    srcTiles[k].targetY = cells[last].y;
+                    srcTiles[k].dead = true;
+                }
+                if (outTiles[last]) {
+                    outTiles[last].targetX = cells[last].x;
+                    outTiles[last].targetY = cells[last].y;
+                    outTiles[last].newV = out[last];
+                    outTiles[last].willMerge = true;
+                }
+                mergedThisMove.push({ x: cells[last].x, y: cells[last].y, v: out[last] });
+            } else {
+                out.push(vals[k]);
+                outTiles.push(srcTiles[k]);
+                mergedFlag.push(false);
+                if (srcTiles[k]) {
+                    srcTiles[k].targetX = cells[out.length - 1].x;
+                    srcTiles[k].targetY = cells[out.length - 1].y;
+                }
+            }
+        }
+        while (out.length < N) { out.push(0); outTiles.push(null); }
+
+        for (var k = 0; k < N; k++) {
+            var c = cells[k];
+            if (s.grid[c.y][c.x] !== out[k]) moved = true;
+            s.grid[c.y][c.x] = out[k];
+        }
+    }
+
+    if (!moved) {
+        s.history.pop();
+        RetroAudio.play('error');
+        RE.juice.shake(0.08);
+        return;
+    }
+
+    s.moves++;
+    G.setStat('moves', s.moves);
+    s.score += gained;
+    G.setStat('score', s.score);
+    s.anim = 0.13;
+
+    // 合併回饋：合併值越大，回饋越強
+    if (mergedThisMove.length) {
+        var biggest = Math.max.apply(null, mergedThisMove.map(function (m) { return m.v; }));
+        var lvl = Math.log2(biggest);
+        RE.juice.hitstop(0.015 + Math.min(lvl, 11) * 0.004);
+        RE.juice.shake(0.08 + Math.min(lvl, 11) * 0.022);
+        RetroAudio.play(biggest >= 128 ? 'heavyHit' : 'hit');
+        if (mergedThisMove.length > 1) RetroAudio.play('combo', mergedThisMove.length);
+
+        mergedThisMove.forEach(function (m) {
+            var px = OX + GAP + m.x * (CELL + GAP) + CELL / 2;
+            var py = OY + GAP + m.y * (CELL + GAP) + CELL / 2;
+            var col = (COLORS[m.v] || COLORS[8192])[0];
+            P.burst(px, py, Math.min(6 + Math.log2(m.v), 20), {
+                colors: [col, '#fff8e7'], speedMin: 40, speedMax: 60 + Math.log2(m.v) * 14,
+                gravity: 200, lifeMin: 0.2, lifeMax: 0.5, sizeMin: 2, sizeMax: 5
+            });
+            if (m.v >= 64) P.ring(px, py, col, 30 + Math.log2(m.v) * 4);
+        });
+        FT.add(W / 2, OY - 16, '+' + gained, { color: '#ffd166', size: 17, life: 0.9 });
+    } else {
+        RetroAudio.play('step');
+    }
+
+    // 里程碑
+    var mx = 0;
+    for (var y = 0; y < N; y++) for (var x = 0; x < N; x++) if (s.grid[y][x] > mx) mx = s.grid[y][x];
+    if (mx > s.maxTile) {
+        s.maxTile = mx;
+        G.setStat('max', mx);
+        /* `MILESTONES.indexOf(mx)` 是拿一個**數字**去 indexOf 一個**物件陣列**
+           （元素長 `{ name, goalTile }`），永遠回傳 -1——**整段從來沒有執行過**。
+           後果不只是少了慶祝動畫：`s.won` 是在這個 if 裡面設的，
+           所以做到 2048 也不算贏，結算畫面照樣說「棋盤填滿了」，
+           五個里程碑一個都沒解鎖過。機器人實測做到 4096 仍被記成失敗。
+           煙霧測試抓不到（不拋例外），靜態稽核也抓不到（關卡陣列本身沒錯）。
+           凡是 `indexOf` 一個陣列而那個陣列裝的是物件，都要先確認比對的是同一種東西。 */
+        var mi = -1;
+        for (var q = 0; q < MILESTONES.length; q++) {
+            if (MILESTONES[q].goalTile === mx) { mi = q; break; }
+        }
+        if (mi >= 0 && !s.hitMilestones[mx]) {
+            s.hitMilestones[mx] = true;
+            RE.Save.unlockLevel('game_2048', mi + 1);
+            RetroAudio.play('levelUp');
+            RE.juice.flash('rgba(255,209,102,0.3)', 0.2);
+            FT.add(W / 2, H / 2, '達成 ' + mx + '！', { color: (COLORS[mx] || COLORS[8192])[0], size: 26, life: 1.8 });
+            P.burst(W / 2, H / 2, 34, { colors: [(COLORS[mx] || COLORS[8192])[0], '#ffd166', '#fff8e7'],
+                speedMin: 60, speedMax: 240, gravity: 220, lifeMin: 0.4, lifeMax: 1 });
+            if (mx === 2048 && !s.won) {
+                s.won = true;
+                FT.add(W / 2, H / 2 + 34, '目標達成！可以繼續挑戰更高',
+                    { color: '#70e4b5', size: 14, life: 2.4, vy: -22 });
+            }
+        }
+    }
+
+    addTile();
+    if (!canMove()) {
+        s.over = true;
+        G.gameOver({
+            score: s.score, win: s.won,
+            body: s.won
+                ? '做出了 ' + s.maxTile + '，共 ' + s.moves + ' 步。'
+                : '棋盤填滿了，最大方塊 ' + s.maxTile + '，共 ' + s.moves + ' 步。' +
+                  '訣竅是把最大的方塊鎖在同一個角落，並讓那一行保持遞減排列。'
+        });
+    }
+}
+
+function canMove() {
+    for (var y = 0; y < N; y++)
+        for (var x = 0; x < N; x++) {
+            if (!s.grid[y][x]) return true;
+            if (x < N - 1 && s.grid[y][x] === s.grid[y][x + 1]) return true;
+            if (y < N - 1 && s.grid[y][x] === s.grid[y + 1][x]) return true;
+        }
+    return false;
+}
+
+function undo() {
+    if (!s.history.length || s.undos <= 0 || s.anim > 0) {
+        RetroAudio.play('error');
+        return;
+    }
+    var h = s.history.pop();
+    s.grid = h.grid;
+    s.score = h.score;
+    s.undos--;
+    s.over = false;
+    syncTiles();
+    G.setStat('score', s.score);
+    RetroAudio.play('cancel');
+    FT.add(W / 2, OY - 16, '悔棋（剩 ' + s.undos + ' 次）', { color: '#7dd3fc', size: 14, life: 1.2 });
+}
+
+/* U 鍵保留給桌機；同一功能也必須是畫面上可點的操作。 */
+function undoButtonRect() {
+    return { x: OX + BOARD - 106, y: 12, w: 106, h: 28 };
+}
+
+function pointInUndoButton(x, y) {
+    var b = undoButtonRect();
+    return x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h;
+}
+
+// ======================================================================
+function update(dt) {
+    if (s.anim > 0) {
+        s.anim -= dt;
+        if (s.anim <= 0) {
+            s.anim = 0;
+            // 動畫結束：清掉被合併的方塊、更新數值
+            for (var i = s.tiles.length - 1; i >= 0; i--) {
+                var t = s.tiles[i];
+                if (t.dead) { s.tiles.splice(i, 1); continue; }
+                if (t.targetX !== undefined) { t.x = t.targetX; t.y = t.targetY; }
+                if (t.willMerge) { t.v = t.newV; t.pop = 1; t.willMerge = false; }
+                t.targetX = undefined; t.targetY = undefined;
+            }
+        }
+    } else if (!s.over) {
+        if (RE.Input.pressed('left')) slide(0);
+        else if (RE.Input.pressed('up')) slide(1);
+        else if (RE.Input.pressed('right')) slide(2);
+        else if (RE.Input.pressed('down')) slide(3);
+    }
+
+    // 補間：從 fx/fy 平滑移到 x/y
+    for (var i = 0; i < s.tiles.length; i++) {
+        var t = s.tiles[i];
+        var tx = t.targetX !== undefined ? t.targetX : t.x;
+        var ty = t.targetY !== undefined ? t.targetY : t.y;
+        t.fx = RE.lerp(t.fx, tx, 1 - Math.pow(0.00002, dt));
+        t.fy = RE.lerp(t.fy, ty, 1 - Math.pow(0.00002, dt));
+        if (t.pop > 0) t.pop -= dt * 4.5;
+    }
+
+    P.update(dt);
+    FT.update(dt);
+}
+
+// ======================================================================
+function render() {
+    G.clear('#0d1512');
+    G.beginWorld();
+
+    // 棋盤底
+    ctx.fillStyle = '#1c3229';
+    RE.Draw.roundRect(ctx, OX, OY, BOARD, BOARD, 12);
+    ctx.fill();
+    for (var y = 0; y < N; y++) {
+        for (var x = 0; x < N; x++) {
+            ctx.fillStyle = 'rgba(0,0,0,0.22)';
+            RE.Draw.roundRect(ctx, OX + GAP + x * (CELL + GAP), OY + GAP + y * (CELL + GAP), CELL, CELL, 7);
+            ctx.fill();
+        }
+    }
+
+    // 方塊
+    for (var i = 0; i < s.tiles.length; i++) {
+        var t = s.tiles[i];
+        var pair = COLORS[t.v] || COLORS[8192];
+        var scale = 1 + Math.max(0, t.pop) * 0.22;
+        var px = OX + GAP + t.fx * (CELL + GAP) + CELL / 2;
+        var py = OY + GAP + t.fy * (CELL + GAP) + CELL / 2;
+        var sz = CELL * scale;
+
+        ctx.save();
+        if (t.v >= 128) { ctx.shadowBlur = 14; ctx.shadowColor = pair[0]; }
+        ctx.fillStyle = pair[0];
+        RE.Draw.roundRect(ctx, px - sz / 2, py - sz / 2, sz, sz, 7);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        RE.Draw.roundRect(ctx, px - sz / 2 + 3, py - sz / 2 + 3, sz - 6, sz * 0.32, 5);
+        ctx.fill();
+        ctx.restore();
+
+        var digits = String(t.v).length;
+        var fs = digits <= 2 ? 34 : digits === 3 ? 28 : digits === 4 ? 22 : 18;
+        RE.Draw.text(ctx, String(t.v), px, py - fs * 0.55, {
+            size: Math.round(fs * scale), align: 'center', color: pair[1], stroke: false
+        });
+    }
+
+    P.draw(ctx);
+    FT.draw(ctx);
+
+    // 標題列
+    RE.Draw.text(ctx, '目標 2048', OX, 22, { size: 15, color: '#ffd166' });
+    var ub = undoButtonRect();
+    ctx.fillStyle = s.undos > 0 && s.history.length ? '#243e4a' : '#26302f';
+    RE.Draw.roundRect(ctx, ub.x, ub.y, ub.w, ub.h, 6); ctx.fill();
+    ctx.strokeStyle = s.undos > 0 && s.history.length ? '#7dd3fc' : '#5c6b66';
+    ctx.lineWidth = 1; ctx.stroke();
+    RE.Draw.text(ctx, '悔棋 ' + s.undos + ' 次', ub.x + ub.w / 2, ub.y + 5,
+        { size: 13, color: s.undos > 0 ? '#7dd3fc' : '#5c6b66', align: 'center' });
+
+    // 提示：把大方塊鎖在角落
+    if (s.moves < 8) {
+        ctx.save();
+        ctx.globalAlpha = 0.7;
+        RE.Draw.text(ctx, '訣竅：把最大的方塊固定在同一個角落', W / 2, OY + BOARD + 14,
+            { size: 12, align: 'center', color: '#9fb3aa' });
+        ctx.restore();
+    }
+
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.05, vignetteStrength: 0.34 });
+}
+
+// ======================================================================
+// 手機滑動手勢
+// ======================================================================
+var touchStart = null;
+G.canvas.addEventListener('touchstart', function (e) {
+    var t = e.changedTouches[0];
+    touchStart = { x: t.clientX, y: t.clientY };
+}, { passive: true });
+G.canvas.addEventListener('touchend', function (e) {
+    if (!touchStart || !G.isPlaying()) return;
+    var t = e.changedTouches[0];
+    var dx = t.clientX - touchStart.x, dy = t.clientY - touchStart.y;
+    var r = G.canvas.getBoundingClientRect();
+    var gx = (t.clientX - r.left) / r.width * W, gy = (t.clientY - r.top) / r.height * H;
+    touchStart = null;
+    if (Math.abs(dx) < 24 && Math.abs(dy) < 24) {
+        if (pointInUndoButton(gx, gy)) undo();
+        return;
+    }
+    if (Math.abs(dx) > Math.abs(dy)) slide(dx > 0 ? 2 : 0);
+    else slide(dy > 0 ? 3 : 1);
+}, { passive: true });
+
+G.canvas.addEventListener('mousedown', function (e) {
+    if (!G.isPlaying() || e.button !== 0) return;
+    var r = G.canvas.getBoundingClientRect();
+    var gx = (e.clientX - r.left) / r.width * W, gy = (e.clientY - r.top) / r.height * H;
+    if (pointInUndoButton(gx, gy)) { e.preventDefault(); undo(); }
+});
+
+window.addEventListener('keydown', function (e) {
+    if (e.code === 'KeyU' && G.isPlaying()) undo();
+});
+
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '往任一方向滑動，相同數字相撞會合併成兩倍。目標是做出 2048。訣竅是把最大方塊鎖在角落。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

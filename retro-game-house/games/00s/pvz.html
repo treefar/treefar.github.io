@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 花園守衛戰</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   花園守衛戰 — 致敬 Plants vs. Zombies (PopCap, 2009)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. **把 RTS 壓縮成五條橫線**。採集（陽光）、生產（種植）、防線（佈陣）
+      全部還在，但空間被壓成 5×9 的格盤，操作壓成「點兩下」。
+   2. **每種植物只有一個功能**：產能、直射、擋路、減速、爆炸。
+      複雜度全部來自組合——減速＋直射是火力網、擋路＋產能是經濟局。
+      新植物逐關解鎖，每關其實是一堂新機制的教學課。
+   3. 掃地機器人＝可原諒的失誤：每行一次免費救場，
+      讓「差一點守住」變成劇情高潮而不是挫折。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'pvz',
+    title: '花園守衛戰',
+    tagline: '五條線就是整場即時戰略：採集、生產、防線',
+    original: 'Plants vs. Zombies (PopCap, 2009)',
+    decade: '00s', year: 2009, platform: 'PC / 手機', genre: '路線塔防',
+    developer: 'PopCap Games', bgm: '00s',
+    width: 480, height: 320,
+    hud: [
+        { key: 'stage', label: '關卡', init: '1/5' },
+        { key: 'wave', label: '波次', init: '0/0' },
+        { key: 'kills', label: '擊退', init: 0 },
+        { key: 'mower', label: '掃地機', init: 5 }
+    ],
+    lives: 3,
+    touch: 'none',
+    controls: [
+        { keys: ['滑鼠 / 觸控'], desc: '點卡片選植物，點格子種下；點陽光收集' },
+        { keys: ['←↑→↓'], desc: '移動游標' },
+        { keys: ['A'], desc: '種植 / 收陽光' },
+        { keys: ['B'], desc: '切換植物卡' }
+    ],
+    howto: '廢鐵人偶會從右側一排排走進菜園。<strong>點植物卡、再點格子</strong>種下防線：' +
+           '<strong>金光花</strong>產陽光（經濟）、<strong>豌豆炮</strong>直線射擊（火力）、' +
+           '<strong>硬殼果</strong>擋路（時間）、<strong>雪霜炮</strong>減速（控場）、' +
+           '<strong>爆爆椒</strong>範圍爆炸（救場）。天上掉的陽光記得點。' +
+           '人偶走到最左邊會觸發該行的<strong>掃地機器人</strong>（每行只有一台）；' +
+           '掃地機用完後再被突破就輸了。撐過每一波就過關，共 5 關。',
+    lesson: {
+        verb: '收集陽光、選植物、把它種在正確的行與列，讓每條路線形成能自行運轉的防線。',
+        innovation: '把即時戰略的資源、生產與兵線壓縮成五條可讀的平行路線；植物一株一功能，深度來自組合而不是複雜指令。',
+        mission: '完成五關後回看自己的陣型：指出哪一關先建立經濟、哪一關用硬殼果換時間、哪一關必須把爆爆椒留到破線前；再故意少種一種功能植物，觀察防線在哪裡崩潰。',
+        evolution: '《植物大戰殭屍》把塔防的路線與資源變成人人能讀的草坪；《Kingdom Rush》把路線節點化並加入英雄；《Into the Breach》則把同樣的預判與功能分工改成回合制、可看見敵方意圖的棋盤。',
+        reflection: '如果所有植物都能同時射擊、產陽光又擋路，玩家還需要規劃行列與資源順序嗎？'
+    },
+    design: '《Plants vs. Zombies》用五條水平路線解決即時戰略的視覺負擔：敵人只在自己的行上前進，玩家因此能把注意力放在「現在的陽光要變成什麼功能」。金光花建立經濟、豌豆炮提供穩定輸出、硬殼果購買時間、雪霜炮改變節奏、爆爆椒處理局部危機；單位能力越單純，組合的因果就越容易在一局內被看見。逐關解鎖卡片則把教學直接嵌入內容節奏，而不是先讀一頁規則。它承接《王國保衛戰》的路線防守傳統，卻把《Into the Breach》式的預判感提前放進即時節奏：玩家不是等敵人撞上塔，而是看著每一行的距離決定何時種下功能。',
+    history: 'PopCap 在 2009 年推出《Plants vs. Zombies》，以「植物守住家園、殭屍沿草坪進攻」的幽默包裝，將原本偏硬派的塔防與資源配置帶進更廣的 PC／Mac 與後續多平台市場。EA 的回顧資料也記錄了它在 2009 年推出、以 Peashooter、Wall-nut、Cherry Bomb 等功能植物組成防線；本頁用廢鐵人偶與五關縮編，保留的是原作的學習順序與多軌道防守邏輯。',
+    sources: [
+        { label: 'EA／PopCap：Plants vs. Zombies 遊戲介紹', url: 'https://www.ea.com/en-gb/ea-studios/popcap/games' },
+        { label: 'EA：Plants vs. Zombies 團隊幕後訪談', url: 'https://www.ea.com/news/go-behind-the-scenes-with-the-plants-vs-zombies-team-at-popcap' },
+        { label: 'EA：Plants vs. Zombies 發行與行銷回顧', url: 'https://www.ea.com/news/playas1-paula-wong-plants-vs-zombies' }
+    ]
+});
+
+var ctx = G.ctx, VW = G.width, VH = G.height;
+var P = new RE.Particles(400);
+var FT = new RE.FloatText();
+
+// ======================================================================
+// 佈局與常數
+// ======================================================================
+var COLS = 9, ROWS = 5, CW = 44, CH = 44;
+var BX = 40, BY = 58;                    // 草坪左上
+var CARD_Y = 6, CARD_H = 44, CARD_W = 58;
+var SUN_START = 75;
+var SKY_SUN_EVERY = 9;                   // 天降陽光間隔
+var MOWER_X = 16;
+
+// ======================================================================
+// 植物。每種只有一個功能——這就是原作的靈魂。
+// ======================================================================
+var PLANTS = {
+    sunflower: { name: '金光花', cost: 50,  hp: 80,  cd: 6,  desc: '每隔一段時間產出陽光' },
+    pea:       { name: '豌豆炮', cost: 100, hp: 90,  cd: 6,  desc: '直線射擊本行敵人' },
+    nut:       { name: '硬殼果', cost: 50,  hp: 420, cd: 16, desc: '高血量，用身體換時間' },
+    ice:       { name: '雪霜炮', cost: 150, hp: 90,  cd: 9,  desc: '射擊並減速敵人' },
+    pepper:    { name: '爆爆椒', cost: 125, hp: 60,  cd: 20, desc: '種下即爆，炸 3×3 範圍' }
+};
+
+// ======================================================================
+// 敵人：廢鐵人偶軍團
+// ======================================================================
+var FOES = {
+    rust:   { name: '鏽皮人偶', hp: 95,  speed: 9,  dps: 26, score: 10, col: '#b08a6a' },
+    runner: { name: '疾走人偶', hp: 70,  speed: 21, dps: 22, score: 15, col: '#c8b06a' },
+    bucket: { name: '鐵桶人偶', hp: 340, speed: 8,  dps: 26, score: 25, col: '#8a9ab0' },
+    hammer: { name: '巨錘人偶', hp: 520, speed: 6.5, dps: 0, score: 40, col: '#a06a8a', smash: true }
+};
+
+// ======================================================================
+// 關卡：波次全部手工寫死（可測、可調），新植物逐關解鎖。
+// spawn: [秒, 敵種, 行(-1=隨機)]。final 標記最後大波（顯示紅旗）。
+// ======================================================================
+var LEVELS = [
+    {
+        name: '第一關 · 經濟與火力',
+        hint: '先種金光花攢陽光，再上豌豆炮。經濟先行，火力才跟得上。',
+        cards: ['sunflower', 'pea'],
+        spawns: [[16,'rust',-1],[34,'rust',-1],[50,'rust',-1],[64,'rust',-1],[76,'rust',-1],
+                 [90,'rust',-1],[96,'rust',-1],[102,'rust',-1],[108,'rust',-1]],
+        finalAt: 96
+    },
+    {
+        name: '第二關 · 用身體換時間',
+        hint: '疾走人偶跑得飛快。硬殼果擋在前面，讓豌豆有時間輸出。',
+        cards: ['sunflower', 'pea', 'nut'],
+        spawns: [[14,'rust',-1],[30,'runner',-1],[44,'rust',-1],[56,'runner',-1],[68,'rust',-1],
+                 [78,'runner',-1],[88,'rust',-1],[100,'runner',-1],[106,'runner',-1],
+                 [112,'rust',-1],[118,'runner',-1]],
+        finalAt: 106
+    },
+    {
+        name: '第三關 · 減速的價值',
+        hint: '鐵桶人偶又硬又臭。雪霜炮讓牠慢下來，時間就是傷害。',
+        cards: ['sunflower', 'pea', 'nut', 'ice'],
+        spawns: [[14,'rust',-1],[28,'rust',-1],[42,'bucket',-1],[58,'runner',-1],[70,'rust',-1],
+                 [82,'bucket',-1],[94,'runner',-1],[104,'rust',-1],[114,'bucket',-1],
+                 [124,'rust',-1],[128,'runner',-1],[134,'bucket',-1]],
+        finalAt: 124
+    },
+    {
+        name: '第四關 · 一次性的救場',
+        hint: '爆爆椒種下就炸。留著它，等到某一行快守不住的時候。',
+        cards: ['sunflower', 'pea', 'nut', 'ice', 'pepper'],
+        spawns: [[14,'runner',-1],[26,'rust',-1],[38,'bucket',-1],[50,'runner',0],[52,'runner',0],
+                 [66,'rust',-1],[76,'bucket',-1],[88,'runner',4],[90,'runner',4],[92,'rust',4],
+                 [104,'bucket',-1],[112,'rust',-1],[120,'runner',-1],[126,'bucket',-1],
+                 [132,'rust',-1],[136,'runner',-1]],
+        finalAt: 120
+    },
+    {
+        name: '第五關 · 廢鐵大軍',
+        hint: '巨錘人偶一錘一棵植物。所有組合一起上，撐過最後的大波。',
+        cards: ['sunflower', 'pea', 'nut', 'ice', 'pepper'],
+        spawns: [[14,'rust',-1],[24,'runner',-1],[36,'bucket',-1],[48,'hammer',-1],[62,'rust',-1],
+                 [72,'bucket',-1],[82,'runner',-1],[92,'hammer',-1],[104,'bucket',-1],
+                 [116,'rust',-1],[122,'runner',-1],[128,'hammer',-1],[136,'bucket',-1],
+                 [142,'rust',-1],[146,'runner',-1],[150,'hammer',-1],[154,'bucket',-1]],
+        finalAt: 136
+    }
+];
+
+// ======================================================================
+// 狀態
+// ======================================================================
+var s = null;
+
+function reset() {
+    s = { level: 0, total: 0 };
+    P.clear(); FT.clear();
+    G.setLives(3);
+    loadLevel(0);
+}
+
+function loadLevel(i) {
+    var L = LEVELS[i];
+    s.level = i; s.L = L;
+    s.plants = [];
+    for (var r = 0; r < ROWS; r++) { s.plants.push([]); for (var c = 0; c < COLS; c++) s.plants[r].push(null); }
+    s.foes = [];
+    s.bullets = [];
+    s.suns = [];
+    s.mowers = [true, true, true, true, true];
+    s.sun = SUN_START;
+    s.time = 0;
+    s.spawnIdx = 0;
+    s.kills = 0;
+    s.skySunT = 5;
+    s.sel = 0;
+    s.cardCd = {};
+    for (var k = 0; k < L.cards.length; k++) s.cardCd[L.cards[k]] = 0;
+    s.cursor = { r: 2, c: 2 };
+    s.over = 0; s.overT = 0;
+    s.banner = L.name; s.bannerT = 2.6;
+    s.finalShown = false;
+    G.setStat('stage', (i + 1) + '/' + LEVELS.length);
+    G.setStat('wave', '0/' + L.spawns.length);
+    G.setStat('kills', s.kills);
+    G.setStat('mower', 5);
+}
+
+function cellX(c) { return BX + c * CW; }
+function cellY(r) { return BY + r * CH; }
+
+// ======================================================================
+// 種植與收集
+// ======================================================================
+function tryPlant(r, c) {
+    var key = s.L.cards[s.sel];
+    var Pd = PLANTS[key];
+    if (!Pd) return false;
+    if (s.plants[r][c]) { RetroAudio.play('error'); return false; }
+    if (s.sun < Pd.cost) { RetroAudio.play('error'); FT.add(cellX(c) + CW / 2, cellY(r) + 8, '陽光不夠', { color: '#ffd166', size: 13 }); return false; }
+    if (s.cardCd[key] > 0) { RetroAudio.play('error'); return false; }
+    s.sun -= Pd.cost;
+    s.cardCd[key] = Pd.cd;
+    var pl = { key: key, hp: Pd.hp, maxHp: Pd.hp, r: r, c: c, t: 0, anim: Math.random() * 7 };
+    s.plants[r][c] = pl;
+    RetroAudio.play('drop');
+    P.burst(cellX(c) + CW / 2, cellY(r) + CH / 2, 8, { colors: ['#8fd08a', '#5a9a4a'],
+        speedMin: 20, speedMax: 90, gravity: 200, lifeMin: 0.2, lifeMax: 0.5 });
+    if (key === 'pepper') {
+        pl.fuse = 0.55;   // 種下即引爆（0.55s 演出）
+    }
+    return true;
+}
+
+function explodePepper(pl) {
+    var cx = cellX(pl.c) + CW / 2, cy = cellY(pl.r) + CH / 2;
+    RetroAudio.play('bigExplosion');
+    RE.juice.hitstop(0.07);
+    RE.juice.shake(0.5);
+    RE.juice.flash('rgba(255,160,80,0.28)', 0.12);
+    P.burst(cx, cy, 30, { colors: ['#ff5c3c', '#ffd166', '#ff9a3c', '#fff3c4'],
+        speedMin: 60, speedMax: 260, gravity: 200, lifeMin: 0.3, lifeMax: 0.7, glow: true });
+    P.ring(cx, cy, '#ffb680', 60);
+    for (var i = s.foes.length - 1; i >= 0; i--) {
+        var f = s.foes[i];
+        if (Math.abs(f.row - pl.r) <= 1) {
+            var fx = f.x;
+            if (fx > cellX(pl.c) - CW * 1.5 && fx < cellX(pl.c) + CW * 2.5) hurtFoe(f, 420, true);
+        }
+    }
+    s.plants[pl.r][pl.c] = null;
+}
+
+function collectSun(x, y) {
+    for (var i = s.suns.length - 1; i >= 0; i--) {
+        var su = s.suns[i];
+        var dx = su.x - x, dy = su.y - y;
+        if (dx * dx + dy * dy < 22 * 22) {
+            s.sun += 25;
+            FT.add(su.x, su.y - 10, '+25', { color: '#ffd166', size: 13 });
+            RetroAudio.play('coin');
+            s.suns.splice(i, 1);
+            return true;
+        }
+    }
+    return false;
+}
+
+// ======================================================================
+// 敵人
+// ======================================================================
+function spawnFoe(type, row) {
+    if (row < 0 || row >= ROWS) row = Math.floor(Math.random() * ROWS);
+    var F = FOES[type];
+    s.foes.push({
+        type: type, row: row, x: VW + 14, hp: F.hp, maxHp: F.hp,
+        speed: F.speed, slow: 0, eatT: 0, smashT: 0, anim: Math.random() * 7, dead: 0
+    });
+}
+
+function hurtFoe(f, dmg, big) {
+    f.hp -= dmg;
+    var fx = f.x, fy = cellY(f.row) + CH / 2;
+    if (big) { RE.juice.hitstop(0.04); RE.juice.shake(0.2); }
+    else RE.juice.hitstop(0.015);
+    P.burst(fx, fy - 6, big ? 10 : 4, { colors: ['#c8b8a8', '#8a7a6a', '#ffd166'],
+        speedMin: 30, speedMax: big ? 180 : 90, gravity: 300, lifeMin: 0.15, lifeMax: 0.4 });
+    if (f.hp <= 0 && !f.dead) {
+        f.dead = 0.4;
+        s.kills++;
+        s.total += FOES[f.type].score * 10;
+        G.setStat('kills', s.kills);
+        RetroAudio.play('hit');
+        P.burst(fx, fy, 14, { colors: ['#a89a8a', '#6a5a4a', '#d8c8b8'],
+            speedMin: 40, speedMax: 200, gravity: 380, lifeMin: 0.3, lifeMax: 0.7 });
+        FT.add(fx, fy - 22, '+' + FOES[f.type].score * 10, { color: '#c8e8ff', size: 13 });
+    } else if (!big) {
+        RetroAudio.play('step');
+    }
+}
+
+// ======================================================================
+// 主迴圈
+// ======================================================================
+function update(dt) {
+    if (!s) return;
+    P.update(dt); FT.update(dt);
+    if (s.bannerT > 0) s.bannerT -= dt;
+
+    if (s.over) {
+        s.overT -= dt;
+        if (s.overT <= 0) {
+            var w = s.over === 1; s.over = 0;
+            if (w) nextLevel(); else afterFail();
+        }
+        return;
+    }
+
+    s.time += dt;
+    var i, f, r, c;
+
+    // 出怪
+    var L = s.L;
+    while (s.spawnIdx < L.spawns.length && s.time >= L.spawns[s.spawnIdx][0]) {
+        var sp = L.spawns[s.spawnIdx];
+        spawnFoe(sp[1], sp[2]);
+        s.spawnIdx++;
+        G.setStat('wave', s.spawnIdx + '/' + L.spawns.length);
+        if (!s.finalShown && sp[0] >= L.finalAt) {
+            s.finalShown = true;
+            s.banner = '⚠ 最後一波！'; s.bannerT = 2;
+            RetroAudio.play('pause');
+        }
+    }
+
+    // 天降陽光
+    s.skySunT -= dt;
+    if (s.skySunT <= 0) {
+        s.skySunT = SKY_SUN_EVERY;
+        s.suns.push({ x: BX + 20 + Math.random() * (COLS * CW - 40),
+                      y: -10, ty: BY + 20 + Math.random() * (ROWS * CH - 40), life: 12, vy: 40 });
+    }
+    for (i = s.suns.length - 1; i >= 0; i--) {
+        var su = s.suns[i];
+        if (su.y < su.ty) su.y = Math.min(su.ty, su.y + su.vy * dt);
+        else { su.life -= dt; if (su.life <= 0) s.suns.splice(i, 1); }
+    }
+
+    // 植物
+    for (r = 0; r < ROWS; r++) {
+        for (c = 0; c < COLS; c++) {
+            var pl = s.plants[r][c];
+            if (!pl) continue;
+            pl.anim += dt;
+            if (pl.hp <= 0) { s.plants[r][c] = null; RetroAudio.play('cancel');
+                P.burst(cellX(c) + CW / 2, cellY(r) + CH / 2, 10, { colors: ['#8fd08a', '#5a7a4a'],
+                    speedMin: 30, speedMax: 120, gravity: 300, lifeMin: 0.2, lifeMax: 0.5 });
+                continue; }
+            if (pl.key === 'pepper') {
+                pl.fuse -= dt;
+                if (pl.fuse <= 0) explodePepper(pl);
+                continue;
+            }
+            pl.t += dt;
+            if (pl.key === 'sunflower' && pl.t >= 11) {
+                pl.t = 0;
+                s.suns.push({ x: cellX(c) + CW / 2 + 6, y: cellY(r) + 10,
+                              ty: cellY(r) + 14, life: 12, vy: 30 });
+            }
+            if (pl.key === 'pea' || pl.key === 'ice') {
+                var rate = pl.key === 'pea' ? 1.5 : 2.1;
+                if (pl.t >= rate && rowHasFoe(r, cellX(c))) {
+                    pl.t = 0;
+                    s.bullets.push({ x: cellX(c) + CW - 8, y: cellY(r) + 16,
+                                     row: r, v: 250, ice: pl.key === 'ice' });
+                    RetroAudio.play(pl.key === 'ice' ? 'blip' : 'shoot');
+                }
+            }
+        }
+    }
+
+    // 子彈
+    for (i = s.bullets.length - 1; i >= 0; i--) {
+        var b = s.bullets[i];
+        b.x += b.v * dt;
+        if (b.x > VW + 10) { s.bullets.splice(i, 1); continue; }
+        for (var j = 0; j < s.foes.length; j++) {
+            f = s.foes[j];
+            if (f.dead || f.row !== b.row) continue;
+            if (Math.abs(f.x - b.x) < 10) {
+                hurtFoe(f, b.ice ? 16 : 24, false);
+                if (b.ice) f.slow = 4;
+                s.bullets.splice(i, 1);
+                break;
+            }
+        }
+    }
+
+    // 敵人
+    for (i = s.foes.length - 1; i >= 0; i--) {
+        f = s.foes[i];
+        if (f.dead) { f.dead -= dt; if (f.dead <= 0) s.foes.splice(i, 1); continue; }
+        f.anim += dt;
+        if (f.slow > 0) f.slow -= dt;
+        var spd = f.speed * (f.slow > 0 ? 0.45 : 1);
+        // 前方有植物就啃 / 砸
+        var col = Math.floor((f.x - 8 - BX) / CW);
+        var target = (col >= 0 && col < COLS) ? s.plants[f.row][col] : null;
+        if (target && f.x - 8 < cellX(col) + CW - 6) {
+            var F = FOES[f.type];
+            if (F.smash) {
+                f.smashT += dt;
+                if (f.smashT >= 1.6) {
+                    f.smashT = 0;
+                    target.hp -= 260;
+                    RetroAudio.play('heavyHit');
+                    RE.juice.shake(0.3);
+                    P.burst(cellX(col) + CW / 2, cellY(f.row) + CH / 2, 12,
+                        { colors: ['#8fd08a', '#4a6a3a'], speedMin: 40, speedMax: 160,
+                          gravity: 300, lifeMin: 0.2, lifeMax: 0.5 });
+                }
+            } else {
+                f.eatT += dt;
+                if (f.eatT >= 0.5) { f.eatT = 0; target.hp -= F.dps * 0.5; RetroAudio.play('step'); }
+            }
+        } else {
+            f.x -= spd * dt;
+        }
+        // 突破最左
+        if (f.x < BX - 4) {
+            if (s.mowers[f.row]) {
+                s.mowers[f.row] = false;
+                s.mowerRun = s.mowerRun || [];
+                s.mowerRun.push({ row: f.row, x: MOWER_X });
+                G.setStat('mower', s.mowers.filter(function (m) { return m; }).length);
+                RetroAudio.play('dash');
+                RE.juice.shake(0.25);
+            } else {
+                endLevel(false);
+                return;
+            }
+        }
+    }
+
+    // 掃地機
+    if (s.mowerRun) {
+        for (i = s.mowerRun.length - 1; i >= 0; i--) {
+            var m = s.mowerRun[i];
+            m.x += 300 * dt;
+            for (j = 0; j < s.foes.length; j++) {
+                f = s.foes[j];
+                if (!f.dead && f.row === m.row && Math.abs(f.x - m.x) < 20) hurtFoe(f, 9999, true);
+            }
+            if (m.x > VW + 30) s.mowerRun.splice(i, 1);
+        }
+    }
+
+    // 卡片冷卻
+    for (var k in s.cardCd) if (s.cardCd[k] > 0) s.cardCd[k] -= dt;
+
+    // 勝利：波次出完且場上清空
+    if (s.spawnIdx >= L.spawns.length && s.foes.length === 0 &&
+        (!s.mowerRun || s.mowerRun.length === 0)) {
+        endLevel(true);
+        return;
+    }
+
+    handleInput(dt);
+}
+
+function rowHasFoe(r, fromX) {
+    for (var i = 0; i < s.foes.length; i++) {
+        var f = s.foes[i];
+        if (!f.dead && f.row === r && f.x > fromX && f.x < VW + 20) return true;
+    }
+    return false;
+}
+
+// ======================================================================
+// 輸入
+// ======================================================================
+function handleInput(dt) {
+    var pt = RE.Input.pointer;
+    if (pt.pressed) {
+        // 先試收陽光
+        if (collectSun(pt.x, pt.y)) return;
+        // 卡片列
+        if (pt.y < CARD_Y + CARD_H) {
+            var ci = Math.floor((pt.x - cardX0()) / CARD_W);
+            if (ci >= 0 && ci < s.L.cards.length) { s.sel = ci; RetroAudio.play('select'); }
+            return;
+        }
+        // 草坪
+        var c = Math.floor((pt.x - BX) / CW), r = Math.floor((pt.y - BY) / CH);
+        if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+            s.cursor = { r: r, c: c };
+            tryPlant(r, c);
+        }
+        return;
+    }
+    if (RE.Input.pressed('left'))  s.cursor.c = Math.max(0, s.cursor.c - 1);
+    if (RE.Input.pressed('right')) s.cursor.c = Math.min(COLS - 1, s.cursor.c + 1);
+    if (RE.Input.pressed('up'))    s.cursor.r = Math.max(0, s.cursor.r - 1);
+    if (RE.Input.pressed('down'))  s.cursor.r = Math.min(ROWS - 1, s.cursor.r + 1);
+    if (RE.Input.pressed('b')) { s.sel = (s.sel + 1) % s.L.cards.length; RetroAudio.play('select'); }
+    if (RE.Input.pressed('a')) {
+        // 先收游標附近的陽光，沒有就種植
+        var cx = cellX(s.cursor.c) + CW / 2, cy = cellY(s.cursor.r) + CH / 2;
+        if (!collectSun(cx, cy)) tryPlant(s.cursor.r, s.cursor.c);
+    }
+}
+
+function cardX0() { return BX; }
+
+// ======================================================================
+// 關卡結束
+// ======================================================================
+function endLevel(win) {
+    if (s.over) return;
+    s.over = win ? 1 : -1;
+    s.overT = 1.6;
+    if (win) {
+        RetroAudio.play('win');
+        RE.juice.flash('rgba(140,255,180,0.3)', 0.2);
+        var mowersLeft = s.mowers.filter(function (m) { return m; }).length;
+        s.total += 400 + mowersLeft * 120;
+    } else {
+        RetroAudio.play('gameover');
+        RE.juice.shake(0.4);
+    }
+}
+
+function nextLevel() {
+    if (s.level >= LEVELS.length - 1) {
+        G.gameOver({
+            win: true, score: s.total,
+            body: '五關全部守住了。回想一下你的防線：產能、直射、擋路、減速、爆炸——' +
+                  '每種植物都只做一件事，但你把它們疊成了會運轉的系統。' +
+                  '這就是《Plants vs. Zombies》教給整個產業的事：' +
+                  '深度不必來自複雜的單位，而來自簡單元素的組合。' +
+                  '把 RTS 壓成五條線，策略的樂趣一點都沒少。'
+        });
+        return;
+    }
+    var n = s.level + 1;
+    G.stageCard(n + 1, LEVELS[n].name, LEVELS[n].hint, function () { loadLevel(n); });
+}
+
+function afterFail() {
+    G.setLives(G.lives - 1);
+    if (G.lives <= 0) {
+        G.gameOver({
+            win: false, score: s.total,
+            body: '菜園失守。記住塔防的鐵律：<br>' +
+                  '經濟優先——開局兩排金光花，中期的火力才夠；' +
+                  '別把陽光留在手上，種下去的才是防線；' +
+                  '爆爆椒不要早用，它是「快破線那一刻」的答案。'
+        });
+        return;
+    }
+    var i = s.level;
+    G.stageCard(i + 1, LEVELS[i].name, '防線被突破了。' + LEVELS[i].hint, function () { loadLevel(i); });
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function render() {
+    if (!s) return;
+    G.beginWorld();
+    drawBoard();
+    drawMowers();
+    drawPlants();
+    drawFoes();
+    drawBullets();
+    P.draw(ctx);
+    drawSuns();
+    FT.draw(ctx);
+    G.endWorld();
+    drawCards();
+    drawCursor();
+    drawBanner();
+    G.postFX({ scanAlpha: 0.05, vignetteStrength: 0.35 });
+}
+
+function drawBoard() {
+    var g = ctx.createLinearGradient(0, 0, 0, VH);
+    g.addColorStop(0, '#2a3c2a'); g.addColorStop(1, '#1a281c');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+    for (var r = 0; r < ROWS; r++) {
+        for (var c = 0; c < COLS; c++) {
+            ctx.fillStyle = (r + c) % 2 === 0 ? '#4a7a3c' : '#548a44';
+            ctx.fillRect(cellX(c), cellY(r), CW, CH);
+        }
+    }
+    // 房子側（左）
+    ctx.fillStyle = '#5a4a3c';
+    ctx.fillRect(0, BY, BX - 6, ROWS * CH);
+    ctx.fillStyle = '#3a2f26';
+    ctx.fillRect(BX - 6, BY, 6, ROWS * CH);
+    // 右側入侵區
+    ctx.fillStyle = 'rgba(120,90,70,0.35)';
+    ctx.fillRect(BX + COLS * CW, BY, VW - BX - COLS * CW, ROWS * CH);
+}
+
+function drawMowers() {
+    for (var r = 0; r < ROWS; r++) {
+        if (!s.mowers[r]) continue;
+        var x = MOWER_X, y = cellY(r) + CH / 2;
+        ctx.fillStyle = '#8a93a6';
+        RE.Draw.roundRect(ctx, x - 9, y - 7, 18, 13, 3); ctx.fill();
+        ctx.fillStyle = '#ffd166';
+        ctx.fillRect(x - 6, y - 4, 4, 3);
+        ctx.fillStyle = '#3a4356';
+        ctx.beginPath(); ctx.arc(x - 5, y + 7, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x + 5, y + 7, 3, 0, Math.PI * 2); ctx.fill();
+    }
+    if (s.mowerRun) {
+        for (var i = 0; i < s.mowerRun.length; i++) {
+            var m = s.mowerRun[i];
+            var my = cellY(m.row) + CH / 2;
+            ctx.fillStyle = '#aab3c6';
+            RE.Draw.roundRect(ctx, m.x - 10, my - 8, 20, 14, 3); ctx.fill();
+            ctx.fillStyle = '#3a4356';
+            ctx.beginPath(); ctx.arc(m.x - 5, my + 7, 3.5, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(m.x + 5, my + 7, 3.5, 0, Math.PI * 2); ctx.fill();
+            P.burst(m.x - 8, my + 4, 1, { colors: ['#c8d8b0'], speedMin: 20, speedMax: 70,
+                gravity: 150, lifeMin: 0.1, lifeMax: 0.3 });
+        }
+    }
+}
+
+function drawPlants() {
+    for (var r = 0; r < ROWS; r++) {
+        for (var c = 0; c < COLS; c++) {
+            var pl = s.plants[r][c];
+            if (!pl) continue;
+            var x = cellX(c) + CW / 2, y = cellY(r) + CH / 2;
+            var bob = Math.sin(pl.anim * 3) * 1.5;
+            ctx.save();
+            ctx.translate(x, y);
+            if (pl.key === 'sunflower') {
+                ctx.fillStyle = '#4a7a3c'; ctx.fillRect(-2, 2, 4, 14);
+                ctx.fillStyle = '#ffd166';
+                for (var p8 = 0; p8 < 8; p8++) {
+                    var a = p8 / 8 * Math.PI * 2 + pl.anim * 0.5;
+                    ctx.beginPath(); ctx.ellipse(Math.cos(a) * 9, -4 + bob + Math.sin(a) * 9, 4, 2.5, a, 0, Math.PI * 2); ctx.fill();
+                }
+                ctx.fillStyle = '#b8862a';
+                ctx.beginPath(); ctx.arc(0, -4 + bob, 6, 0, Math.PI * 2); ctx.fill();
+            } else if (pl.key === 'pea' || pl.key === 'ice') {
+                ctx.fillStyle = '#4a7a3c'; ctx.fillRect(-2, 4, 4, 12);
+                ctx.fillStyle = pl.key === 'pea' ? '#6ab84a' : '#7ac8e8';
+                ctx.beginPath(); ctx.arc(0, -2 + bob, 10, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = pl.key === 'pea' ? '#3f7a2c' : '#4a90b8';
+                RE.Draw.roundRect(ctx, 4, -7 + bob, 10, 9, 4); ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.beginPath(); ctx.arc(-3, -5 + bob, 2.5, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#222';
+                ctx.beginPath(); ctx.arc(-2.5, -5 + bob, 1.2, 0, Math.PI * 2); ctx.fill();
+            } else if (pl.key === 'nut') {
+                var dmg = pl.hp / pl.maxHp;
+                ctx.fillStyle = dmg > 0.6 ? '#b08a5a' : dmg > 0.3 ? '#98744a' : '#7a5c3a';
+                RE.Draw.roundRect(ctx, -11, -14 + bob * 0.5, 22, 30, 9); ctx.fill();
+                ctx.fillStyle = 'rgba(255,255,255,0.25)';
+                RE.Draw.roundRect(ctx, -7, -11 + bob * 0.5, 8, 10, 4); ctx.fill();
+                ctx.fillStyle = '#3a2f26';
+                ctx.beginPath(); ctx.arc(-4, -2, 1.5, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(4, -2, 1.5, 0, Math.PI * 2); ctx.fill();
+                if (dmg < 0.6) { ctx.strokeStyle = '#5a4430'; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.moveTo(-6, -8); ctx.lineTo(0, 0); ctx.lineTo(-3, 6); ctx.stroke(); }
+            } else if (pl.key === 'pepper') {
+                var sc = 1 + Math.sin(pl.anim * 30) * 0.15;
+                ctx.scale(sc, sc);
+                ctx.fillStyle = '#ff5c3c';
+                RE.Draw.roundRect(ctx, -9, -12, 18, 26, 8); ctx.fill();
+                ctx.fillStyle = '#4a7a3c';
+                ctx.fillRect(-2, -16, 4, 6);
+                ctx.fillStyle = '#ffd166';
+                ctx.beginPath(); ctx.arc(0, -16, 2 + Math.random() * 1.5, 0, Math.PI * 2); ctx.fill();
+            }
+            ctx.restore();
+        }
+    }
+}
+
+function drawFoes() {
+    for (var i = 0; i < s.foes.length; i++) {
+        var f = s.foes[i];
+        var x = f.x, y = cellY(f.row) + CH / 2 + 4;
+        var F = FOES[f.type];
+        ctx.save();
+        ctx.translate(x, y);
+        if (f.dead) ctx.globalAlpha = Math.max(0, f.dead / 0.4);
+        var walk = Math.sin(f.anim * 6) * 2;
+        var slow = f.slow > 0;
+        // 腳
+        ctx.fillStyle = '#4a4038';
+        ctx.fillRect(-6 + walk, 8, 4, 8); ctx.fillRect(2 - walk, 8, 4, 8);
+        // 身體
+        ctx.fillStyle = slow ? '#7a9ab8' : F.col;
+        RE.Draw.roundRect(ctx, -9, -10, 18, 20, 4); ctx.fill();
+        // 鉚釘
+        ctx.fillStyle = 'rgba(40,34,28,0.5)';
+        ctx.beginPath(); ctx.arc(-4, -4, 1.2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(4, 2, 1.2, 0, Math.PI * 2); ctx.fill();
+        // 頭
+        ctx.fillStyle = slow ? '#8aaac8' : '#c8b8a8';
+        ctx.beginPath(); ctx.arc(0, -16, 7, 0, Math.PI * 2); ctx.fill();
+        // 鐵桶
+        if (f.type === 'bucket') {
+            ctx.fillStyle = '#6a7a90';
+            RE.Draw.roundRect(ctx, -8, -26, 16, 12, 2); ctx.fill();
+        }
+        // 巨錘
+        if (f.type === 'hammer') {
+            ctx.fillStyle = '#5a4a5a';
+            ctx.fillRect(8, -22 + (f.smashT > 1.2 ? 6 : 0), 4, 16);
+            ctx.fillStyle = '#8a7a8a';
+            RE.Draw.roundRect(ctx, 5, -30 + (f.smashT > 1.2 ? 8 : 0), 10, 9, 2); ctx.fill();
+        }
+        // 眼睛（呆滯）
+        ctx.fillStyle = '#3a2f26';
+        ctx.beginPath(); ctx.arc(-3, -17, 1.4, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(3, -17, 1.4, 0, Math.PI * 2); ctx.fill();
+        // 血條
+        if (f.hp < f.maxHp && !f.dead) {
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            ctx.fillRect(-9, -30, 18, 3);
+            ctx.fillStyle = '#ff8f6a';
+            ctx.fillRect(-9, -30, 18 * Math.max(0, f.hp / f.maxHp), 3);
+        }
+        ctx.restore();
+    }
+}
+
+function drawBullets() {
+    for (var i = 0; i < s.bullets.length; i++) {
+        var b = s.bullets[i];
+        ctx.fillStyle = b.ice ? '#9adcf8' : '#7ac83f';
+        ctx.beginPath(); ctx.arc(b.x, b.y, 4.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.beginPath(); ctx.arc(b.x - 1.5, b.y - 1.5, 1.6, 0, Math.PI * 2); ctx.fill();
+    }
+}
+
+function drawSuns() {
+    for (var i = 0; i < s.suns.length; i++) {
+        var su = s.suns[i];
+        var pulse = 1 + Math.sin(Date.now() * 0.006 + i) * 0.1;
+        ctx.save();
+        ctx.translate(su.x, su.y);
+        ctx.scale(pulse, pulse);
+        if (su.life < 3 && Math.floor(su.life * 6) % 2 === 0) ctx.globalAlpha = 0.4;
+        ctx.shadowBlur = 10; ctx.shadowColor = 'rgba(255,209,102,0.8)';
+        ctx.fillStyle = '#ffd166';
+        ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ffe9a8';
+        ctx.beginPath(); ctx.arc(0, 0, 6.5, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+    }
+}
+
+function drawCards() {
+    // 480px 畫布在手機約縮至 0.71 倍；卡片名稱、費用與陽光數若低於 13px，玩家會看不清「選哪株、付多少」的即時決策。
+    ctx.fillStyle = 'rgba(16,24,18,0.85)';
+    ctx.fillRect(0, 0, VW, CARD_Y + CARD_H + 2);
+    // 陽光數
+    ctx.fillStyle = '#ffd166';
+    ctx.beginPath(); ctx.arc(18, 26, 8, 0, Math.PI * 2); ctx.fill();
+    RE.Draw.text(ctx, '' + s.sun, 18, 38, { size: 13, align: 'center', color: '#ffd166' });
+    var x0 = cardX0();
+    for (var i = 0; i < s.L.cards.length; i++) {
+        var key = s.L.cards[i];
+        var Pd = PLANTS[key];
+        var x = x0 + i * CARD_W, y = CARD_Y;
+        var afford = s.sun >= Pd.cost && s.cardCd[key] <= 0;
+        ctx.fillStyle = i === s.sel ? 'rgba(255,209,102,0.25)' : 'rgba(255,255,255,0.08)';
+        RE.Draw.roundRect(ctx, x + 2, y, CARD_W - 4, CARD_H, 5); ctx.fill();
+        if (i === s.sel) { ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 1.5;
+            RE.Draw.roundRect(ctx, x + 2, y, CARD_W - 4, CARD_H, 5); ctx.stroke(); }
+        RE.Draw.text(ctx, Pd.name, x + CARD_W / 2, y + 5,
+            { size: 13, align: 'center', color: afford ? '#e8f0e0' : 'rgba(255,255,255,0.35)' });
+        RE.Draw.text(ctx, Pd.cost + '', x + CARD_W / 2, y + 28,
+            { size: 13, align: 'center', color: afford ? '#ffd166' : 'rgba(255,209,102,0.4)' });
+        // 冷卻遮罩
+        if (s.cardCd[key] > 0) {
+            var frac = s.cardCd[key] / Pd.cd;
+            ctx.fillStyle = 'rgba(10,14,10,0.65)';
+            ctx.fillRect(x + 2, y, CARD_W - 4, CARD_H * frac);
+        }
+    }
+    // 選中卡的說明
+    // 卡片描述改成兩行以保留 13px 可讀性，不讓長字串擠出畫布右緣。
+    drawWrappedUiText(PLANTS[s.L.cards[s.sel]].desc, VW - 6, 14, 150, 'right');
+}
+
+function drawWrappedUiText(text, x, y, maxWidth, align) {
+    var size = 13, lineGap = 14, lines = [], line = '';
+    ctx.save();
+    ctx.font = 'bold ' + size + 'px "DotGothic16", monospace';
+    for (var i = 0; i < text.length; i++) {
+        var next = line + text[i];
+        if (line && ctx.measureText(next).width > maxWidth) { lines.push(line); line = text[i]; }
+        else line = next;
+    }
+    if (line) lines.push(line);
+    ctx.restore();
+    for (var j = 0; j < Math.min(lines.length, 2); j++) {
+        RE.Draw.text(ctx, lines[j], x, y + j * lineGap,
+            { size: 13, align: align || 'center', color: 'rgba(230,240,220,0.7)', stroke: false });
+    }
+}
+
+function drawCursor() {
+    var x = cellX(s.cursor.c), y = cellY(s.cursor.r);
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 2;
+    RE.Draw.roundRect(ctx, x + 2, y + 2, CW - 4, CH - 4, 4);
+    ctx.stroke();
+}
+
+function drawBanner() {
+    if (s.bannerT > 0) {
+        ctx.globalAlpha = Math.min(1, s.bannerT);
+        RE.Draw.text(ctx, s.banner, VW / 2, 130, { size: 16, align: 'center', color: '#ffd166' });
+        if (s.bannerT > 1.4) drawWrappedUiText(s.L.hint, VW / 2, 152, VW - 40, 'center');
+        ctx.globalAlpha = 1;
+    }
+    if (s.over) {
+        ctx.fillStyle = 'rgba(8,14,8,0.75)';
+        ctx.fillRect(0, 130, VW, 60);
+        RE.Draw.text(ctx, s.over === 1 ? '守住了！' : '防線被突破…', VW / 2, 148,
+            { size: 18, align: 'center', color: s.over === 1 ? '#8fe0a0' : '#ff8f8f' });
+    }
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '點植物卡再點格子種防線：產陽光、輸出、阻擋、減速與爆發各有用途。' +
+          '點收集的陽光；共 5 關。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

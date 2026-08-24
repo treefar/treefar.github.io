@@ -1,0 +1,169 @@
+{
+  "version": 1,
+  "kind": "game-art-atlas",
+  "game": "hades_like",
+  "source": "art-production/batch-06/hades_like/source/mythic-ink-atlas-v002-imagegen.png",
+  "sourceSha256": "e98a3afa962e76f868f53bcf09e350f59dae4e86b256cccbcd8be00a08d76fe4",
+  "postprocess": "4x4 equal-cell slice; source alpha; aspect-fit resize; no drawing or recolor",
+  "alphaMode": "source-alpha",
+  "atlas": "mythic-ink-atlas.png",
+  "atlasSha256": "c7601957e876a0fc2acd1f5e838029c81dfd6446e3bf3b5c978ce4698ce49feb",
+  "cellWidth": 128,
+  "cellHeight": 128,
+  "columns": 4,
+  "rows": 4,
+  "assets": {
+    "player_idle": {
+      "index": 0,
+      "row": 0,
+      "column": 0,
+      "x": 0,
+      "y": 0,
+      "w": 128,
+      "h": 128
+    },
+    "player_run": {
+      "index": 1,
+      "row": 0,
+      "column": 1,
+      "x": 128,
+      "y": 0,
+      "w": 128,
+      "h": 128
+    },
+    "player_attack": {
+      "index": 2,
+      "row": 0,
+      "column": 2,
+      "x": 256,
+      "y": 0,
+      "w": 128,
+      "h": 128
+    },
+    "player_dash": {
+      "index": 3,
+      "row": 0,
+      "column": 3,
+      "x": 384,
+      "y": 0,
+      "w": 128,
+      "h": 128
+    },
+    "enemy_shade": {
+      "index": 4,
+      "row": 1,
+      "column": 0,
+      "x": 0,
+      "y": 128,
+      "w": 128,
+      "h": 128
+    },
+    "enemy_lancer": {
+      "index": 5,
+      "row": 1,
+      "column": 1,
+      "x": 128,
+      "y": 128,
+      "w": 128,
+      "h": 128
+    },
+    "enemy_caster": {
+      "index": 6,
+      "row": 1,
+      "column": 2,
+      "x": 256,
+      "y": 128,
+      "w": 128,
+      "h": 128
+    },
+    "enemy_brute": {
+      "index": 7,
+      "row": 1,
+      "column": 3,
+      "x": 384,
+      "y": 128,
+      "w": 128,
+      "h": 128
+    },
+    "boss_ferry": {
+      "index": 8,
+      "row": 2,
+      "column": 0,
+      "x": 0,
+      "y": 256,
+      "w": 128,
+      "h": 128
+    },
+    "boss_twin": {
+      "index": 9,
+      "row": 2,
+      "column": 1,
+      "x": 128,
+      "y": 256,
+      "w": 128,
+      "h": 128
+    },
+    "boss_core": {
+      "index": 10,
+      "row": 2,
+      "column": 2,
+      "x": 256,
+      "y": 256,
+      "w": 128,
+      "h": 128
+    },
+    "boss_mirror": {
+      "index": 11,
+      "row": 2,
+      "column": 3,
+      "x": 384,
+      "y": 256,
+      "w": 128,
+      "h": 128
+    },
+    "boss_warden": {
+      "index": 12,
+      "row": 3,
+      "column": 0,
+      "x": 0,
+      "y": 384,
+      "w": 128,
+      "h": 128
+    },
+    "ruined_pillar": {
+      "index": 13,
+      "row": 3,
+      "column": 1,
+      "x": 128,
+      "y": 384,
+      "w": 128,
+      "h": 128
+    },
+    "ground_flame": {
+      "index": 14,
+      "row": 3,
+      "column": 2,
+      "x": 256,
+      "y": 384,
+      "w": 128,
+      "h": 128
+    },
+    "boon_sigil": {
+      "index": 15,
+      "row": 3,
+      "column": 3,
+      "x": 384,
+      "y": 384,
+      "w": 128,
+      "h": 128
+    }
+  },
+  "qa": {
+    "assetCount": 16,
+    "edgePixels": 0,
+    "emptyCells": 0,
+    "minOccupiedPixels": 5357,
+    "maxOccupiedPixels": 10962,
+    "sourceHadTransparency": true
+  }
+}

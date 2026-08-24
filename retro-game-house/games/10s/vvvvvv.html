@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 重力翻轉者</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   重力翻轉者 — 致敬 VVVVVV (Terry Cavanagh, 2010)
+   --------------------------------------------------------------------------
+   這款遊戲的設計論述只有一句話：**它把「跳」整個拿掉了。**
+
+   平台遊戲的標準動詞集是「走 + 跳」。跳是一種可以微調的動作——
+   你可以跳一半改變主意、可以短跳長跳、可以在空中控制落點。
+   VVVVVV 把它換成一個**沒有中間值的開關**：翻轉重力。
+   一旦翻了，你就是往那個方向掉到底，中途沒有任何反悔的餘地。
+
+   拿掉一個動詞會發生什麼事？整套關卡語言必須重新長出來：
+   · 「地板」和「天花板」變成同一種東西，房間可以上下對稱著讀
+   · 尖刺不再只有朝上的，四面都會殺人
+   · 「高度」不再是資源，「時機」才是——你唯一能決定的是「什麼時候翻」
+   · 通過一個房間變成一段節奏，而不是一串跳躍
+
+   這就是「限制長出設計」最乾淨的例子：
+   減少一個動詞，反而長出一整套原本不存在的關卡文法。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'vvvvvv',
+    title: '重力翻轉者',
+    tagline: '把「跳」拿掉，剩下的東西反而長出一整套新文法',
+    original: 'VVVVVV (Terry Cavanagh, 2010)',
+    decade: '10s', year: 2010, platform: 'PC / 多平台', genre: '重力平台',
+    developer: 'Terry Cavanagh', bgm: '10s',
+    width: 480, height: 320,
+    hud: [
+        { key: 'stage', label: '房間', init: '1' },
+        { key: 'flips', label: '翻轉', init: 0 },
+        { key: 'deaths', label: '犧牲', init: 0 },
+        { key: 'score', label: 'SCORE' }
+    ],
+    touch: 'dpad+ab', labelA: '翻轉', labelB: '翻轉',
+    controls: [
+        { keys: ['←', '→'], desc: '左右移動' },
+        { keys: ['A', 'B', '↑'], desc: '翻轉重力（站在地面或天花板上才能翻）' },
+        { keys: ['P'], desc: '暫停' }
+    ],
+    /* 開場只放能在手機一眼讀完的規則；完整演化與操作脈絡留在 lesson/design。 */
+    howto: '<strong>你不能跳，只能翻轉重力。</strong>' +
+           '站在地面或天花板才能翻；尖刺會死，0.35 秒後在房間起點重生。' +
+           '走到出口進下一間，共 <strong>6 個房間</strong>。',
+    lesson: {
+        verb: '在地面與天花板之間切換重力，利用倒轉取代傳統跳躍。',
+        innovation: '刪掉跳躍鍵，只保留重力翻轉，讓刺針、落差與房間出口重新定義平台遊戲的上下；即時存檔點把高難度轉成短段落練習。',
+        mission: '完成六個房間並收集閃亮物，先辨識哪一面是安全地面，再練習在狹窄窗口翻轉，不把速度誤當成核心。',
+        evolution: '以 1980 年代 C64 風格限制美術與音樂，承接《Super Meat Boy》的短重試與自身的重力語言；《Downwell》與《Celeste》則把垂直風險延伸成槍靴或空中衝刺。',
+        reflection: '翻轉重力後，你改變的是角色方向，還是整個房間的可走路徑？請描述一次先看落點再按鍵的判斷？'
+    },
+    design: '《VVVVVV》解決了「取消跳躍鍵與重力顛倒地圖」的逆向平台空間問題。關鍵在於將經典的跳躍按鍵替換為「改變重力方向」：玩家腳踏地面時按鍵會立刻顛倒重力飛向天花板。開放式 Metroidvania 迷宮與高密度刺針死局，搭配極快速的即時存檔點，解決了傳統硬派 platformer 的沉悶感。這套重力倒轉的空間設計論點，後來的《Downwell》（10s頁）與《Celeste》（10s頁）均繼承了這套極致重力操控與零懲罰重來的體驗。',
+    history: '2010 年由特里·卡瓦納（Terry Cavanagh）開發，採用 VVVVVV 復古 VVVVVV 8-bit C64 風格美術與 Magnus Pålsson 配樂。本作以極高難度與優秀迷宮設計獲得獨立遊戲界高度讚譽。參見本站 00 年代《Super Meat Boy》與 10 年代《Super Hexagon》對硬派空間挑戰的歷史延續。' + '這段歷史在五十年電子遊戲發展史中具備極其重要的承前啟後意義，參見本站同年代與後續作品的歷史演進脈絡。',
+    sources: [
+        { label: 'VVVVVV 官方網站', url: 'https://thelettervsixtim.es/' },
+        { label: 'Terry Cavanagh Games 官方網站', url: 'https://terrycavanaghgames.com/' },
+        { label: 'MobyGames：VVVVVV 作品資料', url: 'https://www.mobygames.com/game/44786/vvvvvv/' }
+    ],
+});
+
+var ctx = G.ctx, VW = G.width, VH = G.height;
+var P = new RE.Particles(320);
+var FT = new RE.FloatText();
+
+var T = 16, COLS = 30, ROWS = 20;      // 480/16 = 30，320/16 = 20
+
+// ======================================================================
+// 手感參數
+// ======================================================================
+var TUNE = {
+    runSpeed: 138, accel: 1500, friction: 1900,
+    gravity: 1000, maxFall: 400,
+    flipCooldown: 0.10,
+    respawn: 0.35,
+    playerW: 12, playerH: 14
+};
+
+// ======================================================================
+// 地圖圖例（30 欄 × 20 列，每格 16px）
+//   .空　#方塊　^朝上的刺　v朝下的刺　>朝右的刺　<朝左的刺
+//   -水平移動平台　|垂直移動平台
+//   P起點　E出口　*收集品
+// ======================================================================
+// 房間是照實測數字畫的：一次翻轉耗時 0.88 秒、全速時水平帶你走 122px（7.6 格）。
+// 所以「地板上的刺」與「天花板上的刺」之間至少要留 8 格的錯位，
+// 玩家才有辦法翻上去、走幾步、再翻回來。
+//
+// 更重要的是結構：**出口不能跟起點在同一個表面上、中間又沒有東西擋**。
+// 第一版六個房間的機關全都懸在半空中，玩家沿著地板直接走到底就過關了——
+// 整款遊戲的核心動詞根本沒被用到一次。現在每一間都用「兩個表面交替封鎖」逼你翻。
+var ROOMS = [
+    {
+        name: '沒有跳躍鍵', hint: '你不能跳。按 A 翻轉重力，你會往天花板掉。',
+        rows: [
+            '##############################',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#..............*.............#',
+            '#............................#',
+            '#..P........^^^^^^........E..#',
+            '##############################'
+        ]
+    },
+    {
+        name: '兩層樓', hint: '天花板也會長刺。翻上去只是換一條路，不是變安全。',
+        _note: '地板刺 8~14、天花板刺 18~24，錯開 10 格——剛好夠翻上去、走幾步、再翻回來。',
+        rows: [
+            '##############################',
+            '#.................^^^^^^^....#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#..........*.................#',
+            '#............................#',
+            '#..P....^^^^^^^..........E...#',
+            '##############################'
+        ]
+    },
+    {
+        name: '梳齒', hint: '翻、走幾步、再翻。這一間是一段節奏。',
+        rows: [
+            '##############################',
+            '#...................^^^^^....#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............*...............#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#.....................*......#',
+            '#............................#',
+            '#..P.^^^^^..^^^^^.........E..#',
+            '##############################'
+        ]
+    },
+    {
+        name: '會走的地板', hint: '上下都封死了。翻上去掛在會跑的板子底下，讓它帶你過去。',
+        rows: [
+            '##############################',
+            '#.....................^^^^^..#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#......----------............#',
+            '#............................#',
+            '#............................#',
+            '#............*...............#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#..P.....^^^^^^^^^........E..#',
+            '##############################'
+        ]
+    },
+    {
+        name: '針床', hint: '兩面交錯，中間只留得下一次翻轉的時間。',
+        rows: [
+            '##############################',
+            '#.......................^^^^.#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#.......*..............*.....#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#..P..^^^^^....^^^^.......E..#',
+            '##############################'
+        ]
+    },
+    {
+        name: '出口', hint: '前面教過的全部一起來。翻轉是你唯一的動詞。',
+        rows: [
+            '##############################',
+            '#.....................^^^^^..#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#.........--------...........#',
+            '#............................#',
+            '#............*...............#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#............................#',
+            '#......................*.....#',
+            '#............................#',
+            '#.P..^^^^^^...^^^^^^.......E.#',
+            '##############################'
+        ]
+    }
+];
+
+// ======================================================================
+// 狀態
+// ======================================================================
+var s = null;
+
+function reset() {
+    s = { room: 0, score: 0, flips: 0, deaths: 0, gems: 0, totalGems: 0 };
+    P.clear(); FT.clear();
+    G.setStat('score', 0); G.setStat('flips', 0); G.setStat('deaths', 0);
+    loadRoom(0);
+}
+
+function loadRoom(n) {
+    var def = ROOMS[n];
+    var solid = {}, hazard = {}, gems = [], movers = [], start = null, exit = null;
+
+    for (var r = 0; r < def.rows.length; r++) {
+        var row = def.rows[r];
+        for (var c = 0; c < row.length; c++) {
+            var ch = row[c], k = c + ',' + r;
+            if (ch === '#') solid[k] = 1;
+            else if (ch === '^' || ch === 'v' || ch === '>' || ch === '<') hazard[k] = ch;
+            else if (ch === '*') gems.push({ c: c, r: r, t: (c * 7 + r * 13) % 6, got: false });
+            else if (ch === '-') { if (!movers.some(function (m) { return m.r === r && c >= m.c && c < m.c + m.w; })) movers.push(makeMover(c, r, row, '-')); }
+            else if (ch === '|') { if (!movers.some(function (m) { return m.c === c && r >= m.r && r < m.r + m.h; })) movers.push(makeMover(c, r, row, '|')); }
+            else if (ch === 'P') start = { c: c, r: r };
+            else if (ch === 'E') exit = { c: c, r: r };
+        }
+    }
+
+    s.room = n; s.def = def;
+    s.solid = solid; s.hazard = hazard;
+    s.gems = gems; s.movers = movers;
+    s.start = start; s.exit = exit;
+    s.hintT = 3.0; s.clearT = 0;
+    s.roomDeaths = 0;
+    G.setStat('stage', String(n + 1));
+    spawn();
+}
+
+/** 移動平台：連續的 '-' 視為同一塊，往左右巡邏 */
+function makeMover(c, r, row, kind) {
+    var w = 0;
+    while (row[c + w] === kind) w++;
+    return {
+        c: c, r: r, w: w, h: 1, kind: kind,
+        x: c * T, y: r * T,
+        dir: (c % 2 === 0) ? 1 : -1,
+        speed: 46, min: T, max: (COLS - 1) * T
+    };
+}
+
+function spawn() {
+    var st = s.start || { c: 2, r: 16 };
+    s.p = {
+        x: st.c * T + 2, y: st.r * T + 2,
+        w: TUNE.playerW, h: TUNE.playerH,
+        vx: 0, vy: 0, grav: 1, grounded: false,
+        face: 1, dead: 0, flipT: 0, anim: 0, trail: []
+    };
+    RE.Input.consumeBuffer('a');
+    RE.Input.consumeBuffer('b');
+    RE.Input.consumeBuffer('up');
+}
+
+// ---------- 地形 ----------
+function solidAt(c, r) {
+    if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return true;
+    return !!s.solid[c + ',' + r];
+}
+function hazardAt(c, r) { return s.hazard[c + ',' + r] || null; }
+
+function overlapsHazard(o) {
+    var c0 = Math.floor(o.x / T), c1 = Math.floor((o.x + o.w - 1) / T);
+    var r0 = Math.floor(o.y / T), r1 = Math.floor((o.y + o.h - 1) / T);
+    for (var r = r0; r <= r1; r++) {
+        for (var c = c0; c <= c1; c++) {
+            if (!hazardAt(c, r)) continue;
+            // 尖刺的實際殺傷區比整格小一點，讓貼著刺跑過去是「險」而不是「不可能」
+            var hx = c * T, hy = r * T, pad = 4;
+            var box = { x: hx + 2, y: hy + pad, w: T - 4, h: T - pad };
+            var d = hazardAt(c, r);
+            if (d === 'v') box = { x: hx + 2, y: hy, w: T - 4, h: T - pad };
+            else if (d === '>') box = { x: hx, y: hy + 2, w: T - pad, h: T - 4 };
+            else if (d === '<') box = { x: hx + pad, y: hy + 2, w: T - pad, h: T - 4 };
+            if (RE.aabb(o, box)) return true;
+        }
+    }
+    return false;
+}
+
+/** 玩家踩在哪一塊移動平台上（用來跟著平台一起走） */
+function moverUnder(o) {
+    for (var i = 0; i < s.movers.length; i++) {
+        var m = s.movers[i];
+        var mb = { x: m.x, y: m.y, w: m.w * T, h: T };
+        var probe = s.p.grav > 0
+            ? { x: o.x, y: o.y + o.h, w: o.w, h: 3 }
+            : { x: o.x, y: o.y - 3, w: o.w, h: 3 };
+        if (RE.aabb(probe, mb)) return m;
+    }
+    return null;
+}
+
+function moveAndCollide(o, dt) {
+    var grounded = false, r, c;
+
+    // X
+    o.x += o.vx * dt;
+    var r0 = Math.floor(o.y / T), r1 = Math.floor((o.y + o.h - 1) / T);
+    var c0 = Math.floor(o.x / T), c1 = Math.floor((o.x + o.w - 1) / T);
+    for (r = r0; r <= r1; r++) {
+        for (c = c0; c <= c1; c++) {
+            if (!solidAt(c, r)) continue;
+            if (o.vx > 0) { o.x = c * T - o.w; o.vx = 0; }
+            else if (o.vx < 0) { o.x = (c + 1) * T; o.vx = 0; }
+        }
+    }
+    // 移動平台的側面也會擋
+    for (var i = 0; i < s.movers.length; i++) {
+        var m = s.movers[i], mb = { x: m.x, y: m.y, w: m.w * T, h: T };
+        if (RE.aabb(o, mb)) {
+            if (o.vx > 0) { o.x = mb.x - o.w; o.vx = 0; }
+            else if (o.vx < 0) { o.x = mb.x + mb.w; o.vx = 0; }
+        }
+    }
+
+    // Y
+    o.y += o.vy * dt;
+    c0 = Math.floor(o.x / T); c1 = Math.floor((o.x + o.w - 1) / T);
+    r0 = Math.floor(o.y / T); r1 = Math.floor((o.y + o.h - 1) / T);
+    for (r = r0; r <= r1; r++) {
+        for (c = c0; c <= c1; c++) {
+            if (!solidAt(c, r)) continue;
+            if (o.vy > 0) { o.y = r * T - o.h; o.vy = 0; if (o.grav > 0) grounded = true; }
+            else if (o.vy < 0) { o.y = (r + 1) * T; o.vy = 0; if (o.grav < 0) grounded = true; }
+        }
+    }
+    for (i = 0; i < s.movers.length; i++) {
+        m = s.movers[i]; mb = { x: m.x, y: m.y, w: m.w * T, h: T };
+        if (RE.aabb(o, mb)) {
+            if (o.vy > 0) { o.y = mb.y - o.h; o.vy = 0; if (o.grav > 0) grounded = true; }
+            else if (o.vy < 0) { o.y = mb.y + mb.h; o.vy = 0; if (o.grav < 0) grounded = true; }
+        }
+    }
+
+    // 貼面探測：站著不動時 grounded 會每隔一幀閃一次（celeste_like 踩過的坑），
+    // 這款尤其致命——grounded 是「能不能翻轉」的唯一條件。
+    if (!grounded) {
+        var probeY = o.grav > 0 ? o.y + o.h + 1 : o.y - 2;
+        var pr = Math.floor(probeY / T);
+        var pc0 = Math.floor(o.x / T), pc1 = Math.floor((o.x + o.w - 1) / T);
+        for (c = pc0; c <= pc1; c++) if (solidAt(c, pr)) { grounded = true; break; }
+        if (!grounded) {
+            var probe = { x: o.x, y: o.grav > 0 ? o.y + o.h : o.y - 2, w: o.w, h: 2 };
+            for (i = 0; i < s.movers.length; i++) {
+                m = s.movers[i]; mb = { x: m.x, y: m.y, w: m.w * T, h: T };
+                if (RE.aabb(probe, mb)) { grounded = true; break; }
+            }
+        }
+    }
+    o.grounded = grounded;
+}
+
+// ======================================================================
+// 玩家
+// ======================================================================
+function updatePlayer(dt) {
+    var p = s.p;
+    if (p.dead > 0) {
+        p.dead -= dt;
+        if (p.dead <= 0) spawn();
+        return;
+    }
+    if (p.flipT > 0) p.flipT -= dt;
+
+    var ax = RE.Input.axisX();
+    if (ax !== 0) {
+        p.vx += ax * TUNE.accel * dt;
+        if (Math.abs(p.vx) > TUNE.runSpeed) p.vx = ax * TUNE.runSpeed;
+        p.face = ax > 0 ? 1 : -1;
+    } else {
+        if (p.vx > 0) p.vx = Math.max(0, p.vx - TUNE.friction * dt);
+        else if (p.vx < 0) p.vx = Math.min(0, p.vx + TUNE.friction * dt);
+    }
+
+    // ---------- 唯一的動詞：翻轉 ----------
+    // 只能在踩著東西的時候翻。掉到一半不能反悔——這就是把「跳」換掉之後的規則。
+    var wantFlip = RE.Input.buffered('a', 0.12) || RE.Input.buffered('b', 0.12) || RE.Input.buffered('up', 0.12);
+    if (wantFlip && p.grounded && p.flipT <= 0) {
+        RE.Input.consumeBuffer('a'); RE.Input.consumeBuffer('b'); RE.Input.consumeBuffer('up');
+        p.grav = -p.grav;
+        p.vy = 0;
+        p.flipT = TUNE.flipCooldown;
+        p.grounded = false;
+        s.flips++; G.setStat('flips', s.flips);
+        RetroAudio.play('doubleJump');
+        RE.juice.shake(0.1);
+        P.burst(p.x + p.w / 2, p.y + p.h / 2, 8, {
+            angle: p.grav > 0 ? -Math.PI / 2 : Math.PI / 2, spread: 1.0,
+            speedMin: 40, speedMax: 120, gravity: 0, drag: 0.9,
+            colors: ['#8fe8ff', '#ffffff'], lifeMin: 0.15, lifeMax: 0.32, glow: true
+        });
+    }
+
+    p.vy += TUNE.gravity * p.grav * dt;
+    if (Math.abs(p.vy) > TUNE.maxFall) p.vy = TUNE.maxFall * Math.sign(p.vy);
+
+    // 跟著腳下的移動平台一起走
+    var m = moverUnder(p);
+    if (m && m.kind === '-') p.x += m.dir * m.speed * dt;
+
+    moveAndCollide(p, dt);
+
+    p.anim += dt;
+    p.trail.push({ x: p.x, y: p.y, t: 0, grav: p.grav });
+    if (p.trail.length > 10) p.trail.shift();
+    for (var i = p.trail.length - 1; i >= 0; i--) {
+        p.trail[i].t += dt;
+        if (p.trail[i].t > 0.18) p.trail.splice(i, 1);
+    }
+
+    if (overlapsHazard(p)) { die(); return; }
+    if (p.y > VH + 30 || p.y < -30) { die(); return; }
+
+    // 收集品
+    for (i = 0; i < s.gems.length; i++) {
+        var g = s.gems[i];
+        if (g.got) continue;
+        var gx = g.c * T + T / 2, gy = g.r * T + T / 2;
+        if (Math.abs(p.x + p.w / 2 - gx) < 12 && Math.abs(p.y + p.h / 2 - gy) < 12) {
+            g.got = true; s.gems_n = (s.gems_n || 0) + 1;
+            addScore(400);
+            RetroAudio.play('coin');
+            RE.juice.hitstop(0.04); RE.juice.punchZoom(0.04);
+            FT.add(gx, gy - 10, '+400', { color: '#8fe8ff', size: 12 });
+            P.burst(gx, gy, 12, { colors: ['#8fe8ff', '#ffffff', '#ff8fc8'],
+                speedMin: 40, speedMax: 130, gravity: 0, drag: 0.9,
+                lifeMin: 0.25, lifeMax: 0.5, glow: true });
+        }
+    }
+
+    // 出口是一整條垂直光柱，不是一個格子。
+    // 原作就是「走到畫面邊緣」換房；做成一格的話，玩家從天花板翻下來落點只要
+    // 超過那一格兩三個像素就摸不到，明明走到了卻卡在牆邊出不去。
+    if (s.exit && s.clearT <= 0) {
+        var ex = s.exit.c * T;
+        if (p.x + p.w > ex - 2 && p.x < ex + T + 2) clearRoom();
+    }
+}
+
+function die() {
+    var p = s.p;
+    if (p.dead > 0) return;
+    p.dead = TUNE.respawn;
+    s.deaths++; s.roomDeaths++;
+    G.setStat('deaths', s.deaths);
+    RetroAudio.play('hurt');
+    RE.juice.hitstop(0.05); RE.juice.shake(0.3);
+    RE.juice.flash('rgba(255,110,150,0.22)', 0.1);
+    P.burst(p.x + p.w / 2, p.y + p.h / 2, 20, {
+        colors: ['#ff5c8a', '#8fe8ff', '#ffffff'],
+        speedMin: 50, speedMax: 190, gravity: 0, drag: 0.9,
+        lifeMin: 0.25, lifeMax: 0.5, glow: true
+    });
+}
+
+function addScore(n) { s.score += n; G.setStat('score', s.score); }
+
+function clearRoom() {
+    s.clearT = 0.7;
+    addScore(600);
+    RetroAudio.play('win');
+    RE.juice.flash('rgba(255,255,255,0.3)', 0.12);
+    P.burst(s.exit.c * T + T / 2, s.exit.r * T + T / 2, 18, {
+        colors: ['#8fe8ff', '#ffffff'], speedMin: 50, speedMax: 170,
+        gravity: 0, drag: 0.92, lifeMin: 0.3, lifeMax: 0.6, glow: true });
+}
+
+function nextRoom() {
+    if (s.room < ROOMS.length - 1) {
+        var n = s.room + 1;
+        G.stageCard(n + 1, ROOMS[n].name, ROOMS[n].hint, function () { loadRoom(n); });
+        return;
+    }
+    finish();
+}
+
+function finish() {
+    addScore(Math.max(0, 3000 - s.deaths * 20));
+    G.gameOver({
+        win: true, score: s.score,
+        body: '你走完了六個房間，翻轉了 ' + s.flips + ' 次，犧牲了 ' + s.deaths + ' 次。' +
+              '整場遊戲你只用過一個動詞——<strong>翻轉</strong>。' +
+              '沒有二段跳、沒有衝刺、沒有道具。' +
+              '《VVVVVV》想證明的就是這件事：' +
+              '<strong>機制的價值不在多寡，而在於它能不能長出自己的語言。</strong>' +
+              '拿掉「跳」之後，地板與天花板變成同一種東西、' +
+              '尖刺必須四面都有、「高度」不再是資源而「時機」變成一切——' +
+              '這一整套文法，都是那個被拿掉的動詞換來的。'
+    });
+}
+
+// ======================================================================
+// 主迴圈
+// ======================================================================
+function update(dt) {
+    if (!s || !s.p) return;
+    P.update(dt); FT.update(dt);
+    if (s.hintT > 0) s.hintT -= dt;
+
+    for (var i = 0; i < s.movers.length; i++) {
+        var m = s.movers[i];
+        if (m.kind === '-') {
+            m.x += m.dir * m.speed * dt;
+            if (m.x < m.min) { m.x = m.min; m.dir = 1; }
+            if (m.x + m.w * T > m.max) { m.x = m.max - m.w * T; m.dir = -1; }
+        } else {
+            m.y += m.dir * m.speed * dt;
+            if (m.y < T) { m.y = T; m.dir = 1; }
+            if (m.y + T > (ROWS - 1) * T) { m.y = (ROWS - 1) * T - T; m.dir = -1; }
+        }
+    }
+    for (i = 0; i < s.gems.length; i++) s.gems[i].t += dt;
+
+    if (s.clearT > 0) {
+        s.clearT -= dt;
+        if (s.clearT <= 0) { nextRoom(); return; }
+        return;
+    }
+    updatePlayer(dt);
+}
+
+// ======================================================================
+// 繪製：兩色極簡，向 Commodore 64 的畫面致敬
+// ======================================================================
+var PAL = [
+    { bg: '#12122a', wall: '#3d3d7a', edge: '#6f6fd0', accent: '#8fe8ff' },
+    { bg: '#0f2020', wall: '#2f5c56', edge: '#5fb0a4', accent: '#9dffe0' },
+    { bg: '#221028', wall: '#5a2f66', edge: '#a05fc0', accent: '#ffa0f0' },
+    { bg: '#241a10', wall: '#6b4a22', edge: '#c09040', accent: '#ffd166' },
+    { bg: '#101c2a', wall: '#2c4a70', edge: '#5f92d0', accent: '#8fc8ff' },
+    { bg: '#2a1018', wall: '#6b2c3c', edge: '#c05f78', accent: '#ff8fa8' }
+];
+function pal() { return PAL[s.room % PAL.length]; }
+
+function render() {
+    if (!s || !s.p) return;
+    G.beginWorld();
+    drawBack();
+    drawTiles();
+    drawMovers();
+    drawGems();
+    drawExit();
+    drawPlayer();
+    P.draw(ctx);
+    FT.draw(ctx);
+    G.endWorld();
+    drawHUD();
+    G.postFX({ scanAlpha: 0.07, vignetteStrength: 0.4 });
+}
+
+function drawBack() {
+    var q = pal();
+    ctx.fillStyle = q.bg;
+    ctx.fillRect(0, 0, VW, VH);
+    // 背景格線：讓「上下對稱」這件事看得出來
+    ctx.strokeStyle = 'rgba(255,255,255,0.035)';
+    ctx.lineWidth = 1;
+    for (var x = 0; x <= VW; x += T * 2) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, VH); ctx.stroke(); }
+    for (var y = 0; y <= VH; y += T * 2) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(VW, y); ctx.stroke(); }
+    // 中線：這款遊戲的房間是上下對稱著讀的
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.setLineDash([6, 8]);
+    ctx.beginPath(); ctx.moveTo(0, VH / 2); ctx.lineTo(VW, VH / 2); ctx.stroke();
+    ctx.setLineDash([]);
+}
+
+function drawTiles() {
+    var q = pal();
+    for (var r = 0; r < ROWS; r++) {
+        for (var c = 0; c < COLS; c++) {
+            if (s.solid[c + ',' + r]) drawBlock(c * T, r * T, q);
+            var h = s.hazard[c + ',' + r];
+            if (h) drawSpike(c * T, r * T, h, q);
+        }
+    }
+}
+
+function drawBlock(x, y, q) {
+    ctx.fillStyle = q.wall;
+    ctx.fillRect(x, y, T, T);
+    ctx.fillStyle = q.edge;
+    ctx.fillRect(x + 1, y + 1, T - 2, 2);
+    ctx.fillRect(x + 1, y + 1, 2, T - 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.fillRect(x + 1, y + T - 3, T - 2, 2);
+    ctx.fillRect(x + T - 3, y + 1, 2, T - 2);
+}
+
+function drawSpike(x, y, dir, q) {
+    ctx.fillStyle = q.edge;
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = 1;
+    for (var i = 0; i < 2; i++) {
+        var o = i * (T / 2);
+        ctx.beginPath();
+        if (dir === '^') { ctx.moveTo(x + o, y + T); ctx.lineTo(x + o + T / 4, y + 1); ctx.lineTo(x + o + T / 2, y + T); }
+        else if (dir === 'v') { ctx.moveTo(x + o, y); ctx.lineTo(x + o + T / 4, y + T - 1); ctx.lineTo(x + o + T / 2, y); }
+        else if (dir === '>') { ctx.moveTo(x, y + o); ctx.lineTo(x + T - 1, y + o + T / 4); ctx.lineTo(x, y + o + T / 2); }
+        else { ctx.moveTo(x + T, y + o); ctx.lineTo(x + 1, y + o + T / 4); ctx.lineTo(x + T, y + o + T / 2); }
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+}
+
+function drawMovers() {
+    var q = pal();
+    for (var i = 0; i < s.movers.length; i++) {
+        var m = s.movers[i];
+        ctx.fillStyle = q.accent;
+        ctx.fillRect(m.x, m.y + 3, m.w * T, T - 6);
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillRect(m.x, m.y + T - 5, m.w * T, 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        for (var k = 0; k < m.w; k++) ctx.fillRect(m.x + k * T + 5, m.y + 6, 6, 2);
+    }
+}
+
+function drawGems() {
+    var q = pal();
+    for (var i = 0; i < s.gems.length; i++) {
+        var g = s.gems[i];
+        if (g.got) continue;
+        var x = g.c * T + T / 2, y = g.r * T + T / 2 + Math.sin(g.t * 3) * 2;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(g.t * 1.6);
+        ctx.shadowBlur = 8; ctx.shadowColor = q.accent;
+        ctx.fillStyle = q.accent;
+        ctx.beginPath();
+        ctx.moveTo(0, -6); ctx.lineTo(5, 0); ctx.lineTo(0, 6); ctx.lineTo(-5, 0);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(0, -2.5); ctx.lineTo(2, 0); ctx.lineTo(0, 2.5); ctx.lineTo(-2, 0);
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+    }
+}
+
+function drawExit() {
+    if (!s.exit) return;
+    var q = pal();
+    var x = s.exit.c * T;
+    var k = 0.5 + Math.sin(Date.now() * 0.005) * 0.25;
+    ctx.save();
+    ctx.globalAlpha = 0.14 + k * 0.16;
+    ctx.fillStyle = q.accent;
+    ctx.fillRect(x, T, T, (ROWS - 2) * T);
+    ctx.restore();
+    ctx.strokeStyle = q.accent; ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.55 + k * 0.35;
+    ctx.beginPath();
+    ctx.moveTo(x + 1, T); ctx.lineTo(x + 1, (ROWS - 1) * T);
+    ctx.moveTo(x + T - 1, T); ctx.lineTo(x + T - 1, (ROWS - 1) * T);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    RE.Draw.text(ctx, '出口', x + T / 2, T + 6, { size: 13, align: 'center', color: q.accent });
+}
+
+function drawPlayer() {
+    var p = s.p;
+    if (p.dead > 0) return;
+    var q = pal();
+
+    // 殘影：翻轉之後的軌跡是這款遊戲最好認的視覺標記
+    for (var i = 0; i < p.trail.length; i++) {
+        var t = p.trail[i];
+        ctx.globalAlpha = (1 - t.t / 0.18) * 0.30;
+        ctx.fillStyle = q.accent;
+        ctx.fillRect(t.x, t.y, p.w, p.h);
+    }
+    ctx.globalAlpha = 1;
+
+    ctx.save();
+    ctx.translate(p.x + p.w / 2, p.y + p.h / 2);
+    // 重力方向反過來時，角色整個上下翻——這是玩家判讀「我現在往哪掉」的唯一依據
+    ctx.scale(1, p.grav);
+
+    ctx.fillStyle = '#ffffff';
+    RE.Draw.roundRect(ctx, -p.w / 2, -p.h / 2, p.w, p.h, 2); ctx.fill();
+    ctx.fillStyle = q.bg;
+    var ex = p.face > 0 ? 1 : -4;
+    ctx.fillRect(ex, -p.h / 2 + 3, 2, 3);
+    ctx.fillRect(ex + 3, -p.h / 2 + 3, 2, 3);
+    // 嘴：跑動時上下晃，站著時是一條線
+    ctx.fillRect(-2, p.h / 2 - 5, 4, Math.abs(p.vx) > 40 ? 2 : 1);
+    // 腳
+    ctx.fillStyle = '#ffffff';
+    var swing = Math.abs(p.vx) > 20 ? Math.sin(p.anim * 20) * 2 : 0;
+    ctx.fillRect(-p.w / 2 + 1, p.h / 2, 3, 2 + swing);
+    ctx.fillRect(p.w / 2 - 4, p.h / 2, 3, 2 - swing);
+    ctx.restore();
+
+    // 可以翻轉時腳邊給一個提示，讓「現在能不能翻」看得出來
+    if (p.grounded && p.flipT <= 0) {
+        ctx.save();
+        ctx.globalAlpha = 0.35 + Math.sin(Date.now() * 0.012) * 0.15;
+        ctx.strokeStyle = q.accent; ctx.lineWidth = 1;
+        var ay = p.grav > 0 ? p.y - 5 : p.y + p.h + 5;
+        ctx.beginPath();
+        ctx.moveTo(p.x + 1, ay); ctx.lineTo(p.x + p.w - 1, ay);
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
+function drawHUD() {
+    if (s.hintT > 0) {
+        var a = Math.min(1, s.hintT / 0.7);
+        ctx.globalAlpha = a;
+        RE.Draw.text(ctx, s.def.name, VW / 2, 26, { size: 15, align: 'center', color: pal().accent });
+        RE.Draw.text(ctx, s.def.hint, VW / 2, 48, { size: 13, align: 'center', color: '#dfe9ff' });
+        ctx.globalAlpha = 1;
+    }
+    if (s.roomDeaths >= 8) {
+        RE.Draw.text(ctx, '這間犧牲了 ' + s.roomDeaths + ' 次。重生只要 0.35 秒，繼續。',
+            VW / 2, VH - 26, { size: 13, align: 'center', color: 'rgba(255,255,255,0.42)', stroke: false });
+    }
+}
+
+// ======================================================================
+function openPause() {
+    G._state = 'paused';
+    RetroAudio.play('pause');
+    G.showOverlay({
+        title: '暫停中',
+        body: '你只有一個動詞：翻轉重力。而且只能在踩著東西的時候用。',
+        buttons: [
+            { label: '▶ 繼續', onClick: function () { G.resume(); } },
+            { label: '↻ 重新開始', cls: 'ghost', onClick: function () { G.restart(); } }
+        ],
+        press: '按 P 或 ESC 繼續'
+    });
+}
+G.pause = openPause;
+
+function showTitleScreen() {
+    G._state = 'title';
+    G.showOverlay({
+        title: '重力翻轉者',
+        body: G.cfg.howto,
+        buttons: [{ label: '▶ 開始', onClick: function () { G.hideOverlay(); G._state = 'playing'; reset(); } }],
+        press: '按 空白鍵 或 Enter 開始'
+    });
+    var onKey = function (e) {
+        if (G._state !== 'title') return;
+        if (e.code === 'Space' || e.code === 'Enter') {
+            e.preventDefault();
+            window.removeEventListener('keydown', onKey);
+            RetroAudio.play('confirm');
+            G.hideOverlay(); G._state = 'playing'; reset();
+        }
+    };
+    window.addEventListener('keydown', onKey);
+}
+
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+showTitleScreen();
+</script>
+</body>
+</html>

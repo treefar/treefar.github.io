@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 軟糖大亂鬥</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   軟糖大亂鬥 — 致敬 Fall Guys (Mediatonic, 2020)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. **輸掉也很好笑**。這是本作在設計史上真正的貢獻——
+      大逃殺原本是高壓、殘酷、失敗代價極重的類型，
+      它把「被淘汰」重新包裝成綜藝節目的橋段：
+      沒有血條、沒有傷害、沒有殺人者，只有被撞飛時軟綿綿的翻滾。
+      **降低失敗的情緒門檻，比降低失敗的機率更能留住玩家。**
+   2. 沒有攻擊、沒有生命值。所有互動都是推擠與碰撞，
+      因此每一次失敗都可以歸咎於「運氣」而不是「我很爛」——這是刻意的設計。
+   3. 一起被淘汰的人越多越好笑：同場永遠有其他參賽者在一起翻滾，
+      失敗因此是集體事件而不是個人挫敗。
+   4. 每一關都短。輸了馬上重來，重來的成本低到讓人不介意再輸一次。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'fall_guys',
+    title: '軟糖大亂鬥',
+    tagline: '被撞飛的時候，記得那也是節目的一部分',
+    original: 'Fall Guys (Mediatonic, 2020)',
+    decade: '20s', year: 2020, platform: 'PC / 主機', genre: '綜藝式大逃殺',
+    developer: 'Mediatonic', bgm: '20s',
+    width: 560, height: 400,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'round', label: '關卡', init: '1/5' },
+        { key: 'alive', label: '存活', init: 8 },
+        { key: 'time', label: '剩餘', init: '60' }
+    ],
+    /* 撲倒（startDive）綁在 A 鍵，而且沒有任何替代路徑。
+       原本設成 'dpad'，手機玩家拿不到 A 鈕，等於整個核心動詞被拿掉——
+       而這款最後一關「決賽搶皇冠」正是靠撲倒鑽縫隙才過得去。 */
+    touch: 'dpad+ab',
+    labelA: '撲',
+    controls: [
+        { keys: ['↑', '↓', '←', '→'], desc: '移動（沒有攻擊鍵）' },
+        { keys: ['Z', 'A'], desc: '撲倒：短暫加速並鑽過縫隙' }
+    ],
+    howto: '<strong>沒有攻擊、沒有血條</strong>。' +
+           '你是一顆軟糖，被撞到只會翻滾一下，然後爬起來繼續跑。' +
+           '每一關取前幾名晉級，最後一關搶到皇冠就贏了。' +
+           '按 <strong>Z</strong> 可以撲倒——短暫加速，但倒地後要爬起來。',
+    lesson: {
+        verb: '奔跑、跳躍、撲倒與碰撞，在混亂障礙中搶到下一輪資格。',
+        innovation: '把大逃殺的淘汰壓力包裝成軟綿綿的綜藝摔倒，讓失敗可以被觀看、重播與大笑；多人碰撞不是誤差，而是主要表演。',
+        mission: '通過五段障礙賽並觀察何時該衝、何時該避讓；比較單人路線與利用群體推擠的路線，理解資格線如何改變風險。',
+        evolution: '從《Frogger》與《Crossy Road》的障礙穿越，演化成《Fall Guys》的多人闖關與觀眾式淘汰；官方 Creative 又把關卡製作與分享納入玩法。',
+        reflection: '你淘汰的原因是操作失誤、路線選擇，還是被群體碰撞改變位置？請把一次跌倒還原成可重試的決策？'
+    },
+    design: '《Fall Guys》解決了「大逃殺高壓殘酷感與綜藝物理摔倒」的情緒門檻問題。關鍵在於降低失敗的情緒打擊：沒有血條與槍械殺戮，淘汰時玩家只是軟綿綿地翻滾跌出畫面。60 人同場障礙賽跑、旋轉門與消失地板，將淘汰重新包裝為歡樂的電視綜藝節目。這套將高壓大逃殺轉化為輕量綜藝派對的設計論點，承接了 80 年代《Frogger》與 10 年代《Crossy Road》的闖關歡樂感。' + '設計上的關鍵在於：看似簡單的規則背後，隱藏著對玩家心理、空間約束與代價邊界的精確計算，不是隨意拍腦袋而是有著深刻的系統取捨。',
+    history: '2020 年 8 月由 Mediatonic 開發、Devolver Digital / Epic Games 發行，首月創下 PS Plus 史上最多下載紀錄。本作在疫情期間為全球無數玩家提供了歡樂與連結。參見本站 10 年代《Crossy Road》與 20 年代《Among Us》對多人社交派對遊戲的歷史對照。' + '這段歷史在五十年電子遊戲發展史中具備極其重要的承前啟後意義，參見本站同年代與後續作品的歷史演進脈絡。',
+    sources: [
+        { label: 'Fall Guys 官方 About', url: 'https://www.fallguys.com/about' },
+        { label: 'Fall Guys 官方：2020 發行回顧', url: 'https://www.fallguys.com/news/fall-guys-is-going-free-on-june-21-launching-on-playstation-nintendo-switch-xbox-and-the-epic-games-store' },
+        { label: 'PlayStation 官方 Blog：Fall Guys 介紹', url: 'https://blog.playstation.com/2020/02/17/stumble-toward-greatness-with-fall-guys/' }
+    ],
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(500);
+var FT = new RE.FloatText();
+var FALL_ART = { image: new Image(), manifest: null };
+FALL_ART.image.src = '../../assets/games/fall_guys/toy-atlas.png';
+fetch('../../assets/games/fall_guys/toy-manifest.json')
+    .then(function (r) { if (!r.ok) throw new Error('fall guys art manifest ' + r.status); return r.json(); })
+    .then(function (m) { FALL_ART.manifest = m; })
+    .catch(function () { FALL_ART.manifest = null; });
+
+// ======================================================================
+// 場地與物理
+// ======================================================================
+var LANE_W = 460;                 // 賽道寬
+var LANE_X = (W - LANE_W) / 2;    // 賽道左緣（畫面座標）
+var R = 12;                       // 參賽者半徑
+
+var PHYS = {
+    accel: 780, maxSpd: 152, friction: 5.2,
+    restitution: 0.55, posPercent: 0.8, posSlop: 0.4,
+    diveSpd: 235, diveTime: 0.42, getUp: 0.55,
+    tumbleTime: 0.75
+};
+
+/* ----------------------------------------------------------------------
+   五個關卡。難度靠三件事逐關收緊：晉級名額、障礙密度、時間。
+   關卡型態刻意輪替（跑、閃、站、閃、搶），
+   因為這款的樂趣來自「每一關都在做不一樣的蠢事」。
+   ---------------------------------------------------------------------- */
+var STAGES = [
+    { kind: 'race', name: '旋轉門廊', hint: '轉桿會把你掃飛，但飛出去也不會少一條命',
+      len: 1500, time: 60, passQuota: 6, spin: { count: 4, spd: 1.5, len: 150 }, balls: 0 },
+    { kind: 'race', name: '滾球坡道', hint: '大球比你重得多，硬碰硬只會被彈開',
+      len: 1450, time: 55, passQuota: 5, spin: { count: 2, spd: 1.7, len: 130 }, balls: 3 },
+    { kind: 'hex',  name: '消失的地板', hint: '踩過的格子會塌，別在同一塊上猶豫',
+      cols: 11, rows: 10, hexTime: 18, passQuota: 4, fall: 0.9 },
+    { kind: 'race', name: '擺錘走廊', hint: '擺錘有節奏，等它盪過去再走',
+      len: 1250, time: 50, passQuota: 2, swings: 3, swingSpd: 1.6, swingR: 17,
+      spin: { count: 0 }, balls: 0 },
+    { kind: 'crown', name: '皇冠爭奪戰',
+      hint: '皇冠外面那一圈用跑的進不去。跑到圈緣，對準，然後撲。',
+      time: 40, passQuota: 1 }
+];
+
+// 參賽者的顏色（致敬式原創造型：一顆有腳的軟糖）
+var CROWN_POS = { x: 280, y: 205 };      // 決賽場地中央，所有人等距圍著它出生
+/* 皇冠周圍的護城圈半徑。只有撲倒中的參賽者進得來。
+   一次撲倒的位移是 diveSpd 235 × diveTime 0.42 ≈ 99px，
+   所以 46 是「從圈緣起撲一定搆得到、但用跑的永遠進不去」的值。 */
+var CROWN_MOAT = 46;
+
+var COLORS = ['#ff9ec4', '#7dd3fc', '#a7f3a0', '#ffd166', '#c8a2ff', '#ff8f6b', '#7ee7c7', '#f0abfc'];
+var NAMES = ['你', '軟糖二號', '布丁', '棉花', '果凍', '麻糬', '奶油', '芋圓'];
+
+var s = {};
+
+// ======================================================================
+function reset() {
+    s = {
+        stage: 0, mode: 'run',        // run | result | over
+        players: [], camY: 0,
+        spinners: [], balls: [], swings: [], tiles: [],
+        crown: null,
+        t: 0, timeLeft: 0,
+        finished: [],                 // 依抵達順序
+        score: 0, over: false, win: false,
+        resultT: 0, resultText: '', eliminated: false,
+        shakeCam: 0
+    };
+    G.setStat('score', 0);
+    loadStage(0);
+}
+
+function cfg() { return STAGES[Math.min(s.stage, STAGES.length - 1)]; }
+
+function loadStage(n) {
+    s.stage = n;
+    var c = cfg();
+    // 一次性旗標一律在這裡清乾淨，否則上一關的結算狀態會殘留到新關卡
+    s.mode = 'run'; s.t = 0; s.timeLeft = c.time; s.finished = [];
+    s.spinners = []; s.balls = []; s.swings = []; s.tiles = []; s.crown = null;
+    s.resultT = 0; s.eliminated = false; s.camY = 0;
+
+    var alive = s.players.length ? s.players.filter(function (p) { return !p.out; }) : null;
+    if (!alive) {
+        // 第一關：八位參賽者
+        s.players = [];
+        for (var i = 0; i < 8; i++) {
+            s.players.push(makePlayer(i, i === 0));
+        }
+    } else {
+        s.players = alive;
+        for (var j = 0; j < s.players.length; j++) resetPlayer(s.players[j], j);
+    }
+
+    if (c.kind === 'race') buildRace(c);
+    else if (c.kind === 'hex') buildHex(c);
+    else buildCrown(c);
+
+    G.setStat('round', (n + 1) + '/' + STAGES.length);
+    G.setStat('alive', s.players.length);
+    G.setStat('time', String(Math.ceil(s.timeLeft)));
+}
+
+function makePlayer(i, isYou) {
+    var p = {
+        idx: i, you: isYou, name: NAMES[i], color: COLORS[i],
+        x: 0, y: 0, vx: 0, vy: 0, r: R, m: 1,
+        face: 0, anim: RE.rand(0, 6),
+        tumble: 0, dive: 0, down: 0, out: false, done: false, rank: 0,
+        ai: { react: RE.rand(0.10, 0.30), wob: RE.rand(0, 6), aim: 0, think: 0, target: null }
+    };
+    resetPlayer(p, i);
+    return p;
+}
+
+function resetPlayer(p, slot) {
+    var c = cfg();
+    p.tumble = 0; p.dive = 0; p.down = 0; p.done = false; p.rank = 0;
+    p.vx = 0; p.vy = 0;
+    if (c.kind === 'hex') {
+        var cw = LANE_W / c.cols;
+        p.x = LANE_X + cw * (1.5 + (slot % 6)) ;
+        p.y = 60 + Math.floor(slot / 6) * 40;
+    } else if (c.kind === 'crown') {
+        /* 所有人都要離皇冠等距，否則這場決賽在開始前就分出勝負了。
+           第一版皇冠放在上緣、參賽者排在下方的橢圓周上，
+           最近的位置距離 74、最遠的 254——差三倍多。 */
+        var a = slot / Math.max(1, s.players.length) * RE.TAU - Math.PI / 2;
+        p.x = CROWN_POS.x + Math.cos(a) * 150;
+        p.y = CROWN_POS.y + Math.sin(a) * 150;
+    } else {
+        p.x = LANE_X + 60 + (slot % 5) * 84;
+        p.y = c.len - 40 - Math.floor(slot / 5) * 40;
+    }
+}
+
+// ---------- 關卡建構 ----------
+function buildRace(c) {
+    var i;
+    for (i = 0; i < c.spin.count; i++) {
+        var y = c.len - 300 - i * ((c.len - 420) / Math.max(1, c.spin.count));
+        s.spinners.push({ x: W / 2, y: y, ang: i * 1.1, spd: c.spin.spd * (i % 2 ? -1 : 1), len: c.spin.len });
+    }
+    for (i = 0; i < (c.balls || 0); i++) {
+        s.balls.push({ x: LANE_X + RE.rand(60, LANE_W - 60), y: 120 - i * 260,
+                       vx: RE.rand(-40, 40), vy: 150 + i * 18, r: 26, m: 7, spawnY: 120 - i * 260 });
+    }
+    for (i = 0; i < (c.swings || 0); i++) {
+        var sy = c.len - 260 - i * ((c.len - 380) / Math.max(1, c.swings));
+        s.swings.push({ x: W / 2 + (i % 2 ? 70 : -70), y: sy, ang: i * 0.8,
+                        spd: c.swingSpd || 1.9, len: 96, r: c.swingR || 20 });
+    }
+}
+
+function buildHex(c) {
+    var cw = LANE_W / c.cols, ch = 30;
+    for (var r = 0; r < c.rows; r++) {
+        for (var k = 0; k < c.cols; k++) {
+            s.tiles.push({ cx: LANE_X + cw * (k + 0.5), cy: 46 + ch * (r + 0.5),
+                           w: cw - 3, h: ch - 3, life: -1, gone: false });
+        }
+    }
+    s.tileW = cw; s.tileH = ch;
+}
+
+function buildCrown(c) {
+    s.crown = { x: CROWN_POS.x, y: CROWN_POS.y, r: 16, taken: false, bob: 0 };
+}
+
+// ======================================================================
+// 主迴圈
+// ======================================================================
+function update(dt) {
+    P.update(dt); FT.update(dt);
+    if (s.over) return;
+
+    if (s.mode === 'result') {
+        s.resultT -= dt;
+        if (s.resultT <= 0) nextStage();
+        return;
+    }
+
+    s.t += dt;
+    s.timeLeft -= dt;
+    G.setStat('time', String(Math.max(0, Math.ceil(s.timeLeft))));
+
+    var c = cfg();
+    if (c.kind === 'race') updateRace(dt, c);
+    else if (c.kind === 'hex') updateHex(dt, c);
+    else updateCrown(dt, c);
+
+    stepBodies(dt);
+
+    if (s.timeLeft <= 0) timeUp(c);
+}
+
+// ---------- 共用：移動與碰撞 ----------
+function stepBodies(dt) {
+    var i, j;
+    var list = s.players;
+
+    for (i = 0; i < list.length; i++) {
+        var p = list[i];
+        if (p.out || p.done) continue;
+        p.anim += dt * (Math.hypot(p.vx, p.vy) > 20 ? 9 : 3);
+
+        if (p.tumble > 0) { p.tumble -= dt; }
+        if (p.down > 0) { p.down -= dt; }
+        if (p.dive > 0) { p.dive -= dt; if (p.dive <= 0) p.down = PHYS.getUp; }
+
+        var ax = 0, ay = 0;
+        if (p.tumble <= 0 && p.down <= 0) {
+            if (p.you) {
+                ax = RE.Input.axisX(); ay = RE.Input.axisY();
+                if (RE.Input.pressed('a') && p.dive <= 0) startDive(p, ax, ay);
+            } else {
+                var d = aiInput(p, dt);
+                ax = d.x; ay = d.y;
+                if (d.dive && p.dive <= 0) startDive(p, ax, ay);
+            }
+        }
+        if (p.dive > 0) {
+            // 撲倒中：方向鎖定，速度固定。這是唯一的「主動」動作，也一定有代價（要爬起來）
+            p.vx = Math.cos(p.diveAng) * PHYS.diveSpd;
+            p.vy = Math.sin(p.diveAng) * PHYS.diveSpd;
+        } else {
+            var len = Math.hypot(ax, ay) || 1;
+            p.vx += (ax / len) * PHYS.accel * dt;
+            p.vy += (ay / len) * PHYS.accel * dt;
+            var damp = Math.pow(0.0025, dt) ;
+            if (!ax && !ay) { p.vx *= damp; p.vy *= damp; }
+            var sp = Math.hypot(p.vx, p.vy);
+            var cap = p.tumble > 0 ? 320 : PHYS.maxSpd;
+            if (sp > cap) { p.vx = p.vx / sp * cap; p.vy = p.vy / sp * cap; }
+        }
+        if (ax || ay) p.face = Math.atan2(ay, ax);
+
+        p.x += p.vx * dt; p.y += p.vy * dt;
+
+        /* 皇冠護城圈：不在撲倒狀態就進不去。
+           少了這一條，決賽的核心動詞完全不會被用到——
+           實測撲倒的平均速度只有 102px/s（0.42 秒衝 235，之後 0.55 秒爬不起來），
+           比用跑的 152px/s 還慢，所以「一路跑過去」永遠比較快。
+           對照組機器人（完全不撲）因此 4/4 全破。
+
+           更糟的是：決賽只有兩個人、等距出生、速度相同，
+           所以兩邊會在同一幀抵達，而 updateCrown 是照陣列順序判定的，
+           玩家永遠是 players[0]——**勝負在開始前就由索引決定了**。
+
+           護城圈半徑取 46，而一次撲倒的位移是 235 × 0.42 ≈ 99px，
+           從圈緣起撲綽綽有餘，但跑是永遠進不來的。
+           於是決賽變成「跑到圈緣 → 對準 → 撲」，撲倒才真的是勝負手。 */
+        if (s.crown && !s.crown.taken && p.dive <= 0) {
+            var mdx = p.x - s.crown.x, mdy = p.y - s.crown.y;
+            var md = Math.hypot(mdx, mdy);
+            /* 已經搆到皇冠的人不要推。
+               updateCrown 跟這一段不在同一個時序點上——
+               撲進去的人在落地那一幀 dive 歸零，若無條件推回圈緣，
+               他會在 updateCrown 檢查到之前就被彈出去。
+               實測對手曾經進到距皇冠 7px 卻沒有拿到皇冠，就是這個原因。 */
+            if (md < CROWN_MOAT && md > 0.001 && md >= s.crown.r + p.r) {
+                p.x = s.crown.x + mdx / md * CROWN_MOAT;
+                p.y = s.crown.y + mdy / md * CROWN_MOAT;
+                var vn = (p.vx * mdx + p.vy * mdy) / md;
+                if (vn < 0) { p.vx -= vn * mdx / md; p.vy -= vn * mdy / md; }
+            }
+        }
+    }
+
+    // 參賽者互相推擠。這是這款唯一的「攻擊手段」，
+    // 也是「失敗可以歸咎於運氣」的來源——沒有人是故意撞你的
+    for (i = 0; i < list.length; i++) {
+        var a = list[i];
+        if (a.out || a.done) continue;
+        for (j = i + 1; j < list.length; j++) {
+            var b = list[j];
+            if (b.out || b.done) continue;
+            var dx = b.x - a.x, dy = b.y - a.y;
+            var dist = Math.hypot(dx, dy);
+            var min = a.r + b.r;
+            if (dist < min && dist > 0.001) {
+                var nx = dx / dist, ny = dy / dist;
+                resolvePair(a, b, nx, ny, min - dist);
+            }
+        }
+    }
+
+    // 賽道左右牆
+    var c = cfg();
+    if (c.kind !== 'hex') {
+        for (i = 0; i < list.length; i++) {
+            var q = list[i];
+            if (q.out || q.done) continue;
+            if (q.x < LANE_X + q.r) { q.x = LANE_X + q.r; q.vx = Math.abs(q.vx) * 0.4; }
+            if (q.x > LANE_X + LANE_W - q.r) { q.x = LANE_X + LANE_W - q.r; q.vx = -Math.abs(q.vx) * 0.4; }
+        }
+    }
+}
+
+function resolvePair(a, b, nx, ny, pen) {
+    var im1 = 1 / a.m, im2 = 1 / b.m, imSum = im1 + im2;
+    var rvx = b.vx - a.vx, rvy = b.vy - a.vy;
+    var vn = rvx * nx + rvy * ny;
+    if (vn < 0) {
+        var jimp = -(1 + PHYS.restitution) * vn / imSum;
+        a.vx -= jimp * nx * im1; a.vy -= jimp * ny * im1;
+        b.vx += jimp * nx * im2; b.vy += jimp * ny * im2;
+        // 撞得夠用力就一起翻滾。撞人的那一方也會翻，所以沒有「加害者」
+        if (-vn > 190) {
+            tumbleIt(a, 0.5); tumbleIt(b, 0.5);
+            RetroAudio.play('bounce');
+            // 撞人翻滾是這款最主要的觸感事件，缺頓幀就只是「兩顆球互相彈開」
+            RE.juice.hitstop(0.04);
+            RE.juice.shake(0.14);
+        }
+    }
+    var corr = Math.max(pen - PHYS.posSlop, 0) / imSum * PHYS.posPercent;
+    a.x -= nx * corr * im1; a.y -= ny * corr * im1;
+    b.x += nx * corr * im2; b.y += ny * corr * im2;
+}
+
+function startDive(p, ax, ay) {
+    p.diveAng = (ax || ay) ? Math.atan2(ay, ax) : p.face;
+    p.dive = PHYS.diveTime;
+    RetroAudio.play('jump');
+    P.burst(p.x, p.y, 6, { colors: [p.color, '#ffffff'], speedMin: 30, speedMax: 90,
+        gravity: 0, drag: 0.9, lifeMin: 0.1, lifeMax: 0.3, sizeMax: 3 });
+}
+
+/** 被撞飛：翻滾一下再爬起來。沒有傷害，只有時間損失與一點狼狽 */
+function tumbleIt(p, t) {
+    if (p.tumble > 0) return;
+    p.tumble = t || PHYS.tumbleTime;
+    p.dive = 0;
+    p.spin = RE.rand(-14, 14);
+    if (p.you) {
+        RE.juice.shake(0.3);
+        RE.juice.rumble(0.5, 0.14);
+        FT.add(p.x, p.y - 22, RE.pick(['哎呀！', '唔哇！', '啊——']), { color: '#ffd166', size: 15, life: 0.9 });
+    }
+    P.burst(p.x, p.y, 10, { colors: [p.color, '#ffffff'], speedMin: 40, speedMax: 150,
+        gravity: 0, drag: 0.9, lifeMin: 0.15, lifeMax: 0.4, sizeMax: 3.5 });
+}
+
+// ---------- 關卡：賽跑型 ----------
+function updateRace(dt, c) {
+    var i, j;
+    // 旋轉桿
+    for (i = 0; i < s.spinners.length; i++) {
+        var sp = s.spinners[i];
+        sp.ang += sp.spd * dt;
+        for (j = 0; j < s.players.length; j++) {
+            var p = s.players[j];
+            if (p.out || p.done) continue;
+            hitBar(p, sp);
+        }
+    }
+    // 滾球
+    for (i = 0; i < s.balls.length; i++) {
+        var b = s.balls[i];
+        b.y += b.vy * dt; b.x += b.vx * dt;
+        if (b.x < LANE_X + b.r) { b.x = LANE_X + b.r; b.vx = Math.abs(b.vx); }
+        if (b.x > LANE_X + LANE_W - b.r) { b.x = LANE_X + LANE_W - b.r; b.vx = -Math.abs(b.vx); }
+        if (b.y > c.len + 120) { b.y = -80; b.x = LANE_X + RE.rand(60, LANE_W - 60); b.vx = RE.rand(-50, 50); }
+        for (j = 0; j < s.players.length; j++) {
+            var q = s.players[j];
+            if (q.out || q.done) continue;
+            var dx = q.x - b.x, dy = q.y - b.y, d = Math.hypot(dx, dy);
+            if (d < b.r + q.r && d > 0.001) {
+                var nx = dx / d, ny = dy / d;
+                q.x = b.x + nx * (b.r + q.r); q.y = b.y + ny * (b.r + q.r);
+                q.vx = nx * 260 + b.vx * 0.5; q.vy = ny * 200 + b.vy * 0.6;
+                tumbleIt(q);
+                RetroAudio.play('heavyHit');
+            }
+        }
+    }
+    // 擺錘
+    for (i = 0; i < s.swings.length; i++) {
+        var sw = s.swings[i];
+        sw.ang += sw.spd * dt;
+        var bx = sw.x + Math.sin(sw.ang) * sw.len, by = sw.y;
+        sw.bx = bx; sw.by = by;
+        for (j = 0; j < s.players.length; j++) {
+            var r = s.players[j];
+            if (r.out || r.done) continue;
+            var ddx = r.x - bx, ddy = r.y - by, dd = Math.hypot(ddx, ddy);
+            if (dd < sw.r + r.r && dd > 0.001) {
+                var mx = ddx / dd, my = ddy / dd;
+                r.x = bx + mx * (sw.r + r.r); r.y = by + my * (sw.r + r.r);
+                var push = Math.cos(sw.ang) * sw.spd * sw.len;
+                r.vx = mx * 200 + push * 1.4; r.vy = my * 170 - 60;
+                tumbleIt(r);
+                RetroAudio.play('heavyHit');
+            }
+        }
+    }
+    /* 抵達終點。判定其實是 y <= 24 不是註解寫的 y <= 0。
+       ⚠ 這一段的晉級人數本來全部讀 `c.qualify`，而 STAGES 從頭到尾只定義
+       `passQuota`——五處全是 undefined。後果是
+       `s.finished.length >= undefined` 永遠是 false，**關卡永遠不會結束**：
+       人跑到終點、done 設起來了，然後就站在那裡等到時間耗盡被判淘汰。
+       分數那一行更直接算出 NaN（600 + (undefined - rank + 1) * 120）。
+       機器人三場都是跑滿 3600 幀（60 秒）、停在 y=23 動也不動。
+       煙霧測試抓不到，靜態稽核也抓不到——兩者都不會去比對
+       「關卡定義的欄位名」與「程式讀的欄位名」。 */
+    for (i = 0; i < s.players.length; i++) {
+        var pl = s.players[i];
+        if (pl.out || pl.done) continue;
+        if (pl.y <= 24) {
+            pl.done = true;
+            pl.rank = s.finished.length + 1;
+            s.finished.push(pl);
+            if (pl.you) {
+                addScore(600 + (c.passQuota - pl.rank + 1) * 120);
+                RetroAudio.play('win');
+                RE.juice.flash('rgba(255,209,102,0.25)', 0.25);
+            }
+            P.ring(pl.x, pl.y, pl.color, 70);
+            RetroAudio.play('coin');
+            if (s.finished.length >= c.passQuota) { finishStage(c); return; }
+        }
+    }
+    // 鏡頭跟著玩家（或還在跑的第一名）
+    var focus = s.players[0].done || s.players[0].out ? leader() : s.players[0];
+    if (focus) s.camY = RE.lerp(s.camY, RE.clamp(focus.y - H * 0.62, -40, c.len - H + 40), 1 - Math.pow(0.002, dt));
+}
+
+function hitBar(p, sp) {
+    // 旋轉桿當成一條線段，取最近點做圓對膠囊
+    var hx = Math.cos(sp.ang), hy = Math.sin(sp.ang);
+    var relx = p.x - sp.x, rely = p.y - sp.y;
+    var t = RE.clamp(relx * hx + rely * hy, -sp.len, sp.len);
+    var cx = sp.x + hx * t, cy = sp.y + hy * t;
+    var dx = p.x - cx, dy = p.y - cy, d = Math.hypot(dx, dy);
+    var min = 9 + p.r;
+    if (d < min && d > 0.001) {
+        var nx = dx / d, ny = dy / d;
+        p.x = cx + nx * min; p.y = cy + ny * min;
+        // 桿的切線速度：越靠外側掃得越快，被掃飛得越遠
+        var tanx = -hy * sp.spd * t, tany = hx * sp.spd * t;
+        p.vx = nx * 150 + tanx * 1.5;
+        p.vy = ny * 130 + tany * 1.5;
+        tumbleIt(p);
+        RetroAudio.play('heavyHit');
+    }
+}
+
+// ---------- 關卡：消失的地板 ----------
+function updateHex(dt, c) {
+    var i, j;
+    for (i = 0; i < s.tiles.length; i++) {
+        var t = s.tiles[i];
+        if (t.gone) continue;
+        if (t.life > 0) {
+            t.life -= dt;
+            if (t.life <= 0) {
+                t.gone = true;
+                P.burst(t.cx, t.cy, 6, { colors: ['#7dd3fc', '#ffffff'], speedMin: 20, speedMax: 80,
+                    gravity: 240, lifeMin: 0.2, lifeMax: 0.5, sizeMax: 3 });
+                RetroAudio.play('drop');
+            }
+        }
+    }
+    for (j = 0; j < s.players.length; j++) {
+        var p = s.players[j];
+        if (p.out || p.done) continue;
+        var tile = tileAt(p.x, p.y);
+        if (tile && !tile.gone) {
+            if (tile.life < 0) { tile.life = c.fall; }
+        } else if (!tile || tile.gone) {
+            // 腳下沒有地板就掉下去。沒有傷害，只是這一關結束了
+            dropOut(p);
+            if (s.mode !== 'run') return;
+        }
+    }
+    /* 這一關的規則是「撐住」，所以只有剩下一個人時才提前結束，
+       其餘情況一律撐到時間到、存活者全部晉級。
+       第一版寫成「剩下的人數等於晉級名額就結束」，
+       四個人裡只要一個掉下去就立刻收工——實測每一場都在三秒內結束，
+       整關變成「比誰先失手」，完全沒有原作那種一路踩塌地板互相逼退的過程。 */
+    var alive = s.players.filter(function (q) { return !q.out; });
+    if (alive.length <= 1) {
+        alive.forEach(function (q) { q.done = true; if (!q.rank) { q.rank = s.finished.length + 1; s.finished.push(q); } });
+        finishStage(c);
+    }
+    s.camY = 0;
+}
+
+/* 用格距直接算索引，不要拿繪製尺寸去比對。
+   第一版判定寫成「離格心的距離小於 w/2」，而 w 是扣掉 3px 視覺間隙後的寬度，
+   於是每兩格之間留下 0.5px 的縫——踩到縫就判定腳下沒有地板，當場掉下去。
+   逐關體檢時這一關「四場沒有任何人通過」，整款遊戲斷在第三關。
+   **視覺上的間隙不該變成碰撞上的間隙。** */
+/* 從腳下這一格往外找一格可以踏的鄰格。
+   一定要限制在「相鄰」，不能挑全場最近的完好格子——
+   那條直線會直接穿過已經塌掉的洞，走到一半就掉下去。
+   實測時 AI 與玩家用同一個錯誤策略，第三關出現「全員掉光」的死局。
+   偏好往場地中央走，因為邊緣的退路比較少。 */
+function bestNeighborTile(p) {
+    var c = cfg();
+    var k = Math.floor((p.x - LANE_X) / s.tileW);
+    var r = Math.floor((p.y - 46) / s.tileH);
+    var best = null, bestScore = -1e9;
+    for (var dk = -1; dk <= 1; dk++) {
+        for (var dr = -1; dr <= 1; dr++) {
+            if (!dk && !dr) continue;
+            var nk = k + dk, nr = r + dr;
+            if (nk < 0 || nk >= c.cols || nr < 0 || nr >= c.rows) continue;
+            var t = s.tiles[nr * c.cols + nk];
+            if (!t || t.gone) continue;
+            var score = t.life < 0 ? 100 : t.life * 30;      // 沒踩過的最好，其次是剛踩的
+            score -= Math.abs(nk - (c.cols - 1) / 2) * 3;    // 往中央靠
+            score -= Math.abs(nr - (c.rows - 1) / 2) * 2;
+            if (score > bestScore) { bestScore = score; best = t; }
+        }
+    }
+    return best;
+}
+
+function tileAt(x, y) {
+    var c = cfg();
+    var k = Math.floor((x - LANE_X) / s.tileW);
+    var r = Math.floor((y - 46) / s.tileH);
+    if (k < 0 || k >= c.cols || r < 0 || r >= c.rows) return null;
+    return s.tiles[r * c.cols + k];
+}
+
+function dropOut(p) {
+    p.out = true;
+    P.burst(p.x, p.y, 14, { colors: [p.color, '#ffffff'], speedMin: 30, speedMax: 120,
+        gravity: 420, lifeMin: 0.3, lifeMax: 0.8, sizeMax: 4 });
+    RetroAudio.play(p.you ? 'gameover' : 'cancel');
+    G.setStat('alive', s.players.filter(function (q) { return !q.out; }).length);
+    if (p.you) {
+        s.eliminated = true;
+        FT.add(W / 2, 150, '掉下去了！', { color: '#ff9ec4', size: 22, life: 1.6 });
+        finishStage(cfg());
+    } else {
+        FT.add(p.x, p.y - 20, p.name + ' 掉了', { color: p.color, size: 12, life: 1.2 });
+    }
+}
+
+// ---------- 關卡：搶皇冠 ----------
+function updateCrown(dt, c) {
+    s.crown.bob += dt * 3;
+    /* 同一幀有兩個人搆到時，要比誰真的比較近，不能照陣列順序判。
+       原本是找到第一個就結束，而玩家永遠是 players[0]——
+       兩個人等距出生、速度相同的話，玩家等於自動獲勝。 */
+    var best = null, bestD = Infinity;
+    for (var i = 0; i < s.players.length; i++) {
+        var q = s.players[i];
+        if (q.out || q.done) continue;
+        var qd = Math.hypot(q.x - s.crown.x, q.y - s.crown.y);
+        if (qd < s.crown.r + q.r && qd < bestD) { bestD = qd; best = q; }
+    }
+    if (best) {
+        best.done = true; best.rank = 1;
+        s.finished.push(best);
+        s.crown.taken = true;
+        RE.juice.flash('rgba(255,209,102,0.4)', 0.35);
+        RE.juice.slowmo(0.35, 0.9);
+        RetroAudio.play('win');
+        P.ring(best.x, best.y, '#ffd166', 120);
+        finishStage(c);
+        return;
+    }
+    s.camY = 0;
+}
+
+// ---------- 關卡結算 ----------
+function finishStage(c) {
+    if (s.mode !== 'run') return;
+    s.mode = 'result';
+    s.resultT = 2.2;
+
+    var you = s.players[0];
+    var youQualified = !you.out && (you.done && you.rank <= c.passQuota);
+
+    // 沒抵達終點的人淘汰（rank 為 0）
+    for (var i = 0; i < s.players.length; i++) {
+        var p = s.players[i];
+        if (!p.done || p.rank > c.passQuota) p.out = true;
+    }
+    G.setStat('alive', s.players.filter(function (q) { return !q.out; }).length);
+
+    // 撐過時間的那一關，名額不設限——所有還站著的人都算過關
+    if (c.kind === 'hex' && s.timeLeft <= 0) {
+        for (var k = 0; k < s.players.length; k++) {
+            if (s.players[k].done) s.players[k].out = false;
+        }
+        youQualified = !you.out && you.done;
+        G.setStat('alive', s.players.filter(function (q) { return !q.out; }).length);
+    }
+
+    if (!youQualified) {
+        s.resultText = '淘汰！';
+        s.eliminated = true;
+    } else if (s.stage === STAGES.length - 1) {
+        s.resultText = '皇冠到手！';
+    } else {
+        s.resultText = '晉級！';
+        addScore(300);
+    }
+}
+
+function nextStage() {
+    var c = cfg();
+    var you = s.players[0];
+    if (s.eliminated || you.out) { finish(false); return; }
+    if (s.stage === STAGES.length - 1) { finish(true); return; }
+    loadStage(s.stage + 1);
+    G.stageCard(s.stage + 1, cfg().name, cfg().hint);
+}
+
+function timeUp(c) {
+    if (s.mode !== 'run') return;
+    /* 「消失的地板」的過關條件是撐住，不是抵達某個地方——
+       所以時間到的時候還站著的人全部晉級，不受名額限制。
+       第一版沿用賽跑關的規則（沒完成就淘汰），
+       導致沒人掉下去的場次反而全員出局，這一關等於必死。 */
+    if (c.kind === 'hex') {
+        s.players.forEach(function (p) {
+            if (p.out || p.done) return;
+            p.done = true; p.rank = s.finished.length + 1; s.finished.push(p);
+        });
+        RetroAudio.play('win');
+    } else {
+        RetroAudio.play('error');
+    }
+    finishStage(c);
+}
+
+function leader() {
+    var best = null;
+    for (var i = 0; i < s.players.length; i++) {
+        var p = s.players[i];
+        if (p.out || p.done) continue;
+        if (!best || p.y < best.y) best = p;
+    }
+    return best;
+}
+
+function finish(win) {
+    s.over = true; s.win = win;
+    if (win) {
+        addScore(2000);
+        G.gameOver({ score: s.score, win: true,
+            body: '皇冠是你的了。回頭看看，你整場沒有攻擊過任何人一次——' +
+                  '這款遊戲把「被淘汰」變成綜藝橋段而不是懲罰，' +
+                  '證明了讓玩家難受的往往不是難度本身，而是難度被呈現的方式。' });
+    } else {
+        G.gameOver({ score: s.score, win: false,
+            body: '在「' + cfg().name + '」被淘汰了。不過你有沒有發現——' +
+                  '你剛剛並不特別難過？沒有血條、沒有兇手、旁邊還有一堆人跟你一起摔，' +
+                  '**這就是這款遊戲最大的設計成就**。再來一次吧，反正也不痛。' });
+    }
+}
+
+function addScore(n) { s.score += n; G.setStat('score', s.score); }
+
+// ======================================================================
+// AI
+// ======================================================================
+function aiInput(p, dt) {
+    var c = cfg();
+    var out = { x: 0, y: 0, dive: false };
+    p.ai.think -= dt;
+
+    if (c.kind === 'race') {
+        /* 對手是陪襯，不是對手。
+           這款的失敗必須讓玩家覺得「是我自己撞上去的」而不是「我被電腦贏了」——
+           所以 AI 的偵測距離刻意設得比玩家的視野短一截，
+           它們會撞得比你多、翻滾得比你久，畫面上才會一直有人在摔。
+           第一版把 AI 寫成會提早閃避的高手，熟練玩家連過五關的期望只有 6%，
+           而且輸的感覺變成「技不如人」，那正是這款遊戲極力避免的情緒。 */
+        var avoid = 0;
+        for (var i = 0; i < s.spinners.length; i++) {
+            var sp = s.spinners[i];
+            if (Math.abs(sp.y - p.y) < 58) {
+                var hx = Math.cos(sp.ang), hy = Math.sin(sp.ang);
+                var rel = (p.x - sp.x) * hx + (p.y - sp.y) * hy;
+                var cx = sp.x + hx * RE.clamp(rel, -sp.len, sp.len);
+                avoid += (p.x - cx) > 0 ? 1 : -1;
+            }
+        }
+        for (var j = 0; j < s.balls.length; j++) {
+            var b = s.balls[j];
+            if (Math.abs(b.y - p.y) < 70 && Math.abs(b.x - p.x) < 48) avoid += (p.x - b.x) > 0 ? 1.4 : -1.4;
+        }
+        for (var k = 0; k < s.swings.length; k++) {
+            var sw = s.swings[k];
+            if (sw.bx !== undefined && Math.abs(sw.by - p.y) < 52 && Math.abs(sw.bx - p.x) < 55) {
+                avoid += (p.x - sw.bx) > 0 ? 1.2 : -1.2;
+            }
+        }
+        p.ai.wob += dt * 1.6;
+        out.x = RE.clamp(avoid * 0.8 + Math.sin(p.ai.wob) * 0.45, -1, 1);
+        out.y = -1;
+        if (p.ai.think <= 0) { p.ai.think = RE.rand(1.2, 2.6); out.dive = Math.random() < 0.35; }
+    } else if (c.kind === 'hex') {
+        /* 只往相鄰的完好格子挪（理由見 bestNeighborTile），
+           而且要等腳下這格「快塌了」才動。
+           格子是一踏上就開始倒數的，所以「腳下在倒數就跑」等於永遠在跑——
+           實測玩家三秒內換了十七格，地板消耗速度是正常的五倍，
+           還會在移動途中一頭栽進剛塌出來的洞。 */
+        var here = tileAt(p.x, p.y);
+        var needMove = !here || here.gone || (here.life >= 0 && here.life < 0.38);
+        if (needMove && (p.ai.think <= 0 || !p.ai.target || p.ai.target.gone)) {
+            p.ai.think = RE.rand(0.12, 0.3);
+            p.ai.target = bestNeighborTile(p);
+        }
+        if (p.ai.target && !p.ai.target.gone) {
+            var dx = p.ai.target.cx - p.x, dy = p.ai.target.cy - p.y;
+            var n = Math.hypot(dx, dy) || 1;
+            if (n < 4) p.ai.target = null;
+            else { out.x = dx / n; out.y = dy / n; }
+        }
+    } else {
+        var cdx = s.crown.x - p.x, cdy = s.crown.y - p.y;
+        var cn = Math.hypot(cdx, cdy) || 1;
+        out.x = cdx / cn; out.y = cdy / cn;
+        /* 護城圈之後，撲的時機就是唯一的勝負手，AI 也要真的會撲——
+           否則只是把「玩家靠索引自動獲勝」換成「AI 永遠進不去」。
+           但它要撲得比玩家差一點：這款的失敗必須讓玩家覺得
+           「是我自己撲歪了」，所以 AI 的窗口比理想值寬（它常常撲早或撲晚），
+           而且每次決策只擲一次骰，不是每幀重擲。 */
+        if (p.ai.think <= 0) {
+            p.ai.think = RE.rand(0.25, 0.5);
+            var ideal = CROWN_MOAT + 26;             // 從這個距離起撲最穩
+            out.dive = Math.abs(cn - ideal) < 34 && Math.random() < 0.55;
+        }
+    }
+    return out;
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function drawFallAsset(name, cx, cy, w, h, alpha, flip, rotation) {
+    var m = FALL_ART.manifest;
+    if (!m || !m.assets || !m.assets[name] || !FALL_ART.image.complete ||
+        !FALL_ART.image.naturalWidth) return false;
+    var a = m.assets[name];
+    ctx.save();
+    ctx.globalAlpha = alpha === undefined ? 1 : alpha;
+    ctx.translate(cx, cy);
+    if (rotation) ctx.rotate(rotation);
+    if (flip) ctx.scale(-1, 1);
+    ctx.drawImage(FALL_ART.image, a.x, a.y, a.w, a.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+}
+
+function render() {
+    var c = cfg();
+    G.clear('#12304a');
+    G.beginWorld();
+
+    if (c.kind === 'hex') drawHexStage(c);
+    else if (c.kind === 'crown') drawCrownStage(c);
+    else drawRaceStage(c);
+
+    drawPlayers(c);
+    P.draw(ctx);
+    FT.draw(ctx);
+    drawHUD(c);
+    if (s.mode === 'result') drawResult();
+
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.04 });
+}
+
+function sy(worldY) { return worldY - s.camY; }
+
+function drawRaceStage(c) {
+    // 賽道
+    ctx.fillStyle = '#1c4b6e';
+    ctx.fillRect(LANE_X, 0, LANE_W, H);
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    for (var y = -((s.camY % 60) + 60); y < H; y += 60) ctx.fillRect(LANE_X, y, LANE_W, 30);
+    // 邊牆
+    ctx.fillStyle = '#ff9ec4';
+    ctx.fillRect(LANE_X - 10, 0, 10, H);
+    ctx.fillRect(LANE_X + LANE_W, 0, 10, H);
+    ctx.fillStyle = '#7dd3fc';
+    for (var y2 = -((s.camY % 40) + 40); y2 < H; y2 += 40) {
+        ctx.fillRect(LANE_X - 10, y2, 10, 20);
+        ctx.fillRect(LANE_X + LANE_W, y2 + 20, 10, 20);
+    }
+
+    // 終點線
+    var fy = sy(24);
+    if (fy > -30 && fy < H + 30) {
+        for (var i = 0; i < LANE_W / 20; i++) {
+            ctx.fillStyle = i % 2 ? '#ffffff' : '#232a33';
+            ctx.fillRect(LANE_X + i * 20, fy - 10, 20, 10);
+            ctx.fillStyle = i % 2 ? '#232a33' : '#ffffff';
+            ctx.fillRect(LANE_X + i * 20, fy, 20, 10);
+        }
+        drawFallAsset('finish_arch', W / 2, fy - 35, 178, 94, 0.92);
+    }
+    // 起點線
+    var by = sy(c.len - 10);
+    if (by > -20 && by < H + 20) {
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        ctx.fillRect(LANE_X, by, LANE_W, 4);
+    }
+
+    // 旋轉桿
+    for (var k = 0; k < s.spinners.length; k++) {
+        var sp = s.spinners[k];
+        var py = sy(sp.y);
+        if (py < -80 || py > H + 80) continue;
+        if (!drawFallAsset('spinner_bar', sp.x, py, sp.len * 2 + 34, 58, 1, false, sp.ang)) {
+            ctx.save(); ctx.translate(sp.x, py); ctx.rotate(sp.ang);
+            ctx.fillStyle = '#ffd166'; RE.Draw.roundRect(ctx, -sp.len, -9, sp.len * 2, 18, 9); ctx.fill();
+            ctx.fillStyle = '#ff8f6b'; RE.Draw.roundRect(ctx, -sp.len, -9, 26, 18, 9); ctx.fill();
+            RE.Draw.roundRect(ctx, sp.len - 26, -9, 26, 18, 9); ctx.fill(); ctx.restore();
+            ctx.fillStyle = '#c8a2ff'; ctx.beginPath(); ctx.arc(sp.x, py, 12, 0, RE.TAU); ctx.fill();
+        }
+    }
+
+    // 擺錘
+    for (var m = 0; m < s.swings.length; m++) {
+        var sw = s.swings[m];
+        var wy = sy(sw.y);
+        if (wy < -80 || wy > H + 80) continue;
+        ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(sw.x, wy - 70); ctx.lineTo(sw.bx, wy); ctx.stroke();
+        if (!drawFallAsset('pendulum', sw.bx, wy, 48, 62, 1)) {
+            ctx.save(); ctx.shadowBlur = 10; ctx.shadowColor = '#ff8f6b';
+            ctx.fillStyle = '#ff8f6b'; ctx.beginPath(); ctx.arc(sw.bx, wy, sw.r, 0, RE.TAU); ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    // 滾球
+    for (var n = 0; n < s.balls.length; n++) {
+        var b = s.balls[n];
+        var byy = sy(b.y);
+        if (byy < -60 || byy > H + 60) continue;
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.beginPath(); ctx.ellipse(b.x, byy + b.r * 0.7, b.r, b.r * 0.4, 0, 0, RE.TAU); ctx.fill();
+        if (!drawFallAsset('rolling_ball', b.x, byy, b.r * 2.25, b.r * 2.25, 1, false, b.y * 0.018)) {
+            ctx.fillStyle = '#f0abfc'; ctx.beginPath(); ctx.arc(b.x, byy, b.r, 0, RE.TAU); ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.beginPath(); ctx.arc(b.x - b.r * 0.3, byy - b.r * 0.3, b.r * 0.35, 0, RE.TAU); ctx.fill();
+        }
+    }
+}
+
+function drawHexStage(c) {
+    ctx.fillStyle = '#0e2438';
+    ctx.fillRect(0, 0, W, H);
+    for (var i = 0; i < s.tiles.length; i++) {
+        var t = s.tiles[i];
+        if (t.gone) continue;
+        var warn = t.life > 0;
+        // 快塌的格子閃爍，玩家才有得反應
+        var blink = warn && Math.floor(t.life * 12) % 2 === 0;
+        if (!drawFallAsset('hex_tile', t.cx, t.cy, t.w + 4, t.h + 8, warn ? (blink ? 0.48 : 0.72) : 0.92)) {
+            ctx.fillStyle = warn ? (blink ? '#ff8f6b' : '#ffd166') : '#3f7fa8';
+            RE.Draw.roundRect(ctx, t.cx - t.w / 2, t.cy - t.h / 2, t.w, t.h, 4); ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.12)';
+            RE.Draw.roundRect(ctx, t.cx - t.w / 2, t.cy - t.h / 2, t.w, 4, 2); ctx.fill();
+        } else if (warn) {
+            ctx.strokeStyle = blink ? '#ff6b6b' : '#fff3c4'; ctx.lineWidth = 2;
+            RE.Draw.roundRect(ctx, t.cx - t.w / 2, t.cy - t.h / 2, t.w, t.h, 4); ctx.stroke();
+        }
+    }
+}
+
+function drawCrownStage(c) {
+    ctx.fillStyle = '#1c4b6e';
+    ctx.beginPath(); ctx.arc(CROWN_POS.x, CROWN_POS.y, 185, 0, RE.TAU); ctx.fill();
+    ctx.strokeStyle = '#ff9ec4'; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.arc(CROWN_POS.x, CROWN_POS.y, 185, 0, RE.TAU); ctx.stroke();
+    /* 護城圈。玩家看不到它就只會覺得「莫名其妙走不過去」——
+       crossy_road 那條「會自己逼近的死線要畫出來」的教訓，
+       換成「走不進去的圈也要畫出來」同樣成立。
+       畫成虛線環＋內側的淺色地板，暗示「這一圈要用飛的」。 */
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,209,102,0.10)';
+    ctx.beginPath(); ctx.arc(s.crown.x, s.crown.y, CROWN_MOAT, 0, RE.TAU); ctx.fill();
+    ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 2;
+    ctx.setLineDash([7, 6]);
+    ctx.lineDashOffset = -s.crown.bob * 6;
+    ctx.beginPath(); ctx.arc(s.crown.x, s.crown.y, CROWN_MOAT, 0, RE.TAU); ctx.stroke();
+    ctx.restore();
+
+    // 皇冠台
+    ctx.fillStyle = '#3f7fa8';
+    ctx.beginPath(); ctx.ellipse(s.crown.x, s.crown.y + 14, 46, 20, 0, 0, RE.TAU); ctx.fill();
+    var cy = s.crown.y + Math.sin(s.crown.bob) * 4;
+    if (!drawFallAsset('crown', s.crown.x, cy, 58, 52, 1)) {
+        ctx.save(); ctx.shadowBlur = 18; ctx.shadowColor = '#ffd166'; ctx.fillStyle = '#ffd166';
+        ctx.beginPath(); ctx.moveTo(s.crown.x - 16, cy + 10); ctx.lineTo(s.crown.x - 16, cy - 6);
+        ctx.lineTo(s.crown.x - 8, cy + 2); ctx.lineTo(s.crown.x, cy - 12);
+        ctx.lineTo(s.crown.x + 8, cy + 2); ctx.lineTo(s.crown.x + 16, cy - 6);
+        ctx.lineTo(s.crown.x + 16, cy + 10); ctx.closePath(); ctx.fill(); ctx.restore();
+    }
+}
+
+function drawPlayers(c) {
+    // 遠的先畫，近的後畫
+    var list = s.players.slice().sort(function (a, b) { return a.y - b.y; });
+    for (var i = 0; i < list.length; i++) {
+        var p = list[i];
+        if (p.out) continue;
+        var py = c.kind === 'race' ? sy(p.y) : p.y;
+        if (py < -40 || py > H + 40) continue;
+
+        ctx.save();
+        // 影子
+        ctx.fillStyle = 'rgba(0,0,0,0.28)';
+        ctx.beginPath(); ctx.ellipse(p.x, py + p.r * 0.85, p.r * 0.9, p.r * 0.32, 0, 0, RE.TAU); ctx.fill();
+
+        ctx.translate(p.x, py);
+        if (p.tumble > 0) ctx.rotate(p.tumble * (p.spin || 8));
+        else if (p.dive > 0) ctx.rotate(Math.PI * 0.25);
+        else if (p.down > 0) ctx.rotate(Math.PI * 0.5);
+
+        var squash = p.dive > 0 ? 1.25 : 1;
+        var assetName;
+        if (p.you) {
+            if (p.tumble > 0 || p.down > 0) assetName = 'player_tumble';
+            else if (p.dive > 0) assetName = 'player_dive';
+            else if (Math.hypot(p.vx, p.vy) > 18) assetName = 'player_run';
+            else assetName = 'player_ready';
+        } else {
+            assetName = ['rival_cactus', 'rival_explorer', 'rival_dragon', 'rival_pudding'][(p.idx - 1 + 8) % 4];
+        }
+        if (!drawFallAsset(assetName, 0, -3, p.you ? 42 : 39, p.you ? 46 : 44, 1,
+                           !p.you && Math.cos(p.face) < 0)) {
+            ctx.fillStyle = p.color; ctx.strokeStyle = 'rgba(12,24,36,0.85)'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.ellipse(0, 0, p.r * squash, p.r * (2 - squash) * 1.05, 0, 0, RE.TAU);
+            ctx.fill(); ctx.stroke();
+            var sw = Math.sin(p.anim) * 4;
+            ctx.fillStyle = 'rgba(12,24,36,0.6)';
+            ctx.fillRect(-6, p.r * 0.8 + sw * 0.3, 4, 5);
+            ctx.fillRect(2, p.r * 0.8 - sw * 0.3, 4, 5);
+            ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(-4, -3, 3.4, 0, RE.TAU); ctx.fill();
+            ctx.beginPath(); ctx.arc(4, -3, 3.4, 0, RE.TAU); ctx.fill();
+            ctx.fillStyle = '#22303f';
+            var ex = p.tumble > 0 ? 0 : Math.cos(p.face) * 1.2, ey = p.tumble > 0 ? 0 : Math.sin(p.face) * 1.2;
+            ctx.beginPath(); ctx.arc(-4 + ex, -3 + ey, 1.7, 0, RE.TAU); ctx.fill();
+            ctx.beginPath(); ctx.arc(4 + ex, -3 + ey, 1.7, 0, RE.TAU); ctx.fill();
+            if (p.tumble > 0) { ctx.fillStyle = '#22303f'; ctx.beginPath(); ctx.arc(0, 4, 2.4, 0, RE.TAU); ctx.fill(); }
+        }
+        ctx.restore();
+
+        if (p.tumble > 0) {
+            drawFallAsset('knockout_puff', p.x, py + 2, 62, 54,
+                          RE.clamp(p.tumble / PHYS.tumbleTime, 0.12, 0.38));
+        }
+
+        // 你的頭上有標記，八顆軟糖裡才找得到自己
+        if (p.you) {
+            ctx.fillStyle = '#ffd166';
+            ctx.beginPath();
+            ctx.moveTo(p.x, py - p.r - 8);
+            ctx.lineTo(p.x - 6, py - p.r - 17);
+            ctx.lineTo(p.x + 6, py - p.r - 17);
+            ctx.closePath(); ctx.fill();
+        }
+    }
+}
+
+function drawHUD(c) {
+    // 名次進度（賽跑型）
+    if (c.kind === 'race') {
+        var barX = 14, barY = 60, barH = H - 130;
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        RE.Draw.roundRect(ctx, barX, barY, 8, barH, 4); ctx.fill();
+        for (var i = 0; i < s.players.length; i++) {
+            var p = s.players[i];
+            if (p.out) continue;
+            var prog = RE.clamp(1 - p.y / c.len, 0, 1);
+            var yy = barY + barH * (1 - prog);
+            ctx.fillStyle = p.color;
+            ctx.beginPath(); ctx.arc(barX + 4, yy, p.you ? 6 : 4, 0, RE.TAU); ctx.fill();
+            if (p.you) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.stroke(); }
+        }
+        RE.Draw.text(ctx, '終點', barX + 4, barY - 16, { size: 15, align: 'center', color: '#ffd166' });
+    }
+
+    // 晉級名額
+    var txt = c.kind === 'crown' ? '搶到皇冠就贏' : ('晉級 ' + c.passQuota + ' 名　已抵達 ' + s.finished.length);
+    if (c.kind === 'hex') txt = '撐到最後就晉級　場上還有 ' + s.players.filter(function (q) { return !q.out; }).length + ' 人';
+    RE.Draw.text(ctx, txt, W / 2, 10, { size: 15, align: 'center', color: '#ffd166' });
+
+    // 時間快到時變紅
+    if (s.timeLeft < 10) {
+        RE.Draw.text(ctx, Math.ceil(s.timeLeft) + ' 秒', W / 2, 30,
+            { size: 20, align: 'center', color: Math.floor(s.timeLeft * 4) % 2 ? '#ff6b6b' : '#ffd166' });
+    }
+}
+
+function drawResult() {
+    ctx.save();
+    ctx.fillStyle = 'rgba(8,20,32,0.72)';
+    ctx.fillRect(0, 0, W, H);
+    drawFallAsset(s.eliminated ? 'knockout_puff' : 'confetti', W / 2, H / 2 - 86,
+                  s.eliminated ? 118 : 150, s.eliminated ? 96 : 118, 0.72);
+    var col = s.eliminated ? '#ff9ec4' : '#ffd166';
+    RE.Draw.text(ctx, s.resultText, W / 2, H / 2 - 30, { size: 34, align: 'center', color: col });
+    var sub = s.eliminated
+        ? '沒關係，這局本來就是用來摔的'
+        : (s.stage === STAGES.length - 1 ? '你贏了整場節目' : '下一關：' + STAGES[s.stage + 1].name);
+    RE.Draw.text(ctx, sub, W / 2, H / 2 + 14, { size: 15, align: 'center', color: '#cfe3f0' });
+    // 一起被淘汰的人
+    var outs = s.players.filter(function (p) { return p.out && !p.you; }).map(function (p) { return p.name; });
+    if (outs.length) {
+        RE.Draw.text(ctx, '同時出局：' + outs.slice(0, 4).join('、'), W / 2, H / 2 + 44,
+            { size: 15, align: 'center', color: '#8fb3c8', stroke: false });
+    }
+    ctx.restore();
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '沒有攻擊、沒有血條。你是一顆軟糖，被撞到只會翻滾一下再爬起來。' +
+          '五關綜藝關卡，每關淘汰幾個人，最後搶到皇冠就贏。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "kind": "runtime-integrated-art-candidate",
+  "status": "final-gate-pending",
+  "countedInLedger": false,
+  "game": "bejeweled",
+  "set": "set-06-information-ui",
+  "tool": "Codex built-in ImageGen",
+  "model": "ImageGen（服務端版本未揭露）",
+  "generatedAt": "2026-08-24",
+  "prompt": "art-production/final-sweep/set-06-information-ui/prompt-v001.md",
+  "source": "art-production/final-sweep/set-06-information-ui/source/atlas-v001-imagegen.png",
+  "sourceSha256": "327fc8fcca80641467a232d90f503b43565598e393d519a7df8cb3577d154827",
+  "postprocess": "模型 alpha 保留、連通物件裁切、等比例縮放、透明留白與圖集排版；未補畫內容。Set 05 依固定格裁切保留模型背景，實際呈現以圓角裁切避免方形貼紙感。",
+  "atlas": "final-sweep-atlas.png",
+  "atlasSha256": "b85f9129d0c7cd8e9ebe8851802980b6a9fd560e7b230d42e117d7e4442d9e6b",
+  "cellWidth": 128,
+  "cellHeight": 128,
+  "assets": {
+    "violet_gem": {
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "寶石切面"
+    },
+    "velvet_board": {
+      "index": 1,
+      "x": 128,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "盤面材質"
+    },
+    "chain_burst": {
+      "index": 2,
+      "x": 256,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "連鎖演出"
+    }
+  },
+  "runtimePresentation": "RetroShell 開場的美術圖譜層；正常流程可見，不介入遊戲亂數、碰撞或更新。",
+  "qa": {
+    "assetCount": 3,
+    "edgePixels": 0,
+    "emptyCells": 0,
+    "humanFinalGate": false
+  }
+}

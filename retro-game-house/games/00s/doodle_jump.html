@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 筆記本跳跳</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   筆記本跳跳 — 致敬 Doodle Jump (Lima Sky, 2009)
+   --------------------------------------------------------------------------
+   這款遊戲把「無盡」這件事**轉了九十度**，然後整個類型就變了。
+
+   橫向無盡跑酷（見 00s 頁的天際奔逃）的驅動力是「再遠一點」，
+   但「遠」是抽象的——你要看數字才知道自己跑了多遠。
+   垂直無盡的驅動力是「再高一點」，而**高度是畫面本身就在講的事**：
+   你眼睛看著自己往上爬，背景往下捲，不需要任何 UI 就懂了。
+
+   第二個關鍵是：**它自動跳**。
+   玩家不控制「什麼時候跳」，只控制「往哪裡落」。
+   於是操作壓力被拿掉，剩下純粹的空間判斷——
+   這讓它變成一款可以單手、在公車上、分心時也能玩的遊戲，
+   而那正是 2009 年 iPhone 需要的東西。
+
+   平台的種類是這款遊戲全部的關卡設計：
+   靜止的、會左右移動的、踩一下就碎的、彈簧（跳超高）、
+   還有讓你短暫飛起來的道具。它們的比例隨高度改變，
+   這就是難度曲線——沒有關卡，只有機率分布。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'doodle_jump',
+    title: '筆記本跳跳',
+    tagline: '把無盡轉九十度，高度就變成不需要 UI 的驅動力',
+    original: 'Doodle Jump (Lima Sky, 2009)',
+    decade: '00s', year: 2009, platform: 'iOS', genre: '垂直無盡跳躍',
+    developer: 'Lima Sky（Igor & Marko Pušenjak）', bgm: '00s',
+    width: 480, height: 320,
+    hud: [
+        { key: 'height', label: '高度', init: '0m' },
+        { key: 'best', label: '最高', init: '0m' },
+        { key: 'tier', label: '區段', init: '1' },
+        { key: 'score', label: 'SCORE' }
+    ],
+    touch: 'none',
+    controls: [
+        { keys: ['←', '→'], desc: '左右移動。你會自動跳，不用按' },
+        { keys: ['滑鼠 / 觸控'], desc: '按住畫面左右半邊控制方向' },
+        { keys: ['P'], desc: '暫停' }
+    ],
+    howto: '<strong>角色會自動跳，你只控制左右</strong>；平台有普通、移動、碎裂、消失與彈簧。' +
+           '左右邊界相通，越高不穩定平台越多。',
+    lesson: {
+        verb: '在自動彈跳的拋物線中左右修正落點，選下一個平台，必要時利用畫面左右相通來縮短路徑。',
+        innovation: '取消跳躍鍵，把手機傾斜只映射成水平控制；畫面向下捲動本身就顯示高度，平台機率則取代傳統關卡表成為難度曲線。',
+        mission: '爬到 75m 前至少完成一次跨越畫面邊界的落地，並分別踩過普通、移動與一次性平台；記錄哪一種平台最早迫使你在起跳前就決定落點。',
+        evolution: '《Canabalt》把無盡挑戰放在水平速度；《Doodle Jump》把它旋轉成垂直高度並自動跳；《Downwell》再反轉方向，讓下墜同時成為移動與攻擊。',
+        reflection: '如果角色不再自動跳，而由玩家同時控制起跳時機與方向，這款遊戲會更有深度，還是破壞它適合單手短玩的節奏？'
+    },
+    design: '《Doodle Jump》要解決的設計問題是：如何讓手機上的無盡進度不只是一個抽象分數。它把跑酷轉成向上爬升，讓角色越高、舊平台越往下消失，進度本身就成為畫面運動。' +
+            '角色自動彈跳，玩家只負責水平落點；這項刪減把操作壓力集中到下一塊平台的可達窗口，也讓傾斜感應能自然對應身體方向。' +
+            '左右相通不是單純保命，而是把螢幕邊界變成路徑選擇；熟練玩家會把最短水平距離算成穿越另一側。' +
+            '普通、移動、破裂、一次性平台與彈簧沒有另開新模式，而是逐步改寫「下一次還能不能踩回來」的判斷。' +
+            '筆記紙與手繪線條降低了早期手機畫面的製作負擔，卻也建立出一眼可辨識的品牌語言。' +
+            '<strong>它的深度來自控制落點，而不是按下跳躍。</strong>' +
+            '對照本站《Canabalt》的水平速度與《Downwell》的向下攻擊，方向改變也會重寫玩家理解風險的方式。',
+    history: 'Lima Sky 的 Igor 與 Marko Pušenjak 在 2009 年推出《Doodle Jump》。同年訪談中，兄弟說明 Marko 負責程式、Igor 負責圖像；作品的筆記本畫風源自一個未完成專案，兩人發現鉛筆草稿反而比正式美術更合適。' +
+             '原版以傾斜控制左右、點擊射擊，並持續加入障礙與道具；官方 App Store 頁面至今仍把無盡平台、手繪畫面與其他玩家的分數標記列為核心。' +
+             'Igor 在早期訪談中稱即時顯示他人分數線是作品的獨特功能；GDC 2010 簡報則記錄首日只有 21 次下載，之後透過更新、社群與宣傳逐步成長，而不是一上架就自然爆紅。',
+    sources: [
+        { label: 'PocketGamer.biz：Igor、Marko Pušenjak 製作訪談', url: 'https://www.pocketgamer.biz/bouncing-ever-upwards-the-making-of-doodle-jump/' },
+        { label: 'GDC 2010：Lima Sky 的 Doodle Jump 成長簡報', url: 'https://media.gdcvault.com/gdc10/slides/Pusenjak_Igor_KeepingYourGameOnTop.pdf' },
+        { label: 'Apple App Store：Doodle Jump 官方玩法與功能', url: 'https://apps.apple.com/us/app/doodle-jump/id307727765' }
+    ]
+});
+
+var ctx = G.ctx, VW = G.width, VH = G.height;
+var P = new RE.Particles(300);
+var FT = new RE.FloatText();
+var DOODLE_ART = { image: new Image(), manifest: null };
+DOODLE_ART.image.src = '../../assets/games/doodle_jump/notebook-atlas.png';
+fetch('../../assets/games/doodle_jump/notebook-manifest.json')
+    .then(function (r) { if (!r.ok) throw new Error('doodle art manifest ' + r.status); return r.json(); })
+    .then(function (m) { DOODLE_ART.manifest = m; })
+    .catch(function () { DOODLE_ART.manifest = null; });
+
+var TUNE = {
+    gravity: 1250, bounce: -560, springBounce: -960, jetTime: 1.5, jetSpeed: -420,
+    moveSpeed: 235, pw: 22, ph: 26,
+    platW: 62, platH: 12,
+    gapMin: 52, gapMax: 78          // 兩層平台的垂直間距（要保證跳得到）
+};
+
+/* 平台種類的機率分布，就是這款遊戲的難度曲線。
+   每一段只調四個比例：普通、會動、會碎、一次性。 */
+/* 完走高度。
+   1500m 是**量錯之後訂出來的數字**，那時候機器人有兩個 bug
+   （過了跳躍頂點就選不到任何目標、失手墜落時也選不到），
+   看起來像「爬得慢」，於是門檻被往上推。
+   機器人修好之後量到的真實能力是：爬升速度 8.5～16.9 m/s（完全符合理論值
+   ——一次彈跳 125.4px、跳層打法一個循環 0.6 秒），
+   十場的最遠高度分布在 50～211m，平均 117m。
+   也就是說 1500m 要不失手地連跳兩百多次，而**連第二段 TIERS 的 320m 都到不了**：
+   後面四段的平台配置玩家一次都看不到，那正是這份 TIERS 註解當初想解決的問題，
+   結果換個數字又犯了一次。
+   TIERS 一起壓縮之後難度曲線也跟著前移（碎裂磚在 75m 就大量出現，
+   而不是原本的 620m），實測高度分布再往下掉一截，中位數 124m、最遠 168m。
+   最後訂在 120m：熟練打法 6/10 通過，對照組最遠 18m，
+   正好落在底座寫死的「熟練版 ≥60%」基準上。 */
+var WIN_HEIGHT = 120;
+
+/* 這張表的欄位名就是生成器的契約。曾被換成 altHeight／moveRate／crackRate／onceRate，
+   但 tierAt() 與 genPlat() 仍讀 upTo／move／crack／once／spring；JS 不會對 undefined
+   報錯，結果正式 12 種子生成的 318 塊平台全是 normal、區段從 1 直接跳到 5，
+   說明文字承諾的難度曲線完全沒有執行。以下把原表的平滑機率對回生成器欄位，
+   門檻壓進 120m 完走路線，並補回原本漏掉的彈簧率。 */
+var TIERS = [
+    // 五段都在一局內出現；四種平台比例各段加總為 1。
+    { name: '地面起飛', upTo: 20,  normal: 0.83, move: 0.10, crack: 0.04, once: 0.03, spring: 0.10 },
+    { name: '積雲層',   upTo: 45,  normal: 0.72, move: 0.16, crack: 0.07, once: 0.05, spring: 0.08 },
+    { name: '高空平流', upTo: 75,  normal: 0.61, move: 0.22, crack: 0.10, once: 0.07, spring: 0.07 },
+    { name: '外大氣層', upTo: 100, normal: 0.50, move: 0.28, crack: 0.13, once: 0.09, spring: 0.06 },
+    { name: '無盡宇宙', upTo: 140, normal: 0.39, move: 0.34, crack: 0.16, once: 0.11, spring: 0.05 }
+];
+
+var s = null;
+
+function reset() {
+    s = {
+        plats: [], camY: 0, height: 0, score: 0,
+        best: RE.Save.bestScore('doodle_jump') || 0,
+        dead: false, deadT: 0, over: false, won: false, tier: 0, hintT: 3.2,
+        topY: 0
+    };
+    P.clear(); FT.clear();
+    G.setStat('score', 0);
+    G.setStat('best', Math.round(s.best) + 'm');
+    G.setStat('height', '0m');
+    G.setStat('tier', '1');
+
+    s.p = { x: VW / 2 - TUNE.pw / 2, y: VH - 120, vx: 0, vy: TUNE.bounce,
+            face: 1, jet: 0, anim: 0, artLandT: 0 };
+    // 起始平台：正下方保證有一塊，玩家不會一開場就掉下去
+    s.plats.push(makePlat(VW / 2 - TUNE.platW / 2, VH - 80, 'normal'));
+    s.topY = VH - 80;
+    s.topX = VW / 2 - TUNE.platW / 2;
+    while (s.topY > -VH) genPlat();
+}
+
+function tierAt(h) {
+    for (var i = 0; i < TIERS.length; i++) if (h < TIERS[i].upTo) return i;
+    return TIERS.length - 1;
+}
+
+function makePlat(x, y, kind) {
+    return { x: x, y: y, kind: kind, dir: Math.random() < 0.5 ? -1 : 1,
+             spring: false, broken: 0, used: false, t: 0 };
+}
+
+/**
+ * 生成下一塊平台。
+ * 間距一律限制在「以目前彈跳初速跳得到」的範圍內——
+ * 這是垂直無盡類的可通過性保證，跟橫向跑酷的跳躍包絡線是同一件事。
+ */
+function genPlat() {
+    var h = Math.max(0, Math.round(s.height));
+    var T = TIERS[tierAt(h)];
+    // 一次彈跳能爬的高度：v²/2g，取 70% 當上限，永遠跳得到
+    var maxRise = (TUNE.bounce * TUNE.bounce) / (2 * TUNE.gravity) * 0.70;
+    var gap = RE.rand(TUNE.gapMin, Math.min(TUNE.gapMax, maxRise));
+    var y = s.topY - gap;
+
+    var r = Math.random(), kind;
+    if (r < T.crack) kind = 'crack';
+    else if (r < T.crack + T.once) kind = 'once';
+    else if (r < T.crack + T.once + T.move) kind = 'move';
+    else kind = 'normal';
+
+    /* **水平方向也要有可達性保證。**
+       垂直間距已經夾在「一次彈跳爬得到」的範圍內了，但橫向原本是整條寬度亂擺，
+       而一次彈跳的滯空時間只夠橫移這麼多：
+         間距 65px 時，下墜通過該高度是 t = (560 + √(560² − 2500×65)) / 1250 ≈ 0.76 秒，
+         乘上 moveSpeed 235 → 178px。
+       盤面寬 VW（含左右相通）最遠要移 251px，也就是**有些平台根本追不到**。
+       機器人稽核就是這樣量到的：爬升速度完全符合理論值（8.5～16.9 m/s），
+       卻平均在 62 公尺就摔死——不是玩得不好，是那一層剛好擺在射程外。
+       改成以上一塊為中心 ±140px（178 的八成，留失手餘裕）。 */
+    var reach = 140;
+    var prevX = s.topX === undefined ? VW / 2 - TUNE.platW / 2 : s.topX;
+    var x = RE.rand(Math.max(6, prevX - reach),
+                    Math.min(VW - TUNE.platW - 6, prevX + reach));
+    var p = makePlat(x, y, kind);
+    // 會碎的平台不掛彈簧（踩下去就碎了，彈簧等於白給）
+    if (kind !== 'crack' && Math.random() < T.spring) p.spring = true;
+    s.plats.push(p);
+    s.topY = y;
+    s.topX = x;
+
+    /* 棕色平台在 land() 裡不會反彈，所以它不能單獨占住線性生成鏈的一層。
+       欄位失效修正後首輪 12 種子只有 4/12 通關：第 4 場卡在 18.2m 跑滿
+       24,000 幀、第 11 場 10m 陣亡，兩場前方都只剩必踩的 crack。
+       每塊 crack 同高度放一塊可達的普通替代路，讓它成為「辨識後避開」的選擇，
+       而不是亂數抽到就無解的斷路；下一層也從安全路的 x 繼續生成。 */
+    if (kind === 'crack') {
+        var side = TUNE.platW + 20;
+        var left = x - side, right = x + side;
+        var maxX = VW - TUNE.platW - 6;
+        var safeX;
+        if (left >= 6 && right <= maxX) {
+            safeX = Math.abs(left - prevX) <= Math.abs(right - prevX) ? left : right;
+        } else {
+            safeX = left >= 6 ? left : right;
+        }
+        s.plats.push(makePlat(safeX, y, 'normal'));
+        s.topX = safeX;
+    }
+
+    // **保證條款**：連續生成會碎／一次性平台時，隔幾塊補一塊踏得住的。
+    // 不補的話會出現「一整段全是踩了就沒的平台」，玩家再準也活不下來。
+    // crack 已在同高度配一條安全路，因此這一層也算有固體平台。
+    s.sinceSolid = (kind === 'normal' || kind === 'move' || kind === 'crack') ? 0 : (s.sinceSolid || 0) + 1;
+    if (s.sinceSolid >= 2) {
+        s.sinceSolid = 0;
+        var y2 = y - RE.rand(TUNE.gapMin, Math.min(TUNE.gapMax, maxRise));
+        // 補上來的這一塊同樣要在射程內，否則保證條款自己就會生出追不到的平台
+        var x2 = RE.rand(Math.max(6, x - reach), Math.min(VW - TUNE.platW - 6, x + reach));
+        s.plats.push(makePlat(x2, y2, 'normal'));
+        s.topY = y2;
+        s.topX = x2;
+    }
+}
+
+function update(dt) {
+    if (!s || !s.p) return;
+    P.update(dt); FT.update(dt);
+    if (s.hintT > 0) s.hintT -= dt;
+
+    var p = s.p;
+    if (p.artLandT > 0) p.artLandT = Math.max(0, p.artLandT - dt);
+    if (s.dead) {
+        s.deadT -= dt;
+        p.vy += TUNE.gravity * dt; p.y += p.vy * dt;
+        if (s.deadT <= 0 && !s.over) { s.over = true; gameOver(); }
+        return;
+    }
+
+    // 左右：唯一的操作
+    var ax = RE.Input.axisX();
+    if (RE.Input.pointer.down) ax = RE.Input.pointer.x < VW / 2 ? -1 : 1;
+    p.vx = ax * TUNE.moveSpeed;
+    if (ax !== 0) p.face = ax > 0 ? 1 : -1;
+    p.x += p.vx * dt;
+    // 左右相通
+    if (p.x + TUNE.pw < 0) p.x = VW;
+    if (p.x > VW) p.x = -TUNE.pw;
+
+    // 噴射道具
+    if (p.jet > 0) {
+        p.jet -= dt;
+        p.vy = TUNE.jetSpeed;
+        if (Math.random() < 0.7) {
+            P.burst(p.x + TUNE.pw / 2, p.y + TUNE.ph, 2, {
+                angle: Math.PI / 2, spread: 0.5, speedMin: 60, speedMax: 180,
+                gravity: 0, drag: 0.9, colors: ['#ffd166', '#ff8a3d', '#fff3c4'],
+                lifeMin: 0.15, lifeMax: 0.35, glow: true });
+        }
+    } else {
+        p.vy += TUNE.gravity * dt;
+    }
+    p.y += p.vy * dt;
+    p.anim += dt;
+
+    // 只有下墜時才會踩到平台（往上穿過去）
+    if (p.vy > 0) {
+        for (var i = 0; i < s.plats.length; i++) {
+            var pl = s.plats[i];
+            if (pl.broken > 0 || pl.gone) continue;
+            var feet = p.y + TUNE.ph;
+            if (feet >= pl.y && feet <= pl.y + TUNE.platH + 10 &&
+                p.x + TUNE.pw > pl.x + 3 && p.x < pl.x + TUNE.platW - 3) {
+                land(pl);
+                break;
+            }
+        }
+    }
+
+    // 平台自己的動作
+    for (i = 0; i < s.plats.length; i++) {
+        pl = s.plats[i];
+        pl.t += dt;
+        if (pl.kind === 'move' && !pl.gone) {
+            pl.x += pl.dir * 74 * dt;
+            if (pl.x < 4) { pl.x = 4; pl.dir = 1; }
+            if (pl.x + TUNE.platW > VW - 4) { pl.x = VW - 4 - TUNE.platW; pl.dir = -1; }
+        }
+        if (pl.broken > 0) { pl.broken += dt; pl.y += 420 * dt; }
+    }
+
+    // 鏡頭只往上追，永遠不往下——這是垂直無盡的關鍵手感
+    var want = p.y - VH * 0.42;
+    if (want < s.camY) {
+        s.height += (s.camY - want) / 10;
+        s.camY = want;
+        var hh = Math.round(s.height);
+        if (hh !== s.shownH) {
+            s.shownH = hh;
+            G.setStat('height', hh + 'm');
+            s.score = hh * 10;
+            G.setStat('score', s.score);
+            var t = tierAt(hh);
+            if (t !== s.tier) {
+                s.tier = t;
+                G.setStat('tier', String(t + 1));
+                FT.add(VW / 2, 60, TIERS[t].name, { color: '#8fe8ff', size: 15 });
+                RetroAudio.play('levelUp');
+            }
+            /* 完走條件：爬到大氣層外再往上 400 公尺。
+               最後一段的門檻是 1100m，所以 1500m 代表「五段全部走完，
+               而且在最難的配置下又撐了一段」。
+               原本這款沒有全破結局，`gameOver` 永遠帶 win:false——
+               玩家爬得再高也只會看到 GAME OVER。 */
+            if (!s.won && hh >= WIN_HEIGHT) { s.won = true; winRun(); return; }
+        }
+    }
+
+    while (s.topY > s.camY - VH * 0.6) genPlat();
+    for (i = s.plats.length - 1; i >= 0; i--) {
+        if (s.plats[i].y > s.camY + VH + 80) s.plats.splice(i, 1);
+    }
+
+    if (p.y > s.camY + VH + 20) die();
+}
+
+function land(pl) {
+    var p = s.p;
+    if (pl.kind === 'crack') {
+        pl.broken = 0.001;
+        RetroAudio.play('drop');
+        P.burst(pl.x + TUNE.platW / 2, pl.y, 10, {
+            colors: ['#a8845a', '#7a5c3a'], speedMin: 40, speedMax: 150,
+            gravity: 600, lifeMin: 0.3, lifeMax: 0.6 });
+        return;                                    // 踩碎的不會彈起來
+    }
+    p.y = pl.y - TUNE.ph;
+    p.artLandT = 0.11;
+    p.vy = pl.spring ? TUNE.springBounce : TUNE.bounce;
+    if (pl.spring) {
+        pl.spring = false;
+        RetroAudio.play('bounce');
+        // 彈簧是這款唯一的「重擊」時刻，頓幀要跟著上去才有份量
+        RE.juice.hitstop(0.05);
+        RE.juice.shake(0.18); RE.juice.punchZoom(0.05);
+        FT.add(pl.x + TUNE.platW / 2, pl.y - 14, '彈簧！', { color: '#ffd166', size: 12 });
+        P.ring(pl.x + TUNE.platW / 2, pl.y, '#ffd166', 34);
+    } else {
+        RetroAudio.play('jump');
+    }
+    if (pl.kind === 'once') {
+        pl.gone = true;
+        P.burst(pl.x + TUNE.platW / 2, pl.y + 6, 8, {
+            colors: ['#ffffff', '#dfe9ff'], speedMin: 20, speedMax: 90,
+            gravity: 200, lifeMin: 0.2, lifeMax: 0.45 });
+    }
+    P.burst(p.x + TUNE.pw / 2, p.y + TUNE.ph, 5, {
+        angle: -Math.PI / 2, spread: 1.3, speedMin: 20, speedMax: 80,
+        gravity: 300, colors: ['#cfe8c8'], lifeMin: 0.12, lifeMax: 0.3 });
+}
+
+function die() {
+    if (s.dead) return;
+    s.dead = true; s.deadT = 0.9;
+    RetroAudio.play('gameover');
+    RE.juice.shake(0.4);
+}
+
+/** 全破：爬到 WIN_HEIGHT。結尾文字要把這款的設計論點收掉。 */
+function winRun() {
+    var h = Math.round(s.height);
+    if (h > s.best) { RE.Save.submitScore('doodle_jump', h); s.best = h; }
+    G.setStat('best', Math.round(s.best) + 'm');
+    RE.juice.flash('rgba(143,232,255,0.45)', 0.3);
+    RE.juice.slowmo(0.3, 1.4);
+    RetroAudio.play('win');
+    G.gameOver({
+        win: true, score: s.score,
+        body: '你爬到 ' + h + ' 公尺，穿出了大氣層。' +
+              '整段路你<strong>一次跳躍鍵都沒按過</strong>——它是自動的。' +
+              '玩家唯一要決定的事情只有「往哪落」。' +
+              '把操作壓力整個拿掉之後，剩下的是純粹的空間判斷；' +
+              '而<strong>「我爬得多高」這件事，畫面本身就在講</strong>，不需要任何 UI。' +
+              '<strong>一個手指、一個決定、一個不用解釋的目標</strong>——' +
+              '這就是 2009 年的 iPhone 最需要的那種遊戲。'
+    });
+}
+
+function gameOver() {
+    var h = Math.round(s.height);
+    if (h > s.best) { RE.Save.submitScore('doodle_jump', h); s.best = h; }
+    G.setStat('best', Math.round(s.best) + 'm');
+    G.gameOver({
+        win: false, score: s.score,
+        body: '你爬到 ' + h + ' 公尺，' + TIERS[s.tier].name + '。' +
+              '注意到你從來沒有按過跳躍鍵嗎——<strong>它是自動的</strong>。' +
+              '玩家唯一要決定的是「往哪落」。' +
+              '把操作壓力拿掉之後，剩下的是純粹的空間判斷，' +
+              '而<strong>高度這件事，畫面本身就在講</strong>，不需要任何 UI。' +
+              '這兩個決定加起來，就是 2009 年的 iPhone 最需要的那種遊戲。'
+    });
+}
+
+// ======================================================================
+// 繪製：方格筆記本
+// ======================================================================
+function drawDoodleAsset(name, cx, cy, w, h, alpha, flip, rotation) {
+    var m = DOODLE_ART.manifest;
+    if (!m || !m.assets || !m.assets[name] || !DOODLE_ART.image.complete ||
+        !DOODLE_ART.image.naturalWidth) return false;
+    var a = m.assets[name];
+    ctx.save();
+    ctx.globalAlpha = alpha === undefined ? 1 : alpha;
+    ctx.translate(cx, cy);
+    if (rotation) ctx.rotate(rotation);
+    if (flip) ctx.scale(-1, 1);
+    ctx.drawImage(DOODLE_ART.image, a.x, a.y, a.w, a.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+}
+
+function render() {
+    if (!s || !s.p) return;
+    G.beginWorld();
+    drawPaper();
+    ctx.save();
+    ctx.translate(0, -s.camY);
+    drawPlats();
+    drawPlayer();
+    ctx.restore();
+    P.draw(ctx);
+    FT.draw(ctx);
+    G.endWorld();
+    drawHUD();
+    G.postFX({ scanAlpha: 0.03, vignetteStrength: 0.35 });
+}
+
+function drawPaper() {
+    ctx.fillStyle = '#f4f1e4';
+    ctx.fillRect(0, 0, VW, VH);
+    // 方格線跟著鏡頭捲動，讓「我在往上爬」看得出來
+    var off = ((-s.camY) % 24 + 24) % 24;
+    ctx.strokeStyle = 'rgba(120,150,190,0.24)';
+    ctx.lineWidth = 1;
+    for (var x = 0; x <= VW; x += 24) { ctx.beginPath(); ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, VH); ctx.stroke(); }
+    for (var y = off; y <= VH; y += 24) { ctx.beginPath(); ctx.moveTo(0, y + 0.5); ctx.lineTo(VW, y + 0.5); ctx.stroke(); }
+    ctx.strokeStyle = 'rgba(220,120,120,0.35)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(48.5, 0); ctx.lineTo(48.5, VH); ctx.stroke();
+    // 低對比筆記貼紙維持紙面媒材；平台、角色仍是最高資訊層。
+    drawDoodleAsset('cloud', VW - 58, 62, 72, 48, 0.16);
+    drawDoodleAsset('star', 88, 88, 48, 48, 0.12, false, -0.12);
+    drawDoodleAsset('moon', VW - 82, VH - 72, 52, 52, 0.10);
+    drawDoodleAsset('planet', 95, VH - 62, 52, 52, 0.09, false, 0.08);
+    drawDoodleAsset('pencil_rocket', VW - 118, 142, 50, 50, 0.08, false, -0.18);
+}
+
+var PLAT_COL = {
+    normal: ['#7bc46a', '#4f9a42'], move: ['#6aa8e0', '#3d78b0'],
+    crack: ['#b8905a', '#8a6b40'], once: ['#f0f0f6', '#c8c8d4']
+};
+
+function drawPlats() {
+    for (var i = 0; i < s.plats.length; i++) {
+        var pl = s.plats[i];
+        if (pl.gone) continue;
+        if (pl.y > s.camY + VH + 40 || pl.y < s.camY - 40) continue;
+        var col = PLAT_COL[pl.kind] || PLAT_COL.normal;
+        ctx.save();
+        var platformAlpha = pl.broken > 0 ? Math.max(0, 1 - pl.broken * 2) : 1;
+        if (pl.broken > 0) { ctx.globalAlpha = platformAlpha; ctx.rotate(0); }
+        var platformAsset = pl.broken > 0 ? 'platform_broken' :
+            pl.kind === 'move' ? 'platform_move' :
+            pl.kind === 'crack' ? 'platform_crack' :
+            pl.kind === 'once' ? 'platform_once' : 'platform_normal';
+        if (drawDoodleAsset(platformAsset, pl.x + TUNE.platW / 2, pl.y + 4,
+            TUNE.platW + 14, 34, platformAlpha)) {
+            if (pl.spring) drawDoodleAsset('spring', pl.x + TUNE.platW / 2, pl.y - 10, 30, 30);
+            ctx.restore();
+            continue;
+        }
+        ctx.fillStyle = col[1];
+        RE.Draw.roundRect(ctx, pl.x, pl.y, TUNE.platW, TUNE.platH, 5); ctx.fill();
+        ctx.fillStyle = col[0];
+        RE.Draw.roundRect(ctx, pl.x, pl.y, TUNE.platW, TUNE.platH - 4, 5); ctx.fill();
+        // 手繪感的外框
+        ctx.strokeStyle = 'rgba(40,50,40,0.45)'; ctx.lineWidth = 1.5;
+        RE.Draw.roundRect(ctx, pl.x + 0.5, pl.y + 0.5, TUNE.platW - 1, TUNE.platH - 1, 5); ctx.stroke();
+        if (pl.kind === 'crack') {
+            ctx.strokeStyle = 'rgba(40,30,20,0.5)'; ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(pl.x + 16, pl.y); ctx.lineTo(pl.x + 22, pl.y + TUNE.platH);
+            ctx.moveTo(pl.x + 40, pl.y); ctx.lineTo(pl.x + 34, pl.y + TUNE.platH);
+            ctx.stroke();
+        }
+        if (pl.kind === 'move') {
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.fillRect(pl.x + 8, pl.y + 3, 5, 3); ctx.fillRect(pl.x + TUNE.platW - 13, pl.y + 3, 5, 3);
+        }
+        if (pl.spring) {
+            ctx.strokeStyle = '#3f8f60'; ctx.lineWidth = 2;
+            var sx = pl.x + TUNE.platW / 2;
+            ctx.beginPath();
+            for (var k = 0; k < 3; k++) { ctx.moveTo(sx - 5, pl.y - 4 - k * 4); ctx.lineTo(sx + 5, pl.y - 4 - k * 4); }
+            ctx.stroke();
+            ctx.fillStyle = '#a8f0c4';
+            ctx.fillRect(sx - 7, pl.y - 18, 14, 3);
+        }
+        ctx.restore();
+    }
+}
+
+function drawPlayer() {
+    var p = s.p;
+    var wrapPose = p.x < 2 || p.x + TUNE.pw > VW - 2;
+    var playerAsset = wrapPose ? 'player_wrap' : p.artLandT > 0 ? 'player_land' :
+        p.vy < 0 ? 'player_rise' : 'player_fall';
+    if (drawDoodleAsset(playerAsset, p.x + TUNE.pw / 2, p.y + TUNE.ph / 2,
+        38, 38, 1, p.face < 0)) return;
+    ctx.save();
+    ctx.translate(p.x + TUNE.pw / 2, p.y + TUNE.ph);
+    ctx.scale(p.face, 1);
+    // 上升時拉長、下墜時壓扁——沒有 UI 也讀得出垂直速度
+    var sy = p.vy < -100 ? 1.12 : (p.vy > 200 ? 0.92 : 1);
+    ctx.scale(1 / sy, sy);
+    ctx.fillStyle = '#8fd46a';
+    RE.Draw.roundRect(ctx, -11, -24, 22, 24, 9); ctx.fill();
+    ctx.strokeStyle = 'rgba(40,60,30,0.55)'; ctx.lineWidth = 1.5;
+    RE.Draw.roundRect(ctx, -10.5, -23.5, 21, 23, 9); ctx.stroke();
+    // 腳
+    ctx.fillStyle = '#5f9a44';
+    ctx.fillRect(-8, -3, 5, 5); ctx.fillRect(3, -3, 5, 5);
+    // 長鼻子（塗鴉風格的招牌）
+    ctx.fillStyle = '#8fd46a';
+    ctx.beginPath(); ctx.moveTo(6, -16); ctx.lineTo(17, -13); ctx.lineTo(6, -10); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(40,60,30,0.55)'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(6, -16); ctx.lineTo(17, -13); ctx.lineTo(6, -10); ctx.stroke();
+    // 眼睛
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(1, -18, 4.5, 0, RE.TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(40,60,30,0.5)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(1, -18, 4.5, 0, RE.TAU); ctx.stroke();
+    ctx.fillStyle = '#1a2418';
+    ctx.beginPath(); ctx.arc(2.4, -18, 1.9, 0, RE.TAU); ctx.fill();
+    ctx.restore();
+}
+
+function drawHUD() {
+    if (s.hintT > 0) {
+        var a = Math.min(1, s.hintT / 0.8);
+        ctx.globalAlpha = a;
+        // 480px 畫布縮到 390px 手機視窗後，原本 10～12px 只剩約 7～9px，
+        // 而且貼在最底層平台線上；放大並上移，讓「自動跳／左右相通」這個核心規則
+        // 在第一次彈跳時真的能被讀到，不必犧牲筆記本格線與平台構圖。
+        RE.Draw.text(ctx, '你會自己跳——只要決定往哪落', VW / 2, VH - 46,
+            { size: 15, align: 'center', color: '#3a5a3a', stroke: '#fffdf0', strokeWidth: 2 });
+        RE.Draw.text(ctx, '左右相通，從左邊出去會從右邊回來', VW / 2, VH - 27,
+            { size: 13, align: 'center', color: '#4a6a58', stroke: '#fffdf0', strokeWidth: 2 });
+        ctx.globalAlpha = 1;
+    }
+}
+
+// ======================================================================
+function openPause() {
+    G._state = 'paused';
+    RetroAudio.play('pause');
+    G.showOverlay({
+        title: '暫停中',
+        body: '這款遊戲沒有關卡，只有機率分布——平台種類的比例隨高度改變，那就是難度曲線。',
+        buttons: [
+            { label: '▶ 繼續', onClick: function () { G.resume(); } },
+            { label: '↻ 重新開始', cls: 'ghost', onClick: function () { G.restart(); } }
+        ],
+        press: '按 P 或 ESC 繼續'
+    });
+}
+G.pause = openPause;
+
+function showTitleScreen() {
+    G._state = 'title';
+    G.showOverlay({
+        title: '筆記本跳跳',
+        body: G.cfg.howto,
+        buttons: [{ label: '▶ 開始跳', onClick: function () { G.hideOverlay(); G._state = 'playing'; reset(); } }],
+        press: '按 空白鍵 或 Enter 開始'
+    });
+    var onKey = function (e) {
+        if (G._state !== 'title') return;
+        if (e.code === 'Space' || e.code === 'Enter') {
+            e.preventDefault();
+            window.removeEventListener('keydown', onKey);
+            RetroAudio.play('confirm');
+            G.hideOverlay(); G._state = 'playing'; reset();
+        }
+    };
+    window.addEventListener('keydown', onKey);
+}
+
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+showTitleScreen();
+</script>
+</body>
+</html>

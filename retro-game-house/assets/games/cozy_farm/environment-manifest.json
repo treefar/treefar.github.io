@@ -1,0 +1,169 @@
+{
+  "version": 1,
+  "kind": "game-art-atlas",
+  "game": "cozy_farm",
+  "source": "art-production/batch-03/cozy_farm/source/cozy-environment-sheet-v001-imagegen.png",
+  "sourceSha256": "d973551a2f0930c1f031b32ec5d3c9f1986d5c1f5f8ec211ec362e7d91db294c",
+  "postprocess": "4x4 equal-cell slice; connected sampled chroma alpha unmix; nearest resize; no drawing or recolor",
+  "atlas": "environment-atlas.png",
+  "atlasSha256": "16e339e6551c752e86a861e35cdec66aa5f7cfd98e98da81663e6f0704653eec",
+  "cellWidth": 128,
+  "cellHeight": 128,
+  "columns": 4,
+  "rows": 4,
+  "assets": {
+    "grass": {
+      "index": 0,
+      "row": 0,
+      "column": 0,
+      "x": 0,
+      "y": 0,
+      "w": 128,
+      "h": 128
+    },
+    "tilled": {
+      "index": 1,
+      "row": 0,
+      "column": 1,
+      "x": 128,
+      "y": 0,
+      "w": 128,
+      "h": 128
+    },
+    "seed": {
+      "index": 2,
+      "row": 0,
+      "column": 2,
+      "x": 256,
+      "y": 0,
+      "w": 128,
+      "h": 128
+    },
+    "sprout": {
+      "index": 3,
+      "row": 0,
+      "column": 3,
+      "x": 384,
+      "y": 0,
+      "w": 128,
+      "h": 128
+    },
+    "crop": {
+      "index": 4,
+      "row": 1,
+      "column": 0,
+      "x": 0,
+      "y": 128,
+      "w": 128,
+      "h": 128
+    },
+    "tree": {
+      "index": 5,
+      "row": 1,
+      "column": 1,
+      "x": 128,
+      "y": 128,
+      "w": 128,
+      "h": 128
+    },
+    "stump": {
+      "index": 6,
+      "row": 1,
+      "column": 2,
+      "x": 256,
+      "y": 128,
+      "w": 128,
+      "h": 128
+    },
+    "rock": {
+      "index": 7,
+      "row": 1,
+      "column": 3,
+      "x": 384,
+      "y": 128,
+      "w": 128,
+      "h": 128
+    },
+    "water": {
+      "index": 8,
+      "row": 2,
+      "column": 0,
+      "x": 0,
+      "y": 256,
+      "w": 128,
+      "h": 128
+    },
+    "flowers": {
+      "index": 9,
+      "row": 2,
+      "column": 1,
+      "x": 128,
+      "y": 256,
+      "w": 128,
+      "h": 128
+    },
+    "bench": {
+      "index": 10,
+      "row": 2,
+      "column": 2,
+      "x": 256,
+      "y": 256,
+      "w": 128,
+      "h": 128
+    },
+    "cabin": {
+      "index": 11,
+      "row": 2,
+      "column": 3,
+      "x": 384,
+      "y": 256,
+      "w": 128,
+      "h": 128
+    },
+    "reeds": {
+      "index": 12,
+      "row": 3,
+      "column": 0,
+      "x": 0,
+      "y": 384,
+      "w": 128,
+      "h": 128
+    },
+    "path": {
+      "index": 13,
+      "row": 3,
+      "column": 1,
+      "x": 128,
+      "y": 384,
+      "w": 128,
+      "h": 128
+    },
+    "fence": {
+      "index": 14,
+      "row": 3,
+      "column": 2,
+      "x": 256,
+      "y": 384,
+      "w": 128,
+      "h": 128
+    },
+    "lantern": {
+      "index": 15,
+      "row": 3,
+      "column": 3,
+      "x": 384,
+      "y": 384,
+      "w": 128,
+      "h": 128
+    }
+  },
+  "qa": {
+    "assetCount": 16,
+    "edgePixels": 0,
+    "cornerKeyRgb": [
+      250,
+      3,
+      250
+    ]
+  }
+}

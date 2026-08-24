@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 鋼骨塔攀登</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   鋼骨塔攀登 — 致敬 Donkey Kong (Nintendo, 1981)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. 以開場演出建立角色動機，並把跳躍推成主要解題動詞。
+      本作保留原作的單畫面塔型結構：往上就是目標，不需要教學。
+   2. 斜坡鋼骨會讓桶子加速滾動，梯子則是唯一的垂直通道——
+      「路徑本身就是難度」的關卡設計。
+   3. 四種關卡（滾桶／升降台／鉚釘／彈簧）輪替，每種考驗不同技巧。
+   4. 跳過桶子有額外加分，鐵鎚可以短暫反擊——風險與報酬的經典配置。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'donkey_kong',
+    title: '鋼骨塔攀登',
+    tagline: '跳躍第一次成為遊戲的核心動詞',
+    original: 'Donkey Kong (Nintendo, 1981)',
+    decade: '80s', year: 1981, platform: '大型街機', genre: '平台跳躍',
+    developer: 'Nintendo · 宮本茂', bgm: '80s',
+    width: 440, height: 460,
+    lives: 3,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'best', label: 'BEST' },
+        { key: 'stage', label: '關卡', init: 1 },
+        { key: 'bonus', label: 'BONUS', init: 5000 }
+    ],
+    touch: 'dpad+ab', labelA: '跳', maxScale: 2,
+    controls: [
+        { keys: ['←', '→'], desc: '移動' },
+        { keys: ['↑', '↓'], desc: '爬梯子' },
+        { keys: ['空白'], desc: '跳躍' }
+    ],
+    howto: '爬到塔頂救出同伴。<strong>跳過桶子可以加分</strong>，直接踩到會失去一條命。' +
+           '梯子是唯一的垂直通道，但爬梯時無法跳躍——要算好時機。' +
+           '撿到鐵鎚可以短暫敲碎桶子，但拿著鐵鎚時不能爬梯子。',
+    lesson: {
+        verb: '跳過威脅，並在梯子與平台之間規劃向上的路線。',
+        innovation: '跳躍不再只是移動方式，而是同時承擔閃避、得分與讀取障礙節奏的核心動詞。',
+        mission: '同一層先完成一次純閃避，再刻意跳過一個桶子得分，比較「活下來」與「冒險取分」的差別。',
+        evolution: '《Donkey Kong》把跳躍變成解題工具；《Super Mario Bros.》再把加速、慣性與踩敵整合成完整平台動作語言。',
+        reflection: '若玩家可以直接射掉所有桶子，跳躍還會是這款遊戲不可替代的動詞嗎？'
+    },
+    design: '《Donkey Kong》要解決的問題不是「怎麼再做一款射擊遊戲」，而是如何讓玩家在持續逼近的威脅中讀懂路線與時機。' +
+            '桶子不能從遠處直接清空，玩家必須在平台上判斷距離，選擇跳過、繞路、爬梯或暫時拿鐵鎚。' +
+            '跳躍同時負責閃避與得分：安全地躲遠可以生存，貼近桶子起跳則能換取分數，膽量因此成為可量化的技術。' +
+            '任天堂官方回顧稱它是 Mario 第一次跳躍的作品，重點不是宣稱它發明所有遊戲的跳躍，' +
+            '而是它把跳躍放進角色、障礙與關卡敘事的中心；往後的《Super Mario Bros.》再把這套語言擴展成慣性、踩敵與長距離平台探索。',
+    history: '1981 年，任天堂為處理一批在美國滯銷的街機機板與機殼，讓新遊戲沿用既有硬體；宮本茂在這個限制下完成《Donkey Kong》。' +
+             '任天堂訪談記載，這款作品從一開始就以美國市場為目標，後來也成為宮本茂思考全球玩家的起點。' +
+             '主角曾被稱為 Mr. Video 與 Jumpman；任天堂美國公司的倉儲與員工宿舍房東名叫 Mario，角色外貌又與他相似，名稱因而固定下來。' +
+             '這段歷史顯示，硬體庫存、海外市場與角色辨識度，能共同推動一套新玩法誕生。',
+    sources: [
+        { label: '任天堂：宮本茂談 Donkey Kong', url: 'https://www.nintendo.com/en-gb/News/2016/November/Nintendo-Classic-Mini-NES-special-interview-Volume-1-Donkey-Kong-1152552.html' },
+        { label: '任天堂 Iwata Asks：Mario 的跳躍', url: 'https://www.nintendo.com/en-gb/Iwata-Asks/Iwata-Asks-New-Super-Mario-Bros-Wii/Volume-1/4-Letting-Everyone-Know-It-Was-A-Good-Mushroom/4-Letting-Everyone-Know-It-Was-A-Good-Mushroom-210863.html' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(400);
+var FT = new RE.FloatText();
+
+// 塔的結構：六層鋼骨，交錯傾斜，梯子連接
+var FLOOR_H = 62;
+var FLOORS = 6;
+var GROUND_Y = H - 34;
+
+var STAGES = [
+    { type: 'barrel', barrelRate: 2.4, speed: 1.00, hammer: true,  name: '滾桶層', hint: '跳過桶子可以加分。梯子上不能跳。' },
+    { type: 'rivet',  barrelRate: 3.2, speed: 1.05, hammer: false, name: '鉚釘層', hint: '踩掉所有金色鉚釘就能過關。' },
+    { type: 'barrel', barrelRate: 1.9, speed: 1.15, hammer: true,  name: '急流層', hint: '桶子變多也變快了。' },
+    { type: 'rivet',  barrelRate: 2.6, speed: 1.20, hammer: false, name: '高塔鉚釘', hint: '鉚釘更分散，火球也更積極。' },
+    { type: 'barrel', barrelRate: 1.5, speed: 1.32, hammer: true,  name: '最後攀登', hint: '所有機制在此匯集。' }
+];
+
+var s = {};
+
+/** 產生塔的鋼骨與梯子。奇偶層向不同方向傾斜，形成 Z 字動線。 */
+function buildTower(stage) {
+    var beams = [], ladders = [], rivets = [];
+    for (var f = 0; f < FLOORS; f++) {
+        var y = GROUND_Y - f * FLOOR_H;
+        var tilt = (f % 2 === 0) ? -1 : 1;      // 傾斜方向
+        var x0 = 20, x1 = W - 20;
+        if (f === FLOORS - 1) { x0 = 90; x1 = W - 90; tilt = 0; }   // 頂層平台
+        beams.push({ x0: x0, x1: x1, y0: y, y1: y + tilt * 14, tilt: tilt });
+
+        if (f < FLOORS - 1) {
+            // 每層一到兩條梯子，位置交錯避免直線通關
+            var lx = f % 2 === 0 ? W - 90 : 90;
+            ladders.push({ x: lx, yTop: y - FLOOR_H, yBot: y + 6 });
+            if (f % 2 === 1 && f < FLOORS - 2) {
+                ladders.push({ x: W / 2 + 40, yTop: y - FLOOR_H, yBot: y + 6 });
+            }
+        }
+        if (stage.type === 'rivet' && f < FLOORS - 1) {
+            for (var k = 0; k < 2; k++) {
+                rivets.push({ x: x0 + 60 + k * (x1 - x0 - 120), y: y - 6, got: false, floor: f });
+            }
+        }
+    }
+    return { beams: beams, ladders: ladders, rivets: rivets };
+}
+
+function beamYAt(x, floor) {
+    var b = s.tower.beams[floor];
+    if (!b || x < b.x0 || x > b.x1) return null;
+    var t = (x - b.x0) / (b.x1 - b.x0);
+    return RE.lerp(b.y0, b.y1, t);
+}
+
+/** 找出角色腳下最近的鋼骨 */
+function floorUnder(x, y) {
+    for (var f = FLOORS - 1; f >= 0; f--) {
+        var by = beamYAt(x, f);
+        if (by === null) continue;
+        /* 容許量維持 6。試過放寬到 10，會讓 floorUnder 在往上掃時
+           提早回報上一層，機器人的最高樓層從第 3～4 層掉回第 0 層——
+           斜面造成的 0.4px 誤差要在梯頂放手那裡修，不是在這裡放寬。 */
+        if (y <= by + 6 && y >= by - FLOOR_H + 4) return f;
+    }
+    return null;
+}
+
+function reset() {
+    s = { stage: 1, lives: 3, score: 0, over: false };
+    loadStage(1);
+    G.setStat('score', 0); G.setLives(3);
+}
+
+function loadStage(n) {
+    var cfg = STAGES[Math.min(n - 1, STAGES.length - 1)];
+    s.cfg = cfg;
+    s.stage = n;
+    s.tower = buildTower(cfg);
+    s.barrels = [];
+    s.fires = [{ x: W / 2, y: GROUND_Y - 8, floor: 0, vx: 40, climb: 0 }];
+    s.hammer = cfg.hammer ? { x: W - 70, y: GROUND_Y - FLOOR_H - 20, taken: false } : null;
+    s.spawnTimer = 1.5;
+    s.bonus = 5000;
+    s.bonusTimer = 0;
+    s.clearTimer = 0;
+    resetPlayer();
+    G.setStat('stage', n);
+    G.setStat('bonus', s.bonus);
+}
+
+function resetPlayer() {
+    s.p = {
+        x: 46, y: 0, vx: 0, vy: 0, w: 16, h: 22,
+        grounded: true, onLadder: false, floor: 0,
+        face: 1, anim: 0, dead: 0, hammerTime: 0, jumping: false
+    };
+    /* **出生高度要問鋼骨，不能用常數。**
+       原本寫死 `y: GROUND_Y - 12`，也就是腳底落在 GROUND_Y + 10 = 436。
+       但 GROUND_Y（426）只是第一根鋼骨**左端**的高度，而鋼骨是斜的
+       （y0 426 → y1 412），出生點 x=46 那裡的骨面已經升到 424.8——
+       腳底整整低於骨面 11px，floorUnder() 的 `y <= by + 6` 判定當然不成立。
+       後果是**完全不輸入也會一路掉出塔外**：開場即墜落，三條命五秒用完，
+       這一款從建好以來就沒有一次真的玩得起來。
+       煙霧測試只驗「不會拋例外」，靜態稽核只讀關卡陣列，兩邊都看不到這種事；
+       是機器人稽核跑出「343 幀、三條命全死在同一個座標」才抓到的。 */
+    var by = beamYAt(s.p.x + s.p.w / 2, 0);
+    s.p.y = (by === null ? GROUND_Y : by) - s.p.h;
+}
+
+// ======================================================================
+function update(dt) {
+    if (s.over) return;
+
+    if (s.clearTimer > 0) {
+        s.clearTimer -= dt;
+        P.update(dt); FT.update(dt);
+        if (s.clearTimer <= 0) nextStage();
+        return;
+    }
+
+    var p = s.p;
+    if (p.dead > 0) {
+        p.dead -= dt;
+        p.y += 140 * dt;
+        P.update(dt); FT.update(dt);
+        if (p.dead <= 0) afterDeath();
+        return;
+    }
+
+    // ---- 獎勵分數倒數：時間壓力，但不會直接殺死玩家 ----
+    s.bonusTimer += dt;
+    if (s.bonusTimer >= 1) {
+        s.bonusTimer -= 1;
+        s.bonus = Math.max(0, s.bonus - 100);
+        G.setStat('bonus', s.bonus);
+        if (s.bonus === 0) { die('獎勵時間耗盡'); return; }
+    }
+
+    // ---- 梯子偵測 ----
+    var lad = null;
+    for (var i = 0; i < s.tower.ladders.length; i++) {
+        var L = s.tower.ladders[i];
+        if (Math.abs(p.x + p.w / 2 - L.x) < 12 && p.y + p.h > L.yTop - 4 && p.y < L.yBot + 6) {
+            lad = L; break;
+        }
+    }
+
+    var ay = RE.Input.axisY();
+    if (lad && ay !== 0 && p.hammerTime <= 0) {
+        // 爬梯：垂直移動，水平鎖定在梯子中線
+        p.onLadder = true;
+        p.x = lad.x - p.w / 2;
+        p.vy = 0; p.vx = 0;
+        p.y += ay * 78 * dt;
+        p.anim += dt * 8;
+        /* 放手的位置**只往上夾，不往下拉**。
+           鋼骨是斜的：中間那兩條梯子（x = W/2+40）上方的骨面在 293.6，
+           而常數放手會把腳底停在 yTop − 2 = 300，落在骨面下方 6.4px，
+           floorUnder() 的容許只有 6px——差 0.4px 就抓不到這一層，
+           人於是穿過鋼骨掉回下一層，那兩條梯子爬了也是白爬。
+           改成取「常數位置」與「該 x 的骨面」兩者中比較高的那一個：
+           斜面偏高時貼著骨面放手（缺陷修掉），偏低時維持原本的行為
+           （直接改成貼骨面會把人往下拉，機器人爬到頂又被放回原處，
+           反而爬不上去——這一條是實測踩出來的）。 */
+        if (p.y + p.h < lad.yTop - 2) {
+            p.onLadder = false;
+            var upF = Math.round((GROUND_Y - lad.yTop) / FLOOR_H);
+            var upBy = beamYAt(p.x + p.w / 2, upF);
+            var feet = (upBy === null) ? lad.yTop - 2 : Math.min(lad.yTop - 2, upBy);
+            p.y = feet - p.h;
+        }
+        if (p.y > lad.yBot) { p.onLadder = false; }
+        if (Math.random() < dt * 6) RetroAudio.play('step');
+        P.update(dt); FT.update(dt);
+        updateHazards(dt);
+        return;
+    }
+    /* 「腳底已經高過梯頂」也算離開梯子。
+       只判 `!lad` 是不夠的：爬到頂端那一格時梯子仍然在偵測範圍內，
+       而上面那行的放手條件是嚴格小於（`p.y + p.h < lad.yTop - 2`），
+       玩家如果剛好在等號的位置放開 ↑，onLadder 會一直卡在 true——
+       而重力與落地判定整段包在 `if (!p.onLadder)` 裡面，
+       人就凍在梯頂：不會掉下去、也不會登上這一層，p.floor 永遠不更新。
+       走開才解得掉，但玩家看不出來自己該走開。 */
+    if (!lad || p.y + p.h <= lad.yTop - 1) p.onLadder = false;
+
+    // ---- 水平移動 ----
+    var ax = RE.Input.axisX();
+    if (p.hammerTime > 0) p.hammerTime -= dt;
+    p.vx = RE.approach(p.vx, ax * 108, 900 * dt);
+    if (ax !== 0) p.face = ax;
+    p.x += p.vx * dt;
+    p.x = RE.clamp(p.x, 8, W - p.w - 8);
+    p.anim += Math.abs(p.vx) * dt * 0.14;
+
+    // ---- 跳躍 ----
+    if (!p.onLadder) {
+        if (RE.Input.buffered('a', 0.14) && p.grounded && p.hammerTime <= 0) {
+            RE.Input.consumeBuffer('a');
+            p.vy = -285;
+            p.grounded = false;
+            p.jumping = true;
+            p.jumpStartX = p.x;
+            RetroAudio.play('jump');
+        }
+        p.vy += 1150 * dt;
+        p.y += p.vy * dt;
+
+        // 落到鋼骨上
+        var f = floorUnder(p.x + p.w / 2, p.y + p.h);
+        if (f !== null) {
+            var by = beamYAt(p.x + p.w / 2, f);
+            if (by !== null && p.y + p.h >= by && p.vy >= 0) {
+                p.y = by - p.h;
+                p.vy = 0;
+                if (!p.grounded) {
+                    RetroAudio.play('land');
+                    P.burst(p.x + p.w / 2, p.y + p.h, 4, { colors: ['#d9c9a8'],
+                        speedMin: 20, speedMax: 70, gravity: 260, lifeMin: 0.12, lifeMax: 0.26, sizeMax: 2.5 });
+                }
+                p.grounded = true;
+                p.jumping = false;
+                p.floor = f;
+            } else if (p.vy > 0) {
+                p.grounded = false;
+            }
+        } else {
+            p.grounded = false;
+        }
+        if (p.y > H + 40) { die('掉出塔外'); return; }
+    }
+
+    // ---- 鐵鎚 ----
+    if (s.hammer && !s.hammer.taken &&
+        RE.aabb({ x: p.x, y: p.y, w: p.w, h: p.h },
+                { x: s.hammer.x, y: s.hammer.y, w: 20, h: 20 })) {
+        s.hammer.taken = true;
+        p.hammerTime = 8;
+        addScore(300);
+        RetroAudio.play('powerup');
+        RE.juice.flash('rgba(255,209,102,0.3)', 0.14);
+        FT.add(p.x, p.y - 20, '鐵鎚！8 秒', { color: '#ffd166', size: 16, life: 1.3 });
+    }
+
+    // ---- 鉚釘 ----
+    if (s.cfg.type === 'rivet') {
+        var left = 0;
+        for (var i = 0; i < s.tower.rivets.length; i++) {
+            var rv = s.tower.rivets[i];
+            if (rv.got) continue;
+            left++;
+            if (Math.abs(p.x + p.w / 2 - rv.x) < 14 && Math.abs(p.y + p.h - rv.y) < 16 && p.grounded) {
+                rv.got = true;
+                addScore(200);
+                RetroAudio.play('hit');
+                RE.juice.shake(0.16);
+                RE.juice.hitstop(0.03);
+                FT.add(rv.x, rv.y - 12, '+200', { color: '#ffd166', size: 14 });
+                P.burst(rv.x, rv.y, 10, { colors: ['#ffd166', '#fff0aa'], speedMin: 40, speedMax: 140,
+                    gravity: 300, lifeMin: 0.2, lifeMax: 0.5 });
+                left--;
+            }
+        }
+        if (left === 0) { clearStage(); return; }
+    } else {
+        // 滾桶關：抵達頂層平台即過關
+        if (p.floor === FLOORS - 1 && p.grounded && p.x > W / 2 - 40 && p.x < W / 2 + 40) {
+            clearStage(); return;
+        }
+    }
+
+    updateHazards(dt);
+    P.update(dt);
+    FT.update(dt);
+}
+
+function updateHazards(dt) {
+    var p = s.p;
+
+    // ---- 產生桶子 ----
+    s.spawnTimer -= dt;
+    if (s.spawnTimer <= 0) {
+        s.spawnTimer = s.cfg.barrelRate * RE.rand(0.7, 1.3);
+        s.barrels.push({
+            x: W / 2 - 40, y: GROUND_Y - (FLOORS - 1) * FLOOR_H - 20,
+            vx: 66 * s.cfg.speed, vy: 0, floor: FLOORS - 1, rot: 0, scored: false
+        });
+        RetroAudio.play('drop');
+    }
+
+    // ---- 桶子 ----
+    for (var i = s.barrels.length - 1; i >= 0; i--) {
+        var b = s.barrels[i];
+        b.vy += 1150 * dt;
+        b.y += b.vy * dt;
+        b.x += b.vx * dt;
+        b.rot += b.vx * dt * 0.09;
+
+        var f = floorUnder(b.x + 9, b.y + 18);
+        if (f !== null) {
+            var by = beamYAt(b.x + 9, f);
+            if (by !== null && b.y + 18 >= by && b.vy >= 0) {
+                b.y = by - 18;
+                b.vy = 0;
+                b.floor = f;
+                // 順著鋼骨傾斜方向滾動，這是原作動線的來源
+                var beam = s.tower.beams[f];
+                var dir = beam.tilt >= 0 ? 1 : -1;
+                if (f === FLOORS - 1) dir = b.vx >= 0 ? 1 : -1;
+                b.vx = dir * (58 + (FLOORS - f) * 7) * s.cfg.speed;
+            }
+        }
+
+        // 撞到牆或掉出畫面
+        if (b.x < 6 || b.x > W - 24) {
+            // 掉到下一層
+            b.vx = -b.vx * 0.2;
+            b.y += 6;
+        }
+        if (b.y > H + 40) { s.barrels.splice(i, 1); continue; }
+
+        // 跳過桶子加分：閃避動作本身就是得分機會
+        if (!b.scored && !p.grounded && p.jumping &&
+            Math.abs((b.x + 9) - (p.x + p.w / 2)) < 22 && p.y + p.h < b.y + 6) {
+            b.scored = true;
+            addScore(100);
+            FT.add(p.x + p.w / 2, p.y - 14, '跳過！+100', { color: '#70e4b5', size: 13, life: 0.9 });
+            RetroAudio.play('coin');
+            RE.juice.shake(0.08);
+        }
+
+        if (p.dead > 0) continue;
+        if (RE.aabb({ x: p.x, y: p.y, w: p.w, h: p.h }, { x: b.x, y: b.y, w: 18, h: 18 })) {
+            if (p.hammerTime > 0) {
+                s.barrels.splice(i, 1);
+                addScore(500);
+                RetroAudio.play('heavyHit');
+                RE.juice.impact(2);
+                FT.add(b.x, b.y, '+500', { color: '#ffd166', size: 16 });
+                P.burst(b.x + 9, b.y + 9, 16, { colors: ['#c84c0c', '#ffd166', '#fff8e7'],
+                    speedMin: 50, speedMax: 190, gravity: 340, lifeMin: 0.25, lifeMax: 0.6 });
+            } else {
+                die('被桶子擊中'); return;
+            }
+        }
+    }
+
+    // ---- 火球：會爬梯追人，但速度慢 ----
+    for (var i = 0; i < s.fires.length; i++) {
+        var fb = s.fires[i];
+        fb.x += fb.vx * dt * s.cfg.speed;
+        var ff = floorUnder(fb.x, fb.y + 10);
+        if (ff !== null) {
+            var fy = beamYAt(fb.x, ff);
+            if (fy !== null) fb.y = fy - 12;
+            fb.floor = ff;
+        }
+        if (fb.x < 24 || fb.x > W - 24) fb.vx = -fb.vx;
+        // 偶爾爬梯往玩家的樓層靠近
+        if (Math.random() < dt * 0.35 && s.p.floor > fb.floor) {
+            for (var k = 0; k < s.tower.ladders.length; k++) {
+                var L = s.tower.ladders[k];
+                if (Math.abs(fb.x - L.x) < 26) { fb.y = L.yTop - 12; fb.x = L.x; break; }
+            }
+        }
+        if (p.dead > 0) continue;
+        if (RE.aabb({ x: p.x, y: p.y, w: p.w, h: p.h }, { x: fb.x - 9, y: fb.y - 2, w: 18, h: 18 })) {
+            if (p.hammerTime > 0) {
+                addScore(800);
+                FT.add(fb.x, fb.y, '+800', { color: '#ffd166', size: 17 });
+                RetroAudio.play('bigExplosion');
+                RE.juice.impact(3);
+                P.burst(fb.x, fb.y, 22, { colors: ['#ff6b6b', '#ffd166'], speedMin: 60, speedMax: 210,
+                    gravity: 0, drag: 0.93, lifeMin: 0.3, lifeMax: 0.7 });
+                fb.x = W / 2; fb.y = GROUND_Y - 12; fb.floor = 0;
+            } else { die('被火球燒到'); return; }
+        }
+    }
+}
+
+function die(reason) {
+    var p = s.p;
+    if (p.dead > 0) return;
+    p.dead = 1.5;
+    s.deathReason = reason;
+    s.lives--;
+    G.setLives(s.lives);
+    RE.juice.impact(3);
+    RE.juice.slowmo(0.3, 0.9);
+    RetroAudio.play('gameover');
+    P.burst(p.x + p.w / 2, p.y + p.h / 2, 24, { colors: ['#ff6b6b', '#ffd166', '#fff8e7'],
+        speedMin: 50, speedMax: 200, gravity: 300, lifeMin: 0.3, lifeMax: 0.8 });
+}
+
+function afterDeath() {
+    if (s.lives <= 0) {
+        s.over = true;
+        G.gameOver({ score: s.score,
+            body: '停在第 ' + s.stage + ' 關「' + s.cfg.name + '」（' + s.deathReason + '）。' +
+                  '別忘了：跳過桶子會加分，躲得遠反而虧。' });
+        return;
+    }
+    loadStage(s.stage);
+    FT.add(W / 2, 100, '剩餘機會 ' + s.lives, { color: '#ffd166', size: 16, life: 1.6 });
+}
+
+function addScore(n) { s.score += n; G.setStat('score', s.score); }
+
+function clearStage() {
+    s.clearTimer = 2;
+    addScore(s.bonus + 1000 * s.stage);
+    RetroAudio.play('win');
+    RE.juice.flash('rgba(255,209,102,0.4)', 0.2);
+    FT.add(W / 2, H / 2, '救出同伴！', { color: '#ffd166', size: 24, life: 2 });
+    FT.add(W / 2, H / 2 + 28, '獎勵 +' + s.bonus, { color: '#70e4b5', size: 15, life: 2, vy: -22 });
+    P.burst(W / 2, H / 2, 40, { colors: ['#ffd166', '#ff9ebb', '#70e4b5', '#fff8e7'],
+        speedMin: 60, speedMax: 260, gravity: 320, lifeMin: 0.5, lifeMax: 1.2 });
+}
+
+function nextStage() {
+    var n = s.stage + 1;
+    RE.Save.unlockLevel('donkey_kong', n);
+    if (n > STAGES.length) {
+        s.over = true;
+        G.gameOver({ score: s.score, win: true,
+            body: '五關全部通過。1981 年，宮本茂用這款救急企劃證明了「跳躍」可以撐起一個遊戲類型。' });
+        return;
+    }
+    loadStage(n);
+    G.stageCard(n, s.cfg.name, s.cfg.hint);
+}
+
+// ======================================================================
+function render() {
+    G.clear('#0a0a14');
+    G.beginWorld();
+
+    // 鋼骨
+    for (var f = 0; f < FLOORS; f++) {
+        var b = s.tower.beams[f];
+        ctx.save();
+        ctx.strokeStyle = '#e0453e';
+        ctx.lineWidth = 7;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(b.x0, b.y0); ctx.lineTo(b.x1, b.y1);
+        ctx.stroke();
+        ctx.strokeStyle = '#ff8a80';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(b.x0, b.y0 - 2); ctx.lineTo(b.x1, b.y1 - 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // 梯子
+    for (var i = 0; i < s.tower.ladders.length; i++) {
+        var L = s.tower.ladders[i];
+        ctx.strokeStyle = '#7dd3fc';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(L.x - 8, L.yTop); ctx.lineTo(L.x - 8, L.yBot);
+        ctx.moveTo(L.x + 8, L.yTop); ctx.lineTo(L.x + 8, L.yBot);
+        ctx.stroke();
+        ctx.lineWidth = 2;
+        for (var y = L.yTop + 6; y < L.yBot; y += 10) {
+            ctx.beginPath(); ctx.moveTo(L.x - 8, y); ctx.lineTo(L.x + 8, y); ctx.stroke();
+        }
+    }
+
+    // 鉚釘
+    for (var i = 0; i < s.tower.rivets.length; i++) {
+        var rv = s.tower.rivets[i];
+        if (rv.got) continue;
+        ctx.save();
+        ctx.shadowBlur = 8; ctx.shadowColor = '#ffd166';
+        ctx.fillStyle = '#ffd166';
+        ctx.beginPath(); ctx.arc(rv.x, rv.y, 6, 0, RE.TAU); ctx.fill();
+        ctx.restore();
+    }
+
+    // 鐵鎚
+    if (s.hammer && !s.hammer.taken) {
+        ctx.fillStyle = '#8b4513';
+        ctx.fillRect(s.hammer.x + 8, s.hammer.y + 6, 4, 14);
+        ctx.fillStyle = '#c9d6d0';
+        ctx.fillRect(s.hammer.x + 2, s.hammer.y, 16, 8);
+    }
+
+    // 大猩猩（頂層）
+    var apeY = GROUND_Y - (FLOORS - 1) * FLOOR_H - 44;
+    ctx.fillStyle = '#8b4513';
+    RE.Draw.roundRect(ctx, W / 2 - 62, apeY, 44, 40, 10); ctx.fill();
+    ctx.fillStyle = '#c49a6c';
+    RE.Draw.roundRect(ctx, W / 2 - 54, apeY + 16, 28, 20, 8); ctx.fill();
+    ctx.fillStyle = '#2a1a0a';
+    ctx.fillRect(W / 2 - 50, apeY + 8, 5, 5);
+    ctx.fillRect(W / 2 - 38, apeY + 8, 5, 5);
+    // 被抓走的同伴
+    ctx.fillStyle = '#ff9ebb';
+    RE.Draw.roundRect(ctx, W / 2 + 26, apeY + 6, 16, 26, 6); ctx.fill();
+    ctx.fillStyle = '#ffd166';
+    ctx.fillRect(W / 2 + 27, apeY, 14, 8);
+    if (Math.floor(performance.now() / 500) % 2 === 0) {
+        RE.Draw.text(ctx, 'HELP!', W / 2 + 34, apeY - 18, { size: 11, align: 'center', color: '#ff9ebb' });
+    }
+
+    // 桶子
+    for (var i = 0; i < s.barrels.length; i++) {
+        var b = s.barrels[i];
+        ctx.save();
+        ctx.translate(b.x + 9, b.y + 9);
+        ctx.rotate(b.rot);
+        ctx.fillStyle = '#c84c0c';
+        RE.Draw.roundRect(ctx, -9, -9, 18, 18, 5); ctx.fill();
+        ctx.fillStyle = '#8b3a08';
+        ctx.fillRect(-9, -3, 18, 2);
+        ctx.fillRect(-9, 2, 18, 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        ctx.fillRect(-7, -7, 5, 4);
+        ctx.restore();
+    }
+
+    // 火球
+    for (var i = 0; i < s.fires.length; i++) {
+        var fb = s.fires[i];
+        var fl = 1 + Math.sin(performance.now() / 90) * 0.2;
+        ctx.save();
+        ctx.shadowBlur = 14; ctx.shadowColor = '#ff6b6b';
+        ctx.fillStyle = '#ff6b6b';
+        ctx.beginPath(); ctx.arc(fb.x, fb.y + 6, 9 * fl, 0, RE.TAU); ctx.fill();
+        ctx.fillStyle = '#ffd166';
+        ctx.beginPath(); ctx.arc(fb.x, fb.y + 7, 5 * fl, 0, RE.TAU); ctx.fill();
+        ctx.restore();
+    }
+
+    // 玩家
+    var p = s.p;
+    if (p.dead <= 0 || Math.floor(p.dead * 12) % 2 === 0) {
+        ctx.save();
+        ctx.translate(Math.round(p.x), Math.round(p.y));
+        ctx.fillStyle = '#e0453e';
+        ctx.fillRect(1, 0, p.w - 2, 5);
+        ctx.fillStyle = '#f2c9a0';
+        ctx.fillRect(2, 5, p.w - 4, 6);
+        ctx.fillStyle = '#3a6fd8';
+        ctx.fillRect(0, 11, p.w, 8);
+        ctx.fillStyle = '#6a3a1a';
+        var ph = p.onLadder ? Math.sin(p.anim * 3) * 2 : (Math.abs(p.vx) > 8 ? Math.sin(p.anim * 6) * 3 : 0);
+        ctx.fillRect(1 + ph, p.h - 4, 6, 4);
+        ctx.fillRect(p.w - 7 - ph, p.h - 4, 6, 4);
+        if (p.hammerTime > 0) {
+            ctx.fillStyle = '#c9d6d0';
+            var swing = Math.sin(performance.now() / 90) * 10;
+            ctx.fillRect(p.face > 0 ? p.w : -14, -8 + swing, 14, 7);
+        }
+        ctx.restore();
+    }
+
+    P.draw(ctx);
+    FT.draw(ctx);
+
+    if (s.p.hammerTime > 0) {
+        RE.Draw.text(ctx, '鐵鎚 ' + s.p.hammerTime.toFixed(1) + 's', 8, 8, { size: 12, color: '#ffd166' });
+    }
+    if (s.cfg.type === 'rivet') {
+        var left = s.tower.rivets.filter(function (r) { return !r.got; }).length;
+        RE.Draw.text(ctx, '剩餘鉚釘 ' + left, W - 8, 8, { size: 12, color: '#ffd166', align: 'right' });
+    }
+
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.1, vignetteStrength: 0.48 });
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '爬到塔頂救出同伴。跳過桶子可以加分，直接踩到會失去一條命。撿鐵鎚可以短暫反擊。共五關。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

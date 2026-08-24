@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "kind": "runtime-integrated-art-candidate",
+  "status": "final-gate-pending",
+  "countedInLedger": false,
+  "game": "super_hexagon",
+  "set": "set-08-vector-minimal",
+  "tool": "Codex built-in ImageGen",
+  "model": "ImageGen（服務端版本未揭露）",
+  "generatedAt": "2026-08-24",
+  "prompt": "art-production/final-sweep/set-08-vector-minimal/prompt-v002.md",
+  "source": "art-production/final-sweep/set-08-vector-minimal/source/atlas-v002-imagegen.png",
+  "sourceSha256": "03cfc19751e4e5b745f36d511987be7bb8737affd4ca5a96e5413bab3b0093a2",
+  "postprocess": "模型 alpha 保留、連通物件裁切、等比例縮放、透明留白與圖集排版；未補畫內容。Set 05 依固定格裁切保留模型背景，實際呈現以圓角裁切避免方形貼紙感。",
+  "atlas": "final-sweep-atlas.png",
+  "atlasSha256": "5b2e08da5407cbe0e2dfa968e767098509ba9ac4912933add3dcd3b2abb227ec",
+  "cellWidth": 128,
+  "cellHeight": 128,
+  "assets": {
+    "nested_hexagons": {
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "幾何材質"
+    },
+    "beat_wedge": {
+      "index": 1,
+      "x": 128,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "節拍回饋"
+    },
+    "chapter_rosette": {
+      "index": 2,
+      "x": 256,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "結算圖形"
+    }
+  },
+  "runtimePresentation": "RetroShell 開場的美術圖譜層；正常流程可見，不介入遊戲亂數、碰撞或更新。",
+  "qa": {
+    "assetCount": 3,
+    "edgePixels": 0,
+    "emptyCells": 0,
+    "humanFinalGate": false
+  }
+}

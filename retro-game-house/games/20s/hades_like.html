@@ -1,0 +1,2090 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 冥河逃脫</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   冥河逃脫 — 致敬 Hades (Supergiant Games, 2020)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. **把「反覆死亡」寫進劇情**。這是本作在設計史上真正的貢獻——
+      roguelite 的重來一次原本是純粹的機制懲罰，Hades 讓每一次死亡都
+      推進一段對話、揭露一塊背景，於是「又死了」從挫折變成翻頁。
+      本作的實作：死亡不是結算畫面，是回到渡口，船夫會多說一句話。
+   2. **獎勵決定路線，而不是路線決定獎勵**。每間房清空後出現兩道門，
+      門上先寫明下一間給什麼（祝福／治療／記憶碎片），
+      玩家選的是「我這一趟要拿什麼」，不是「我要走哪條路」。
+   3. **祝福（boon）構築**：五位河神各三種祝福，可疊到三級，
+      湊齊指定兩神還會解鎖聯名祝福。每一趟的玩法由抽到什麼決定。
+   4. **衝刺攻擊是核心動詞**。衝刺後 0.3 秒內的攻擊威力與範圍都放大，
+      不需要第三顆按鍵，手機也做得到——原作的招牌操作就是這個節奏。
+
+   與原作的差異（刻意的取捨，寫進 design 文字裡）：
+   原作可以無限次重來，本作給六趟燈油。教學復刻需要一條會結束的弧線，
+   所以把「無限重試」濃縮成「有限次數，但每一次都留下永久成長」。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'hades_like',
+    title: '冥河逃脫',
+    tagline: '死一次，故事就往前一頁',
+    original: 'Hades (Supergiant Games, 2020)',
+    decade: '20s', year: 2020, platform: 'PC / 多平台', genre: '動作 Roguelite',
+    developer: 'Supergiant Games', bgm: '20s',
+    width: 560, height: 400,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'layer', label: '層', init: '1' },
+        { key: 'oil', label: '燈油', init: 6 },
+        { key: 'deaths', label: '死亡', init: 0 }
+    ],
+    touch: 'dpad+ab',
+    controls: [
+        { keys: ['↑', '↓', '←', '→'], desc: '移動' },
+        { keys: ['Z', 'A'], desc: '攻擊（三連段）' },
+        { keys: ['X', 'B'], desc: '衝刺（有無敵幀）' },
+        { keys: ['衝刺→攻擊'], desc: '衝刺攻擊：威力與範圍放大' }
+    ],
+    howto: '你是渡口的學徒，要往上逃出冥河。' +
+           '<strong>衝刺之後馬上攻擊</strong>會打出威力放大的衝刺攻擊，這是本作的核心節奏。' +
+           '每清空一間房就選一道門，門上寫著下一間給你什麼獎勵。' +
+           '<strong>死亡不會結束遊戲</strong>——你會回到渡口，船夫會多說一句話，' +
+           '你也會帶回記憶碎片換成永久強化。燈油有六趟，用完才真的結束。',
+    lesson: {
+        verb: '衝進危險範圍、利用短暫無敵穿過攻擊，再在 0.3 秒內接續強化斬擊。',
+        innovation: '把 Roguelite 必然重複的死亡與重跑，轉化成角色記憶、對話進展與永久成長的敘事節奏。',
+        mission: '先辨認敵人的紅色預警，再用衝刺穿越危險區並立刻攻擊；至少打出三次畫面標示的「衝刺斬」，並在選門時說明自己為何選這種獎勵。',
+        evolution: '《Rogue》把死亡接到重新生成的冒險；《Hades》再把每次失敗接到會回應玩家經歷的家，讓重複不只換關卡，也推進角色關係。',
+        reflection: '如果死亡後只有數值歸零、沒有新對話與永久變化，你還會把下一趟視為故事的一部分嗎？'
+    },
+    design: '大部分 roguelite 把「再來一次」當成純粹的機制懲罰：' +
+            '死了就清空，回到起點，故事沒有任何變化。' +
+            'Hades 做的事情很簡單卻改變了整個類型——**它讓死亡變成敘事的推進器**。' +
+            '每一次回到冥府，NPC 都有新的台詞，關係往前一格，背景多揭一塊。' +
+            '於是玩家心裡的句子從「又死了，好煩」變成「又死了，那這次他會說什麼」。' +
+            '**當你的遊戲有某個玩家一定會反覆經歷的環節，' +
+            '不要只想著怎麼減輕它的痛苦，先想能不能讓它承載內容。**' +
+            '另一個值得抄的是門上的獎勵預告：玩家做的選擇因此是「我要什麼」而不是「我走哪裡」，' +
+            '同樣一個分岔，資訊給法不同，決策的意義就完全不同。' +
+            '本站版本為了讓單次遊玩有完整弧線，把原作的無限重試改成六趟燈油——' +
+            '這是教學取捨，原作沒有次數限制，而且那個「沒有限制」正是它敢把敘事押在死亡上的前提。',
+    history: 'Supergiant Games 於 2018 年 12 月推出《Hades》搶先體驗版，2020 年 9 月完成 1.0 正式版。' +
+             '官方說明指出，本作從一開始就依搶先體驗設計，房間、祝福與事件都能在玩家反覆逃脫時持續擴充；' +
+             '正式版也把「每次逃脫都變強並揭露更多故事」列為核心特色。' +
+             '2021 年本作獲 BAFTA 最佳遊戲、遊戲設計、敘事與藝術成就四項獎，' +
+             '並獲雨果獎當年度特設的 Best Video Game 獎項。' +
+             '它示範了類型慣例中的重複、死亡與隨機，不必是敘事的阻礙，也能直接成為敘事結構。',
+    sources: [
+        { label: 'Supergiant Games：《Hades》搶先體驗與正式版沿革', url: 'https://www.supergiantgames.com/blog/hades-faq/' },
+        { label: 'Supergiant Games：《Hades》1.0 正式推出公告', url: 'https://www.supergiantgames.com/blog/hades-now-out-of-early-access/' },
+        { label: 'BAFTA：2021 Games Awards 得獎名單', url: 'https://www.bafta.org/media-centre/press-releases/winners-announced-british-academy-games-awards-2021/' },
+        { label: 'Hugo Awards：2021 Best Video Game 結果', url: 'https://www.thehugoawards.org/content/pdf/2021HugoStatistics.pdf' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(600);
+var FT = new RE.FloatText();
+var HADES_ART = { image: new Image(), manifest: null };
+HADES_ART.image.src = '../../assets/games/hades_like/mythic-ink-atlas.png';
+fetch('../../assets/games/hades_like/mythic-ink-manifest.json')
+    .then(function (r) { if (!r.ok) throw new Error('hades art manifest ' + r.status); return r.json(); })
+    .then(function (m) { HADES_ART.manifest = m; })
+    .catch(function () { HADES_ART.manifest = null; });
+
+// ======================================================================
+// 場地：一間房就是一個畫面，不捲動（原作的房間感）
+// ======================================================================
+var WALL = 22;
+var AR = { x0: WALL, y0: WALL, x1: W - WALL, y1: H - WALL };
+
+// ---------- 玩家基礎值（永久強化會在這之上加成）----------
+var PL = {
+    r: 10, spd: 152, hp: 70,
+    atkDmg: [10, 10, 15],          // 三連段
+    atkTime: [0.20, 0.20, 0.30],   // 每段硬直
+    atkReach: 48, atkArc: 1.45,
+    comboWindow: 0.42,
+    dashDist: 104, dashTime: 0.15, dashCd: 0.42, dashInv: 0.22,
+    dashAtkWindow: 0.30,           // 衝刺後多久內的攻擊算衝刺攻擊
+    dashAtkDmg: 22, dashAtkReach: 70, dashAtkArc: 2.1,
+    inv: 0.55
+};
+
+// ======================================================================
+// 五位河神的祝福。每種可疊到三級。
+// eff(lv) 只是給選單看的說明，真正的效果寫在戰鬥計算裡。
+// ======================================================================
+var GODS = {
+    lethe: { name: '忘川', color: '#8fd3ff', title: '遺忘之河' },
+    styx:  { name: '怨河', color: '#ff7bb0', title: '積怨之河' },
+    phleg: { name: '火河', color: '#ff9349', title: '燃燒之河' },
+    cocy:  { name: '悲河', color: '#7ee7c7', title: '哀哭之河' },
+    oath:  { name: '誓河', color: '#ffd166', title: '立誓之河' }
+};
+
+var BOONS = {
+    lethe_touch: { god: 'lethe', name: '遺忘之觸', max: 3,
+        eff: function (l) { return '攻擊有 ' + (18 + l * 9) + '% 機率讓敵人停滯 ' + (0.6 + l * 0.2).toFixed(1) + ' 秒'; } },
+    lethe_step:  { god: 'lethe', name: '靜水步', max: 3,
+        eff: function (l) { return '衝刺距離 +' + (l * 15) + '%、冷卻 −' + (l * 12) + '%'; } },
+    lethe_void:  { god: 'lethe', name: '空白之盾', max: 3,
+        eff: function (l) { return '受傷後 1.5 秒內的第一次攻擊傷害 ×' + (1.5 + l * 0.5).toFixed(1); } },
+
+    styx_grudge: { god: 'styx', name: '積怨', max: 3,
+        eff: function (l) { return '連段第三下額外造成 ' + (10 + l * 7) + ' 傷害'; } },
+    styx_wraith: { god: 'styx', name: '怨影', max: 3,
+        eff: function (l) { return '擊殺時放出追蹤怨影，傷害 ' + (8 + l * 5); } },
+    styx_debt:   { god: 'styx', name: '舊債', max: 3,
+        eff: function (l) { return '生命低於 40% 時傷害 +' + (l * 18) + '%'; } },
+
+    phleg_trail: { god: 'phleg', name: '燼跡', max: 3,
+        eff: function (l) { return '衝刺留下火痕，每秒 ' + (8 + l * 6) + ' 傷害'; } },
+    phleg_blade: { god: 'phleg', name: '熾刃', max: 3,
+        eff: function (l) { return '攻擊附加灼燒，每秒 ' + (5 + l * 4) + ' 持續 2 秒'; } },
+    phleg_burst: { god: 'phleg', name: '爆燃', max: 3,
+        eff: function (l) { return '衝刺攻擊引發爆炸，範圍傷害 ' + (14 + l * 9); } },
+
+    cocy_wail:   { god: 'cocy', name: '哀鳴', max: 3,
+        eff: function (l) { return '受傷時釋放震波，擊退並造成 ' + (10 + l * 8) + ' 傷害'; } },
+    cocy_spring: { god: 'cocy', name: '淚泉', max: 3,
+        eff: function (l) { return '每清空一間房回復 ' + (5 + l * 4) + ' 生命'; } },
+    cocy_frost:  { god: 'cocy', name: '寒鎖', max: 3,
+        eff: function (l) { return '攻擊使敵人減速 ' + (20 + l * 10) + '%，持續 2 秒'; } },
+
+    oath_vow:    { god: 'oath', name: '誓約', max: 3,
+        eff: function (l) { return '最大生命 +' + (l * 12) + ' 並立即回復同量'; } },
+    oath_counter:{ god: 'oath', name: '反誓', max: 3,
+        eff: function (l) { return '衝刺穿過敵人攻擊時回復 ' + (2 + l * 2) + ' 生命'; } },
+    oath_break:  { god: 'oath', name: '破誓', max: 3,
+        eff: function (l) { return '每擊殺一名敵人 +' + (2 + l) + '% 傷害（上限 10 層，受傷歸零）'; } }
+};
+
+/* 聯名祝福：原作 duo boon 的簡化版。它的作用不只是變強，
+   而是讓「我這趟拿了誰的祝福」變成一個要規劃的問題。
+
+   need 列的是它實際依賴的那幾個祝福，缺一個就不進選單。
+   第一版只檢查「有沒有那位河神的任一祝福」，結果 duo 變成陷阱選項——
+   卡面最亮眼、名字最特別，收下去卻可能一點效果都沒有
+   （例如「停滯中的敵人火傷翻倍」，但你根本沒有讓敵人停滯的手段）。
+   機器人對照組因此出現詭異的結果：優先收 duo 的一方反而輸給亂選。
+   **獎勵的出現條件要對應它真正依賴的機制，不能只看所屬陣營。** */
+var DUOS = {
+    duo_steam: { gods: ['lethe', 'phleg'], name: '蒸散', color: '#ffd9a8',
+        need: ['lethe_touch', 'phleg_blade|phleg_trail'],
+        desc: '停滯中的敵人受到的火焰傷害翻倍' },
+    duo_repay: { gods: ['styx', 'oath'], name: '償還', color: '#ffb3d1',
+        need: ['oath_break', 'styx_grudge'],
+        desc: '破誓層數滿 5 時，衝刺攻擊必定引發積怨爆發' },
+    duo_still: { gods: ['cocy', 'lethe'], name: '凝結', color: '#bfeaff',
+        need: ['cocy_frost', 'lethe_touch'],
+        desc: '對減速中的敵人施加停滯時，停滯時間再 +1.2 秒' }
+};
+
+/** duo 的前置條件是否成立。'a|b' 代表兩者其一即可 */
+function duoReady(dk) {
+    var need = DUOS[dk].need;
+    for (var i = 0; i < need.length; i++) {
+        var alts = need[i].split('|'), ok = false;
+        for (var j = 0; j < alts.length; j++) { if (bl(alts[j]) > 0) { ok = true; break; } }
+        if (!ok) return false;
+    }
+    return true;
+}
+
+// ======================================================================
+// 敵人
+// ======================================================================
+var ENEMY_DEF = {
+    shade:  { r: 9,  hp: 18, spd: 62, dmg: 5,  score: 12, color: '#9fb6ff', knock: 1.0, name: '遊魂' },
+    lancer: { r: 11, hp: 28, spd: 52, dmg: 11, score: 22, color: '#e0796b', knock: 0.7, name: '執矛者' },
+    caster: { r: 9,  hp: 20, spd: 42, dmg: 8,  score: 26, color: '#c08cff', knock: 1.1, name: '詠咒者' },
+    brute:  { r: 15, hp: 52, spd: 36, dmg: 11, score: 44, color: '#7f8b9c', knock: 0.3, name: '石傀' }
+};
+
+/* ----------------------------------------------------------------------
+   五層。每層兩間普通房 + 一間王房。
+   難度靠 hpMul / spdMul / dmgMul 三個數字逐層收緊，敵種也逐層換血，
+   不用亂數硬拉——這樣調整時知道自己在動哪一條曲線。
+   ---------------------------------------------------------------------- */
+var LAYERS = [
+    { name: '渡口淺灘', hint: '衝刺之後馬上攻擊，威力會放大',
+      hpMul: 1.00, spdMul: 1.00, dmgMul: 1.00, count: [4, 5],
+      pool: ['shade'], color: '#12202c',
+      boss: { kind: 'ferry', name: '殘槳的船影', hp: 200 } },
+    { name: '灰燼長廊', hint: '執矛者衝刺前會先僵住半秒——那是你的空隙',
+      hpMul: 1.25, spdMul: 1.05, dmgMul: 1.10, count: [5, 6],
+      pool: ['shade', 'lancer'], color: '#221a24',
+      boss: { kind: 'twin', name: '雙生執矛', hp: 130 } },
+    { name: '沸血河床', hint: '詠咒者會保持距離，先繞過去解決它',
+      hpMul: 1.65, spdMul: 1.10, dmgMul: 1.25, count: [5, 6],
+      pool: ['lancer', 'caster'], color: '#2b1618',
+      boss: { kind: 'core', name: '沸血之核', hp: 330 } },
+    { name: '記憶迴廊', hint: '石傀砸地前有一圈預警，退出那個圈就好',
+      hpMul: 2.00, spdMul: 1.12, dmgMul: 1.35, count: [6, 6],
+      pool: ['shade', 'caster', 'brute'], color: '#1b1f2e',
+      boss: { kind: 'mirror', name: '記憶裡的你', hp: 320 } },
+    { name: '誓言之門', hint: '最後一層。守誓者有三個階段',
+      hpMul: 2.25, spdMul: 1.15, dmgMul: 1.50, count: [6, 7],
+      pool: ['lancer', 'brute', 'caster'], color: '#241f14',
+      boss: { kind: 'warden', name: '守誓者', hp: 520 } }
+];
+
+/* 手工擺的石柱。每層兩間普通房各一組。
+   擺放原則：不擋住玩家出生點（左側中央）、彼此留出可衝刺穿過的縫。 */
+var PILLARS = [
+    [ [], [{ x: 280, y: 130, r: 22 }, { x: 280, y: 270, r: 22 }] ],
+    [ [{ x: 200, y: 200, r: 26 }, { x: 380, y: 120, r: 20 }, { x: 380, y: 280, r: 20 }],
+      [{ x: 160, y: 110, r: 20 }, { x: 300, y: 200, r: 24 }, { x: 440, y: 290, r: 20 }] ],
+    [ [{ x: 240, y: 90, r: 20 }, { x: 240, y: 310, r: 20 }, { x: 400, y: 200, r: 26 }],
+      [{ x: 190, y: 200, r: 22 }, { x: 330, y: 110, r: 22 }, { x: 330, y: 290, r: 22 }, { x: 470, y: 200, r: 18 }] ],
+    [ [{ x: 200, y: 130, r: 24 }, { x: 200, y: 280, r: 24 }, { x: 380, y: 205, r: 30 }],
+      [{ x: 260, y: 200, r: 34 }, { x: 430, y: 110, r: 18 }, { x: 430, y: 300, r: 18 }] ],
+    [ [{ x: 180, y: 200, r: 20 }, { x: 300, y: 100, r: 22 }, { x: 300, y: 300, r: 22 }, { x: 430, y: 200, r: 24 }],
+      [{ x: 230, y: 120, r: 22 }, { x: 230, y: 290, r: 22 }, { x: 380, y: 205, r: 26 }, { x: 480, y: 120, r: 16 }] ]
+];
+
+// ======================================================================
+// 死亡台詞：這是整款遊戲的設計論述所在。
+// 每次回到渡口就往下推一句，前十句是主線，之後轉為循環的閒聊。
+// ======================================================================
+/* 開場白。第一版沒有這一句，遊戲一開始船夫就說「回來了。第一次都這樣」，
+   可是畫面上明明寫著「死亡 0 次」——玩家根本還沒走過。
+   死亡驅動的敘事，第一句更不能是死亡台詞。 */
+var OPENING_LINE = { who: '船夫',
+    text: '要走就趁現在。\n上面的路我不熟，河水我熟——它不會等你。' };
+
+var DEATH_LINES = [
+    { who: '船夫',   text: '回來了。第一次都這樣。\n把槳握好，河水不會等你。' },
+    { who: '船夫',   text: '你母親也走過這條河。\n她走了很多次。' },
+    { who: '守門犬', text: '（牠把頭埋進你懷裡，\n像是知道你剛剛痛過。）' },
+    { who: '船夫',   text: '上面的人說，逃出去的人不會回頭。\n我倒覺得，回頭才是最難的部分。' },
+    { who: '船夫',   text: '你父親不是不讓你走。\n他是怕你走到一半，就不記得為什麼要走了。' },
+    { who: '守門犬', text: '（牠叼來一塊碎片。\n那是你上一次留下的。）' },
+    { who: '船夫',   text: '記憶碎片不是獎品，是你自己。\n每死一次，你就多撿回一點。' },
+    { who: '船夫',   text: '你母親第七次的時候說了跟你一樣的話。\n她說：這次我知道該怎麼走了。' },
+    { who: '船夫',   text: '燈油快見底了。\n真正的問題從來不是你會不會死，是你還想不想再上去一次。' },
+    { who: '船夫',   text: '去吧。\n我不會再多說什麼了——上面有人在等你。' }
+];
+var IDLE_LINES = [
+    { who: '船夫',   text: '河水今天很安靜。\n那通常不是好事。' },
+    { who: '守門犬', text: '（牠在門口轉了三圈才趴下。）' },
+    { who: '船夫',   text: '你又瘦了。祝福不能當飯吃。' },
+    { who: '船夫',   text: '這條河我渡了很久。\n你是少數幾個會回頭跟我說話的。' }
+];
+
+// ---------- 永久強化（用記憶碎片換）----------
+var UPGRADES = {
+    vigor:  { name: '殘存的體溫', desc: '最大生命 +8',        max: 5, cost: [2, 3, 4, 6, 8] },
+    edge:   { name: '磨利的槳刃', desc: '攻擊傷害 +8%',       max: 5, cost: [2, 3, 5, 7, 9] },
+    swift:  { name: '踏水的習慣', desc: '衝刺冷卻 −8%',       max: 3, cost: [3, 5, 8] },
+    favor:  { name: '河神的偏愛', desc: '出發時多帶一個祝福', max: 2, cost: [4, 8] },
+    lamp:   { name: '多備的燈油', desc: '每輪多一趟嘗試',     max: 2, cost: [6, 10] }
+};
+
+/* 王房的石柱。子彈打到石柱會消失（見 updateShots），所以柱子就是掩體。
+   第一版王房一律空曠，機器人在沸血之核那間死了十八次——
+   彈幕王配上完全沒有遮蔽的場地，玩家能做的只剩「賭衝刺冷卻好了沒有」。
+   給掩體之後，同一場戰鬥才變成「跑到柱子後面再輸出」的跑位題。
+   反過來，鏡像王那間刻意維持空曠：那是一對一的對決，給誰掩體都不對。 */
+var BOSS_PILLARS = [
+    [],                                                                    // 殘槳的船影：橫掃，要留出閃避空間
+    [{ x: 285, y: 115, r: 18 }, { x: 285, y: 285, r: 18 }],                // 雙生執矛：用柱子拆開兩隻的夾擊
+    [{ x: 170, y: 128, r: 20 }, { x: 170, y: 272, r: 20 },
+     { x: 355, y: 118, r: 20 }, { x: 355, y: 282, r: 20 }],                // 沸血之核：四面掩體
+    [],                                                                    // 記憶裡的你：對決，空曠
+    [{ x: 205, y: 112, r: 18 }, { x: 205, y: 288, r: 18 }]                 // 守誓者：躲砸地用
+];
+
+var TOTAL_ROOMS = LAYERS.length * 3;   // 每層兩間普通房 + 一間王房
+
+var s = {};        // 單次逃脫的狀態
+var meta = {};     // 跨越死亡的永久狀態
+
+// ======================================================================
+// 存檔：永久成長是這款遊戲的骨幹，必須跨頁面保留
+// ======================================================================
+function loadMeta() {
+    meta = {
+        deaths:   RE.Save.get(G.id, 'deaths', 0),
+        story:    RE.Save.get(G.id, 'story', 0),
+        shards:   RE.Save.get(G.id, 'shards', 0),
+        cleared:  RE.Save.get(G.id, 'cleared', 0),
+        up:       RE.Save.get(G.id, 'up', {}) || {}
+    };
+    if (typeof meta.up !== 'object') meta.up = {};
+}
+function saveMeta() {
+    RE.Save.set(G.id, 'deaths', meta.deaths);
+    RE.Save.set(G.id, 'story', meta.story);
+    RE.Save.set(G.id, 'shards', meta.shards);
+    RE.Save.set(G.id, 'cleared', meta.cleared);
+    RE.Save.set(G.id, 'up', meta.up);
+}
+function upLv(k) { return meta.up[k] || 0; }
+function upCost(k) { var l = upLv(k); return l >= UPGRADES[k].max ? null : UPGRADES[k].cost[l]; }
+
+function maxOil() { return 6 + upLv('lamp'); }
+function baseMaxHp() { return PL.hp + upLv('vigor') * 8; }
+
+// ======================================================================
+function reset() {
+    loadMeta();
+    s = {
+        mode: 'hub',              // hub | fight | doors | boon | card
+        layer: 0, room: 0,        // room 0,1 = 普通房；2 = 王房
+        oil: maxOil(),
+        score: 0,
+        p: null,
+        enemies: [], shots: [], flames: [], waves: [], wraiths: [],
+        pillars: [],
+        boons: {}, duos: {},
+        doors: null, boonChoices: null, hubSel: 0,
+        clearT: 0, over: false, win: false,
+        runShards: 0, roomsDone: 0,
+        line: pickLine(), lineT: 0,
+        deathReason: '',
+        bossRef: null, shake: 0
+    };
+    newPlayer();
+    G.setStat('score', 0);
+    G.setStat('layer', '1');
+    G.setStat('oil', s.oil);
+    G.setStat('deaths', meta.deaths);
+}
+
+function newPlayer() {
+    s.p = {
+        x: AR.x0 + 60, y: (AR.y0 + AR.y1) / 2,
+        vx: 0, vy: 0, face: 1, aim: 0,
+        r: PL.r, hp: baseMaxHp(), maxHp: baseMaxHp(),
+        inv: 0, anim: 0,
+        atkT: 0, atkStage: 0, comboT: 0, atkSwing: 0, atkDash: false,
+        dashT: 0, dashCd: 0, dashVx: 0, dashVy: 0, dashInv: 0,
+        voidT: 0, breakStack: 0, hurtT: 0
+    };
+}
+
+function pickLine() {
+    if (meta.deaths === 0) return OPENING_LINE;      // 還沒死過就還不能說「回來了」
+    if (meta.story < DEATH_LINES.length) return DEATH_LINES[meta.story];
+    return IDLE_LINES[meta.story % IDLE_LINES.length];
+}
+
+// ---------- 祝福查詢 ----------
+function bl(k) { return s.boons[k] || 0; }
+function hasGod(g) {
+    for (var k in s.boons) { if (s.boons[k] > 0 && BOONS[k].god === g) return true; }
+    return false;
+}
+function duo(k) { return !!s.duos[k]; }
+
+/* 河神的青睞：單一河神的祝福總等級達到 FAVOR_NEED，該神所有效果加成。
+   加這個是因為機器人實測抓到一件事——第一版「亂選祝福」的通關率
+   跟「照優先序精選」幾乎一樣（4/5 對 4/6），代表構築根本沒有意義：
+   祝福各自獨立、拿多拿少都差不多，那三選一就只是換皮的隨機數。
+   青睞讓「專精」有回報，聯名祝福讓「分散」有回報，
+   兩條路都成立，而亂選會兩邊都沾不到——這樣選擇才真的是選擇。 */
+var FAVOR_NEED = 3, FAVOR_MUL = 1.7;
+function godTotal(g) {
+    var t = 0;
+    for (var k in s.boons) { if (s.boons[k] && BOONS[k].god === g) t += s.boons[k]; }
+    return t;
+}
+function favor(g) { return godTotal(g) >= FAVOR_NEED ? FAVOR_MUL : 1; }
+
+function dmgMul() {
+    var m = 1 + upLv('edge') * 0.08;
+    if (bl('styx_debt') && s.p.hp < s.p.maxHp * 0.4) m += bl('styx_debt') * 0.18 * favor('styx');
+    if (bl('oath_break')) m += s.p.breakStack * (2 + bl('oath_break')) * 0.01 * favor('oath');
+    if (s.p.voidT > 0 && bl('lethe_void')) m *= 1 + bl('lethe_void') * 0.5 * favor('lethe');
+    return m;
+}
+function dashCdTotal() {
+    return PL.dashCd * Math.pow(bl('lethe_step') ? (favor('lethe') > 1 ? 0.84 : 0.88) : 1, bl('lethe_step'))
+        * (1 - upLv('swift') * 0.08);
+}
+function dashDistTotal() { return PL.dashDist * (1 + bl('lethe_step') * 0.15 * favor('lethe')); }
+
+// ======================================================================
+// 房間流程
+// ======================================================================
+function layerCfg() { return LAYERS[Math.min(s.layer, LAYERS.length - 1)]; }
+
+function startRun() {
+    FT.clear(); P.clear();
+    s.layer = 0; s.room = 0; s.roomsDone = 0; s.runShards = 0;
+    s.boons = {}; s.duos = {};
+    s.enemies = []; s.shots = []; s.flames = []; s.waves = []; s.wraiths = [];
+    newPlayer();
+    // 「河神的偏愛」：出發就先帶祝福，讓每一趟從第一間房就有個性
+    var extra = upLv('favor');
+    for (var i = 0; i < extra; i++) grantRandomBoon();
+    G.setStat('layer', '1');
+    enterRoom();
+}
+
+function enterRoom() {
+    var cfg = layerCfg();
+    // 一次性旗標一律在這裡清乾淨。只在 reset 清的話，
+    // 上一間房的 over/clearT 會殘留到下一間，出現「進門就結算」的假象。
+    s.over = false; s.win = false; s.clearT = 0;
+    s.enemies = []; s.shots = []; s.flames = []; s.waves = []; s.wraiths = [];
+    s.doors = null; s.boonChoices = null; s.bossRef = null;
+    s.p.x = AR.x0 + 54; s.p.y = (AR.y0 + AR.y1) / 2;
+    s.p.vx = s.p.vy = 0; s.p.atkT = 0; s.p.dashT = 0; s.p.inv = 0.6;
+    s.pillars = s.room === 2 ? BOSS_PILLARS[s.layer] : PILLARS[s.layer][s.room];
+
+    if (s.room === 2) spawnBoss(cfg);
+    else spawnWave(cfg);
+    s.mode = 'fight';
+}
+
+function spawnWave(cfg) {
+    var n = cfg.count[s.room];
+    for (var i = 0; i < n; i++) {
+        var t = cfg.pool[i % cfg.pool.length];
+        var pt = findSpawn();
+        var d = ENEMY_DEF[t];
+        s.enemies.push({
+            type: t, def: d, x: pt.x, y: pt.y, r: d.r,
+            hp: Math.round(d.hp * cfg.hpMul), maxHp: Math.round(d.hp * cfg.hpMul),
+            spd: d.spd * cfg.spdMul, dmg: Math.round(d.dmg * cfg.dmgMul),
+            kx: 0, ky: 0, flash: 0, anim: RE.rand(0, 6),
+            stun: 0, slow: 0, burn: 0, burnT: 0,
+            think: RE.rand(0, 0.5), state: 'idle', st: 0, telegraph: 0,
+            boss: false
+        });
+    }
+}
+
+/** 生成點：右側 2/3 區域，且離玩家出生點至少 120px、不埋在石柱裡 */
+function findSpawn() {
+    for (var tries = 0; tries < 40; tries++) {
+        var x = RE.rand(AR.x0 + 150, AR.x1 - 30);
+        var y = RE.rand(AR.y0 + 30, AR.y1 - 30);
+        if (Math.hypot(x - (AR.x0 + 54), y - (AR.y0 + AR.y1) / 2) < 120) continue;
+        var ok = true;
+        for (var i = 0; i < s.pillars.length; i++) {
+            var pl = s.pillars[i];
+            if (Math.hypot(x - pl.x, y - pl.y) < pl.r + 22) { ok = false; break; }
+        }
+        if (ok) return { x: x, y: y };
+    }
+    return { x: AR.x1 - 60, y: (AR.y0 + AR.y1) / 2 };
+}
+
+function spawnBoss(cfg) {
+    var b = cfg.boss;
+    var mk = function (x, y, hp, tag) {
+        return {
+            type: 'boss', kind: b.kind, tag: tag || 0, def: { r: 20, color: '#ffd166', knock: 0.12, score: 300, name: b.name },
+            x: x, y: y, r: b.kind === 'twin' ? 15 : 20,
+            hp: hp, maxHp: hp, spd: 54 * cfg.spdMul, dmg: Math.round(11 * cfg.dmgMul),
+            kx: 0, ky: 0, flash: 0, anim: 0, stun: 0, slow: 0, burn: 0, burnT: 0,
+            state: 'idle', st: RE.rand(0.6, 1.4), telegraph: 0, phase: 0, boss: true
+        };
+    };
+    if (b.kind === 'twin') {
+        s.enemies.push(mk(AR.x1 - 110, 130, Math.round(b.hp * cfg.hpMul), 0));
+        s.enemies.push(mk(AR.x1 - 110, 270, Math.round(b.hp * cfg.hpMul), 1));
+    } else {
+        s.enemies.push(mk(AR.x1 - 120, (AR.y0 + AR.y1) / 2, Math.round(b.hp * cfg.hpMul), 0));
+    }
+    s.bossRef = s.enemies[0];
+}
+
+// ---------- 房間清空 ----------
+function onRoomClear() {
+    s.roomsDone++;
+    addScore(60 + s.layer * 40 + (s.room === 2 ? 260 : 0));
+    if (bl('cocy_spring')) heal(Math.round((5 + bl('cocy_spring') * 4) * favor('cocy')));
+    RetroAudio.play('win');
+    RE.juice.flash('rgba(255,209,102,0.18)', 0.25);
+
+    // 最終王倒下 = 全破
+    if (s.layer === LAYERS.length - 1 && s.room === 2) { finishRun(true); return; }
+    openDoors();
+}
+
+/* 兩道門，門上先寫明下一間給什麼。玩家選的是獎勵，不是路徑。
+   兩道門必須是不同獎勵，否則「選擇」是假的。
+   祝福幾乎每次都在其中一道：構築是這款遊戲的主軸，
+   第一版讓三種獎勵等機率出現，實測一整趟只拿得到兩個祝福，
+   等於玩家根本沒有 build 可言。 */
+function openDoors() {
+    s.mode = 'doors';
+    var pair;
+    if (s.room === 1) pair = ['boon', 'heal'];                       // 王房前，讓玩家能補狀態
+    else if (s.room === 2) pair = Math.random() < 0.55 ? ['boon', 'shard'] : ['heal', 'shard'];
+    else pair = Math.random() < 0.65 ? ['boon', 'heal'] : ['boon', 'shard'];
+    if (Math.random() < 0.5) pair = [pair[1], pair[0]];               // 左右位置也要洗，不然玩家會變成背按鍵
+    s.doors = [{ kind: pair[0] }, { kind: pair[1] }];
+    s.doorSel = 0;
+}
+
+function takeDoor(i) {
+    var d = s.doors[i];
+    RetroAudio.play('confirm');
+    // 推進到下一間
+    s.room++;
+    if (s.room > 2) { s.room = 0; s.layer++; }
+    if (s.layer >= LAYERS.length) { finishRun(true); return; }
+    G.setStat('layer', String(s.layer + 1));
+
+    s.pendingReward = d.kind;
+    if (s.room === 0) {
+        // 進入新的一層，給字卡當呼吸點
+        var cfg = layerCfg();
+        G.stageCard(s.layer + 1, cfg.name, cfg.hint, function () { applyRewardThenEnter(); });
+    } else {
+        applyRewardThenEnter();
+    }
+}
+
+function applyRewardThenEnter() {
+    var kind = s.pendingReward;
+    s.pendingReward = null;
+    if (kind === 'heal') {
+        heal(Math.round(s.p.maxHp * 0.3));
+        enterRoom();
+    } else if (kind === 'shard') {
+        var n = 1 + Math.floor(s.layer / 2);
+        s.runShards += n;
+        FT.add(W / 2, 140, '記憶碎片 +' + n, { color: '#c9b3ff', size: 18, life: 1.6 });
+        RetroAudio.play('coin');
+        enterRoom();
+    } else {
+        openBoonChoice();
+    }
+}
+
+// ---------- 祝福選單 ----------
+function boonPool() {
+    var pool = [];
+    for (var k in BOONS) {
+        var lv = bl(k);
+        if (lv < BOONS[k].max) pool.push({ key: k, lv: lv });
+    }
+    return pool;
+}
+
+function openBoonChoice() {
+    var pool = boonPool();
+    // 聯名祝福：條件湊齊、尚未拿到，才進池子，機率刻意壓低
+    for (var dk in DUOS) {
+        if (s.duos[dk]) continue;
+        if (duoReady(dk) && Math.random() < 0.55) pool.push({ key: dk, lv: 0, isDuo: true });
+    }
+    if (!pool.length) { heal(Math.round(s.p.maxHp * 0.25)); enterRoom(); return; }
+    for (var i = pool.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = pool[i]; pool[i] = pool[j]; pool[j] = t;
+    }
+    s.boonChoices = pool.slice(0, 3);
+    s.boonSel = 0;
+    s.mode = 'boon';
+    RetroAudio.play('levelUp');
+}
+
+function takeBoon(i) {
+    var c = s.boonChoices[i];
+    if (!c) return;
+    if (c.isDuo) {
+        s.duos[c.key] = 1;
+        FT.add(W / 2, 150, '聯名祝福：' + DUOS[c.key].name, { color: DUOS[c.key].color, size: 19, life: 2 });
+    } else {
+        s.boons[c.key] = bl(c.key) + 1;
+        if (c.key === 'oath_vow') { s.p.maxHp += 12; heal(12); }
+        FT.add(W / 2, 150, BOONS[c.key].name + ' Lv.' + s.boons[c.key],
+            { color: GODS[BOONS[c.key].god].color, size: 19, life: 1.8 });
+    }
+    s.boonChoices = null;
+    RetroAudio.play('powerup');
+    RE.juice.flash('rgba(255,209,102,0.2)', 0.18);
+    enterRoom();
+}
+
+function grantRandomBoon() {
+    var pool = boonPool();
+    if (!pool.length) return;
+    var c = RE.pick(pool);
+    s.boons[c.key] = bl(c.key) + 1;
+    if (c.key === 'oath_vow') { s.p.maxHp += 12; s.p.hp += 12; }
+}
+
+// ---------- 死亡與結束 ----------
+function onDeath(reason) {
+    s.deathReason = reason || '力竭';
+    s.oil--;
+    meta.deaths++;
+    meta.shards += s.runShards + 1 + s.layer;
+    // 先取這一次要說的台詞，再把進度往前推。
+    // 反過來寫的話，第一次死亡會直接跳到第二句，開場那句永遠沒人看得到。
+    var nextLine = (meta.story < DEATH_LINES.length)
+        ? DEATH_LINES[meta.story]
+        : IDLE_LINES[meta.story % IDLE_LINES.length];
+    meta.story++;
+    saveMeta();
+    G.setStat('oil', Math.max(0, s.oil));
+    G.setStat('deaths', meta.deaths);
+
+    RE.juice.impact(3);
+    RE.juice.slowmo(0.25, 1.0);
+    RetroAudio.play('gameover');
+    P.burst(s.p.x, s.p.y, 26, { colors: ['#ffd166', '#ff6b6b', '#ffffff'],
+        speedMin: 40, speedMax: 210, gravity: 0, drag: 0.9, lifeMin: 0.3, lifeMax: 0.9, sizeMax: 4, glow: true });
+
+    if (s.oil <= 0) { finishRun(false); return; }
+    s.line = nextLine;
+    s.lineT = 0;
+    s.hubSel = 0;
+    s.mode = 'hub';
+    // 場景換了就把上一場的浮動文字與粒子清掉，
+    // 否則「反誓 Lv.1」這種戰鬥中的提示會飄在渡口的對話上
+    FT.clear();
+    P.clear();
+}
+
+function finishRun(win) {
+    s.over = true; s.win = win;
+    if (win) {
+        meta.cleared = 1;
+        meta.shards += 10;
+        saveMeta();
+        addScore(1200);
+        G.gameOver({
+            score: s.score, win: true,
+            body: '你走出了冥河。' +
+                  '第 ' + meta.deaths + ' 次死亡之後，船夫終於沒有話要說了——' +
+                  '這正是《Hades》的設計核心：如果玩家一定會反覆經歷某件事，' +
+                  '那件事就該用來裝故事，而不是只用來扣血。'
+        });
+    } else {
+        saveMeta();
+        G.gameOver({
+            score: s.score, win: false,
+            body: '燈油燒完了，你留在了' + LAYERS[Math.min(s.layer, LAYERS.length - 1)].name + '（' + s.deathReason + '）。' +
+                  '但記憶碎片留下來了——' + meta.shards + ' 枚。' +
+                  '下一輪出發前先去換永久強化，這就是 roguelite 讓失敗有意義的方式。'
+        });
+    }
+}
+
+function addScore(n) { s.score += n; G.setStat('score', s.score); }
+function heal(n) {
+    var before = s.p.hp;
+    s.p.hp = Math.min(s.p.maxHp, s.p.hp + n);
+    if (s.p.hp > before) {
+        FT.add(s.p.x, s.p.y - 24, '+' + Math.round(s.p.hp - before), { color: '#7ee7c7', size: 15 });
+        RetroAudio.play('pickup');
+    }
+}
+
+// ======================================================================
+// 主迴圈
+// ======================================================================
+function update(dt) {
+    P.update(dt);
+    FT.update(dt);
+    if (s.over) return;
+
+    if (s.mode === 'hub') { updateHub(dt); return; }
+    if (s.mode === 'doors') { updateDoors(dt); return; }
+    if (s.mode === 'boon') { updateBoonMenu(dt); return; }
+    updateFight(dt);
+}
+
+// ---------- 渡口 ----------
+function updateHub(dt) {
+    s.lineT += dt;
+    var list = hubOptions();
+    /* 選項數量會變——升到滿級的項目會從清單裡消失——而 s.hubSel 是上一幀留下來的。
+       清單一縮短，索引就落在外面，下一次按 A 就會在 `list[s.hubSel].kind` 讀到
+       undefined 而整個當掉。煙霧測試偶爾才 FAIL 一次就是這個：
+       要先湊夠碎片把某一項升滿、而且游標剛好停在最後一項，條件湊齊才會發生。
+       每一幀先夾一次，比在按下去那一刻才檢查更保險（繪製也用同一個索引）。 */
+    if (!list.length) return;
+    if (s.hubSel >= list.length) s.hubSel = list.length - 1;
+    if (s.hubSel < 0) s.hubSel = 0;
+    if (RE.Input.pressed('up')) { s.hubSel = (s.hubSel + list.length - 1) % list.length; RetroAudio.play('blip'); }
+    if (RE.Input.pressed('down')) { s.hubSel = (s.hubSel + 1) % list.length; RetroAudio.play('blip'); }
+    if (RE.Input.pressed('a') || RE.Input.pressed('b')) {
+        var o = list[s.hubSel];
+        if (o.kind === 'go') { RetroAudio.play('confirm'); startRun(); return; }
+        var cost = upCost(o.key);
+        if (cost !== null && meta.shards >= cost) {
+            meta.shards -= cost;
+            meta.up[o.key] = upLv(o.key) + 1;
+            saveMeta();
+            RetroAudio.play('powerup');
+            RE.juice.flash('rgba(201,179,255,0.22)', 0.18);
+            FT.add(W / 2, 250, UPGRADES[o.key].name + ' Lv.' + upLv(o.key), { color: '#c9b3ff', size: 16, life: 1.4 });
+            if (o.key === 'lamp') { s.oil++; G.setStat('oil', s.oil); }
+            if (o.key === 'vigor') { s.p.maxHp = baseMaxHp(); s.p.hp = s.p.maxHp; }
+        } else {
+            RetroAudio.play('cancel');
+            FT.add(W / 2, 250, '碎片不夠', { color: '#ff6b6b', size: 15, life: 1.0 });
+        }
+    }
+}
+
+/* 「出發」一定要排在第一項。
+   第一版把它放在清單最後，掛機測試因此跑滿十六分鐘都沒離開渡口——
+   碎片為 0 的新玩家只按確認鍵會一直撞到「買不起」，
+   完全不知道要先往下捲才找得到出口。預設選項要是「繼續玩下去」。 */
+function hubOptions() {
+    var list = [{ kind: 'go' }];
+    for (var k in UPGRADES) {
+        if (upLv(k) < UPGRADES[k].max) list.push({ kind: 'up', key: k });
+    }
+    return list;
+}
+
+// ---------- 選門 ----------
+function updateDoors(dt) {
+    if (RE.Input.pressed('left'))  { s.doorSel = 0; RetroAudio.play('blip'); }
+    if (RE.Input.pressed('right')) { s.doorSel = 1; RetroAudio.play('blip'); }
+    if (RE.Input.pressed('a') || RE.Input.pressed('b')) takeDoor(s.doorSel);
+}
+
+// ---------- 祝福選單 ----------
+function updateBoonMenu(dt) {
+    if (RE.Input.pressed('left'))  { s.boonSel = (s.boonSel + 2) % 3; RetroAudio.play('blip'); }
+    if (RE.Input.pressed('right')) { s.boonSel = (s.boonSel + 1) % 3; RetroAudio.play('blip'); }
+    if (s.boonSel >= s.boonChoices.length) s.boonSel = 0;
+    if (RE.Input.pressed('a') || RE.Input.pressed('b')) takeBoon(s.boonSel);
+}
+
+// ======================================================================
+// 戰鬥
+// ======================================================================
+function updateFight(dt) {
+    updatePlayer(dt);
+    updateEnemies(dt);
+    updateShots(dt);
+    updateFlames(dt);
+    updateWaves(dt);
+    updateWraiths(dt);
+
+    if (!s.enemies.length) {
+        s.clearT += dt;
+        if (s.clearT > 0.55) onRoomClear();
+    }
+}
+
+function updatePlayer(dt) {
+    var p = s.p;
+    p.anim += dt * 8;
+    if (p.inv > 0) p.inv -= dt;
+    if (p.dashCd > 0) p.dashCd -= dt;
+    if (p.comboT > 0) p.comboT -= dt; else p.atkStage = 0;
+    if (p.voidT > 0) p.voidT -= dt;
+    if (p.hurtT > 0) p.hurtT -= dt;
+    if (p.dashInv > 0) p.dashInv -= dt;
+
+    var ax = RE.Input.axisX(), ay = RE.Input.axisY();
+
+    // ---- 衝刺中：位移由衝刺速度接管 ----
+    if (p.dashT > 0) {
+        p.dashT -= dt;
+        moveBy(p, p.dashVx * dt, p.dashVy * dt);
+        if (bl('phleg_trail')) {
+            s.flames.push({ x: p.x, y: p.y, r: 15 * favor('phleg'), life: 2.4, max: 2.4,
+                dps: (8 + bl('phleg_trail') * 6) * favor('phleg'), tick: 0 });
+        }
+        P.spawn({ x: p.x, y: p.y, vx: RE.rand(-20, 20), vy: RE.rand(-20, 20),
+            color: '#8fd3ff', life: 0.3, size: 3, glow: true });
+    } else if (p.atkT > 0) {
+        // 攻擊硬直中只能微幅位移，讓每一下都有重量
+        p.atkT -= dt;
+        moveBy(p, ax * 34 * dt, ay * 34 * dt);
+    } else {
+        var len = Math.hypot(ax, ay) || 1;
+        moveBy(p, (ax / len) * PL.spd * dt, (ay / len) * PL.spd * dt);
+        if (ax || ay) { p.aim = Math.atan2(ay, ax); if (ax) p.face = ax > 0 ? 1 : -1; }
+    }
+
+    // ---- 衝刺 ----
+    if (RE.Input.pressed('b') && p.dashCd <= 0 && p.dashT <= 0) {
+        var a = (ax || ay) ? Math.atan2(ay, ax) : (p.face > 0 ? 0 : Math.PI);
+        p.aim = a;
+        var dist = dashDistTotal();
+        p.dashVx = Math.cos(a) * dist / PL.dashTime;
+        p.dashVy = Math.sin(a) * dist / PL.dashTime;
+        p.dashT = PL.dashTime;
+        p.dashCd = dashCdTotal();
+        p.dashInv = PL.dashInv;
+        p.dashUsedT = PL.dashAtkWindow;
+        p.atkT = 0;
+        RetroAudio.play('dash');
+        P.ring(p.x, p.y, '#8fd3ff', 42);
+    }
+    if (p.dashUsedT > 0) p.dashUsedT -= dt;
+
+    // ---- 攻擊 ----
+    if (RE.Input.pressed('a') && p.atkT <= 0 && p.dashT <= 0) doAttack();
+}
+
+/** 三連段；若在衝刺後的窗口內按下，改成威力放大的衝刺攻擊（本作的核心動詞） */
+/** 攻擊範圍附近最近的敵人，找不到回傳 null */
+function nearestEnemy(range) {
+    var best = null, bd = range;
+    for (var i = 0; i < s.enemies.length; i++) {
+        var e = s.enemies[i];
+        var d = Math.hypot(e.x - s.p.x, e.y - s.p.y);
+        if (d < bd) { bd = d; best = e; }
+    }
+    return best;
+}
+
+function doAttack() {
+    var p = s.p;
+    var ax = RE.Input.axisX(), ay = RE.Input.axisY();
+    if (ax || ay) p.aim = Math.atan2(ay, ax);
+    else {
+        /* 沒有方向輸入時自動朝最近的敵人出手。
+           動作遊戲的標準輔助，原作的近戰也有明顯吸附。
+           少了它有兩個後果，機器人實測都撞到了：
+           手機玩家沒辦法同時精準推方向又按攻擊；
+           而站著不動時 aim 會停在「上一次移動的方向」，
+           於是貼身猛揮卻全部揮空——一隻 18 點血的遊魂能把滿血玩家磨死。 */
+        var near = nearestEnemy(PL.dashAtkReach * 1.6);
+        if (near) p.aim = Math.atan2(near.y - p.y, near.x - p.x);
+    }
+    var isDash = p.dashUsedT > 0;
+    p.atkDash = isDash;
+
+    var dmg, reach, arc, knock;
+    if (isDash) {
+        dmg = PL.dashAtkDmg; reach = PL.dashAtkReach; arc = PL.dashAtkArc; knock = 300;
+        p.atkT = 0.26; p.atkStage = 0; p.dashUsedT = 0;
+        RetroAudio.play('heavyHit');
+        RE.juice.punchZoom(0.05);
+    } else {
+        var st = p.atkStage % 3;
+        dmg = PL.atkDmg[st]; reach = PL.atkReach; arc = PL.atkArc; knock = st === 2 ? 260 : 150;
+        p.atkT = PL.atkTime[st];
+        p.atkStage = st + 1;
+        p.comboT = PL.comboWindow + p.atkT;
+        RetroAudio.play(st === 2 ? 'heavyHit' : 'slash');
+    }
+    p.atkSwing = 1;
+
+    var total = dmg * dmgMul();
+    if (!isDash && p.atkStage === 3 && bl('styx_grudge')) total += (10 + bl('styx_grudge') * 7) * favor('styx');
+    if (isDash && bl('phleg_burst')) {
+        var bx = p.x + Math.cos(p.aim) * reach * 0.6, by = p.y + Math.sin(p.aim) * reach * 0.6;
+        explode(bx, by, 44 * (favor('phleg') > 1 ? 1.25 : 1), (14 + bl('phleg_burst') * 9) * dmgMul() * favor('phleg'));
+    }
+    if (isDash && duo('duo_repay') && p.breakStack >= 5) {
+        total += 30;
+        FT.add(p.x, p.y - 30, '償還！', { color: '#ffb3d1', size: 16, life: 1.0 });
+    }
+
+    var hitAny = hitArc(p.x, p.y, p.aim, reach, arc, total, knock);
+    if (hitAny) {
+        if (p.voidT > 0) p.voidT = 0;      // 空白之盾只加成第一擊
+        RE.juice.hitstop(isDash ? 0.07 : 0.035);
+        RE.juice.shake(isDash ? 0.35 : 0.16);
+        RE.juice.rumble(isDash ? 0.7 : 0.4, 0.12);
+    }
+}
+
+/** 扇形判定。回傳是否打中任何目標 */
+function hitArc(x, y, aim, reach, arc, dmg, knock) {
+    var hit = false;
+    for (var i = s.enemies.length - 1; i >= 0; i--) {
+        var e = s.enemies[i];
+        var dx = e.x - x, dy = e.y - y;
+        var d = Math.hypot(dx, dy);
+        if (d > reach + e.r) continue;
+        var da = Math.abs(angDiff(Math.atan2(dy, dx), aim));
+        if (da > arc / 2) continue;
+        hit = true;
+        var a = Math.atan2(dy, dx);
+        damageEnemy(e, dmg, Math.cos(a) * knock * e.def.knock, Math.sin(a) * knock * e.def.knock, true);
+        // 迭代中若回呼清空了陣列就立刻收手（例如最後一隻死亡觸發房間清空）
+        if (!s.enemies.length) break;
+    }
+    return hit;
+}
+
+function explode(x, y, r, dmg) {
+    P.burst(x, y, 20, { colors: ['#ff9349', '#ffd166', '#ffffff'], speedMin: 50, speedMax: 240,
+        gravity: 0, drag: 0.88, lifeMin: 0.2, lifeMax: 0.6, sizeMax: 5, glow: true });
+    P.ring(x, y, '#ff9349', r * 2);
+    RetroAudio.play('explosion');
+    RE.juice.shake(0.4);
+    for (var i = s.enemies.length - 1; i >= 0; i--) {
+        var e = s.enemies[i];
+        var d = Math.hypot(e.x - x, e.y - y);
+        if (d < r + e.r) {
+            var a = Math.atan2(e.y - y, e.x - x);
+            damageEnemy(e, dmg, Math.cos(a) * 240 * e.def.knock, Math.sin(a) * 240 * e.def.knock, false);
+            if (!s.enemies.length) break;
+        }
+    }
+}
+
+function damageEnemy(e, dmg, kx, ky, fromMelee) {
+    if (e.state === 'vent') dmg *= 1.4;      // 破綻期受創加成，讓「抓破綻」真的划算
+    dmg = Math.round(dmg);
+    e.hp -= dmg;
+    e.flash = 0.12;
+    e.kx += kx; e.ky += ky;
+    FT.add(e.x, e.y - e.r - 6, String(dmg), { color: '#fff8e7', size: 15 });
+    P.burst(e.x, e.y, 6, { colors: [e.def.color, '#ffffff'], speedMin: 40, speedMax: 140,
+        gravity: 0, drag: 0.88, lifeMin: 0.1, lifeMax: 0.3, sizeMax: 3, glow: true });
+    RetroAudio.play('hit');
+
+    if (fromMelee) {
+        // 遺忘之觸：停滯
+        if (bl('lethe_touch') && Math.random() < (0.18 + bl('lethe_touch') * 0.09) * favor('lethe')) {
+            var t = (0.6 + bl('lethe_touch') * 0.2) * favor('lethe');
+            if (duo('duo_still') && e.slow > 0) t += 1.2;
+            e.stun = Math.max(e.stun, t);
+            FT.add(e.x, e.y - e.r - 20, '停滯', { color: '#8fd3ff', size: 15, life: 0.8 });
+        }
+        // 熾刃：灼燒
+        if (bl('phleg_blade')) { e.burn = (5 + bl('phleg_blade') * 4) * favor('phleg'); e.burnT = 2.0; }
+        // 寒鎖：減速
+        if (bl('cocy_frost')) e.slow = 2.0 * favor('cocy');
+    }
+
+    if (e.hp <= 0) killEnemy(e);
+}
+
+function killEnemy(e) {
+    var i = s.enemies.indexOf(e);
+    if (i < 0) return;
+    s.enemies.splice(i, 1);
+    addScore(e.def.score + s.layer * 6);
+    RE.juice.hitstop(e.boss ? 0.12 : 0.03);
+    RE.juice.shake(e.boss ? 0.7 : 0.2);
+    P.burst(e.x, e.y, e.boss ? 30 : 12, { colors: [e.def.color, '#ffffff', '#ffd166'],
+        speedMin: 50, speedMax: e.boss ? 260 : 170, gravity: 0, drag: 0.88,
+        lifeMin: 0.2, lifeMax: 0.7, sizeMax: e.boss ? 5 : 3.5, glow: true });
+    RetroAudio.play(e.boss ? 'bigExplosion' : 'explosion');
+    if (e.boss) { RE.juice.flash('rgba(255,209,102,0.35)', 0.3); RE.juice.slowmo(0.35, 0.8); }
+
+    if (bl('oath_break')) {
+        s.p.breakStack = Math.min(10, s.p.breakStack + 1);
+    }
+    if (bl('styx_wraith')) {
+        s.wraiths.push({ x: e.x, y: e.y, vx: 0, vy: 0, life: 3.0,
+            dmg: (8 + bl('styx_wraith') * 5) * dmgMul() * favor('styx') });
+    }
+}
+
+function damagePlayer(n, srcX, srcY) {
+    var p = s.p;
+    if (p.inv > 0 || p.dashInv > 0 || s.over) return;
+    n = Math.round(n);
+    p.hp -= n;
+    p.inv = PL.inv;
+    p.hurtT = 0.3;
+    p.breakStack = 0;
+    if (bl('lethe_void')) p.voidT = 1.5;
+    RE.juice.impact(2);
+    RE.juice.flash('rgba(255,107,107,0.28)', 0.12);
+    RetroAudio.play('hurt');
+    FT.add(p.x, p.y - 22, '-' + n, { color: '#ff6b6b', size: 15 });
+    P.burst(p.x, p.y, 10, { colors: ['#ff6b6b', '#ffffff'], speedMin: 40, speedMax: 160,
+        gravity: 0, drag: 0.88, lifeMin: 0.1, lifeMax: 0.4, sizeMax: 3.5, glow: true });
+
+    if (bl('cocy_wail')) {
+        s.waves.push({ x: p.x, y: p.y, r: 10, max: 96 * favor('cocy'),
+            dmg: (10 + bl('cocy_wail') * 8) * dmgMul() * favor('cocy'), hitSet: {} });
+        RetroAudio.play('bounce');
+    }
+    if (p.hp <= 0) {
+        p.hp = 0;
+        onDeath(s.enemies.length ? ('倒在' + layerCfg().name) : '力竭');
+    }
+}
+
+// ======================================================================
+// 敵人 AI
+// ======================================================================
+function updateEnemies(dt) {
+    var p = s.p;
+    for (var i = s.enemies.length - 1; i >= 0; i--) {
+        var e = s.enemies[i];
+        e.anim += dt * 5;
+        if (e.flash > 0) e.flash -= dt;
+        if (e.slow > 0) e.slow -= dt;
+
+        // 灼燒
+        if (e.burnT > 0) {
+            e.burnT -= dt;
+            var burnDmg = e.burn * dt;
+            if (duo('duo_steam') && e.stun > 0) burnDmg *= 2;
+            e.hp -= burnDmg;
+            if (Math.random() < dt * 8) {
+                P.spawn({ x: e.x + RE.rand(-6, 6), y: e.y + RE.rand(-8, 4), vx: 0, vy: -30,
+                    color: '#ff9349', life: 0.3, size: 2.5, glow: true });
+            }
+            if (e.hp <= 0) { killEnemy(e); continue; }
+        }
+
+        // 擊退位移一律先套用，停滯中也會被推開
+        e.x += e.kx * dt; e.y += e.ky * dt;
+        e.kx *= Math.pow(0.015, dt); e.ky *= Math.pow(0.015, dt);
+        clampToArena(e);
+
+        if (e.stun > 0) {
+            e.stun -= dt;
+            if (Math.random() < dt * 6) {
+                P.spawn({ x: e.x + RE.rand(-8, 8), y: e.y - e.r - 4, vx: 0, vy: -20,
+                    color: '#8fd3ff', life: 0.4, size: 2, glow: true });
+            }
+            continue;
+        }
+
+        var spd = e.spd * (e.slow > 0 ? (1 - (0.2 + bl('cocy_frost') * 0.1)) : 1);
+        if (e.boss) { bossAI(e, dt, spd); continue; }
+
+        var dx = p.x - e.x, dy = p.y - e.y;
+        var dist = Math.hypot(dx, dy) || 1;
+
+        if (e.type === 'shade') {
+            moveBy(e, (dx / dist) * spd * dt, (dy / dist) * spd * dt);
+            touchDamage(e, dist);
+        } else if (e.type === 'lancer') {
+            // 突刺前先僵住半秒當預警——沒有預警的高速衝撞只會讓玩家覺得不講理
+            e.st -= dt;
+            if (e.state === 'idle') {
+                if (dist < 190 && e.st <= 0) { e.state = 'tele'; e.st = 0.5; e.telegraph = Math.atan2(dy, dx); }
+                else { moveBy(e, (dx / dist) * spd * 0.7 * dt, (dy / dist) * spd * 0.7 * dt); }
+            } else if (e.state === 'tele') {
+                if (e.st <= 0) { e.state = 'charge'; e.st = 0.42; RetroAudio.play('dash'); }
+            } else {
+                moveBy(e, Math.cos(e.telegraph) * 340 * dt, Math.sin(e.telegraph) * 340 * dt);
+                if (e.st <= 0) { e.state = 'idle'; e.st = RE.rand(0.7, 1.2); }
+            }
+            touchDamage(e, dist, e.state === 'charge');   // 只有突刺中會傷人
+        } else if (e.type === 'caster') {
+            // 保持距離、定期投射
+            var want = 150;
+            var mv = dist < want ? -1 : (dist > want + 40 ? 1 : 0);
+            moveBy(e, (dx / dist) * spd * mv * dt, (dy / dist) * spd * mv * dt);
+            e.st -= dt;
+            if (e.st <= 0) {
+                e.st = RE.rand(1.5, 2.2);
+                var a = Math.atan2(dy, dx);
+                s.shots.push({ x: e.x, y: e.y, vx: Math.cos(a) * 150, vy: Math.sin(a) * 150,
+                    r: 6, dmg: e.dmg, life: 3.2, color: '#c08cff' });
+                RetroAudio.play('shoot');
+            }
+            // 詠咒者是遠程單位，身體不傷人——否則玩家貼上去解決它反而更虧
+        } else if (e.type === 'brute') {
+            e.st -= dt;
+            if (e.state === 'idle') {
+                moveBy(e, (dx / dist) * spd * dt, (dy / dist) * spd * dt);
+                if (dist < 84 && e.st <= 0) { e.state = 'tele'; e.st = 0.65; }
+            } else if (e.state === 'tele') {
+                if (e.st <= 0) {
+                    e.state = 'idle'; e.st = RE.rand(1.6, 2.2);
+                    slam(e.x, e.y, 74, e.dmg * 1.3);
+                }
+            }
+            touchDamage(e, dist);
+        }
+    }
+}
+
+/* 接觸傷害。
+   第一版是「碰到就扣血」，機器人實測直接把難度曲線壓垮：
+   玩家的核心動詞是衝進去近戰，貼身卻自動扣血，等於用機制懲罰核心動詞。
+   第一層的王站著不動就磨掉玩家 42 點血（60 → 18），三次接觸而已。
+   改成**傷害只來自看得見的動作**：執矛者只有突刺中會傷人、詠咒者完全不靠身體、
+   王只在自己的攻擊段判定。玩家因此永遠能靠「讀動作」躲掉傷害，
+   而遊魂與石傀這種「撲上來」本身就是攻擊的敵人才保留接觸判定。 */
+function touchDamage(e, dist, active) {
+    if (active === false) return;
+    if (dist < e.r + s.p.r) {
+        damagePlayer(e.dmg, e.x, e.y);
+        var a = Math.atan2(e.y - s.p.y, e.x - s.p.x);
+        e.kx += Math.cos(a) * 120; e.ky += Math.sin(a) * 120;
+    }
+}
+
+function slam(x, y, r, dmg) {
+    s.waves.push({ x: x, y: y, r: 8, max: r, dmg: 0, hitSet: {}, hostile: true, hostileDmg: dmg });
+    RetroAudio.play('heavyHit');
+    RE.juice.shake(0.35);
+    P.ring(x, y, '#c9a066', r * 2);
+}
+
+// ---------- 王 ----------
+function bossAI(e, dt, spd) {
+    var p = s.p;
+    var dx = p.x - e.x, dy = p.y - e.y;
+    var dist = Math.hypot(dx, dy) || 1;
+    e.st -= dt;
+    var hpPct = e.hp / e.maxHp;
+
+    if (e.kind === 'ferry') {
+        // 第一個王：橫掃 + 召喚遊魂。教玩家「先閃再打」的節奏
+        if (e.state === 'idle') {
+            moveBy(e, (dx / dist) * spd * 0.6 * dt, (dy / dist) * spd * 0.6 * dt);
+            if (e.st <= 0) {
+                e.state = Math.random() < 0.65 ? 'tele' : 'summon';
+                e.st = e.state === 'tele' ? 0.6 : 0.4;
+                e.telegraph = Math.atan2(dy, dx);
+            }
+        } else if (e.state === 'tele') {
+            if (e.st <= 0) { e.state = 'sweep'; e.st = 0.5; RetroAudio.play('slash'); }
+        } else if (e.state === 'sweep') {
+            moveBy(e, Math.cos(e.telegraph) * 250 * dt, Math.sin(e.telegraph) * 250 * dt);
+            if (e.st <= 0) { e.state = 'idle'; e.st = hpPct < 0.5 ? 1.0 : 1.5; }
+        } else {
+            if (e.st <= 0) {
+                e.state = 'idle'; e.st = 1.6;
+                for (var i = 0; i < 2; i++) {
+                    var pt = findSpawn();
+                    var d = ENEMY_DEF.shade;
+                    s.enemies.push({ type: 'shade', def: d, x: pt.x, y: pt.y, r: d.r,
+                        hp: d.hp, maxHp: d.hp, spd: d.spd, dmg: d.dmg, kx: 0, ky: 0, flash: 0,
+                        anim: 0, stun: 0, slow: 0, burn: 0, burnT: 0, think: 0, state: 'idle', st: 0, boss: false });
+                }
+                RetroAudio.play('error');
+            }
+        }
+        touchDamage(e, dist, e.state === 'sweep');       // 只有橫掃段傷人
+
+    } else if (e.kind === 'twin') {
+        // 兩隻交錯突刺：一隻預警時另一隻繞側
+        if (e.state === 'idle') {
+            var side = e.tag ? 1 : -1;
+            moveBy(e, (dx / dist) * spd * 0.8 * dt - dy / dist * spd * 0.5 * side * dt,
+                      (dy / dist) * spd * 0.8 * dt + dx / dist * spd * 0.5 * side * dt);
+            if (e.st <= 0 && dist < 220) { e.state = 'tele'; e.st = 0.45; e.telegraph = Math.atan2(dy, dx); }
+        } else if (e.state === 'tele') {
+            if (e.st <= 0) { e.state = 'charge'; e.st = 0.4; RetroAudio.play('dash'); }
+        } else {
+            moveBy(e, Math.cos(e.telegraph) * 360 * dt, Math.sin(e.telegraph) * 360 * dt);
+            if (e.st <= 0) { e.state = 'idle'; e.st = RE.rand(0.8, 1.4); }
+        }
+        touchDamage(e, dist, e.state === 'charge');
+
+    } else if (e.kind === 'core') {
+        /* 定點彈幕：圓環 + 扇形，玩家要在缺口與石柱之間找路。
+           放完一輪就進入 vent（過熱）狀態靜止 0.7 秒並且受創加成——
+           這是王設計的基本功：每一招之後要留破綻。
+           沒有破綻的話，這場戰鬥會變成「一邊躲一邊硬蹭傷害」，
+           機器人實測時第三層王比第四層王還難，曲線直接倒掛。 */
+        if (e.state === 'vent') {
+            if (e.st <= 0) { e.state = 'idle'; e.st = hpPct < 0.5 ? 1.0 : 1.4; }
+            touchDamage(e, dist, false);
+            return;
+        }
+        moveBy(e, (dx / dist) * spd * 0.3 * dt, (dy / dist) * spd * 0.3 * dt);
+        if (e.st <= 0) {
+            e.phase = (e.phase + 1) % 2;
+            e.st = hpPct < 0.5 ? 1.3 : 1.8;
+            /* 圓環一定要留缺口。
+               第一版是完整的 10 發圓環，機器人在這裡死了七次——
+               彈幕沒有縫，玩家再會閃也只是在賭衝刺冷卻好了沒有。
+               留一個缺口，這一波就從「消耗品」變成「一道有正確答案的題目」。 */
+            var n = e.phase === 0 ? 9 : 5;
+            var gap = e.phase === 0 ? Math.floor(RE.rand(0, n)) : -1;
+            var base = e.phase === 0 ? RE.rand(0, RE.TAU) : Math.atan2(dy, dx) - 0.4;
+            for (var k = 0; k < n; k++) {
+                if (k === gap) continue;
+                var a = e.phase === 0 ? base + k / n * RE.TAU : base + k * 0.2;
+                s.shots.push({ x: e.x, y: e.y, vx: Math.cos(a) * 118, vy: Math.sin(a) * 118,
+                    r: 7, dmg: e.dmg, life: 4.0, color: '#ff9349' });
+            }
+            RetroAudio.play('shoot');
+            e.state = 'vent'; e.st = 0.7;
+        }
+        // 沸血之核靠彈幕，不靠身體
+
+    } else if (e.kind === 'mirror') {
+        // 記憶裡的你：會衝刺、會三連段。敘事上是玩家自己
+        if (e.state === 'idle') {
+            moveBy(e, (dx / dist) * spd * dt, (dy / dist) * spd * dt);
+            if (e.st <= 0) {
+                if (dist > 130) { e.state = 'tele'; e.st = 0.35; e.telegraph = Math.atan2(dy, dx); }
+                else { e.state = 'combo'; e.st = 0.3; e.phase = 0; }
+            }
+        } else if (e.state === 'tele') {
+            if (e.st <= 0) { e.state = 'charge'; e.st = 0.3; RetroAudio.play('dash'); }
+        } else if (e.state === 'charge') {
+            moveBy(e, Math.cos(e.telegraph) * 380 * dt, Math.sin(e.telegraph) * 380 * dt);
+            if (e.st <= 0) { e.state = 'combo'; e.st = 0.25; e.phase = 0; }
+        } else {
+            if (e.st <= 0) {
+                e.phase++;
+                // 兩段而不是三段、間隔拉到 0.42：
+                // 玩家的衝刺冷卻是 0.42，三段 0.32 的連打等於中間根本沒有可閃的空隙
+                e.st = 0.42;
+                var aa = Math.atan2(dy, dx);
+                s.waves.push({ x: e.x + Math.cos(aa) * 26, y: e.y + Math.sin(aa) * 26,
+                    r: 6, max: 34, dmg: 0, hitSet: {}, hostile: true, hostileDmg: e.dmg });
+                RetroAudio.play('slash');
+                if (e.phase >= 2) { e.state = 'idle'; e.st = RE.rand(0.8, 1.2); }
+            }
+        }
+        touchDamage(e, dist, e.state === 'charge');      // 連段本身用震波判定，這裡只算衝撞
+
+    } else {
+        // 守誓者：三階段，隨血量切換行為，最後一段同時放彈幕與砸地
+        var ph = hpPct > 0.66 ? 0 : (hpPct > 0.33 ? 1 : 2);
+        if (ph !== e.phase) {
+            e.phase = ph;
+            e.st = 0.9;
+            RE.juice.flash('rgba(255,209,102,0.3)', 0.25);
+            RetroAudio.play('error');
+            FT.add(e.x, e.y - 40, '第 ' + (ph + 1) + ' 階段', { color: '#ffd166', size: 16, life: 1.4 });
+        }
+        moveBy(e, (dx / dist) * spd * (0.5 + ph * 0.2) * dt, (dy / dist) * spd * (0.5 + ph * 0.2) * dt);
+        if (e.st <= 0) {
+            e.st = 1.6 - ph * 0.35;
+            /* 砸地與彈幕互斥，一次只出一招。
+               第一版在第三階段會同時砸地又放圓環，玩家的衝刺一次只能躲一種，
+               機器人在這裡死了十三次——多招齊發不是難度，是不給答案。 */
+            var slamNow = (ph === 0) || (ph === 2 && Math.random() < 0.45);
+            if (slamNow) slam(p.x, p.y, 70, e.dmg);   // 砸在玩家腳下，逼玩家一直移動
+            if (ph >= 1 && !slamNow) {
+                var m = 7 + ph * 2;
+                var b0 = RE.rand(0, RE.TAU);
+                var qgap = Math.floor(RE.rand(0, m));       // 同樣留缺口，理由見沸血之核
+                for (var q = 0; q < m; q++) {
+                    if (q === qgap) continue;
+                    var qa = b0 + q / m * RE.TAU;
+                    s.shots.push({ x: e.x, y: e.y, vx: Math.cos(qa) * 118, vy: Math.sin(qa) * 118,
+                        r: 6, dmg: e.dmg * 0.8, life: 4.0, color: '#ffd166' });
+                }
+                RetroAudio.play('shoot');
+            }
+        }
+        // 守誓者靠砸地與彈幕，身體不傷人
+    }
+}
+
+// ======================================================================
+// 投射物、火痕、震波、怨影
+// ======================================================================
+function updateShots(dt) {
+    for (var i = s.shots.length - 1; i >= 0; i--) {
+        var b = s.shots[i];
+        b.x += b.vx * dt; b.y += b.vy * dt;
+        b.life -= dt;
+        if (b.life <= 0 || b.x < AR.x0 - 20 || b.x > AR.x1 + 20 || b.y < AR.y0 - 20 || b.y > AR.y1 + 20) {
+            s.shots.splice(i, 1); continue;
+        }
+        // 石柱擋彈：讓場上的障礙物有戰術意義
+        var blocked = false;
+        for (var j = 0; j < s.pillars.length; j++) {
+            var pl = s.pillars[j];
+            if (Math.hypot(b.x - pl.x, b.y - pl.y) < pl.r + b.r) { blocked = true; break; }
+        }
+        if (blocked) {
+            P.burst(b.x, b.y, 5, { colors: [b.color], speedMin: 20, speedMax: 90, gravity: 0,
+                drag: 0.9, lifeMin: 0.1, lifeMax: 0.3, sizeMax: 2.5, glow: true });
+            s.shots.splice(i, 1); continue;
+        }
+        if (Math.hypot(b.x - s.p.x, b.y - s.p.y) < b.r + s.p.r) {
+            var wasInv = s.p.dashInv > 0;
+            damagePlayer(b.dmg, b.x, b.y);
+            // 反誓：用衝刺的無敵幀穿過攻擊有回報，鼓勵主動閃避而不是龜著
+            if (wasInv && bl('oath_counter')) heal(Math.round((2 + bl('oath_counter') * 2) * favor('oath')));
+            s.shots.splice(i, 1);
+        }
+    }
+}
+
+function updateFlames(dt) {
+    for (var i = s.flames.length - 1; i >= 0; i--) {
+        var f = s.flames[i];
+        f.life -= dt;
+        if (f.life <= 0) { s.flames.splice(i, 1); continue; }
+        f.tick -= dt;
+        if (f.tick <= 0) {
+            f.tick = 0.2;
+            for (var j = s.enemies.length - 1; j >= 0; j--) {
+                var e = s.enemies[j];
+                if (Math.hypot(e.x - f.x, e.y - f.y) < f.r + e.r) {
+                    var d = f.dps * 0.2 * dmgMul();
+                    if (duo('duo_steam') && e.stun > 0) d *= 2;
+                    damageEnemy(e, d, 0, 0, false);
+                    if (!s.enemies.length) break;
+                }
+            }
+        }
+        if (Math.random() < dt * 12) {
+            P.spawn({ x: f.x + RE.rand(-8, 8), y: f.y + RE.rand(-6, 6), vx: 0, vy: -26,
+                color: '#ff9349', life: 0.35, size: 2.5, glow: true });
+        }
+    }
+}
+
+function updateWaves(dt) {
+    for (var i = s.waves.length - 1; i >= 0; i--) {
+        var w = s.waves[i];
+        w.r += (w.max - w.r) * (1 - Math.pow(0.001, dt)) + 40 * dt;
+        if (w.r >= w.max - 1) { s.waves.splice(i, 1); continue; }
+        if (w.hostile) {
+            if (!w.hitP && Math.hypot(s.p.x - w.x, s.p.y - w.y) < w.r + s.p.r) {
+                w.hitP = true;
+                var wasInv = s.p.dashInv > 0;
+                damagePlayer(w.hostileDmg, w.x, w.y);
+                if (wasInv && bl('oath_counter')) heal(Math.round((2 + bl('oath_counter') * 2) * favor('oath')));
+            }
+        } else {
+            for (var j = s.enemies.length - 1; j >= 0; j--) {
+                var e = s.enemies[j];
+                var key = e.x + ':' + e.y;
+                if (w.hitSet[j]) continue;
+                if (Math.hypot(e.x - w.x, e.y - w.y) < w.r + e.r) {
+                    w.hitSet[j] = 1;
+                    var a = Math.atan2(e.y - w.y, e.x - w.x);
+                    damageEnemy(e, w.dmg, Math.cos(a) * 260 * e.def.knock, Math.sin(a) * 260 * e.def.knock, false);
+                    if (!s.enemies.length) break;
+                }
+            }
+        }
+    }
+}
+
+function updateWraiths(dt) {
+    for (var i = s.wraiths.length - 1; i >= 0; i--) {
+        var w = s.wraiths[i];
+        w.life -= dt;
+        if (w.life <= 0 || !s.enemies.length) { s.wraiths.splice(i, 1); continue; }
+        // 追最近的敵人
+        var best = null, bd = 1e9;
+        for (var j = 0; j < s.enemies.length; j++) {
+            var d = Math.hypot(s.enemies[j].x - w.x, s.enemies[j].y - w.y);
+            if (d < bd) { bd = d; best = s.enemies[j]; }
+        }
+        if (!best) { s.wraiths.splice(i, 1); continue; }
+        var a = Math.atan2(best.y - w.y, best.x - w.x);
+        w.x += Math.cos(a) * 260 * dt;
+        w.y += Math.sin(a) * 260 * dt;
+        P.spawn({ x: w.x, y: w.y, vx: RE.rand(-12, 12), vy: RE.rand(-12, 12),
+            color: '#ff7bb0', life: 0.25, size: 2.5, glow: true });
+        if (bd < best.r + 8) {
+            damageEnemy(best, w.dmg, 0, 0, false);
+            s.wraiths.splice(i, 1);
+        }
+    }
+}
+
+// ======================================================================
+// 移動與碰撞
+// ======================================================================
+function moveBy(o, dx, dy) {
+    // X、Y 分兩階段解算，避免斜向移動時被石柱誤判成正面撞上
+    o.x += dx;
+    resolvePillars(o, true);
+    o.y += dy;
+    resolvePillars(o, false);
+    clampToArena(o);
+}
+
+function resolvePillars(o, xAxis) {
+    for (var i = 0; i < s.pillars.length; i++) {
+        var p = s.pillars[i];
+        var dx = o.x - p.x, dy = o.y - p.y;
+        var d = Math.hypot(dx, dy);
+        var min = p.r + o.r;
+        if (d < min && d > 0.001) {
+            var push = (min - d);
+            o.x += (dx / d) * push;
+            o.y += (dy / d) * push;
+        }
+    }
+}
+
+function clampToArena(o) {
+    o.x = RE.clamp(o.x, AR.x0 + o.r, AR.x1 - o.r);
+    o.y = RE.clamp(o.y, AR.y0 + o.r, AR.y1 - o.r);
+}
+
+function angDiff(a, b) {
+    var d = a - b;
+    while (d > Math.PI) d -= RE.TAU;
+    while (d < -Math.PI) d += RE.TAU;
+    return d;
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function drawHadesAsset(name, cx, cy, w, h, alpha, flip, rotation) {
+    var m = HADES_ART.manifest;
+    if (!m || !m.assets || !m.assets[name] || !HADES_ART.image.complete ||
+        !HADES_ART.image.naturalWidth) return false;
+    var a = m.assets[name];
+    ctx.save();
+    ctx.globalAlpha = alpha === undefined ? 1 : alpha;
+    ctx.translate(cx, cy);
+    if (rotation) ctx.rotate(rotation);
+    if (flip) ctx.scale(-1, 1);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(HADES_ART.image, a.x, a.y, a.w, a.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+}
+
+function render() {
+    var cfg = layerCfg();
+    G.clear(s.mode === 'hub' ? '#0b0f16' : cfg.color);
+    G.beginWorld();
+
+    if (s.mode === 'hub') drawHub();
+    else {
+        drawArena(cfg);
+        drawFlames();
+        drawWaves();
+        drawEnemies();
+        drawShots();
+        drawWraiths();
+        drawPlayer();
+        P.draw(ctx);
+        FT.draw(ctx);
+    }
+    G.endWorld();
+    // HUD、選門與祝福選單屬於介面，不應跟著打擊震動與 punch zoom 位移。
+    // 實戰採樣曾在衝刺斬時把血量與房間名稱推出畫布，移到世界相機之外才穩定。
+    if (s.mode !== 'hub') {
+        drawHUD();
+        if (s.mode === 'doors') drawDoors();
+        if (s.mode === 'boon') drawBoonMenu();
+    }
+    G.postFX({ scanAlpha: 0.05 });
+}
+
+function drawArena(cfg) {
+    // 地板
+    ctx.fillStyle = 'rgba(255,255,255,0.03)';
+    for (var gx = AR.x0; gx < AR.x1; gx += 28) {
+        for (var gy = AR.y0; gy < AR.y1; gy += 28) {
+            if (((gx / 28 | 0) + (gy / 28 | 0)) % 2 === 0) ctx.fillRect(gx, gy, 28, 28);
+        }
+    }
+    // 現代層：低彩度地板仍保留拱頂透視與冥河紋章，讓房間不只是棋盤底。
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,209,102,0.075)'; ctx.lineWidth = 1;
+    for (var ray = -2; ray <= 2; ray++) {
+        ctx.beginPath();
+        ctx.moveTo(W / 2 + ray * 42, H / 2 - 8);
+        ctx.lineTo(W / 2 + ray * 118, AR.y1);
+        ctx.stroke();
+    }
+    ctx.translate(W / 2, H / 2 + 8);
+    ctx.rotate((s.layer + 1) * 0.18);
+    ctx.strokeStyle = 'rgba(255,209,102,0.10)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(0, 0, 58, 0, RE.TAU); ctx.stroke();
+    ctx.beginPath();
+    for (var rune = 0; rune < 8; rune++) {
+        var ra = rune * RE.TAU / 8;
+        var rx = Math.cos(ra) * 45, ry = Math.sin(ra) * 45;
+        ctx.moveTo(rx, ry); ctx.lineTo(rx * 0.72, ry * 0.72);
+    }
+    ctx.stroke();
+    ctx.restore();
+    // 牆
+    ctx.strokeStyle = 'rgba(255,209,102,0.35)';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(AR.x0, AR.y0, AR.x1 - AR.x0, AR.y1 - AR.y0);
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(AR.x0 + 5, AR.y0 + 5, AR.x1 - AR.x0 - 10, AR.y1 - AR.y0 - 10);
+
+    // 石柱
+    for (var i = 0; i < s.pillars.length; i++) {
+        var p = s.pillars[i];
+        ctx.save();
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.beginPath(); ctx.ellipse(p.x, p.y + p.r * 0.5, p.r, p.r * 0.4, 0, 0, RE.TAU); ctx.fill();
+        if (drawHadesAsset('ruined_pillar', p.x, p.y - p.r * 0.18, p.r * 3.1, p.r * 3.1)) {
+            ctx.restore();
+            continue;
+        }
+        // 八角殘柱比純圓障礙更像場景物件，但碰撞半徑完全不變。
+        ctx.fillStyle = '#323a47';
+        ctx.beginPath();
+        for (var k = 0; k < 8; k++) {
+            var a = -Math.PI / 8 + k * RE.TAU / 8;
+            var xx = p.x + Math.cos(a) * p.r, yy = p.y + Math.sin(a) * p.r;
+            if (k === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
+        }
+        ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#667184'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = '#4b5668';
+        ctx.beginPath(); ctx.arc(p.x - p.r * 0.22, p.y - p.r * 0.22, p.r * 0.52, 0, RE.TAU); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,209,102,0.16)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(p.x - p.r * 0.55, p.y + 2); ctx.lineTo(p.x, p.y - p.r * 0.45);
+        ctx.lineTo(p.x + p.r * 0.38, p.y + p.r * 0.28); ctx.stroke();
+        ctx.restore();
+    }
+}
+
+function drawPlayer() {
+    var p = s.p;
+    ctx.save();
+    if (p.inv > 0 && Math.floor(p.inv * 20) % 2 === 0) ctx.globalAlpha = 0.45;
+
+    // 影子
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.beginPath(); ctx.ellipse(p.x, p.y + p.r * 0.85, p.r * 0.9, p.r * 0.35, 0, 0, RE.TAU); ctx.fill();
+
+    /* 攻擊弧用漸層而不是實心。
+       第一版是 0.75 不透明的實心扇形，截圖一看就發現問題：
+       它會把站在圓心的玩家整個淹掉——玩家是畫面上最重要的視覺元素，
+       任何特效都不該蓋過他。 */
+    if (p.atkT > 0 && p.atkSwing > 0) {
+        var t = p.atkT / (p.atkDash ? 0.26 : 0.3);
+        var reach = p.atkDash ? PL.dashAtkReach : PL.atkReach;
+        var arc = p.atkDash ? PL.dashAtkArc : PL.atkArc;
+        ctx.save();
+        ctx.globalAlpha = RE.clamp(t, 0, 1) * 0.62;
+        var gd = ctx.createRadialGradient(p.x, p.y, p.r * 0.6, p.x, p.y, reach);
+        gd.addColorStop(0, 'rgba(255,255,255,0)');
+        gd.addColorStop(0.55, p.atkDash ? 'rgba(255,209,102,0.55)' : 'rgba(232,244,255,0.45)');
+        gd.addColorStop(1, p.atkDash ? 'rgba(255,209,102,0.9)' : 'rgba(232,244,255,0.8)');
+        ctx.fillStyle = gd;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.arc(p.x, p.y, reach, p.aim - arc / 2, p.aim + arc / 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    var bob = Math.sin(p.anim) * 1.2;
+    var artName = p.dashT > 0 ? 'player_dash' : p.atkT > 0 ? 'player_attack' :
+        (RE.Input.axisX() || RE.Input.axisY()) ? 'player_run' : 'player_idle';
+    if (!drawHadesAsset(artName, p.x, p.y - 4 + bob, p.dashT > 0 ? 66 : 58,
+                        p.dashT > 0 ? 66 : 58, 1, p.face < 0)) {
+        /* 母表尚未載入時保留可玩的程序備援；正式畫面載入後以手繪角色取代。 */
+        ctx.save();
+        ctx.shadowBlur = 10; ctx.shadowColor = 'rgba(143,211,255,0.55)';
+        ctx.fillStyle = p.hurtT > 0 ? '#ffffff' : '#5b7fb5';
+        ctx.strokeStyle = 'rgba(10,16,24,0.9)'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y - p.r - 4 + bob);
+        ctx.lineTo(p.x + p.r, p.y + p.r + bob);
+        ctx.lineTo(p.x - p.r, p.y + p.r + bob);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.restore();
+    }
+
+    // 破誓層數
+    if (bl('oath_break') && p.breakStack > 0) {
+        RE.Draw.text(ctx, '×' + p.breakStack, p.x, p.y - p.r - 20,
+            { size: 15, align: 'center', color: '#ffd166' });
+    }
+    ctx.restore();
+}
+
+function drawEnemies() {
+    for (var i = 0; i < s.enemies.length; i++) {
+        var e = s.enemies[i];
+        ctx.save();
+        // 影子
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.beginPath(); ctx.ellipse(e.x, e.y + e.r * 0.8, e.r * 0.9, e.r * 0.32, 0, 0, RE.TAU); ctx.fill();
+
+        // 預警：突刺方向線 / 砸地圈
+        if (e.state === 'tele') {
+            ctx.save();
+            ctx.globalAlpha = 0.68;
+            if (e.type === 'brute') {
+                var danger = ctx.createRadialGradient(e.x, e.y, 12, e.x, e.y, 74);
+                danger.addColorStop(0, 'rgba(255,147,73,0.34)');
+                danger.addColorStop(0.72, 'rgba(255,107,107,0.12)');
+                danger.addColorStop(1, 'rgba(255,107,107,0)');
+                ctx.fillStyle = danger;
+                ctx.beginPath(); ctx.arc(e.x, e.y, 74, 0, RE.TAU); ctx.fill();
+                ctx.strokeStyle = '#ff9349'; ctx.lineWidth = 3;
+                ctx.setLineDash([7, 5]);
+                ctx.beginPath(); ctx.arc(e.x, e.y, 74, 0, RE.TAU); ctx.stroke();
+                ctx.setLineDash([]);
+                RE.Draw.text(ctx, '砸地', e.x, e.y - 86, { size: 15, align: 'center', color: '#ffbd7c' });
+            } else {
+                var ca = Math.cos(e.telegraph), sa = Math.sin(e.telegraph);
+                var nx = -sa * 11, ny = ca * 11;
+                ctx.fillStyle = 'rgba(255,107,107,0.14)';
+                ctx.beginPath();
+                ctx.moveTo(e.x + nx, e.y + ny);
+                ctx.lineTo(e.x + ca * 150 + nx, e.y + sa * 150 + ny);
+                ctx.lineTo(e.x + ca * 150 - nx, e.y + sa * 150 - ny);
+                ctx.lineTo(e.x - nx, e.y - ny); ctx.closePath(); ctx.fill();
+                ctx.strokeStyle = '#ff6b6b'; ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(e.x, e.y);
+                ctx.lineTo(e.x + Math.cos(e.telegraph) * 150, e.y + Math.sin(e.telegraph) * 150);
+                ctx.stroke();
+                ctx.translate(e.x + ca * 134, e.y + sa * 134); ctx.rotate(e.telegraph);
+                ctx.fillStyle = '#ff8a8a';
+                ctx.beginPath(); ctx.moveTo(13, 0); ctx.lineTo(-4, -7); ctx.lineTo(-4, 7); ctx.closePath(); ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        var col = e.flash > 0 ? '#ffffff' : e.def.color;
+        if (e.stun > 0) col = e.flash > 0 ? '#ffffff' : '#8fd3ff';
+
+        var enemyArt = e.type === 'shade' ? 'enemy_shade' : e.type === 'lancer' ? 'enemy_lancer' :
+            e.type === 'caster' ? 'enemy_caster' : 'enemy_brute';
+        if (e.boss) drawBossBody(e, col);
+        else if (drawHadesAsset(enemyArt, e.x, e.y - 3, e.r * 3.8, e.r * 3.8, 1,
+                                e.kx < -1 || (Math.abs(e.kx) <= 1 && s.p.x < e.x))) {
+            // 武器與材質由正式拆件呈現；預警與血條仍讀原本戰鬥狀態另畫。
+        } else if (e.type === 'shade') {
+            ctx.fillStyle = col;
+            ctx.beginPath();
+            ctx.arc(e.x, e.y - 2, e.r, Math.PI, 0);
+            ctx.lineTo(e.x + e.r, e.y + e.r * 0.7 + Math.sin(e.anim) * 1.5);
+            ctx.lineTo(e.x, e.y + e.r * 0.3);
+            ctx.lineTo(e.x - e.r, e.y + e.r * 0.7 - Math.sin(e.anim) * 1.5);
+            ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#101820';
+            ctx.fillRect(e.x - 4, e.y - 4, 2.5, 3); ctx.fillRect(e.x + 1.5, e.y - 4, 2.5, 3);
+        } else if (e.type === 'lancer') {
+            // 槍兵：兜盔、披風、盾與長矛四個辨識點，取代難以判讀的單一三角形。
+            ctx.fillStyle = col;
+            ctx.beginPath();
+            ctx.moveTo(e.x, e.y - e.r * 0.35);
+            ctx.lineTo(e.x + e.r * 0.85, e.y + e.r);
+            ctx.lineTo(e.x - e.r * 0.85, e.y + e.r);
+            ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#d9c9a7';
+            ctx.beginPath(); ctx.arc(e.x, e.y - e.r * 0.6, e.r * 0.48, 0, RE.TAU); ctx.fill();
+            ctx.fillStyle = col;
+            ctx.beginPath(); ctx.arc(e.x, e.y - e.r * 0.78, e.r * 0.58, Math.PI, RE.TAU); ctx.fill();
+            ctx.strokeStyle = '#8fa7bc'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.ellipse(e.x - e.r * 0.62, e.y + 1, e.r * 0.48, e.r * 0.68, -0.2, 0, RE.TAU); ctx.stroke();
+            // 矛
+            var la = e.state === 'idle' ? Math.atan2(s.p.y - e.y, s.p.x - e.x) : e.telegraph;
+            ctx.strokeStyle = '#f0dfb8'; ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(e.x - Math.cos(la) * 7, e.y - Math.sin(la) * 7);
+            ctx.lineTo(e.x + Math.cos(la) * (e.r + 16), e.y + Math.sin(la) * (e.r + 16));
+            ctx.stroke();
+        } else if (e.type === 'caster') {
+            // 詠咒者：長袍與發光面罩，遠距離也不會再像一顆紫色球。
+            ctx.fillStyle = col;
+            ctx.beginPath();
+            ctx.moveTo(e.x, e.y - e.r);
+            ctx.quadraticCurveTo(e.x + e.r, e.y - 3, e.x + e.r * 0.78, e.y + e.r);
+            ctx.lineTo(e.x - e.r * 0.78, e.y + e.r);
+            ctx.quadraticCurveTo(e.x - e.r, e.y - 3, e.x, e.y - e.r);
+            ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#291b3d';
+            ctx.beginPath(); ctx.arc(e.x, e.y - e.r * 0.35, e.r * 0.46, 0, RE.TAU); ctx.fill();
+            ctx.fillStyle = '#f0e6ff';
+            ctx.fillRect(e.x - 4, e.y - e.r * 0.45, 3, 2); ctx.fillRect(e.x + 1, e.y - e.r * 0.45, 3, 2);
+            ctx.save();
+            ctx.shadowBlur = 10; ctx.shadowColor = '#c08cff';
+            ctx.fillStyle = '#f0e6ff';
+            var oa = e.anim * 2;
+            ctx.beginPath(); ctx.arc(e.x + Math.cos(oa) * (e.r + 7), e.y + Math.sin(oa) * (e.r + 7), 3, 0, RE.TAU); ctx.fill();
+            ctx.restore();
+        } else {
+            // 重裝兵：寬肩、石拳與面甲，讓近戰威脅和槍兵形成清楚輪廓差。
+            ctx.fillStyle = col;
+            RE.Draw.roundRect(ctx, e.x - e.r, e.y - e.r * 0.8, e.r * 2, e.r * 1.8, 6); ctx.fill();
+            ctx.beginPath(); ctx.arc(e.x - e.r, e.y + 2, e.r * 0.42, 0, RE.TAU); ctx.fill();
+            ctx.beginPath(); ctx.arc(e.x + e.r, e.y + 2, e.r * 0.42, 0, RE.TAU); ctx.fill();
+            ctx.fillStyle = '#2a3038';
+            RE.Draw.roundRect(ctx, e.x - e.r * 0.58, e.y - e.r * 0.34, e.r * 1.16, 5, 2); ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(e.x - 4, e.y + 2); ctx.lineTo(e.x + 2, e.y + 8); ctx.lineTo(e.x - 1, e.y + 13); ctx.stroke();
+        }
+
+        // 血條（王另外畫大條）
+        if (!e.boss && e.hp < e.maxHp) {
+            ctx.fillStyle = 'rgba(0,0,0,0.55)';
+            ctx.fillRect(e.x - e.r, e.y - e.r - 9, e.r * 2, 3);
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fillRect(e.x - e.r, e.y - e.r - 9, e.r * 2 * (e.hp / e.maxHp), 3);
+        }
+        ctx.restore();
+    }
+}
+
+function drawBossBody(e, col) {
+    ctx.save();
+    ctx.shadowBlur = 14; ctx.shadowColor = e.def.color;
+    ctx.fillStyle = col;
+    if (e.kind === 'twin') {
+        var mate = null;
+        for (var i = 0; i < s.enemies.length; i++) {
+            if (s.enemies[i] !== e && s.enemies[i].boss && s.enemies[i].kind === 'twin') {
+                mate = s.enemies[i]; break;
+            }
+        }
+        if (mate && e.tag === 1) { ctx.restore(); return; }
+        if (mate) {
+            drawHadesAsset('boss_twin', (e.x + mate.x) / 2, (e.y + mate.y) / 2, 150, 150);
+        } else {
+            // 雙生王只剩一人時改回單體槍兵，讓實際命中位置仍可判讀。
+            drawHadesAsset('enemy_lancer', e.x, e.y, e.r * 3.8, e.r * 3.8, 1, s.p.x < e.x);
+        }
+        ctx.restore(); return;
+    }
+    if (drawHadesAsset('boss_' + e.kind, e.x, e.y - 3, e.r * 3.5, e.r * 3.5, 1, s.p.x < e.x)) {
+        if (e.kind === 'core' && e.state === 'vent') {
+            ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
+            ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 4, 0, RE.TAU); ctx.stroke();
+            ctx.setLineDash([]);
+            RE.Draw.text(ctx, '過熱', e.x, e.y - e.r - 22, { size: 15, align: 'center', color: '#ffffff' });
+        }
+        ctx.restore(); return;
+    }
+    if (e.kind === 'core') {
+        ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, RE.TAU); ctx.fill();
+        // 破綻期一定要看得出來，否則玩家學不到「這時候上去打」
+        var venting = e.state === 'vent';
+        ctx.strokeStyle = venting ? '#ffffff' : '#ff9349';
+        ctx.lineWidth = venting ? 2 : 3;
+        ctx.setLineDash(venting ? [5, 5] : []);
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.r + (venting ? 4 : 8 + Math.sin(e.anim) * 3), 0, RE.TAU);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        if (venting) {
+            RE.Draw.text(ctx, '過熱', e.x, e.y - e.r - 22, { size: 15, align: 'center', color: '#ffffff' });
+        }
+    } else if (e.kind === 'mirror') {
+        // 玩家的鏡像：形狀刻意跟玩家一樣
+        ctx.beginPath();
+        ctx.moveTo(e.x, e.y - e.r - 4);
+        ctx.lineTo(e.x + e.r, e.y + e.r);
+        ctx.lineTo(e.x - e.r, e.y + e.r);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#101820';
+        ctx.beginPath(); ctx.arc(e.x, e.y - e.r * 0.4, e.r * 0.6, 0, RE.TAU); ctx.fill();
+    } else {
+        RE.Draw.roundRect(ctx, e.x - e.r, e.y - e.r, e.r * 2, e.r * 2, 6); ctx.fill();
+        ctx.fillStyle = '#101820';
+        ctx.fillRect(e.x - e.r * 0.55, e.y - e.r * 0.35, e.r * 0.4, 4);
+        ctx.fillRect(e.x + e.r * 0.15, e.y - e.r * 0.35, e.r * 0.4, 4);
+    }
+    ctx.restore();
+}
+
+function drawShots() {
+    for (var i = 0; i < s.shots.length; i++) {
+        var b = s.shots[i];
+        ctx.save();
+        ctx.shadowBlur = 10; ctx.shadowColor = b.color;
+        ctx.fillStyle = b.color;
+        ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, RE.TAU); ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.4, 0, RE.TAU); ctx.fill();
+        ctx.restore();
+    }
+}
+
+function drawFlames() {
+    for (var i = 0; i < s.flames.length; i++) {
+        var f = s.flames[i];
+        var a = RE.clamp(f.life / f.max, 0, 1);
+        if (!drawHadesAsset('ground_flame', f.x, f.y, f.r * 2.8, f.r * 2.8, a * 0.76)) {
+            ctx.save();
+            ctx.globalAlpha = a * 0.5;
+            ctx.fillStyle = '#ff9349';
+            ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, RE.TAU); ctx.fill();
+            ctx.restore();
+        }
+    }
+}
+
+function drawWaves() {
+    for (var i = 0; i < s.waves.length; i++) {
+        var w = s.waves[i];
+        var a = 1 - w.r / w.max;
+        ctx.save();
+        ctx.globalAlpha = RE.clamp(a, 0, 1) * 0.8;
+        ctx.strokeStyle = w.hostile ? '#ff9349' : '#7ee7c7';
+        ctx.lineWidth = 3 + a * 3;
+        ctx.beginPath(); ctx.arc(w.x, w.y, w.r, 0, RE.TAU); ctx.stroke();
+        ctx.restore();
+    }
+}
+
+function drawWraiths() {
+    for (var i = 0; i < s.wraiths.length; i++) {
+        var w = s.wraiths[i];
+        ctx.save();
+        ctx.shadowBlur = 12; ctx.shadowColor = '#ff7bb0';
+        ctx.fillStyle = '#ff7bb0';
+        ctx.beginPath(); ctx.arc(w.x, w.y, 5, 0, RE.TAU); ctx.fill();
+        ctx.restore();
+    }
+}
+
+function drawHUD() {
+    var p = s.p;
+    /* 560px 畫布在 390px 手機視窗會縮到約 0.64 倍；原本 9～14px 的
+       關鍵 HUD 會落到 5.7～8.9px。只放大生命、衝刺、房間與祝福數字，
+       讓玩家能讀到決策資訊，不改動場景比例與年代感。 */
+    // 生命條
+    var bw = 150;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    RE.Draw.roundRect(ctx, 10, 6, bw, 11, 5); ctx.fill();
+    var pct = RE.clamp(p.hp / p.maxHp, 0, 1);
+    ctx.fillStyle = pct < 0.35 ? '#ff6b6b' : '#7ee7c7';
+    RE.Draw.roundRect(ctx, 10, 6, Math.max(3, bw * pct), 11, 5); ctx.fill();
+    // 數字要有描邊。深色字畫在血條上，血量掉到一半後右半就落在空槽的深色底上看不見了
+    RE.Draw.text(ctx, Math.ceil(p.hp) + ' / ' + p.maxHp, 10 + bw / 2, 10,
+        { size: 16, align: 'center', color: '#ffffff', strokeWidth: 3 });
+
+    // 衝刺冷卻
+    var dw = 54;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    RE.Draw.roundRect(ctx, 168, 6, dw, 11, 5); ctx.fill();
+    var dp = 1 - RE.clamp(p.dashCd / dashCdTotal(), 0, 1);
+    ctx.fillStyle = dp >= 1 ? '#8fd3ff' : '#4a6b82';
+    RE.Draw.roundRect(ctx, 168, 6, Math.max(3, dw * dp), 11, 5); ctx.fill();
+    RE.Draw.text(ctx, '衝刺', 168 + dw / 2, 10, { size: 15, align: 'center', color: '#08121a', stroke: false });
+
+    // 這 0.3 秒是本作最重要、也最容易只靠文字而錯過的操作窗口。
+    // 常駐顯示因果鏈，窗口成立時再轉成明確的行動提示。
+    var activeDashAttack = typeof p.dashUsedT === 'number' && p.dashUsedT > 0;
+    var cw = 190, cx = W / 2 - cw / 2, cy = 28;
+    ctx.fillStyle = activeDashAttack ? 'rgba(255,209,102,0.92)' : 'rgba(5,10,17,0.58)';
+    RE.Draw.roundRect(ctx, cx, cy, cw, 18, 7); ctx.fill();
+    if (activeDashAttack) {
+        var left = RE.clamp(p.dashUsedT / PL.dashAtkWindow, 0, 1);
+        ctx.fillStyle = 'rgba(255,255,255,0.46)';
+        RE.Draw.roundRect(ctx, cx + 2, cy + 15, (cw - 4) * left, 2, 1); ctx.fill();
+    }
+    RE.Draw.text(ctx, activeDashAttack ? '現在攻擊：衝刺斬！' : 'B 衝刺  →  A 強化斬', W / 2, cy + 2,
+        { size: 15, align: 'center', color: activeDashAttack ? '#2b1b05' : '#b9c9d8', stroke: false });
+
+    // 進度：第幾層第幾間
+    var cfg = layerCfg();
+    RE.Draw.text(ctx, cfg.name + '　' + (s.room === 2 ? '王房' : '第 ' + (s.room + 1) + ' 間'),
+        W - 12, 9, { size: 15, align: 'right', color: '#ffd166' });
+
+    // 祝福圖示列
+    var bx = 12, by = H - 16;
+    for (var k in s.boons) {
+        if (!s.boons[k]) continue;
+        var gk = BOONS[k].god, g = GODS[gk];
+        var fav = favor(gk) > 1;
+        ctx.save();
+        if (fav) { ctx.shadowBlur = 9; ctx.shadowColor = g.color; }   // 受青睞的河神會發光
+        ctx.fillStyle = g.color;
+        ctx.beginPath(); ctx.arc(bx, by, fav ? 6.5 : 5, 0, RE.TAU); ctx.fill();
+        ctx.restore();
+        RE.Draw.text(ctx, String(s.boons[k]), bx, by - 4, { size: 15, align: 'center', color: '#0b0f16', stroke: false });
+        bx += 15;
+    }
+    for (var dk in s.duos) {
+        ctx.fillStyle = DUOS[dk].color;
+        RE.Draw.roundRect(ctx, bx - 5, by - 5, 10, 10, 2); ctx.fill();
+        bx += 15;
+    }
+
+    // 王的血條
+    if (s.room === 2 && s.enemies.length) {
+        var tot = 0, cur = 0;
+        for (var i = 0; i < s.enemies.length; i++) {
+            if (!s.enemies[i].boss) continue;
+            tot += s.enemies[i].maxHp; cur += Math.max(0, s.enemies[i].hp);
+        }
+        if (tot > 0) {
+            var w2 = 300, x2 = (W - w2) / 2;
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            RE.Draw.roundRect(ctx, x2, H - 42, w2, 12, 6); ctx.fill();
+            ctx.fillStyle = '#ffd166';
+            RE.Draw.roundRect(ctx, x2, H - 42, Math.max(3, w2 * (cur / tot)), 12, 6); ctx.fill();
+            RE.Draw.text(ctx, layerCfg().boss.name, W / 2, H - 38, { size: 15, align: 'center', color: '#2a1c06', stroke: false });
+        }
+    }
+}
+
+// ---------- 選門畫面 ----------
+var DOOR_INFO = {
+    boon:  { label: '河神的祝福', desc: '三選一，可疊級', color: '#ffd166' },
+    heal:  { label: '靜水', desc: '回復三成生命', color: '#7ee7c7' },
+    shard: { label: '記憶碎片', desc: '死後仍會留下', color: '#c9b3ff' }
+};
+
+function drawDoors() {
+    ctx.save();
+    ctx.fillStyle = 'rgba(6,10,16,0.82)';
+    ctx.fillRect(0, 0, W, H);
+    RE.Draw.text(ctx, '選一道門', W / 2, 60, { size: 22, align: 'center', color: '#ffd166' });
+    RE.Draw.text(ctx, '門上寫的是「下一間房給你什麼」——你選的是獎勵，不是路線',
+        W / 2, 92, { size: 15, align: 'center', color: '#9fb3aa' });
+
+    for (var i = 0; i < s.doors.length; i++) {
+        var info = DOOR_INFO[s.doors[i].kind];
+        var dw = 170, dh = 168;
+        var x = W / 2 + (i === 0 ? -dw - 14 : 14), y = 130;
+        var sel = s.doorSel === i;
+        ctx.fillStyle = sel ? '#1c2634' : '#141a24';
+        RE.Draw.roundRect(ctx, x, y, dw, dh, 10); ctx.fill();
+        ctx.strokeStyle = info.color;
+        ctx.lineWidth = sel ? 3.5 : 1.5;
+        ctx.stroke();
+
+        // 門的圖示
+        ctx.save();
+        ctx.shadowBlur = sel ? 16 : 6; ctx.shadowColor = info.color;
+        ctx.fillStyle = info.color;
+        RE.Draw.roundRect(ctx, x + dw / 2 - 22, y + 26, 44, 56, 20); ctx.fill();
+        ctx.restore();
+
+        RE.Draw.text(ctx, info.label, x + dw / 2, y + 96, { size: 16, align: 'center', color: '#fff8e7' });
+        RE.Draw.text(ctx, info.desc, x + dw / 2, y + 120, { size: 15, align: 'center', color: '#bccbc4', stroke: false });
+        RE.Draw.text(ctx, i === 0 ? '←' : '→', x + dw / 2, y + 142, { size: 15, align: 'center', color: info.color });
+    }
+    RE.Draw.text(ctx, '← → 選擇　Z / A 進門', W / 2, H - 40, { size: 15, align: 'center', color: '#9fb3aa' });
+    ctx.restore();
+}
+
+// ---------- 祝福選單 ----------
+function drawBoonMenu() {
+    ctx.save();
+    ctx.fillStyle = 'rgba(6,10,16,0.86)';
+    ctx.fillRect(0, 0, W, H);
+    RE.Draw.text(ctx, '河神給了你三個選擇', W / 2, 46, { size: 20, align: 'center', color: '#ffd166' });
+    RE.Draw.text(ctx, '← → 選擇　Z / A 收下', W / 2, 72, { size: 15, align: 'center', color: '#9fb3aa' });
+
+    var cw = 166, gap = 12;
+    var total = s.boonChoices.length * cw + (s.boonChoices.length - 1) * gap;
+    var sx = (W - total) / 2;
+    for (var i = 0; i < s.boonChoices.length; i++) {
+        var c = s.boonChoices[i];
+        var x = sx + i * (cw + gap), y = 100;
+        var sel = s.boonSel === i;
+        var isDuo = !!c.isDuo;
+        var col = isDuo ? DUOS[c.key].color : GODS[BOONS[c.key].god].color;
+        var title = isDuo ? DUOS[c.key].name : BOONS[c.key].name + ' Lv.' + (c.lv + 1);
+        var who = isDuo ? (GODS[DUOS[c.key].gods[0]].name + ' × ' + GODS[DUOS[c.key].gods[1]].name)
+                        : GODS[BOONS[c.key].god].name;
+        var desc = isDuo ? DUOS[c.key].desc : BOONS[c.key].eff(c.lv + 1);
+
+        ctx.fillStyle = sel ? '#1b2432' : '#131a23';
+        RE.Draw.roundRect(ctx, x, y, cw, 190, 10); ctx.fill();
+        ctx.strokeStyle = col; ctx.lineWidth = sel ? 3.5 : 1.5; ctx.stroke();
+
+        if (!drawHadesAsset('boon_sigil', x + cw / 2, y + 34, 42, 42, sel ? 1 : 0.72)) {
+            ctx.save();
+            ctx.shadowBlur = sel ? 14 : 4; ctx.shadowColor = col;
+            ctx.fillStyle = col;
+            ctx.beginPath(); ctx.arc(x + cw / 2, y + 34, 15, 0, RE.TAU); ctx.fill();
+            ctx.restore();
+        }
+
+        RE.Draw.text(ctx, who, x + cw / 2, y + 60, { size: 15, align: 'center', color: col });
+        RE.Draw.text(ctx, title, x + cw / 2, y + 84, { size: 15, align: 'center', color: '#fff8e7' });
+        if (isDuo) {
+            RE.Draw.text(ctx, '聯名祝福', x + cw / 2, y + 168, { size: 15, align: 'center', color: col });
+        } else {
+            // 青睞進度要看得見，玩家才知道「再拿一個就專精了」
+            var g = BOONS[c.key].god, tot = godTotal(g) + 1;
+            RE.Draw.text(ctx,
+                tot >= FAVOR_NEED ? '★ 青睞（效果 ×' + FAVOR_MUL + '）' : GODS[g].name + '眷顧 ' + tot + '/' + FAVOR_NEED,
+                x + cw / 2, y + 168, { size: 15, align: 'center', color: tot >= FAVOR_NEED ? '#ffd166' : '#8b98a5' });
+        }
+
+        // 說明自動換行
+        var line = '', ly = y + 112;
+        for (var w = 0; w < desc.length; w++) {
+            line += desc[w];
+            if (line.length >= 9) {
+                RE.Draw.text(ctx, line, x + cw / 2, ly, { size: 15, align: 'center', color: '#bccbc4', stroke: false });
+                line = ''; ly += 18;
+            }
+        }
+        if (line) RE.Draw.text(ctx, line, x + cw / 2, ly, { size: 15, align: 'center', color: '#bccbc4', stroke: false });
+    }
+    ctx.restore();
+}
+
+// ---------- 渡口 ----------
+function drawHub() {
+    // 河
+    ctx.fillStyle = '#101a26';
+    ctx.fillRect(0, H - 120, W, 120);
+    for (var i = 0; i < 7; i++) {
+        var yy = H - 110 + i * 15;
+        ctx.strokeStyle = 'rgba(143,211,255,' + (0.05 + i * 0.012) + ')';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        for (var xx = 0; xx <= W; xx += 12) {
+            var oy = Math.sin(xx * 0.03 + s.lineT * 1.2 + i) * 2.5;
+            if (xx === 0) ctx.moveTo(xx, yy + oy); else ctx.lineTo(xx, yy + oy);
+        }
+        ctx.stroke();
+    }
+
+    // 對話
+    RE.Draw.text(ctx, s.line.who, 26, 24, { size: 15, color: '#ffd166' });
+    var lines = s.line.text.split('\n');
+    for (var l = 0; l < lines.length; l++) {
+        // 打字機效果：讓玩家真的會去讀
+        var full = lines[l];
+        var shown = full.substring(0, Math.max(0, Math.floor(s.lineT * 26) - l * 16));
+        RE.Draw.text(ctx, shown, 26, 50 + l * 24, { size: 15, color: '#e8f4ff', stroke: false });
+    }
+
+    RE.Draw.text(ctx, '死亡 ' + meta.deaths + ' 次　記憶碎片 ' + meta.shards + ' 枚　燈油剩 ' + s.oil + ' 趟',
+        26, 112, { size: 15, color: '#9fb3aa', stroke: false });
+    if (meta.cleared) {
+        RE.Draw.text(ctx, '★ 你曾經走出去過一次', W - 26, 112, { size: 15, align: 'right', color: '#ffd166' });
+    }
+
+    // 永久強化清單
+    var list = hubOptions();
+    var y0 = 140;
+    for (var i2 = 0; i2 < list.length; i2++) {
+        var o = list[i2];
+        var sel = s.hubSel === i2;
+        var y = y0 + i2 * 30;
+        if (sel) {
+            ctx.fillStyle = 'rgba(255,209,102,0.14)';
+            RE.Draw.roundRect(ctx, 20, y - 11, W - 40, 26, 6); ctx.fill();
+        }
+        if (o.kind === 'go') {
+            RE.Draw.text(ctx, '▶　出發（燈油 −1）', 32, y, { size: 15, color: sel ? '#ffd166' : '#cfe3d8' });
+        } else {
+            var u = UPGRADES[o.key];
+            var cost = upCost(o.key);
+            var afford = meta.shards >= cost;
+            RE.Draw.text(ctx, u.name + '　Lv.' + upLv(o.key) + '/' + u.max, 32, y,
+                { size: 15, color: sel ? '#ffd166' : '#cfe3d8' });
+            RE.Draw.text(ctx, u.desc, 210, y, { size: 15, color: '#9fb3aa', stroke: false });
+            RE.Draw.text(ctx, '碎片 ' + cost, W - 32, y,
+                { size: 15, align: 'right', color: afford ? '#c9b3ff' : '#6b7280' });
+        }
+    }
+    P.draw(ctx);
+    FT.draw(ctx);
+    RE.Draw.text(ctx, '↑ ↓ 選擇　Z / A 確認', W / 2, H - 18, { size: 15, align: 'center', color: '#9fb3aa' });
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '死亡不會結束遊戲——你會回到渡口，船夫會多說一句話，你也會帶回記憶碎片。' +
+          '燈油有六趟。核心操作是「衝刺之後馬上攻擊」。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 天際奔逃</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   天際奔逃 — 致敬 Canabalt (Adam Saltsman, 2009)
+   --------------------------------------------------------------------------
+   單鍵跑酷的原型。你只能跳，而且**跑速會自己愈來愈快**。
+
+   這款遊戲最重要的技術問題只有一個：
+   **程序生成的地形，怎麼保證一定跳得過去？**
+
+   如果只是隨機決定「下一棟樓多高、間隔多寬」，那麼遲早會生出一個
+   物理上跳不過的組合，玩家會死得莫名其妙——而且他永遠不知道
+   是自己太爛還是遊戲不講理。這在無盡跑酷裡是致命的：
+   **玩家必須永遠相信「我死是因為我沒跳好」。**
+
+   所以這一版的生成器每產生一棟樓，都會先用**當下的實際物理**
+   （目前跑速、重力、跳躍初速）算出跳躍包絡線：
+     · 從起跳點到落點的最大水平距離
+     · 在那個水平距離內最多能爬升多少
+   然後只在包絡線內取值，而且留 15% 的餘裕。
+   於是「跳不過去」這件事永遠不可能發生——
+   死掉一定是因為你跳早了、跳晚了、或是跳太短。
+
+   附帶效果很有意思：因為跑速一直在漲，包絡線也一直在變，
+   同一段地形在後期反而變得好跳（衝得遠），
+   但玩家的**反應時間**卻愈來愈短。難度來源從「跳得到嗎」
+   自然過渡成「來得及反應嗎」——完全不需要換一套規則。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'canabalt',
+    title: '天際奔逃',
+    tagline: '只有一個跳鍵，而地形永遠保證跳得過去',
+    original: 'Canabalt (Adam Saltsman, 2009)',
+    decade: '00s', year: 2009, platform: 'Flash / iOS', genre: '單鍵跑酷',
+    developer: 'Adam Saltsman', bgm: '00s',
+    width: 480, height: 320,
+    hud: [
+        { key: 'dist', label: '距離', init: '0m' },
+        { key: 'best', label: '最遠', init: '0m' },
+        { key: 'speed', label: '速度', init: '0' },
+        { key: 'score', label: 'SCORE' }
+    ],
+    touch: 'none',
+    controls: [
+        { keys: ['空白鍵 / A'], desc: '跳。按愈久跳愈高，這是你唯一的操作' },
+        { keys: ['滑鼠 / 觸控'], desc: '按住畫面跳' },
+        { keys: ['P'], desc: '暫停' }
+    ],
+    howto: '<strong>你只能跳</strong>：按住較高、放開下墜；角色會自動加速。' +
+           '撞箱會減速爭取反應時間，程序地形保證有路可跳。',
+    lesson: {
+        verb: '在自動奔跑中判斷起跳時機與按住長度，用短跳落上窄屋頂、用長跳跨過寬缺口。',
+        innovation: '把平台遊戲濃縮成一個按鍵，仍以可變跳高、持續加速、程序樓頂與撞箱減速保留風險管理，而不是把簡化等同於沒有深度。',
+        mission: '在前兩棟樓各做一次點放短跳與按住長跳，觀察落點差；速度升高後刻意撞一只箱子，比較 HUD 速度下降前後留給下一次起跳的反應時間。',
+        evolution: '《Sonic》讓玩家主動累積並保存速度；《Canabalt》拿掉加速鍵，只留下高速下的跳躍判斷；《Flappy Bird》再把長短按壓改成離散拍翼。',
+        reflection: '如果程序生成偶爾產生物理上不可能跳過的缺口，玩家還會把死亡歸因於自己的判斷嗎？'
+    },
+    design: '《Canabalt》用一個按鍵證明，刪除動詞不必刪除決策。角色自動向前且持續加速，玩家只控制何時起跳與按多久；同一個缺口因此同時考驗看見、預判與放開。' +
+            '程序生成不能只抽樓寬與間距，還必須尊重當下速度、重力與跳躍包絡線，否則無盡模式會把系統的錯誤偽裝成玩家失誤。' +
+            '箱子碰撞只讓角色減速而不立即死亡，反而形成一個可選的難度調節器：速度降低會損失分數效率，卻換回更長的反應窗。' +
+            '單色剪影、遠景災難與碎玻璃把低成本 Flash 畫面轉成強烈的逃亡情境，短開場則在幾秒內建立「不要停」的理由。' +
+            '<strong>這款遊戲的核心不是一直跳，而是在速度不斷改變時重新估算同一顆按鍵。</strong>' +
+            '對照本站《Sonic》的主動加速與《Flappy Bird》的固定拍翼，可看出單鍵設計仍能選擇不同的時間語法。',
+    history: 'Adam Saltsman 為 2009 年 Experimental Gameplay Project 的「Bare Minimum」主題製作《Canabalt》；GDC 回顧記錄開發約五個漫長日子，視覺只使用六種顏色與一個按鍵。' +
+             'Saltsman 後來表示，他一開始就是想做一款真正好玩的單鍵遊戲，完成品反而比原先想像更簡單。' +
+             '團隊把難度由單純「跑得越遠越難」改成跟跑速連動，讓撞上障礙造成的減速也能調節壓力。' +
+             '免費完整 Flash 版與付費 iOS 版並存，GDC 當時記錄上架五個月售出 115,000 份；這種瀏覽器傳播與行動版變現並行的做法，也反映 00s 獨立遊戲的跨平台轉折。',
+    sources: [
+        { label: 'Game Developer：Adam Saltsman 談 Canabalt 的單鍵目標', url: 'https://www.gamedeveloper.com/design/lessons-from-a-master-adam-saltsman' },
+        { label: 'GDC 2010 回顧：五日開發、六色與速度難度', url: 'https://www.engadget.com/2010-03-11-gdc-2010-canabalt-postmortem.html' },
+        { label: 'Adam Saltsman：Canabalt 官方頁面', url: 'https://adamatomic.com/canabalt/' }
+    ]
+});
+
+var ctx = G.ctx, VW = G.width, VH = G.height;
+var P = new RE.Particles(360);
+var FT = new RE.FloatText();
+
+// 第九批正式候選美術：保留 2009 Flash 剪影媒材，失敗時退回原程序圖形。
+var CANABALT_ART = { image: new Image(), manifest: null };
+CANABALT_ART.image.src = '../../assets/games/canabalt/flash-silhouette-atlas.png';
+fetch('../../assets/games/canabalt/flash-silhouette-manifest.json')
+    .then(function (r) { return r.json(); })
+    .then(function (m) { CANABALT_ART.manifest = m; })
+    .catch(function () { CANABALT_ART.manifest = null; });
+
+function drawCanabaltAsset(name, x, y, w, h, flip, rotation, alpha) {
+    var m = CANABALT_ART.manifest;
+    if (!m || !m.assets || !m.assets[name] || !CANABALT_ART.image.complete ||
+        !CANABALT_ART.image.naturalWidth) return false;
+    var a = m.assets[name];
+    ctx.save();
+    ctx.translate(x, y);
+    if (rotation) ctx.rotate(rotation);
+    if (flip) ctx.scale(-1, 1);
+    if (alpha !== undefined) ctx.globalAlpha *= alpha;
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(CANABALT_ART.image, a.x, a.y, a.w, a.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+}
+
+// ======================================================================
+// 手感參數
+// ======================================================================
+/* 完走距離。跑速從 180 漲到上限 470（accel 5.2／秒），約 56 秒到頂，
+   期間平均約 325px/s、距離換算除以 10，所以到頂時大約 180m。
+   WIN_DIST 訂在 600m：到頂之後還要在最高速下再維持約 90 秒。 */
+var WIN_DIST = 600;
+
+var TUNE = {
+    speed0: 180, speedMax: 470, accel: 5.2,     // 跑速自己漲
+    gravity: 1500, jumpV: -520, jumpCut: 0.38,
+    playerW: 18, playerH: 30,
+    minGap: 26, minTop: 120, maxTop: 258,
+    // 撞箱子減速。這是設計上的「喘息機會」，但**密度與幅度都不能大**：
+    // 第一版是 42% 的樓放箱子、撞一下砍到 72%，結果機器人跑滿兩分鐘
+    // 速度還停在起始值附近——整條難度曲線靠速度上升，箱子太密就把曲線壓平了。
+    slowOnCrate: 0.84, crateChance: 0.15
+};
+
+// ======================================================================
+// 狀態
+// ======================================================================
+var s = null;
+
+function reset() {
+    s = {
+        dist: 0, score: 0, speed: TUNE.speed0,
+        bldgs: [], camX: 0, dead: false, deadT: 0, over: false, won: false,
+        best: RE.Save.bestScore('canabalt') || 0,
+        shake: 0, crates: [], nextX: 0, jumping: false, hintT: 3.4,
+        jumpFx: 0, landFx: 0, glassFx: 0, glassX: 0, glassY: 0,
+        pointerDownSeen: false
+    };
+    P.clear(); FT.clear();
+    G.setStat('score', 0);
+    G.setStat('best', Math.round(s.best) + 'm');
+    G.setStat('speed', '0');
+
+    // 起始大樓：夠長，讓玩家有時間反應第一個缺口
+    s.bldgs.push({ x: 0, w: 420, top: 210 });
+    s.nextX = 420;
+    for (var i = 0; i < 6; i++) genNext();
+
+    s.p = { x: 90, y: 210 - TUNE.playerH, vy: 0, grounded: true, anim: 0, hold: 0 };
+}
+
+/**
+ * 跳躍包絡線：用**當下的實際物理**算出「這一跳最遠能到多遠、最多能爬多高」。
+ * 這是整款遊戲的技術核心——生成器只在這個範圍內取值，
+ * 所以永遠不會生出跳不過去的地形。
+ */
+function envelope(fromTop) {
+    var v = TUNE.jumpV, g = TUNE.gravity, sp = s.speed;
+    // 滿跳的滯空時間：上升 + 下降到同高度
+    var tUp = -v / g;
+    var apex = (v * v) / (2 * g);                 // 最高能爬多少
+    // 落到「比起跳點低 drop」的地方所需時間（drop 可正可負）
+    function airTime(drop) {
+        // y(t) = v*t + 0.5*g*t^2 = drop  → 解正根
+        var a = 0.5 * g, b = v, c = -drop;
+        var disc = b * b - 4 * a * c;
+        if (disc < 0) return tUp * 2;
+        return (-b + Math.sqrt(disc)) / (2 * a);
+    }
+    return {
+        apex: apex,
+        reachFor: function (drop) { return sp * airTime(drop); }
+    };
+}
+
+/** 生成下一棟樓。高度與間隔一律限制在包絡線的 85% 以內 */
+function genNext() {
+    var prev = s.bldgs[s.bldgs.length - 1];
+    var env = envelope(prev.top);
+
+    // 先決定高度差：往上最多只能到 apex 的 70%（要留水平距離）
+    var maxRise = env.apex * 0.70;
+    var rise = RE.rand(-70, maxRise);
+    var top = RE.clamp(prev.top - rise, TUNE.minTop, TUNE.maxTop);
+    var drop = top - prev.top;                    // 正 = 新樓比較低（好跳）
+
+    // 再決定間隔：不能超過「在這個高度差下」實際跳得到的距離
+    var maxGap = env.reachFor(drop) * 0.85 - TUNE.playerW;
+    maxGap = RE.clamp(maxGap, TUNE.minGap, 260);
+    var gap = RE.rand(TUNE.minGap, maxGap);
+
+    var w = RE.rand(120, 260);
+    var b = { x: prev.x + prev.w + gap, w: w, top: top, windows: [] };
+    for (var i = 0; i < Math.floor(w / 26); i++) {
+        b.windows.push({ x: 8 + i * 26, lit: Math.random() < 0.45 });
+    }
+    s.bldgs.push(b);
+    s.nextX = b.x + b.w;
+
+    // 障礙箱：放在樓面上，撞到只會減速。**故意不放在邊緣附近**，
+    // 否則玩家會被迫在「剛落地就要立刻起跳」時撞上，那就變成不講理了。
+    if (w > 170 && Math.random() < TUNE.crateChance) {
+        s.crates.push({ x: b.x + RE.rand(60, w - 70), y: top, hit: false });
+    }
+    return b;
+}
+
+function groundUnder(x) {
+    for (var i = 0; i < s.bldgs.length; i++) {
+        var b = s.bldgs[i];
+        if (x >= b.x && x <= b.x + b.w) return b.top;
+    }
+    return null;
+}
+
+// ======================================================================
+// 更新
+// ======================================================================
+/*
+ * 手機 touch 可能在第一個遊戲 frame 前清掉 pressed，但 down 仍維持；
+ * Canabalt 的唯一跳鍵若只看 pressed，就會讓同一個按住手勢偶發完全不跳。
+ * 這裡只在本款補一次 down 邊緣，放開後清回 false，不改共用輸入引擎。
+ */
+function pointerPressFresh() {
+    var pt = RE.Input.pointer;
+    if (!pt.down && !pt.pressed) { s.pointerDownSeen = false; return false; }
+    var fresh = pt.pressed || (pt.down && !s.pointerDownSeen);
+    if (fresh) s.pointerDownSeen = true;
+    return fresh;
+}
+
+function update(dt) {
+    if (!s) return;
+    P.update(dt); FT.update(dt);
+    if (s.hintT > 0) s.hintT -= dt;
+    if (s.shake > 0) s.shake -= dt;
+    if (s.jumpFx > 0) s.jumpFx -= dt;
+    if (s.landFx > 0) s.landFx -= dt;
+    if (s.glassFx > 0) s.glassFx -= dt;
+    var freshPointer = pointerPressFresh();
+
+    if (s.dead) {
+        s.deadT -= dt;
+        var p0 = s.p;
+        p0.vy += TUNE.gravity * dt;
+        p0.y += p0.vy * dt;
+        p0.x += s.speed * 0.4 * dt;
+        if (s.deadT <= 0 && !s.over) { s.over = true; gameOver(); }
+        return;
+    }
+
+    // 跑速自己漲——這是唯一會變的參數，卻撐起整條難度曲線
+    s.speed = Math.min(TUNE.speedMax, s.speed + TUNE.accel * dt);
+    G.setStat('speed', String(Math.round(s.speed)));
+
+    var p = s.p;
+    var holding = RE.Input.down('a') || RE.Input.down('b') || RE.Input.pointer.down;
+
+    if (p.grounded && (RE.Input.buffered('a', 0.12) || freshPointer)) {
+        RE.Input.consumeBuffer('a');
+        p.vy = TUNE.jumpV; p.grounded = false; s.jumping = true;
+        s.jumpFx = 0.18;
+        RetroAudio.play('jump');
+        P.burst(p.x + 9, p.y + TUNE.playerH, 7, { angle: -Math.PI / 2, spread: 1.2,
+            speedMin: 40, speedMax: 130, gravity: 400,
+            colors: ['#c8c8d8', '#8a8a9a'], lifeMin: 0.15, lifeMax: 0.35 });
+    }
+    // 可變跳躍高度：放開就砍掉上升速度
+    if (s.jumping && !holding && p.vy < 0) { p.vy *= TUNE.jumpCut; s.jumping = false; }
+    if (p.vy >= 0) s.jumping = false;
+
+    p.vy += TUNE.gravity * dt;
+    p.y += p.vy * dt;
+    p.x += s.speed * dt;
+    p.anim += dt * (0.6 + s.speed / 300);
+
+    s.camX = p.x - 90;
+    s.dist += s.speed * dt / 10;
+    var shown = Math.round(s.dist);
+    if (shown !== s.distShown) {
+        s.distShown = shown;
+        G.setStat('dist', shown + 'm');
+        s.score = shown * 10;
+        G.setStat('score', s.score);
+        /* 完走條件：跑到 WIN_DIST。
+           跑速從 180 漲到上限 470（accel 5.2／秒），大約 56 秒後到頂；
+           WIN_DIST 訂在「到頂之後還要維持一段」的位置。
+           原本這款沒有全破結局，玩家跑得再遠也只會看到 GAME OVER。 */
+        if (!s.won && shown >= WIN_DIST) { s.won = true; winRun(); return; }
+    }
+
+    // 落地判定
+    var gy = groundUnder(p.x + TUNE.playerW / 2);
+    if (gy !== null && p.vy >= 0 && p.y + TUNE.playerH >= gy && p.y + TUNE.playerH - p.vy * dt <= gy + 4) {
+        p.y = gy - TUNE.playerH; p.vy = 0;
+        if (!p.grounded) {
+            s.landFx = 0.2;
+            RetroAudio.play('land');
+            RE.juice.shake(0.1);
+            P.burst(p.x + 9, gy, 6, { angle: -Math.PI / 2, spread: 1.5,
+                speedMin: 30, speedMax: 120, gravity: 420,
+                colors: ['#9a9aaa', '#6a6a7a'], lifeMin: 0.15, lifeMax: 0.35 });
+        }
+        p.grounded = true;
+    } else if (gy === null || p.y + TUNE.playerH < gy) {
+        p.grounded = false;
+    }
+
+    // 掉出畫面 = 結束
+    if (p.y > VH + 40) die();
+
+    // 箱子：撞到減速（這是設計上的「喘息機會」，不是懲罰）
+    for (var i = 0; i < s.crates.length; i++) {
+        var c = s.crates[i];
+        if (c.hit) continue;
+        if (p.x + TUNE.playerW > c.x && p.x < c.x + 22 &&
+            p.y + TUNE.playerH > c.y - 22 && p.y < c.y) {
+            c.hit = true;
+            s.speed = Math.max(TUNE.speed0, s.speed * TUNE.slowOnCrate);
+            RetroAudio.play('block');
+            RE.juice.hitstop(0.05); RE.juice.shake(0.35);
+            FT.add(c.x - s.camX, c.y - 40, '減速！', { color: '#8fe8ff', size: 12 });
+            P.burst(c.x + 11, c.y - 11, 14, {
+                colors: ['#a8845a', '#7a5c3a', '#c8a878'],
+                speedMin: 60, speedMax: 220, gravity: 600, lifeMin: 0.3, lifeMax: 0.6 });
+        }
+    }
+
+    // 生成與回收
+    while (s.nextX < s.camX + VW * 2) genNext();
+    while (s.bldgs.length && s.bldgs[0].x + s.bldgs[0].w < s.camX - 60) s.bldgs.shift();
+    for (i = s.crates.length - 1; i >= 0; i--) if (s.crates[i].x < s.camX - 60) s.crates.splice(i, 1);
+
+    // 背景玻璃碎裂（純視覺）
+    if (Math.random() < 0.02) {
+        var bx = s.camX + RE.rand(0, VW), by = RE.rand(40, 150);
+        s.glassFx = 0.28; s.glassX = bx - s.camX; s.glassY = by;
+        P.burst(bx - s.camX, by, 5, { colors: ['#bfe4ff', '#ffffff'],
+            speedMin: 30, speedMax: 130, gravity: 500, lifeMin: 0.3, lifeMax: 0.7, glow: true });
+    }
+}
+
+function die() {
+    if (s.dead) return;
+    s.dead = true; s.deadT = 1.0;
+    s.p.vy = -160;
+    RetroAudio.play('gameover');
+    RE.juice.hitstop(0.08); RE.juice.shake(0.5);
+    RE.juice.flash('rgba(255,120,90,0.25)', 0.15);
+}
+
+/** 全破：跑到 WIN_DIST。 */
+function winRun() {
+    var d = Math.round(s.dist);
+    if (d > s.best) { RE.Save.submitScore('canabalt', d); s.best = d; }
+    G.setStat('best', Math.round(s.best) + 'm');
+    RE.juice.flash('rgba(255,209,102,0.45)', 0.35);
+    RE.juice.slowmo(0.3, 1.5);
+    RetroAudio.play('win');
+    G.gameOver({
+        win: true, score: s.score,
+        body: '你跑完了 ' + d + ' 公尺，最後速度 ' + Math.round(s.speed) + '。' +
+              '整段路你只按過一個鍵。' +
+              '<strong>地形是即時生成的，但生成器每一步都會先用你當下的跑速' +
+              '算出跳躍包絡線，只在跳得到的範圍內取值</strong>——' +
+              '所以你剛才那三十幾次死亡，每一次都真的是「我跳早了」或「我跳晚了」。' +
+              '在一款死了就重來的遊戲裡，<strong>讓玩家永遠相信這件事，' +
+              '比任何關卡設計都重要。</strong>'
+    });
+}
+
+function gameOver() {
+    var d = Math.round(s.dist);
+    if (d > s.best) { RE.Save.submitScore('canabalt', d); s.best = d; }
+    G.setStat('best', Math.round(s.best) + 'm');
+    G.gameOver({
+        win: false, score: s.score,
+        body: '你跑了 ' + d + ' 公尺，最後速度 ' + Math.round(s.speed) + '。' +
+              '這一跳跳早了還是跳晚了？<strong>一定是其中之一</strong>——' +
+              '因為地形是即時生成的，但生成器每一步都會先用你當下的跑速' +
+              '算出跳躍包絡線，只在跳得到的範圍內取值。' +
+              '<strong>在一款「死了就重來」的遊戲裡，' +
+              '讓玩家永遠相信「我死是因為我沒跳好」，比任何關卡設計都重要。</strong>'
+    });
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function render() {
+    if (!s || !s.p) return;
+    G.beginWorld();
+    drawSky();
+    ctx.save();
+    ctx.translate(-s.camX, 0);
+    drawBuildings();
+    drawCrates();
+    drawRunnerEffectsWorld();
+    drawPlayer();
+    ctx.restore();
+    drawGlassFx();
+    P.draw(ctx);
+    FT.draw(ctx);
+    G.endWorld();
+    drawHUD();
+    G.postFX({ scanAlpha: 0.06, vignetteStrength: 0.5 });
+}
+
+function drawSky() {
+    var g = ctx.createLinearGradient(0, 0, 0, VH);
+    g.addColorStop(0, '#2a2f42'); g.addColorStop(0.6, '#4a4356'); g.addColorStop(1, '#6a5a5a');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+    // 遠景城市剪影（兩層視差）
+    ctx.fillStyle = 'rgba(20,22,34,0.55)';
+    for (var i = 0; i < 14; i++) {
+        var wx = (i * 84 - s.camX * 0.12) % (VW + 168);
+        if (wx < -84) wx += VW + 168;
+        var h = 70 + ((i * 37) % 60);
+        if (!drawCanabaltAsset('city_far', wx + 31, VH - (h + 40) / 2, 68, h + 40,
+            false, 0, 0.56)) ctx.fillRect(wx, VH - h - 40, 62, h + 40);
+    }
+    ctx.fillStyle = 'rgba(14,15,24,0.72)';
+    for (i = 0; i < 10; i++) {
+        wx = (i * 118 - s.camX * 0.26) % (VW + 236);
+        if (wx < -118) wx += VW + 236;
+        h = 110 + ((i * 53) % 80);
+        if (!drawCanabaltAsset('city_near', wx + 45, VH - (h + 20) / 2, 98, h + 20,
+            false, 0, 0.72)) ctx.fillRect(wx, VH - h - 20, 90, h + 20);
+    }
+}
+
+function drawBuildings() {
+    for (var i = 0; i < s.bldgs.length; i++) {
+        var b = s.bldgs[i];
+        if (b.x + b.w < s.camX - 40 || b.x > s.camX + VW + 40) continue;
+        ctx.fillStyle = '#23253a';
+        ctx.fillRect(b.x, b.top, b.w, VH - b.top + 10);
+        ctx.fillStyle = '#3a3d58';
+        ctx.fillRect(b.x, b.top, b.w, 6);
+        ctx.fillStyle = 'rgba(255,255,255,0.10)';
+        ctx.fillRect(b.x, b.top, b.w, 2);
+        drawCanabaltAsset('roof_surface', b.x + b.w / 2, b.top + 8, b.w + 4, 24, false, 0, 0.96);
+        if (b.windows) {
+            for (var k = 0; k < b.windows.length; k++) {
+                var w = b.windows[k];
+                var windowArt = w.lit ? 'window_lit' : 'window_dark';
+                if (!drawCanabaltAsset(windowArt, b.x + w.x + 6.5, b.top + 27, 16, 22,
+                    false, 0, w.lit ? 0.74 : 0.48)) {
+                    ctx.fillStyle = w.lit ? 'rgba(255,214,140,0.5)' : 'rgba(120,140,180,0.13)';
+                    ctx.fillRect(b.x + w.x, b.top + 18, 13, 18);
+                }
+                drawCanabaltAsset(windowArt, b.x + w.x + 6.5, b.top + 57, 16, 22,
+                    false, 0, w.lit ? 0.62 : 0.4);
+            }
+        }
+        drawCanabaltAsset('roof_edge', b.x + b.w - 22, b.top + 9, 44, 27, false, 0, 0.92);
+    }
+}
+
+function drawCrates() {
+    for (var i = 0; i < s.crates.length; i++) {
+        var c = s.crates[i];
+        if (c.hit) continue;
+        if (drawCanabaltAsset('crate', c.x + 11, c.y - 11, 25, 25, false, 0, 1)) continue;
+        ctx.fillStyle = '#8a6b46';
+        ctx.fillRect(c.x, c.y - 22, 22, 22);
+        ctx.fillStyle = '#a8855a';
+        ctx.fillRect(c.x, c.y - 22, 22, 4);
+        ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(c.x, c.y - 22); ctx.lineTo(c.x + 22, c.y);
+        ctx.moveTo(c.x + 22, c.y - 22); ctx.lineTo(c.x, c.y);
+        ctx.stroke();
+    }
+}
+
+function drawPlayer() {
+    var p = s.p;
+    var runnerArt = s.dead ? 'runner_dead' : !p.grounded ?
+        (p.vy < 0 ? 'runner_jump' : 'runner_fall') :
+        (s.dist < 0.7 ? 'runner_idle' : 'runner_run');
+    if (drawCanabaltAsset(runnerArt, p.x + TUNE.playerW / 2,
+        p.y + TUNE.playerH - 20, 35, 40, false, 0, 1)) return;
+    ctx.save();
+    ctx.translate(p.x + TUNE.playerW / 2, p.y + TUNE.playerH);
+    if (s.dead) ctx.rotate(Math.min(1.4, (1.0 - s.deadT) * 3));
+    // 速度愈快前傾愈多，把「我現在跑多快」畫出來
+    ctx.rotate(RE.clamp((s.speed - TUNE.speed0) / TUNE.speedMax * 0.32, 0, 0.32));
+
+    var run = p.grounded ? Math.sin(p.anim * 16) : 0.6;
+    ctx.fillStyle = '#2a2a38';                        // 腿
+    ctx.fillRect(-8 + run * 5, -12, 6, 12);
+    ctx.fillRect(1 - run * 5, -12, 6, 12);
+    ctx.fillStyle = '#1a1a24';                        // 西裝外套
+    RE.Draw.roundRect(ctx, -9, -28, 18, 17, 3); ctx.fill();
+    ctx.fillStyle = '#e8e8f0';                        // 襯衫
+    ctx.fillRect(-3, -27, 5, 12);
+    ctx.fillStyle = '#c8433f';                        // 領帶
+    ctx.fillRect(-1.5, -26, 3, 9);
+    ctx.fillStyle = '#e2b48a';                        // 頭
+    ctx.beginPath(); ctx.arc(1, -33, 6, 0, RE.TAU); ctx.fill();
+    ctx.fillStyle = '#2b2018';
+    ctx.beginPath(); ctx.arc(0, -35, 6, Math.PI, RE.TAU); ctx.fill();
+    ctx.fillStyle = '#1a1a24';                        // 手臂
+    var arm = p.grounded ? -Math.sin(p.anim * 16) * 6 : -8;
+    ctx.fillRect(2, -26 + arm * 0.3, 12, 5);
+    ctx.restore();
+}
+
+function drawRunnerEffectsWorld() {
+    var p = s.p;
+    if (s.speed > 260 && !s.dead) {
+        var speedAlpha = RE.clamp((s.speed - 260) / 170, 0.24, 0.78);
+        drawCanabaltAsset('speed_streak', p.x - 20, p.y + 16, 62, 18, false, 0, speedAlpha);
+    }
+    if (s.jumpFx > 0)
+        drawCanabaltAsset('jump_dust', p.x + 7, p.y + TUNE.playerH, 30, 20, false, 0, s.jumpFx / 0.18);
+    if (s.landFx > 0)
+        drawCanabaltAsset('land_burst', p.x + 9, p.y + TUNE.playerH, 34, 22, false, 0, s.landFx / 0.2);
+}
+
+function drawGlassFx() {
+    if (s.glassFx <= 0) return;
+    drawCanabaltAsset('glass_shard', s.glassX, s.glassY, 30, 30, false,
+        (0.28 - s.glassFx) * 2.4, s.glassFx / 0.28);
+}
+
+function drawHUD() {
+    if (s.hintT > 0) {
+        var a = Math.min(1, s.hintT / 0.8);
+        ctx.globalAlpha = a;
+        // 手機 390px 寬時畫布約縮成 75%，原本 10～12px 只剩 7～9px；
+        // 上移並放大，讓「按住／放開」與程序地形保證在第一次跳躍前可讀。
+        RE.Draw.text(ctx, '按住空白鍵跳，按愈久跳愈高', VW / 2, VH - 46,
+            { size: 15, align: 'center', color: '#ffe066', stroke: '#1b2030', strokeWidth: 2 });
+        RE.Draw.text(ctx, '地形是即時生成的，但保證跳得過去', VW / 2, VH - 27,
+            { size: 13, align: 'center', color: '#dbe2f2', stroke: '#1b2030', strokeWidth: 2 });
+        ctx.globalAlpha = 1;
+    }
+    // 速度條：這是唯一會漲的參數，必須看得見
+    var w = 120, x0 = VW - w - 10, y0 = 10;
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fillRect(x0, y0, w, 5);
+    var k = (s.speed - TUNE.speed0) / (TUNE.speedMax - TUNE.speed0);
+    ctx.fillStyle = k > 0.75 ? '#ff8060' : '#ffe066';
+    ctx.fillRect(x0, y0, w * RE.clamp(k, 0, 1), 5);
+}
+
+// ======================================================================
+function openPause() {
+    G._state = 'paused';
+    RetroAudio.play('pause');
+    G.showOverlay({
+        title: '暫停中',
+        body: '地形是即時生成的，但生成器每一步都會先算跳躍包絡線。你死一定是自己跳錯了。',
+        buttons: [
+            { label: '▶ 繼續', onClick: function () { G.resume(); } },
+            { label: '↻ 重新開始', cls: 'ghost', onClick: function () { G.restart(); } }
+        ],
+        press: '按 P 或 ESC 繼續'
+    });
+}
+G.pause = openPause;
+
+function showTitleScreen() {
+    G._state = 'title';
+    G.showOverlay({
+        title: '天際奔逃',
+        body: G.cfg.howto,
+        buttons: [{ label: '▶ 開跑', onClick: function () { G.hideOverlay(); G._state = 'playing'; reset(); } }],
+        press: '按 空白鍵 或 Enter 開始'
+    });
+    var onKey = function (e) {
+        if (G._state !== 'title') return;
+        if (e.code === 'Space' || e.code === 'Enter') {
+            e.preventDefault();
+            window.removeEventListener('keydown', onKey);
+            RetroAudio.play('confirm');
+            G.hideOverlay(); G._state = 'playing'; reset();
+        }
+    };
+    window.addEventListener('keydown', onKey);
+}
+
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+showTitleScreen();
+</script>
+</body>
+</html>

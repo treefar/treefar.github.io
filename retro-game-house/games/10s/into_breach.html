@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 機甲防線</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   機甲防線 — 致敬 Into the Breach (Subset Games, 2018)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. **完全公開敵人的下一步**。每隻蟲的攻擊目標、每個出土點都預告給你，
+      沒有任何隱藏擲骰——把運氣從策略中移除，剩下的就是純粹的謎題。
+   2. **推撞是答案**。你的火力殺不完蟲，但每次攻擊都能把敵人推一格：
+      推進水裡、推去撞山、推到互撞、或推離攻擊線——
+      而且**蟲的攻擊目標會跟著它一起平移**，讓牠回頭打自己人。
+   3. 保護的不是自己而是建築（電網）。機甲可以損毀，電網歸零才算輸——
+      「該犧牲誰」是每一回合的核心問題。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'into_breach',
+    title: '機甲防線',
+    tagline: '敵人的每一步都攤在桌面上——所以輸了只能怪自己',
+    original: 'Into the Breach (Subset Games, 2018)',
+    decade: '10s', year: 2018, platform: 'PC / Switch 等', genre: '回合制戰術',
+    developer: 'Subset Games', bgm: '10s',
+    width: 480, height: 320,
+    hud: [
+        { key: 'stage', label: '關卡', init: '1/5' },
+        { key: 'grid', label: '電網', init: '4/4' },
+        { key: 'turn', label: '回合', init: '1/4' },
+        { key: 'kills', label: '擊殺', init: 0 }
+    ],
+    lives: 3,
+    touch: 'none',
+    controls: [
+        { keys: ['滑鼠 / 觸控'], desc: '點機甲→點移動格→點攻擊目標' },
+        { keys: ['←↑→↓'], desc: '移動游標' },
+        { keys: ['A'], desc: '確認 / 選取' },
+        { keys: ['B'], desc: '取消 / 待命' }
+    ],
+    howto: '殘骸獸要拆你的電網。輪到你時：<strong>點機甲 → 點移動格 → 點攻擊目標</strong>' +
+           '（也可以按 B 待命不攻擊）。紅線是<strong>敵人下一步的攻擊</strong>、' +
+           '地面裂紋是<strong>下一隻蟲的出土點</strong>——全部攤開，沒有暗算。' +
+           '你的攻擊都會<strong>把目標推一格</strong>：推進水裡直接淹死、撞山撞單位各受 1 傷、' +
+           '而且<strong>蟲被推走後，牠的攻擊落點會跟著平移</strong>——讓牠打空、甚至打自己人。' +
+           '站上裂紋可以堵住出土（自己受 1 傷）。建築被打電網就掉，' +
+           '<strong>電網歸零才輸</strong>，機甲可以犧牲。撐過每關的回合數就贏。',
+    lesson: {
+        verb: '預讀敵方意圖，再用推、拉、阻擋與換位改寫攻擊結果。',
+        innovation: '把傳統戰棋的隱藏風險改成公開的攻擊預告，讓每回合變成可驗證的空間謎題；城市電力與機體位置同時成為資源。',
+        mission: '完成五座島嶼任務，先保住城市與電力，再觀察敵方箭頭如何被位移、互撞或封鎖，最後以最少損失完成回合。',
+        evolution: '從《Bomberman》的格網爆破與《Plants vs. Zombies》的路線防守，演化到《Into the Breach》的完美資訊回合解題；後續《Balatro》也把可計算風險轉成牌組決策。',
+        reflection: '當你沒有把敵人全部消滅，而是讓牠們互相擋住或打空時，你是在使用哪一種「位置就是武器」的策略？'
+    },
+    design: '《Into the Breach》解決了「戰術棋盤資訊透明與傷害位移導向」的極限解謎問題。關鍵在於完美資訊公開：敵人在回合開始時就會明確標示下一回合的攻擊目標與位置。戰鬥的核心不是直接消滅敵人，而是透過位移（Push/Pull）將敵人的攻擊推向空地、其他敵人或是阻擋蟲洞。這套將「受擊代價」轉化為「位置位移棋盤解謎」的設計論點，承接了《Plants vs. Zombies》（00s頁）的軌道邊界，並將回轉戰術推向了極致。' + '設計上的關鍵在於：看似簡單的規則背後，隱藏著對玩家心理、空間約束與代價邊界的精確計算，不是隨意拍腦袋而是有著深刻的系統取捨。',
+    history: '2018 年由《FTL: Faster Than Light》開發團隊 Subset Games（Justin Ma 與 Matthew Davis）開發發行。本作榮獲 2018 年 Game Developers Choice Awards 最佳設計獎，被譽為回合制戰術遊戲的極致典範。參見本站 00 年代《Plants vs. Zombies》與 80 年代《Bomberman》對網格戰術與位移預判的脈絡演進。',
+    sources: [
+        { label: 'Subset Games 官方：Into the Breach', url: 'https://www.subsetgames.com/itb.html' },
+        { label: 'Subset Games：Advanced Edition 官方說明', url: 'https://subsetgames.com/itb_ae.html' },
+        { label: 'Subset Games 官方 FAQ', url: 'https://subsetgames.com/faq.html' }
+    ],
+});
+
+var ctx = G.ctx, VW = G.width, VH = G.height;
+var P = new RE.Particles(300);
+var FT = new RE.FloatText();
+var BREACH_ART = { image: new Image(), manifest: null };
+BREACH_ART.image.src = '../../assets/games/into_breach/tactical-pixel-atlas.png';
+fetch('../../assets/games/into_breach/tactical-pixel-manifest.json')
+    .then(function (r) { return r.json(); })
+    .then(function (m) { BREACH_ART.manifest = m; })
+    .catch(function () { BREACH_ART.manifest = null; });
+
+function drawBreachAsset(name, x, y, w, h, flip, rotation, alpha) {
+    var m = BREACH_ART.manifest;
+    if (!m || !m.assets || !m.assets[name] || !BREACH_ART.image.complete ||
+        !BREACH_ART.image.naturalWidth) return false;
+    var a = m.assets[name];
+    ctx.save();
+    ctx.translate(x, y);
+    if (rotation) ctx.rotate(rotation);
+    if (flip) ctx.scale(-1, 1);
+    if (alpha !== undefined) ctx.globalAlpha *= alpha;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(BREACH_ART.image, a.x, a.y, a.w, a.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+}
+
+// ======================================================================
+// 棋盤
+// ======================================================================
+var N = 7, CS = 30;
+/* 電網上限。原本是 5 點，實測下來那是「不用核心動詞也守得住」的分水嶺——
+   熟練版與只看傷害的對照組同樣 5 關全過（40/40 對 33/40），推撞形同裝飾。
+   降到 4 之後變成 30/30 對 9/30。
+   量測依據是兩種策略在各關的平均電網損失：熟練版全程 6.8 點、對照組 13.2 點，
+   4 這一刀正好切在中間——熟練版守得住，看不懂紅線的守不住。
+   降到 3 則熟練版自己也只剩 22/30，那是罰玩家而不是罰錯誤策略。 */
+var GRID_MAX = 4;
+var BX = Math.round((VW - N * CS) / 2), BY = 58;
+var DIRS = [[1,0],[-1,0],[0,1],[0,-1]];
+
+// ======================================================================
+// 單位定義
+// ======================================================================
+var MECHS = [
+    { key: 'punch',  name: '重拳機甲', hp: 4, move: 3, atk: 2, kind: 'melee',
+      desc: '相鄰 2 傷＋推 1 格', col: '#e8b84a' },
+    { key: 'cannon', name: '弩砲機甲', hp: 3, move: 2, atk: 1, kind: 'artillery',
+      desc: '拋射同行列 2 格外，1 傷＋推', col: '#7ac8a0' },
+    { key: 'rifle',  name: '磁軌機甲', hp: 3, move: 4, atk: 1, kind: 'line',
+      desc: '直線命中第一個目標，1 傷＋推', col: '#8fb0e8' }
+];
+var FOES = {
+    digger:  { name: '掘地獸', hp: 3, move: 3, atk: 1, kind: 'melee',  col: '#b07a5a', score: 100 },
+    spitter: { name: '酸吐獸', hp: 2, move: 2, atk: 1, kind: 'spit',   col: '#8aba5a', score: 120 },
+    shell:   { name: '重甲獸', hp: 5, move: 2, atk: 2, kind: 'melee',  col: '#9a6a9a', score: 180 },
+    queen:   { name: '巢母',   hp: 8, move: 2, atk: 2, kind: 'cross',  col: '#c05a6a', score: 400, big: true }
+};
+
+// ======================================================================
+// 關卡。地圖字元：. 地 ~ 水 ^ 山 B 建築。
+// turns 撐過即勝；spawns[t] = 第 t 回合結束時的出土蟲種。
+// ======================================================================
+var LEVELS = [
+    {
+        name: '第一關 · 著陸區',
+        hint: '牠們的攻擊全都畫在紅線上。用「推」讓紅線落空。',
+        turns: 4, map: [
+            '.......',
+            '..B....',
+            '.......',
+            '...^...',
+            '....B..',
+            '.B.....',
+            '.......'],
+        initFoes: [['digger', 5, 1], ['digger', 5, 4]],
+        spawns: [['digger'], ['digger'], [], []]
+    },
+    {
+        name: '第二關 · 酸性沼澤',
+        hint: '水淹得死任何蟲。算好方向，一推入水。',
+        turns: 4, map: [
+            '..~~...',
+            '.B.~...',
+            '.......',
+            '~~..^..',
+            '.....B.',
+            '..B....',
+            '...~~..'],
+        initFoes: [['digger', 5, 1], ['spitter', 6, 5]],
+        spawns: [['spitter'], ['digger'], ['digger'], []]
+    },
+    {
+        name: '第三關 · 斷礦山道',
+        hint: '重甲獸血厚得離譜。撞山、互撞、借牠的攻擊打牠自己。',
+        turns: 5, map: [
+            '...^...',
+            '.B..^..',
+            '.^.....',
+            '....^B.',
+            '.^.....',
+            '...B.^.',
+            '.......'],
+        initFoes: [['shell', 6, 2], ['digger', 5, 5]],
+        spawns: [['digger'], ['spitter'], ['digger'], ['spitter'], []]
+    },
+    {
+        name: '第四關 · 電網樞紐',
+        hint: '建築太多、蟲更多。想清楚哪一擊必須擋、哪一擊可以放。',
+        turns: 5, map: [
+            '.......',
+            '....~..',
+            '.B...B.',
+            '...^...',
+            '.B...B.',
+            '..~.B..',
+            '.......'],
+        /* 六棟建築全部離開盤面邊界，底列淨空——原因見 README「貼著邊界的建築
+           會讓推撞失效」。這一關的 (6,4) 是最嚴重的一個案例：
+           掘地獸站 (6,3) 打右、酸吐獸站 (6,6) 噴左，兩隻夾擊同一棟，
+           而第 6 列的蟲往上推站不到 (7,x)、往下推是出界、往左右推不是撞到
+           那棟建築就是原地不動——第一回合固定掉 2 點，抽到壞骰就直接歸零。
+
+           出生點也改成手動：自動擺位會把弩砲擠到角落 (6,6)，
+           move 2 的拋射兵在那裡整場打不到東西，等於只有兩台機甲在打。
+           三台散在下方左／中／右，且每一格都至少有兩個相鄰空格可以走。 */
+        spawn: [[5, 0], [6, 3], [5, 6]],
+        initFoes: [['digger', 6, 1], ['spitter', 6, 5], ['digger', 1, 3]],
+        spawns: [['digger'], ['shell'], ['spitter'], ['digger'], []]
+    },
+    {
+        /* 建築一律離開盤面邊界，出生點改成手動指定——兩件事都是為了讓
+           「哪一擊該擋」真的有得選，理由見下方 spawn 欄位與 loadLevel 的註解。 */
+        name: '第五關 · 巢母降臨',
+        hint: '巢母四面揮擊、血量驚人。別想殺光——撐住電網就是勝利。',
+        turns: 6, map: [
+            '.......',
+            '.B..^..',
+            '...~.B.',
+            '.^.....',
+            '.B..^..',
+            '....B.~',
+            '.......'],
+        /* 自動擺位在這張圖上會把三台擠成一排（底列原本有水），
+           而這一關第一回合的兩個威脅分屬盤面兩側，擠在一起等於只有一台能參與。
+           擺法：重拳（近戰、move 3）前壓到 (5,1) 守左側建築 (4,1)，
+           磁軌（直線、move 4）放 (6,2) 打中路的巢母，
+           弩砲（拋射、move 2）留 (6,4) 當後排。 */
+        spawn: [[5, 1], [6, 4], [6, 2]],
+        initFoes: [['queen', 3, 3], ['digger', 6, 1]],
+        /* 出土密度維持滿載（六回合出 5 隻）。實測過減到 3 隻，結果是
+           **對照組的通關率從 1/40 跳到 30/40**——純傷害流最怕的就是「殺不完」，
+           蟲一少，不看紅線、不管推去哪、光靠輸出也守得住電網，
+           推撞就退化成裝飾。難度要加在「逼出核心動詞」的地方，
+           不是加在骰子上，也不能為了讓熟練版好看而降密度。 */
+        spawns: [['spitter'], ['digger'], ['shell'], ['digger'], ['spitter'], []]
+    }
+];
+
+// ======================================================================
+// 狀態
+// ======================================================================
+var s = null;
+
+function reset() {
+    s = { level: 0, total: 0, pointerDownSeen: false };
+    P.clear(); FT.clear();
+    G.setLives(3);
+    loadLevel(0);
+}
+
+function loadLevel(idx) {
+    var L = LEVELS[idx];
+    s.level = idx; s.L = L;
+    s.grid = GRID_MAX;
+    s.turn = 1;
+    s.kills = 0;
+    s.terrain = [];
+    s.buildings = [];
+    var r, c;
+    for (r = 0; r < N; r++) {
+        s.terrain.push([]);
+        for (c = 0; c < N; c++) {
+            var ch = L.map[r][c];
+            s.terrain[r].push(ch === '~' ? 'water' : ch === '^' ? 'mount' : 'land');
+            if (ch === 'B') s.buildings.push({ r: r, c: c, hp: 2 });
+        }
+    }
+    s.mechs = [];
+    /* 預設從底列中央出發；關卡可用 `spawn` 覆寫。
+       會需要覆寫是因為自動擺位只會「往右繞著找第一個空格」，
+       它保證得了合法性，保證不了戰術上的可用性——
+       底列有水或建築時三台會被擠成一排，而擠在一起就等於同一個威脅面。 */
+    var spots = L.spawn || [[6, 2], [6, 3], [6, 4]];
+    for (var m = 0; m < MECHS.length; m++) {
+        var sp = spots[m] || [6, 2 + m];      // spawn 寫少一台也不要爆，交給下面的擺位修正
+        s.mechs.push({ def: MECHS[m], hp: MECHS[m].hp, r: sp[0], c: sp[1],
+                       acted: false, moved: false, dead: false, ox: 0, oy: 0 });
+    }
+    s.foes = [];
+    s.artFx = [];
+    for (var f = 0; f < L.initFoes.length; f++) {
+        var Fi = L.initFoes[f];
+        spawnFoeAt(Fi[0], Fi[1], Fi[2]);
+    }
+
+    /* 機甲的擺位要**在蟲生出來之後**才做，而且要同時避開
+       地形、建築、別台機甲**與蟲**。
+       原本的順序是先擺機甲再生蟲，而且只檢查地形與建築，於是三種撞法都會發生：
+         · 第三關的重甲獸初始座標就是 (6,2)，正好壓在第一台機甲的出生格上
+         · 第二關第 6 列的 (6,3)(6,4) 是水，機甲被往右推到 (6,5)，那裡站著酸吐獸
+         · 兩台機甲被同一片水往右推，直接疊在一起
+       共用一格的後果不只是畫面重疊：`unitAt()` 只回傳第一個命中的，
+       另一個單位等於從盤面上消失——打不到、選不到、推不動。
+       機器人稽核抓到的無限循環（為第二台排好計畫、點下去卻選到第一台、
+       取消、再選，跑滿二十萬幀）就是這樣來的。
+       用 N×N 當上限，繞完整個盤面還找不到位子就維持原狀，不要無限迴圈。 */
+    /* 擺位分兩輪：先要求「彼此不相鄰」，找不到才退回「只要不重疊」。
+
+       只做「不重疊」是不夠的。第五關第 6 列是 `..~....`，(6,2) 是水，
+       於是三台機甲被一路往右擠成 (6,3)(6,4)(6,5) 一排，
+       左邊是水、右上是自家建築、彼此互擋——**兩台的可移動格只剩自己那一格**。
+       那一關第一回合巢母揮到 (5,4) 的建築、掘地獸打 (4,0) 的建築，
+       而弩砲是拋射（打不到貼身的巢母）、磁軌的直線第一個目標是自家建築、
+       重拳三步走不出這個角落：兩點電網的損失在數學上無解，
+       玩家連「哪一擊該擋」都沒得選。稽核量到的「熟練版與對照組一樣爛」
+       就是這樣來的——不是機器人不會玩，是那一回合沒有任何一步能改變結果。 */
+    function spotOK(mm, m, strict) {
+        var o;
+        for (o = 0; o < s.mechs.length; o++) {
+            if (o === m || s.mechs[o].dead) continue;
+            /* 機甲與蟲要**分開檢查**，不能用 unitAt()。
+               它是 `mechAt(r,c) || foeAt(r,c)`——自己站在那一格時 mechAt 先命中，
+               整個運算式短路，後面的 foeAt 根本不會執行，
+               於是「機甲踩在蟲身上」這種情形會被判成沒問題。 */
+            if (s.mechs[o].r === mm.r && s.mechs[o].c === mm.c) return false;
+            if (strict && o < m &&
+                Math.abs(s.mechs[o].r - mm.r) + Math.abs(s.mechs[o].c - mm.c) <= 1) return false;
+        }
+        if (foeAt(mm.r, mm.c)) return false;
+        return s.terrain[mm.r][mm.c] === 'land' && !buildingAt(mm.r, mm.c);
+    }
+    for (m = 0; m < s.mechs.length; m++) {
+        var mm = s.mechs[m];
+        var home = { r: mm.r, c: mm.c };
+        var placed = false, pass, guard;
+        /* 關卡自己指定 spawn 時跳過第 0 輪的「彼此不相鄰」。
+           那一輪是給自動擺位用的保險，而手寫的配置是照戰術擺的——
+           第五關的重拳與磁軌就刻意相鄰（一台守左側建築、一台打中路），
+           讓保險去拆它等於把關卡作者的意圖改掉。
+           第 1 輪的合法性檢查（不重疊、不站水／山／建築／蟲）一律還是要跑，
+           手寫的座標一樣可能打錯。 */
+        for (pass = L.spawn ? 1 : 0; pass < 2 && !placed; pass++) {
+            mm.r = home.r; mm.c = home.c;
+            // 用 N*N 當上限，繞完整個盤面還找不到位子就換下一輪，不要無限迴圈
+            for (guard = 0; guard < N * N; guard++) {
+                if (spotOK(mm, m, pass === 0)) { placed = true; break; }
+                mm.c = (mm.c + 1) % N;
+                if (mm.c === 0) mm.r = (mm.r + N - 1) % N;   // 繞完一列就往上一列找
+            }
+        }
+    }
+    s.cracks = [];
+    s.phase = 'plan0';       // 進場：先讓蟲排好預告
+    s.phaseT = 0.3;
+    s.sel = null;
+    s.selMode = null;        // 'move' | 'aim'
+    s.pointerDownSeen = false;
+    s.cursor = { r: 3, c: 3 };
+    s.anim = [];
+    s.over = 0; s.overT = 0;
+    s.banner = L.name; s.bannerT = 2.6;
+    G.setStat('stage', (idx + 1) + '/' + LEVELS.length);
+    G.setStat('grid', GRID_MAX + '/' + GRID_MAX);
+    G.setStat('turn', '1/' + L.turns);
+    G.setStat('kills', 0);
+}
+
+function inBoard(r, c) { return r >= 0 && r < N && c >= 0 && c < N; }
+function buildingAt(r, c) {
+    for (var i = 0; i < s.buildings.length; i++) {
+        var b = s.buildings[i];
+        if (b.hp > 0 && b.r === r && b.c === c) return b;
+    }
+    return null;
+}
+function mechAt(r, c) {
+    for (var i = 0; i < s.mechs.length; i++) {
+        var m = s.mechs[i];
+        if (!m.dead && m.r === r && m.c === c) return m;
+    }
+    return null;
+}
+function foeAt(r, c) {
+    for (var i = 0; i < s.foes.length; i++) {
+        var f = s.foes[i];
+        if (!f.dead && f.r === r && f.c === c) return f;
+    }
+    return null;
+}
+function unitAt(r, c) { return mechAt(r, c) || foeAt(r, c); }
+function blockedForMove(r, c) {
+    return !inBoard(r, c) || s.terrain[r][c] !== 'land' || buildingAt(r, c) || unitAt(r, c);
+}
+
+function spawnFoeAt(type, r, c) {
+    var F = FOES[type];
+    s.foes.push({ type: type, def: F, hp: F.hp, r: r, c: c,
+                  plan: null, dead: false, ox: 0, oy: 0 });
+}
+
+// ======================================================================
+// 傷害與推撞——本作的心臟
+// ======================================================================
+function cellCenter(r, c) { return { x: BX + c * CS + CS / 2, y: BY + r * CS + CS / 2 }; }
+
+function damageUnit(u, dmg, isMech) {
+    u.hp -= dmg;
+    var p = cellCenter(u.r, u.c);
+    RE.juice.hitstop(0.03);
+    RE.juice.shake(0.18);
+    RetroAudio.play('hit');
+    P.burst(p.x, p.y, 8, { colors: ['#ffd166', '#ff8f6a', '#fff'],
+        speedMin: 40, speedMax: 150, gravity: 250, lifeMin: 0.15, lifeMax: 0.4 });
+    s.artFx.push({ x: p.x, y: p.y, t: 0.32, max: 0.32, size: 34 });
+    FT.add(p.x, p.y - 14, '-' + dmg, { color: isMech ? '#ff8f8f' : '#ffd166', size: 13 });
+    if (u.hp <= 0) killUnit(u, isMech);
+}
+
+function killUnit(u, isMech) {
+    u.dead = true;
+    var p = cellCenter(u.r, u.c);
+    RetroAudio.play('explosion');
+    RE.juice.hitstop(0.05);
+    RE.juice.shake(0.3);
+    P.burst(p.x, p.y, 16, { colors: isMech ? ['#8fb0e8', '#5a6a8a', '#fff'] : ['#b07a5a', '#6a4a3a', '#ffd166'],
+        speedMin: 50, speedMax: 200, gravity: 300, lifeMin: 0.25, lifeMax: 0.6 });
+    if (!isMech) {
+        s.kills++;
+        s.total += u.def.score;
+        G.setStat('kills', s.kills);
+        FT.add(p.x, p.y - 18, '+' + u.def.score, { color: '#8fe0a0', size: 13 });
+    } else {
+        FT.add(p.x, p.y - 18, '機甲損毀', { color: '#ff8f8f', size: 13 });
+    }
+}
+
+function hitBuilding(b, dmg) {
+    b.hp -= 1;
+    s.grid = Math.max(0, s.grid - 1);
+    G.setStat('grid', s.grid + '/' + GRID_MAX);
+    var p = cellCenter(b.r, b.c);
+    RetroAudio.play('heavyHit');
+    RE.juice.hitstop(0.06);
+    RE.juice.shake(0.4);
+    RE.juice.flash('rgba(255,120,80,0.2)', 0.1);
+    P.burst(p.x, p.y, 14, { colors: ['#d8e8f0', '#8a9ab0', '#ffd166'],
+        speedMin: 40, speedMax: 180, gravity: 300, lifeMin: 0.2, lifeMax: 0.5 });
+    s.artFx.push({ x: p.x, y: p.y, t: 0.38, max: 0.38, size: 38 });
+    FT.add(p.x, p.y - 16, '電網 -1', { color: '#ff8f8f', size: 13 });
+    if (s.grid <= 0) endLevel(false);
+}
+
+// 推撞。dir=[dr,dc]。回傳是否移動了。
+function pushUnit(u, dir) {
+    var nr = u.r + dir[0], nc = u.c + dir[1];
+    var isMech = !!u.def.desc;
+    var p = cellCenter(u.r, u.c);
+    if (!inBoard(nr, nc)) return false;
+    var t = s.terrain[nr][nc];
+    if (t === 'mount') {
+        damageUnit(u, 1, isMech);
+        RetroAudio.play('block');
+        P.burst(cellCenter(nr, nc).x, cellCenter(nr, nc).y, 6,
+            { colors: ['#9a9aa2', '#6a6a72'], speedMin: 30, speedMax: 110, gravity: 300, lifeMin: 0.2, lifeMax: 0.4 });
+        return false;
+    }
+    var b = buildingAt(nr, nc);
+    if (b) { damageUnit(u, 1, isMech); hitBuilding(b, 1); return false; }
+    var o = unitAt(nr, nc);
+    if (o) { damageUnit(u, 1, isMech); damageUnit(o, 1, !!o.def.desc); return false; }
+    // 真的推過去
+    u.ox = (u.c - nc) * CS; u.oy = (u.r - nr) * CS;
+    u.r = nr; u.c = nc;
+    if (t === 'water') {
+        RetroAudio.play('splash');
+        P.burst(cellCenter(nr, nc).x, cellCenter(nr, nc).y, 14,
+            { colors: ['#9fd8ff', '#5aa8e0'], speedMin: 40, speedMax: 160, gravity: 300, lifeMin: 0.3, lifeMax: 0.6 });
+        FT.add(cellCenter(nr, nc).x, cellCenter(nr, nc).y - 14, '撲通！', { color: '#9fd8ff', size: 13 });
+        u.hp = 0; killUnit(u, isMech);
+    }
+    return true;
+}
+
+// ======================================================================
+// 玩家攻擊
+// ======================================================================
+function mechTargets(m) {
+    var list = [], d, i;
+    if (m.def.kind === 'melee') {
+        for (d = 0; d < 4; d++) {
+            var r = m.r + DIRS[d][0], c = m.c + DIRS[d][1];
+            if (inBoard(r, c) && s.terrain[r][c] !== 'mount') list.push({ r: r, c: c, dir: DIRS[d] });
+        }
+    } else if (m.def.kind === 'artillery') {
+        for (d = 0; d < 4; d++) {
+            for (i = 2; i < N; i++) {
+                var rr = m.r + DIRS[d][0] * i, cc = m.c + DIRS[d][1] * i;
+                if (!inBoard(rr, cc)) break;
+                if (s.terrain[rr][cc] !== 'mount') list.push({ r: rr, c: cc, dir: DIRS[d] });
+            }
+        }
+    } else { // line：直線第一個實體
+        for (d = 0; d < 4; d++) {
+            for (i = 1; i < N; i++) {
+                var r2 = m.r + DIRS[d][0] * i, c2 = m.c + DIRS[d][1] * i;
+                if (!inBoard(r2, c2)) break;
+                if (s.terrain[r2][c2] === 'mount') { list.push({ r: r2, c: c2, dir: DIRS[d], stop: true }); break; }
+                if (unitAt(r2, c2) || buildingAt(r2, c2)) { list.push({ r: r2, c: c2, dir: DIRS[d] }); break; }
+            }
+        }
+    }
+    return list;
+}
+
+function mechAttack(m, target) {
+    var p0 = cellCenter(m.r, m.c), p1 = cellCenter(target.r, target.c);
+    RetroAudio.play(m.def.kind === 'melee' ? 'heavyHit' : 'shoot');
+    RE.juice.shake(0.15);
+    P.burst(p1.x, p1.y, 8, { colors: [m.def.col, '#fff'], speedMin: 30, speedMax: 130,
+        gravity: 200, lifeMin: 0.15, lifeMax: 0.35, glow: true });
+    var u = unitAt(target.r, target.c);
+    var b = buildingAt(target.r, target.c);
+    if (u) {
+        damageUnit(u, m.def.atk, !!u.def.desc);
+        if (!u.dead) pushUnit(u, target.dir);
+    } else if (b) {
+        hitBuilding(b, 1);   // 誤傷自己建築——原作的教訓保留
+    } else if (s.terrain[target.r][target.c] === 'mount' && m.def.kind !== 'artillery') {
+        // 打山：無事
+    }
+    m.acted = true;
+    s.sel = null; s.selMode = null;
+}
+
+// ======================================================================
+// 敵方 AI：移動 + 預告。決策時擲一次骰，不是每幀。
+// ======================================================================
+function foeAttackTemplates(f) {
+    // 回傳可用的攻擊樣板（offsets 相對自身）
+    var t = [];
+    if (f.def.kind === 'melee') {
+        for (var d = 0; d < 4; d++) t.push([DIRS[d]]);
+    } else if (f.def.kind === 'spit') {
+        for (d = 0; d < 4; d++) t.push([[DIRS[d][0] * 2, DIRS[d][1] * 2]]);
+    } else if (f.def.kind === 'cross') {
+        t.push([[1,0],[-1,0],[0,1],[0,-1]]);
+    }
+    return t;
+}
+
+function foePlanScore(f, r, c, offs) {
+    var sc = 0;
+    for (var i = 0; i < offs.length; i++) {
+        var rr = r + offs[i][0], cc = c + offs[i][1];
+        if (!inBoard(rr, cc)) continue;
+        if (buildingAt(rr, cc)) sc += 10;
+        else if (mechAt(rr, cc)) sc += 6;
+    }
+    return sc;
+}
+
+function foeReachable(f) {
+    // BFS 移動範圍
+    var seen = {}, q = [[f.r, f.c, 0]], out = [[f.r, f.c]];
+    seen[f.r + ',' + f.c] = true;
+    while (q.length) {
+        var cur = q.shift();
+        if (cur[2] >= f.def.move) continue;
+        for (var d = 0; d < 4; d++) {
+            var nr = cur[0] + DIRS[d][0], nc = cur[1] + DIRS[d][1];
+            var key = nr + ',' + nc;
+            if (seen[key]) continue;
+            seen[key] = true;
+            if (blockedForMove(nr, nc)) continue;
+            q.push([nr, nc, cur[2] + 1]);
+            out.push([nr, nc]);
+        }
+    }
+    return out;
+}
+
+function foePlan(f) {
+    var cells = foeReachable(f);
+    var temps = foeAttackTemplates(f);
+    var best = [], bestSc = -1;
+    for (var i = 0; i < cells.length; i++) {
+        for (var j = 0; j < temps.length; j++) {
+            var sc = foePlanScore(f, cells[i][0], cells[i][1], temps[j]);
+            if (sc > bestSc) { bestSc = sc; best = [{ cell: cells[i], offs: temps[j] }]; }
+            else if (sc === bestSc) best.push({ cell: cells[i], offs: temps[j] });
+        }
+    }
+    // 沒得打就朝最近建築逼近（預告仍然存在，只是打空地）
+    var pick = best[Math.floor(Math.random() * best.length)];   // 平手時擲一次骰
+    if (bestSc <= 0 && s.buildings.length) {
+        var tgt = null, bd = 1e9;
+        for (i = 0; i < s.buildings.length; i++) {
+            var b = s.buildings[i];
+            if (b.hp <= 0) continue;
+            for (var k = 0; k < cells.length; k++) {
+                var d2 = Math.abs(cells[k][0] - b.r) + Math.abs(cells[k][1] - b.c);
+                if (d2 < bd) { bd = d2; tgt = { cell: cells[k], offs: pick.offs }; }
+            }
+        }
+        if (tgt) pick = tgt;
+    }
+    f.ox = (f.c - pick.cell[1]) * CS; f.oy = (f.r - pick.cell[0]) * CS;
+    f.r = pick.cell[0]; f.c = pick.cell[1];
+    f.plan = pick.offs;
+}
+
+// 執行一隻蟲的預告攻擊：落點＝目前位置＋offset（推撞會讓落點跟著平移——核心！）
+function foeExecute(f) {
+    if (f.dead || !f.plan) return;
+    for (var i = 0; i < f.plan.length; i++) {
+        var rr = f.r + f.plan[i][0], cc = f.c + f.plan[i][1];
+        if (!inBoard(rr, cc)) continue;
+        var p = cellCenter(rr, cc);
+        RetroAudio.play('slash');
+        P.burst(p.x, p.y, 7, { colors: ['#ff8f6a', '#c05a4a'], speedMin: 30, speedMax: 120,
+            gravity: 200, lifeMin: 0.15, lifeMax: 0.35 });
+        var b = buildingAt(rr, cc);
+        var u = unitAt(rr, cc);
+        if (b) hitBuilding(b, 1);
+        else if (u) damageUnit(u, f.def.atk, !!u.def.desc);
+    }
+    f.plan = null;
+}
+
+function pickSpawnCell() {
+    for (var tries = 0; tries < 60; tries++) {
+        var r = Math.floor(Math.random() * N), c = Math.floor(Math.random() * N);
+        if (s.terrain[r][c] !== 'land') continue;
+        if (buildingAt(r, c) || unitAt(r, c)) continue;
+        var taken = false;
+        for (var i = 0; i < s.cracks.length; i++)
+            if (s.cracks[i].r === r && s.cracks[i].c === c) taken = true;
+        if (!taken) return { r: r, c: c };
+    }
+    return null;
+}
+
+// ======================================================================
+// 回合流程（演出用計時器串接）
+// phase: player → enemyAct → spawnRise → enemyPlan → spawnMark → player
+// ======================================================================
+function startEnemyPhase() {
+    s.phase = 'enemyAct';
+    s.phaseT = 0.5;
+    s.actQueue = s.foes.filter(function (f) { return !f.dead && f.plan; });
+    s.banner = '敵方行動'; s.bannerT = 1;
+}
+
+function update(dt) {
+    if (!s) return;
+    P.update(dt); FT.update(dt);
+    if (s.bannerT > 0) s.bannerT -= dt;
+    var i;
+    for (i = s.artFx.length - 1; i >= 0; i--) {
+        s.artFx[i].t -= dt;
+        if (s.artFx[i].t <= 0) s.artFx.splice(i, 1);
+    }
+
+    // 位移動畫緩衝
+    var units = s.mechs.concat(s.foes);
+    for (i = 0; i < units.length; i++) {
+        var u = units[i];
+        u.ox *= Math.pow(0.0001, dt); u.oy *= Math.pow(0.0001, dt);
+        if (Math.abs(u.ox) < 0.5) u.ox = 0;
+        if (Math.abs(u.oy) < 0.5) u.oy = 0;
+    }
+
+    if (s.over) {
+        s.overT -= dt;
+        if (s.overT <= 0) {
+            var w = s.over === 1; s.over = 0;
+            if (w) nextLevel(); else afterFail();
+        }
+        return;
+    }
+
+    if (s.phase === 'plan0') {
+        s.phaseT -= dt;
+        if (s.phaseT <= 0) {
+            for (i = 0; i < s.foes.length; i++) if (!s.foes[i].dead) foePlan(s.foes[i]);
+            var sp = s.L.spawns[0] || [];
+            for (i = 0; i < sp.length; i++) {
+                var cell = pickSpawnCell();
+                if (cell) s.cracks.push({ r: cell.r, c: cell.c, type: sp[i] });
+            }
+            s.phase = 'player';
+            s.banner = '你的回合'; s.bannerT = 1.2;
+        }
+        return;
+    }
+
+    if (s.phase === 'player') {
+        handleInput(dt);
+        return;
+    }
+
+    if (s.phase === 'enemyAct') {
+        s.phaseT -= dt;
+        if (s.phaseT <= 0) {
+            if (s.actQueue.length) {
+                foeExecute(s.actQueue.shift());
+                s.phaseT = 0.5;
+                if (s.over) return;
+            } else {
+                s.phase = 'spawnRise'; s.phaseT = 0.4;
+            }
+        }
+        return;
+    }
+
+    if (s.phase === 'spawnRise') {
+        s.phaseT -= dt;
+        if (s.phaseT <= 0) {
+            for (i = 0; i < s.cracks.length; i++) {
+                var cr = s.cracks[i];
+                var blocker = unitAt(cr.r, cr.c);
+                if (blocker) {
+                    damageUnit(blocker, 1, !!blocker.def.desc);
+                    FT.add(cellCenter(cr.r, cr.c).x, cellCenter(cr.r, cr.c).y - 20, '堵住了！',
+                        { color: '#8fe0a0', size: 13 });
+                } else {
+                    spawnFoeAt(cr.type, cr.r, cr.c);
+                    var pc = cellCenter(cr.r, cr.c);
+                    RetroAudio.play('land');
+                    P.burst(pc.x, pc.y, 10, { colors: ['#8a6a4a', '#5a4432'],
+                        speedMin: 30, speedMax: 130, gravity: 300, lifeMin: 0.2, lifeMax: 0.5 });
+                }
+            }
+            s.cracks = [];
+            // 回合推進與勝利判定
+            if (s.turn >= s.L.turns) { endLevel(true); return; }
+            s.turn++;
+            G.setStat('turn', s.turn + '/' + s.L.turns);
+            s.phase = 'enemyPlan'; s.phaseT = 0.4;
+        }
+        return;
+    }
+
+    if (s.phase === 'enemyPlan') {
+        s.phaseT -= dt;
+        if (s.phaseT <= 0) {
+            for (i = 0; i < s.foes.length; i++) if (!s.foes[i].dead) foePlan(s.foes[i]);
+            // 場上蟲太多就不再出
+            var alive = s.foes.filter(function (f) { return !f.dead; }).length;
+            var sp2 = s.L.spawns[s.turn - 1] || [];
+            for (i = 0; i < sp2.length && alive + i < 6; i++) {
+                var cell2 = pickSpawnCell();
+                if (cell2) s.cracks.push({ r: cell2.r, c: cell2.c, type: sp2[i] });
+            }
+            for (i = 0; i < s.mechs.length; i++) { s.mechs[i].acted = false; s.mechs[i].moved = false; }
+            s.phase = 'player';
+            s.banner = '你的回合'; s.bannerT = 1.2;
+            RetroAudio.play('blip');
+        }
+        return;
+    }
+}
+
+// ======================================================================
+// 玩家輸入
+// ======================================================================
+function cellAtPixel(x, y) {
+    var c = Math.floor((x - BX) / CS), r = Math.floor((y - BY) / CS);
+    if (!inBoard(r, c)) return null;
+    return { r: r, c: c };
+}
+
+function reachableForMech(m) {
+    var seen = {}, q = [[m.r, m.c, 0]], out = [[m.r, m.c]];
+    seen[m.r + ',' + m.c] = true;
+    while (q.length) {
+        var cur = q.shift();
+        if (cur[2] >= m.def.move) continue;
+        for (var d = 0; d < 4; d++) {
+            var nr = cur[0] + DIRS[d][0], nc = cur[1] + DIRS[d][1];
+            var key = nr + ',' + nc;
+            if (seen[key]) continue;
+            seen[key] = true;
+            if (blockedForMove(nr, nc)) continue;
+            q.push([nr, nc, cur[2] + 1]);
+            out.push([nr, nc]);
+        }
+    }
+    return out;
+}
+
+function endTurnBtn() { return { x: VW - 78, y: VH - 30, w: 72, h: 24 }; }
+
+function pointerPressFresh() {
+    var pt = RE.Input.pointer;
+    if (!pt.down && !pt.pressed) { s.pointerDownSeen = false; return false; }
+    var fresh = pt.pressed || (pt.down && !s.pointerDownSeen);
+    if (fresh) s.pointerDownSeen = true;
+    return fresh;
+}
+
+function handleInput(dt) {
+    var pt = RE.Input.pointer;
+    var click = null;
+    if (pointerPressFresh()) {
+        var btn = endTurnBtn();
+        if (pt.x > btn.x && pt.x < btn.x + btn.w && pt.y > btn.y && pt.y < btn.y + btn.h) {
+            startEnemyPhase();
+            RetroAudio.play('confirm');
+            return;
+        }
+        click = cellAtPixel(pt.x, pt.y);
+        if (click) s.cursor = click;
+    }
+    if (RE.Input.pressed('left'))  s.cursor.c = Math.max(0, s.cursor.c - 1);
+    if (RE.Input.pressed('right')) s.cursor.c = Math.min(N - 1, s.cursor.c + 1);
+    if (RE.Input.pressed('up'))    s.cursor.r = Math.max(0, s.cursor.r - 1);
+    if (RE.Input.pressed('down'))  s.cursor.r = Math.min(N - 1, s.cursor.r + 1);
+    var aPressed = RE.Input.pressed('a');
+    if (aPressed && !click) click = { r: s.cursor.r, c: s.cursor.c };
+
+    if (RE.Input.pressed('b')) {
+        if (s.selMode === 'aim' && s.sel) {
+            // 待命：不攻擊
+            s.sel.acted = true;
+            s.sel = null; s.selMode = null;
+            RetroAudio.play('cancel');
+        } else if (s.sel) { s.sel = null; s.selMode = null; RetroAudio.play('cancel'); }
+        return;
+    }
+    if (!click) return;
+
+    if (!s.sel) {
+        var m = mechAt(click.r, click.c);
+        if (m && !m.acted) {
+            s.sel = m; s.selMode = 'move';
+            s.moveCells = reachableForMech(m);
+            RetroAudio.play('select');
+        }
+        return;
+    }
+
+    if (s.selMode === 'move') {
+        var ok = false;
+        for (var i = 0; i < s.moveCells.length; i++)
+            if (s.moveCells[i][0] === click.r && s.moveCells[i][1] === click.c) ok = true;
+        if (ok) {
+            s.sel.ox = (s.sel.c - click.c) * CS; s.sel.oy = (s.sel.r - click.r) * CS;
+            s.sel.r = click.r; s.sel.c = click.c;
+            s.sel.moved = true;
+            s.selMode = 'aim';
+            s.aimCells = mechTargets(s.sel);
+            RetroAudio.play('step');
+        } else {
+            var m2 = mechAt(click.r, click.c);
+            if (m2 && !m2.acted && m2 !== s.sel) {
+                s.sel = m2; s.selMode = 'move'; s.moveCells = reachableForMech(m2);
+                RetroAudio.play('select');
+            }
+        }
+        return;
+    }
+
+    if (s.selMode === 'aim') {
+        for (i = 0; i < s.aimCells.length; i++) {
+            var t = s.aimCells[i];
+            if (t.r === click.r && t.c === click.c) { mechAttack(s.sel, t); return; }
+        }
+    }
+}
+
+// ======================================================================
+// 關卡結束
+// ======================================================================
+function endLevel(win) {
+    if (s.over) return;
+    s.over = win ? 1 : -1;
+    s.overT = 1.6;
+    if (win) {
+        RetroAudio.play('win');
+        RE.juice.flash('rgba(140,255,180,0.3)', 0.2);
+        s.total += 300 + s.grid * 150;
+    } else {
+        RetroAudio.play('gameover');
+        RE.juice.shake(0.4);
+    }
+}
+
+function nextLevel() {
+    if (s.level >= LEVELS.length - 1) {
+        G.gameOver({
+            win: true, score: s.total,
+            body: '五個戰區全部守住。整場戰役沒有一次暗算：' +
+                  '每一爪、每一口酸、每一個出土點都預先告訴了你。' +
+                  '所以每一分損失都是你的失算，每一次化解也都是你的功勞——' +
+                  '《Into the Breach》把運氣拿走之後，留下來的就是這種' +
+                  '「完全屬於自己」的勝利。這是棋的魅力，裝進了機甲的外殼。'
+        });
+        return;
+    }
+    var n = s.level + 1;
+    G.stageCard(n + 1, LEVELS[n].name, LEVELS[n].hint, function () { loadLevel(n); });
+}
+
+function afterFail() {
+    G.setLives(G.lives - 1);
+    if (G.lives <= 0) {
+        G.gameOver({
+            win: false, score: s.total,
+            body: '電網歸零。記住三件事：' +
+                  '殺不完就用推的——推進水、推去撞、推離紅線；' +
+                  '蟲被推走時牠的攻擊落點會跟著移，可以借刀殺蟲；' +
+                  '機甲是可以犧牲的，電網才是命。'
+        });
+        return;
+    }
+    var i = s.level;
+    G.stageCard(i + 1, LEVELS[i].name, '電網歸零……再想一次每一步。' + LEVELS[i].hint,
+        function () { loadLevel(i); });
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function render() {
+    if (!s) return;
+    G.beginWorld();
+    drawBG();
+    drawBoard();
+    drawCracks();
+    drawPlans();
+    drawBuildings();
+    drawUnits();
+    drawBreachArtFx();
+    drawSelection();
+    P.draw(ctx); FT.draw(ctx);
+    G.endWorld();
+    drawUI();
+    drawBanner();
+    G.postFX({ scanAlpha: 0.05, vignetteStrength: 0.4 });
+}
+
+function drawBG() {
+    var g = ctx.createLinearGradient(0, 0, 0, VH);
+    g.addColorStop(0, '#1c2430'); g.addColorStop(1, '#141a24');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+}
+
+function drawBoard() {
+    for (var r = 0; r < N; r++) {
+        for (var c = 0; c < N; c++) {
+            var x = BX + c * CS, y = BY + r * CS;
+            var t = s.terrain[r][c];
+            var tileName = t === 'water' ? 'tile_water' : t === 'mount' ? 'tile_mountain' : 'tile_land';
+            var artTile = drawBreachAsset(tileName, x + CS / 2, y + CS / 2, CS, CS, false, 0, 1);
+            if (!artTile) {
+            if (t === 'water') {
+                ctx.fillStyle = '#2a5a8a';
+                ctx.fillRect(x, y, CS, CS);
+                ctx.fillStyle = 'rgba(160,220,255,0.25)';
+                var wv = Math.sin(Date.now() * 0.003 + r * 2 + c) * 2;
+                ctx.fillRect(x + 4, y + 10 + wv, CS - 8, 2);
+            } else {
+                ctx.fillStyle = (r + c) % 2 === 0 ? '#3a4a3e' : '#42544a';
+                ctx.fillRect(x, y, CS, CS);
+                if (t === 'mount') {
+                    ctx.fillStyle = '#6a6a74';
+                    ctx.beginPath();
+                    ctx.moveTo(x + 4, y + CS - 5);
+                    ctx.lineTo(x + CS / 2, y + 5);
+                    ctx.lineTo(x + CS - 4, y + CS - 5);
+                    ctx.closePath(); ctx.fill();
+                    ctx.fillStyle = '#8a8a94';
+                    ctx.beginPath();
+                    ctx.moveTo(x + CS / 2, y + 5);
+                    ctx.lineTo(x + CS / 2 + 5, y + 13);
+                    ctx.lineTo(x + CS / 2 - 5, y + 13);
+                    ctx.closePath(); ctx.fill();
+                }
+            }
+            }
+            ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x + 0.5, y + 0.5, CS - 1, CS - 1);
+        }
+    }
+}
+
+function drawCracks() {
+    for (var i = 0; i < s.cracks.length; i++) {
+        var cr = s.cracks[i];
+        var p = cellCenter(cr.r, cr.c);
+        var pulse = 0.5 + Math.sin(Date.now() * 0.006) * 0.3;
+        if (drawBreachAsset('spawn_crack', p.x, p.y, 27, 27, false, 0, 0.78 + pulse * 0.22)) continue;
+        ctx.strokeStyle = 'rgba(255,150,80,' + pulse + ')';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(p.x - 8, p.y + 6); ctx.lineTo(p.x - 2, p.y - 2); ctx.lineTo(p.x + 3, p.y + 3);
+        ctx.lineTo(p.x + 9, p.y - 6);
+        ctx.stroke();
+        RE.Draw.text(ctx, '!', p.x, p.y - 14, { size: 13, align: 'center', color: 'rgba(255,150,80,' + pulse + ')' });
+    }
+}
+
+function drawPlans() {
+    // 敵人攻擊預告：紅線與落點
+    for (var i = 0; i < s.foes.length; i++) {
+        var f = s.foes[i];
+        if (f.dead || !f.plan) continue;
+        var p0 = cellCenter(f.r, f.c);
+        for (var j = 0; j < f.plan.length; j++) {
+            var rr = f.r + f.plan[j][0], cc = f.c + f.plan[j][1];
+            if (!inBoard(rr, cc)) continue;
+            var p1 = cellCenter(rr, cc);
+            var pulse = 0.4 + Math.sin(Date.now() * 0.005 + i) * 0.25;
+            ctx.strokeStyle = 'rgba(255,92,92,' + pulse + ')';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+            ctx.setLineDash([]);
+            if (!drawBreachAsset('attack_warning', p1.x, p1.y, 25, 25, false, 0, pulse + 0.28)) {
+                ctx.strokeStyle = 'rgba(255,92,92,' + (pulse + 0.2) + ')';
+                ctx.strokeRect(BX + cc * CS + 3, BY + rr * CS + 3, CS - 6, CS - 6);
+            }
+        }
+    }
+}
+
+function drawBuildings() {
+    for (var i = 0; i < s.buildings.length; i++) {
+        var b = s.buildings[i];
+        var x = BX + b.c * CS, y = BY + b.r * CS;
+        var bName = b.hp <= 0 ? 'building_ruin' : b.hp === 1 ? 'building_damaged' : 'building_intact';
+        if (drawBreachAsset(bName, x + CS / 2, y + CS / 2 - 2, 37, 37, false, 0, 1)) continue;
+        if (b.hp <= 0) {
+            ctx.fillStyle = '#4a4440';
+            ctx.fillRect(x + 6, y + 16, CS - 12, CS - 20);
+            continue;
+        }
+        ctx.fillStyle = '#c8d8e4';
+        ctx.fillRect(x + 7, y + 8, CS - 14, CS - 12);
+        ctx.fillStyle = '#8a9ab0';
+        ctx.fillRect(x + 7, y + 8, CS - 14, 4);
+        // 窗與電光
+        var lit = Math.floor(Date.now() * 0.002 + i) % 2 === 0;
+        ctx.fillStyle = lit ? '#ffd166' : '#6a7a90';
+        ctx.fillRect(x + 10, y + 15, 4, 4);
+        ctx.fillRect(x + CS - 14, y + 15, 4, 4);
+        ctx.fillRect(x + 10, y + 22, 4, 4);
+        if (b.hp === 1) {
+            ctx.strokeStyle = '#5a4430'; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(x + 9, y + 12); ctx.lineTo(x + 16, y + 22); ctx.stroke();
+        }
+    }
+}
+
+function drawUnits() {
+    var i;
+    for (i = 0; i < s.foes.length; i++) drawFoe(s.foes[i]);
+    for (i = 0; i < s.mechs.length; i++) drawMech(s.mechs[i]);
+}
+
+function drawMech(m) {
+    if (m.dead) return;
+    var p = cellCenter(m.r, m.c);
+    var x = p.x + m.ox, y = p.y + m.oy;
+    if (drawBreachAsset('mech_' + m.def.key, x, y - 2, 35, 35, false, 0, m.acted ? 0.55 : 1)) {
+        for (var ah = 0; ah < m.def.hp; ah++) {
+            ctx.fillStyle = ah < m.hp ? '#8fe0a0' : 'rgba(255,255,255,0.15)';
+            ctx.fillRect(x - 9 + ah * 5, y + 14, 4, 3);
+        }
+        return;
+    }
+    ctx.save();
+    ctx.translate(x, y);
+    if (m.acted) ctx.globalAlpha = 0.55;
+    var col = m.def.col;
+    // 腳
+    ctx.fillStyle = '#3a4356';
+    ctx.fillRect(-7, 6, 5, 6); ctx.fillRect(2, 6, 5, 6);
+    // 身體
+    ctx.fillStyle = col;
+    RE.Draw.roundRect(ctx, -9, -8, 18, 16, 4); ctx.fill();
+    // 座艙
+    ctx.fillStyle = '#1c2430';
+    RE.Draw.roundRect(ctx, -5, -5, 10, 7, 2); ctx.fill();
+    ctx.fillStyle = '#9fe8ff';
+    ctx.fillRect(-3, -3, 6, 2);
+    // 武裝特徵
+    if (m.def.key === 'punch') { ctx.fillStyle = col; ctx.fillRect(8, -4, 5, 9);
+        ctx.fillStyle = '#c89038'; ctx.fillRect(9, -2, 3, 5); }
+    if (m.def.key === 'cannon') { ctx.fillStyle = '#5a8a70';
+        ctx.save(); ctx.rotate(-0.6); ctx.fillRect(2, -14, 5, 12); ctx.restore(); }
+    if (m.def.key === 'rifle') { ctx.fillStyle = '#5a70a8'; ctx.fillRect(6, -7, 3, 12); }
+    ctx.restore();
+    // HP 豆
+    for (var h = 0; h < m.def.hp; h++) {
+        ctx.fillStyle = h < m.hp ? '#8fe0a0' : 'rgba(255,255,255,0.15)';
+        ctx.fillRect(x - 9 + h * 5, y + 14, 4, 3);
+    }
+}
+
+function drawFoe(f) {
+    if (f.dead) return;
+    var p = cellCenter(f.r, f.c);
+    var x = p.x + f.ox, y = p.y + f.oy;
+    var big = f.def.big;
+    var sc = big ? 1.35 : 1;
+    if (drawBreachAsset('foe_' + f.type, x, y - 2, big ? 46 : 35, big ? 46 : 35, false, 0, 1)) {
+        for (var ah = 0; ah < f.def.hp; ah++) {
+            ctx.fillStyle = ah < f.hp ? '#ff8f6a' : 'rgba(255,255,255,0.15)';
+            ctx.fillRect(x - Math.min(12, f.def.hp * 2.5) + ah * 5, y + (big ? 18 : 13), 4, 3);
+        }
+        return;
+    }
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(sc, sc);
+    var wig = Math.sin(Date.now() * 0.006 + f.r * 3 + f.c) * 1.5;
+    // 腳(節肢)
+    ctx.strokeStyle = '#5a4432'; ctx.lineWidth = 2;
+    for (var l = -1; l <= 1; l += 2) {
+        ctx.beginPath(); ctx.moveTo(l * 5, 2); ctx.lineTo(l * 10, 7 + wig * l); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(l * 5, -2); ctx.lineTo(l * 10, -6 - wig * l); ctx.stroke();
+    }
+    // 身體
+    ctx.fillStyle = f.def.col;
+    ctx.beginPath(); ctx.ellipse(0, 0, 9, 7.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.beginPath(); ctx.ellipse(-3, 0, 4, 5, 0, 0, Math.PI * 2); ctx.fill();
+    // 眼睛
+    ctx.fillStyle = '#ffd166';
+    ctx.beginPath(); ctx.arc(4, -3, 1.6, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(4, 3, 1.6, 0, Math.PI * 2); ctx.fill();
+    if (f.def.kind === 'spit') { ctx.fillStyle = '#c8e86a';
+        ctx.beginPath(); ctx.arc(8, 0, 3, 0, Math.PI * 2); ctx.fill(); }
+    if (big) { ctx.strokeStyle = '#e88a9a'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI * 2); ctx.stroke(); }
+    ctx.restore();
+    // HP 豆
+    for (var h = 0; h < f.def.hp; h++) {
+        ctx.fillStyle = h < f.hp ? '#ff8f6a' : 'rgba(255,255,255,0.15)';
+        ctx.fillRect(x - Math.min(12, f.def.hp * 2.5) + h * 5, y + (big ? 18 : 13), 4, 3);
+    }
+}
+
+function drawBreachArtFx() {
+    for (var i = 0; i < s.artFx.length; i++) {
+        var f = s.artFx[i];
+        var k = Math.max(0, f.t / f.max);
+        drawBreachAsset('impact_burst', f.x, f.y, f.size * (1.2 - k * 0.2), f.size * (1.2 - k * 0.2),
+            false, 0, Math.min(1, k * 2));
+    }
+}
+
+function drawSelection() {
+    // 游標
+    var cx = BX + s.cursor.c * CS, cy = BY + s.cursor.r * CS;
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(cx + 1.5, cy + 1.5, CS - 3, CS - 3);
+
+    if (!s.sel) return;
+    var i;
+    if (s.selMode === 'move') {
+        for (i = 0; i < s.moveCells.length; i++) {
+            var mc = s.moveCells[i];
+            ctx.fillStyle = 'rgba(120,200,255,0.28)';
+            ctx.fillRect(BX + mc[1] * CS + 2, BY + mc[0] * CS + 2, CS - 4, CS - 4);
+        }
+    } else if (s.selMode === 'aim') {
+        for (i = 0; i < s.aimCells.length; i++) {
+            var ac = s.aimCells[i];
+            ctx.fillStyle = 'rgba(255,209,102,0.3)';
+            ctx.fillRect(BX + ac.c * CS + 2, BY + ac.r * CS + 2, CS - 4, CS - 4);
+            ctx.strokeStyle = 'rgba(255,209,102,0.7)';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(BX + ac.c * CS + 4, BY + ac.r * CS + 4, CS - 8, CS - 8);
+        }
+    }
+    var sp = cellCenter(s.sel.r, s.sel.c);
+    ctx.strokeStyle = '#ffd166';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(BX + s.sel.c * CS + 1, BY + s.sel.r * CS + 1, CS - 2, CS - 2);
+}
+
+function drawUI() {
+    // 頂部資訊
+    ctx.fillStyle = 'rgba(12,18,26,0.7)';
+    ctx.fillRect(0, 30, VW, 24);
+    // 480px 內部畫布在手機約縮成 0.71 倍；低於 13px 的戰術字會落到 9px 以下，玩家無法在出招前讀懂資訊。
+    RE.Draw.text(ctx, '⚡' + s.grid + '/' + GRID_MAX, 12, 36, { size: 13, color: s.grid <= GRID_MAX / 2 ? '#ff8f8f' : '#9fe8ff' });
+    RE.Draw.text(ctx, s.L.name, VW / 2, 36, { size: 13, align: 'center', color: '#dbe6f7' });
+    RE.Draw.text(ctx, '回合 ' + s.turn + '/' + s.L.turns, VW - 12, 36, { size: 13, align: 'right', color: '#ffd166' });
+
+    // 底部：說明與結束回合
+    ctx.fillStyle = 'rgba(12,18,26,0.7)';
+    ctx.fillRect(0, VH - 36, VW, 36);
+    var tip;
+    if (s.phase !== 'player') tip = '敵方行動中…';
+    else if (!s.sel) tip = '點一台還沒行動的機甲（跳過請按右下角）';
+    else if (s.selMode === 'move') tip = s.sel.def.name + '：點藍格移動（B 取消）';
+    else tip = s.sel.def.name + '：點黃格攻擊——記住，會把目標推一格（B 待命）';
+    RE.Draw.text(ctx, tip, 10, VH - 26, { size: 13, color: '#cfe0ff', stroke: false });
+    if (s.sel) {
+        RE.Draw.text(ctx, s.sel.def.desc, 10, VH - 13, { size: 13, color: 'rgba(255,209,102,0.8)', stroke: false });
+    }
+    if (s.phase === 'player') {
+        var btn = endTurnBtn();
+        ctx.fillStyle = 'rgba(255,209,102,0.18)';
+        RE.Draw.roundRect(ctx, btn.x, btn.y, btn.w, btn.h, 5); ctx.fill();
+        ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 1.5;
+        RE.Draw.roundRect(ctx, btn.x, btn.y, btn.w, btn.h, 5); ctx.stroke();
+        RE.Draw.text(ctx, '結束回合', btn.x + btn.w / 2, btn.y + 6, { size: 13, align: 'center', color: '#ffd166' });
+    }
+}
+
+// 關卡提示在手機上會縮放；以 13px 基準換行，避免「預測攻擊」說明被壓成一條看不懂的細線。
+function drawWrappedUiText(text, x, y, maxWidth, align, maxLines) {
+    var size = 13, lineGap = 14, lines = [], line = '';
+    ctx.save();
+    ctx.font = 'bold ' + size + 'px "DotGothic16", monospace';
+    for (var i = 0; i < text.length; i++) {
+        var next = line + text[i];
+        if (line && ctx.measureText(next).width > maxWidth) {
+            lines.push(line); line = text[i];
+        } else line = next;
+    }
+    if (line) lines.push(line);
+    ctx.restore();
+    var count = Math.min(lines.length, maxLines || 2);
+    for (var j = 0; j < count; j++) {
+        RE.Draw.text(ctx, lines[j], x, y + j * lineGap,
+            { size: size, align: align || 'center', color: '#cfe0ff', stroke: false });
+    }
+}
+
+function drawBanner() {
+    if (s.bannerT > 0) {
+        ctx.globalAlpha = Math.min(1, s.bannerT);
+        RE.Draw.text(ctx, s.banner, VW / 2, 140, { size: 16, align: 'center', color: '#ffd166' });
+        if (s.bannerT > 1.6 && s.L.hint) {
+            drawWrappedUiText(s.L.hint, VW / 2, 160, VW - 36, 'center', 2);
+        }
+        ctx.globalAlpha = 1;
+    }
+    if (s.over) {
+        ctx.fillStyle = 'rgba(8,12,20,0.8)';
+        ctx.fillRect(0, 130, VW, 62);
+        RE.Draw.text(ctx, s.over === 1 ? '戰區守住了！' : '電網歸零…', VW / 2, 148,
+            { size: 18, align: 'center', color: s.over === 1 ? '#8fe0a0' : '#ff8f8f' });
+        RE.Draw.text(ctx, s.over === 1 ? '電網剩餘 ' + s.grid + '，加分！' : '', VW / 2, 172,
+            { size: 13, align: 'center', color: '#dbe6f7' });
+    }
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '敵人下一步與出生點都會顯示。用三台機甲把攻擊者推進水裡、互撞或移出攻擊線；' +
+          '電網歸零才輸。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

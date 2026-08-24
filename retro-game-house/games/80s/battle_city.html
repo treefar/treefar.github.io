@@ -1,0 +1,1645 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 要塞守衛戰</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   要塞守衛戰 — 致敬 Battle City (Namco, 1985)
+   --------------------------------------------------------------------------
+   復刻重點（這四項是這款遊戲真正的設計骨架）：
+   1. **雙重目標**：既要打光敵人，又要守住畫面底部的指揮核心。
+      核心一破就直接結束，不管還剩幾條命——「躲遠一點慢慢打」的最佳解被廢掉了。
+   2. **四種地形各有規則**：磚牆可打穿（一次打掉半格）、鋼牆要三級火力才穿、
+      草叢可穿越且會遮蔽戰車、水域擋車不擋彈。地形組合決定每張地圖的戰術性格。
+   3. **可破壞地形＝可改造戰場**：玩家能自己打通捷徑，也能刻意留牆封死通往核心的路。
+   4. **砲彈對撞會互相抵銷**：這是防守方最重要的技巧，也讓「面對面互射」變成讀秒博弈。
+
+   實作結構：
+   - 大格 15×15（32px），每個大格再切成 2×2 的小格（16px）供磚牆逐塊破壞。
+   - 戰車 32px、對齊 16px 格線移動（等同原作的半格對齊），四方向、不可斜走。
+   - 砲彈以子步進（sub-step）推進，避免高速時穿牆。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'battle_city',
+    title: '要塞守衛戰',
+    tagline: '射擊遊戲加上一個「不能丟下」的定點，策略就長出來了',
+    original: 'Battle City (Namco, 1985)',
+    decade: '80s', year: 1985, platform: 'FC', genre: '射擊策略',
+    developer: 'Namco', bgm: '80s',
+    width: 480, height: 480,
+    lives: 3,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'best',  label: 'BEST' },
+        { key: 'stage', label: '關卡', init: 1 },
+        { key: 'left',  label: '剩敵', init: 0 },
+        { key: 'power', label: '火力', init: 0 }
+    ],
+    touch: 'dpad+ab', labelA: '射擊', labelB: '射擊', maxScale: 2,
+    controls: [
+        { keys: ['↑', '↓', '←', '→'], desc: '移動與轉向' },
+        { keys: ['空白', 'Z'], desc: '射擊' },
+        { keys: ['K', 'X'], desc: '射擊（副鍵）' },
+        { keys: ['P'], desc: '暫停' }
+    ],
+    howto: '打光該關所有敵方戰車即可過關，但<strong>畫面底部的指揮核心被擊中就直接失敗</strong>——' +
+           '包含被你自己的流彈打到。磚牆可以打穿（一發打掉半格），鋼牆要吃滿三顆星才打得穿，' +
+           '草叢能穿過並藏身，水域擋車不擋彈。' +
+           '<strong>雙方砲彈相撞會互相抵銷</strong>，這是回防時最重要的技巧。' +
+           '閃紅光的敵人擊毀後會掉道具：★升級砲彈、盔甲短暫無敵、鏟子把核心護牆變鋼牆、雷把場上敵人全清。',
+    lesson: {
+        verb: '射擊、回防，並決定哪些磚牆要打穿、哪些要留下保護指揮核心。',
+        innovation: '把固定射擊的「消滅敵人」改成攻守雙目標，再讓可破壞地形同時成為捷徑、掩體與會耗損的防線。',
+        mission: '在第二關親手打通一條磚牆捷徑，推進後再沿同一路線回防；觀察這條路如何同時幫你與敵軍更快接近核心。',
+        evolution: '《Tank Combat》先讓兩輛戰車利用障礙互相找角度；《Battle City》加入必須守住的基地，《Plants vs. Zombies》再把回防與路線阻擋變成整局的塔防經濟。',
+        reflection: '如果磚牆只能阻擋、不能被玩家打穿，進攻與回防還會形成同一個有代價的選擇嗎？'
+    },
+    design: '早期俯視射擊多半只問「能不能擊中敵人」；《Battle City》把問題改成「離開基地多遠才安全」。玩家既要摧毀敵方戰車，也要保住畫面下方的司令部，注意力因此在前線與後方之間來回切換。' +
+            '可破壞磚牆尤其關鍵：開路會縮短自己的進攻距離，也可能替敵人拆掉最後一道防線；鋼牆、水域與草叢則分別改變破壞、通行與視認規則。' +
+            '本站用六張手工地圖重現這個取捨，另以砲彈對撞與敵軍攻擊走廊強化回防的可讀性；沒有重現原作雙人合作、冰地與完整關卡編輯器。' +
+            '這條設計線承接《Tank Combat》的障礙攻防，之後可在《Plants vs. Zombies》的路線防守與《Into the Breach》的空間保護中再次看到。',
+    history: 'Namco 於 1985 年在日本 Family Computer 推出《Battle City》。Bandai Namco 的官方回顧把它定位為 1980 年街機《Tank Battalion》的重製延伸，並明確說明：玩家必須保護司令部，擊破場上二十輛敵方戰車才算過關。' +
+             '任天堂保存的電子說明書也列出一般關卡與「製作關卡」兩套操作，證明地圖建構確實是原作功能；但現有官方資料不足以支持「史上第一款家用主機關卡編輯器」，本站不再使用這個首創說法。' +
+             '從《Tank Combat》單純互射，到《Battle City》把地形、基地與關卡製作綁在一起，家用主機上的射擊開始同時承擔策略與創作工具的角色。',
+    sources: [
+        { label: 'Bandai Namco：Namco Gallery Vol.1／Battle City 回顧', url: 'https://www.bandainamcoent.co.jp/cs/list/namcogarally1/' },
+        { label: '任天堂：Battle City 電子說明書', url: 'https://www.nintendo.co.jp/data/software/manual/TDFJ.pdf' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(560);
+var FT = new RE.FloatText();
+
+// ---- 尺度常數 ----
+var CS = 32;                 // 大格（地形一格）
+var COLS = 15, ROWS = 15;
+var SUB = 16;                // 小格（磚牆的破壞單位）
+var SCOLS = COLS * 2, SROWS = ROWS * 2;
+var TANK = 32;               // 戰車碰撞尺寸（繪製時內縮 2px）
+
+// 地形代碼：0 空 1 磚 2 鋼 3 草 4 水 5 核心
+var DIRV = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+var DIRA = { up: 0, right: Math.PI / 2, down: Math.PI, left: -Math.PI / 2 };
+var DIRLIST = ['up', 'down', 'left', 'right'];
+
+/* --------------------------------------------------------------------------
+   關卡：六張手工地圖
+   B=磚 S=鋼 G=草 W=水 . =空 E=敵方出生 P=玩家出生 X=指揮核心
+   queue 是敵人出場順序（b 輕型 / f 快速 / p 重砲 / a 裝甲），完全手排不用亂數。
+   carriers 是「哪幾台是閃紅光的道具車」，drops 是對應掉落物。
+   aggression 是每次 AI 決策時「改以核心為目標」的機率——越後面的關卡越針對核心。
+   -------------------------------------------------------------------------- */
+var STAGES = [
+    {
+        name: '訓練場', hint: '開闊地形。先熟悉轉向與射擊節奏。',
+        queue: 'bbbbbbbb', carriers: [3, 6], drops: ['star', 'helmet'],
+        aggression: 0.15, maxField: 3, spawnGap: 2.4,
+        map: [
+            'E......E......E',
+            '...............',
+            '..BB.BBBBB.BB..',
+            '..BB.BBBBB.BB..',
+            '...............',
+            '.BB.BB...BB.BB.',
+            '.BB.BB...BB.BB.',
+            '...............',
+            '..BB.BB.BB.BB..',
+            '..BB.BB.BB.BB..',
+            '...............',
+            '....BB...BB....',
+            '...............',
+            '......BBB......',
+            '...P..BXB......'
+        ]
+    },
+    {
+        name: '磚砌迷宮', hint: '路很窄。打穿磚牆做出自己的捷徑。',
+        queue: 'bbfbbfbbfb', carriers: [3, 7], drops: ['star', 'shovel'],
+        aggression: 0.25, maxField: 4, spawnGap: 2.2,
+        map: [
+            'E......E......E',
+            '.BBBB.....BBBB.',
+            '.B...B...B...B.',
+            '.B.B.B.B.B.B.B.',
+            '...B...B...B...',
+            'BB.B.BBB.B.B.BB',
+            '...B.B...B.B...',
+            '.BBB.B.B.B.BBB.',
+            '.....B.B.B.....',
+            'BB.BBB.B.BBB.BB',
+            '.B.....B.....B.',
+            '.B.BBB...BBB.B.',
+            '...B.......B...',
+            '.BBB..BBB..BBB.',
+            '...P..BXB......'
+        ]
+    },
+    {
+        name: '鋼鐵走廊', hint: '鋼牆打不穿。先找出走得通的那幾條路。',
+        queue: 'bfbpbfbpbfbp', carriers: [4, 8], drops: ['star', 'grenade'],
+        aggression: 0.35, maxField: 4, spawnGap: 2.0,
+        map: [
+            'E......E......E',
+            '.S.S.S.S.S.S.S.',
+            '...............',
+            'SS.SS.SSS.SS.SS',
+            '...............',
+            '.S.S.S...S.S.S.',
+            '.S.S.S.B.S.S.S.',
+            '.S.S.S.B.S.S.S.',
+            '.S.S.S...S.S.S.',
+            '...............',
+            'SS.SSS.B.SSS.SS',
+            '...............',
+            '.S.S.S...S.S.S.',
+            '......BBB......',
+            '...P..BXB......'
+        ]
+    },
+    {
+        name: '水道戰場', hint: '水擋車不擋彈。隔著水互射是安全的。',
+        queue: 'bfpbfabpfbaf', carriers: [3, 7, 11], drops: ['helmet', 'star', 'shovel'],
+        aggression: 0.45, maxField: 4, spawnGap: 1.9,
+        map: [
+            'E......E......E',
+            '..WWW.....WWW..',
+            '..WWW.....WWW..',
+            '...............',
+            '.BB.WWWWWWW.BB.',
+            '.BB.WWWWWWW.BB.',
+            '...............',
+            'WWW.BB...BB.WWW',
+            'WWW.BB...BB.WWW',
+            '...............',
+            '..WWW.BBB.WWW..',
+            '..WWW.BBB.WWW..',
+            '...............',
+            '..BB..BBB..BB..',
+            '...P..BXB......'
+        ]
+    },
+    {
+        name: '要塞包圍', hint: '中央草叢是視覺死角。別讓敵人從那裡溜下來。',
+        queue: 'fbpafbpafbpaab', carriers: [4, 9, 13], drops: ['shovel', 'star', 'grenade'],
+        aggression: 0.60, maxField: 4, spawnGap: 1.8,
+        // 第 12 列正中央那塊鋼是刻意放的：沒有它，鑽進中央口袋（c5～c9、10～12 列）
+        // 的敵人就取得一個「玩家打不到、卻能直線轟核心」的狙擊位，核心平均 12 秒就會失守。
+        // 第 6／8 列兩端的磚同理——其他五關的最外側車道都有阻斷物，只有這關原本是直達高速公路。
+        map: [
+            'E......E......E',
+            '...............',
+            '.SSSS.....SSSS.',
+            '.S..S.....S..S.',
+            '.S..SS...SS..S.',
+            '.S...B...B...S.',
+            'BSS..B.G.B..SSB',
+            '.....B.G.B.....',
+            'BSS..B.G.B..SSB',
+            '.S...BBBBB...S.',
+            '.S..S.....S..S.',
+            '.S..S.....S..S.',
+            '.SSSS..S..SSSS.',
+            '......BBB......',
+            '...P..BXB......'
+        ]
+    },
+    {
+        name: '最終防線', hint: '四種地形全上場。敵人幾乎只認核心。',
+        queue: 'bfpafbpafbpaafaa', carriers: [3, 8, 14], drops: ['star', 'helmet', 'life'],
+        aggression: 0.75, maxField: 4, spawnGap: 1.6,
+        map: [
+            'E......E......E',
+            '.SS.BBB.BBB.SS.',
+            '.SS.B.....B.SS.',
+            '....B.WWW.B....',
+            'BBB.B.WWW.B.BBB',
+            '...G..WWW..G...',
+            '.S.G.......G.S.',
+            '.S.GGG...GGG.S.',
+            '.S...........S.',
+            '.SBBB.BSB.BBBS.',
+            '.....G...G.....',
+            'BBB.GG...GG.BBB',
+            '...............',
+            '.SS...BBB...SS.',
+            '...P..BXB......'
+        ]
+    }
+];
+
+var ENEMY_DEF = {
+    b: { key: 'b', name: '輕型', speed: 52, bspd: 190, reload: 1.5, hp: 1, score: 100, color: '#b9c6c2' },
+    f: { key: 'f', name: '快速型', speed: 100, bspd: 190, reload: 1.7, hp: 1, score: 200, color: '#9be7ff' },
+    p: { key: 'p', name: '重砲型', speed: 54, bspd: 340, reload: 1.0, hp: 1, score: 300, color: '#ffb4a2' },
+    a: { key: 'a', name: '裝甲型', speed: 48, bspd: 200, reload: 1.3, hp: 4, score: 400, color: '#c084fc' }
+};
+// 裝甲型每被打中一次就換一種顏色，讓「還剩幾發」看得見
+var ARMOR_COLOR = ['#ef4444', '#eab308', '#4ade80', '#c084fc'];
+
+var ITEM_DEF = {
+    star:    { color: '#ffd166', label: '★ 砲彈升級' },
+    helmet:  { color: '#7dd3fc', label: '護盾 8 秒' },
+    shovel:  { color: '#c9a35b', label: '核心護牆鋼化' },
+    grenade: { color: '#ff6b6b', label: '全場殲滅' },
+    life:    { color: '#ff9ebb', label: '額外機會 +1' }
+};
+
+var PLAYER_SPEED = 96;
+
+var s = {};
+
+// ======================================================================
+// 關卡載入
+// ======================================================================
+function setBig(bc, br, code) {
+    for (var dy = 0; dy < 2; dy++) {
+        for (var dx = 0; dx < 2; dx++) s.grid[br * 2 + dy][bc * 2 + dx] = code;
+    }
+}
+
+function reset() {
+    s = { stage: 1, lives: 3, score: 0, power: 0, over: false };
+    P.clear();
+    FT.clear();
+    loadStage(1);
+    G.setStat('score', 0);
+    G.setStat('power', 0);
+    G.setLives(3);
+}
+
+/**
+ * 開一場新遊戲。第一關同樣要走 G.stageCard，理由有兩個：
+ * 1. 六關節奏一致，每關開場都先讀到關卡名與提示。
+ * 2. 外殼在 gameOver／暫停面板按下「重新開始」時，只做 hideOverlay + 觸發 restart，
+ *    並不會把內部狀態切回 playing；stageCard 結束時才會設成 playing。
+ *    少了這張字卡，重玩後 G.run 的包裝永遠不呼叫 update，整個畫面會定格。
+ */
+function startNewGame() {
+    reset();
+    G.stageCard(1, s.cfg.name, s.cfg.hint);
+}
+
+function loadStage(n) {
+    var cfg = STAGES[Math.min(n - 1, STAGES.length - 1)];
+    var r, c, i;
+    s.cfg = cfg;
+    s.stage = n;
+
+    s.grid = [];
+    for (r = 0; r < SROWS; r++) { s.grid[r] = []; for (c = 0; c < SCOLS; c++) s.grid[r][c] = 0; }
+
+    s.spawnPoints = [];
+    s.baseCell = { c: 7, r: ROWS - 1 };
+    s.playerStart = { c: 4, r: ROWS - 1 };
+
+    for (var br = 0; br < ROWS; br++) {
+        var row = cfg.map[br];
+        for (var bc = 0; bc < COLS; bc++) {
+            var ch = row.charAt(bc), code = 0;
+            if (ch === 'B') code = 1;
+            else if (ch === 'S') code = 2;
+            else if (ch === 'G') code = 3;
+            else if (ch === 'W') code = 4;
+            else if (ch === 'X') { code = 5; s.baseCell = { c: bc, r: br }; }
+            else if (ch === 'E') s.spawnPoints.push({ c: bc, r: br });
+            else if (ch === 'P') s.playerStart = { c: bc, r: br };
+            setBig(bc, br, code);
+        }
+    }
+    if (!s.spawnPoints.length) s.spawnPoints = [{ c: 0, r: 0 }, { c: 7, r: 0 }, { c: 14, r: 0 }];
+
+    // 核心護牆（左上、正上、右上、左、右）
+    s.wallCells = [];
+    var ring = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0]];
+    for (i = 0; i < ring.length; i++) {
+        var wc = s.baseCell.c + ring[i][0], wr = s.baseCell.r + ring[i][1];
+        if (wc >= 0 && wc < COLS && wr >= 0 && wr < ROWS) s.wallCells.push({ c: wc, r: wr });
+    }
+
+    // 出場隊列
+    s.queue = [];
+    for (i = 0; i < cfg.queue.length; i++) {
+        var carry = cfg.carriers.indexOf(i);
+        s.queue.push({
+            type: cfg.queue.charAt(i),
+            drop: carry >= 0 ? (cfg.drops[carry] || 'star') : null
+        });
+    }
+    s.totalEnemies = s.queue.length;
+
+    s.enemies = [];
+    s.bullets = [];
+    s.items = [];
+    s.spawnIndex = 0;
+    s.spawnTimer = 0.8;
+    s.clearTimer = 0;
+    s.deadTimer = 0;
+    s.baseTimer = 0;
+    s.baseDown = false;
+    s.baseHitFlash = 0;
+    s.shovelTimer = 0;
+    s.boomTick = 0;
+    s.anim = 0;
+    s.interrupt = false;
+    spawnPlayer(true);
+
+    G.setStat('stage', n);
+    G.setStat('left', s.queue.length);
+    G.setStat('power', s.power);
+}
+
+function spawnPlayer(fresh) {
+    s.p = {
+        x: s.playerStart.c * CS, y: s.playerStart.r * CS,
+        dir: 'up', speed: PLAYER_SPEED, track: 0,
+        // 陣亡後重生給多一點無敵時間，避免一出生就被守在原地的敵人再打掉
+        invuln: fresh ? 2.5 : 3.2, spawnAnim: 0.7,
+        dead: false, stepSfx: 0, blocked: false, moving: false, helmet: false,
+        stuck: 0, freePass: 0, tankBlocked: false
+    };
+}
+
+// ======================================================================
+// 幾何與碰撞
+// ======================================================================
+function solidCode(v) { return v === 1 || v === 2 || v === 4 || v === 5; }
+
+/**
+ * 這個位置放得下戰車嗎。
+ * loose = true 時只檢查地形，不檢查其他戰車——只在「卡死超過 STUCK_FREE 秒」時才會用到，
+ * 是防止戰車互相鎖死的安全閥（見 stepTank 的說明）。
+ */
+function canPlace(x, y, self, loose) {
+    if (x < 0 || y < 0 || x + TANK > W || y + TANK > H) return false;
+    var c0 = Math.floor(x / SUB), c1 = Math.floor((x + TANK - 1) / SUB);
+    var r0 = Math.floor(y / SUB), r1 = Math.floor((y + TANK - 1) / SUB);
+    var r, c;
+    for (r = r0; r <= r1; r++) {
+        if (r < 0 || r >= SROWS) return false;
+        for (c = c0; c <= c1; c++) {
+            if (c < 0 || c >= SCOLS) return false;
+            if (solidCode(s.grid[r][c])) return false;
+        }
+    }
+    if (loose) return true;
+    for (var i = 0; i < s.enemies.length; i++) {
+        var o = s.enemies[i];
+        if (o === self || o.dying > 0) continue;
+        if (Math.abs(o.x - x) < TANK - 6 && Math.abs(o.y - y) < TANK - 6) return false;
+    }
+    var p = s.p;
+    if (p && p !== self && !p.dead &&
+        Math.abs(p.x - x) < TANK - 6 && Math.abs(p.y - y) < TANK - 6) return false;
+    return true;
+}
+
+/** 讓數值往最近的格線靠，每次最多移動 maxDelta（轉彎寬容度的來源） */
+function snapTo(v, maxDelta) {
+    var t = Math.round(v / SUB) * SUB;
+    var d = t - v;
+    if (Math.abs(d) <= maxDelta) return t;
+    return v + RE.sign(d) * maxDelta;
+}
+
+var STUCK_FREE = 0.9;   // 連續卡住多久之後暫時無視「戰車互擋」
+
+/**
+ * 戰車前進一步。
+ * 先做「垂直於行進方向」的格線吸附，再嘗試前進；
+ * 撞牆時把行進軸歸零到格線上——README 提過，
+ * 若停在半格會超出可轉向的判定門檻，貼牆後就再也轉不了向。
+ *
+ * 但那個「歸零」最多會把車體反向推 15px，若不檢查就直接寫入，
+ * 兩台車可能被推成相距 16px 的重疊狀態；之後任何方向的移動都會被
+ * canPlace 的 26px 門檻擋下，兩台車就永久互鎖在原地。
+ * 因此歸零同樣要過 canPlace，並額外提供 loose 安全閥。
+ */
+function stepTank(t, dt, loose) {
+    var d = DIRV[t.dir];
+    var dist = t.speed * dt;
+    if (d[0] !== 0) {
+        var ny = snapTo(t.y, dist * 1.7);
+        if (ny !== t.y && canPlace(t.x, ny, t, loose)) t.y = ny;
+    } else {
+        var nx = snapTo(t.x, dist * 1.7);
+        if (nx !== t.x && canPlace(nx, t.y, t, loose)) t.x = nx;
+    }
+    var tx = t.x + d[0] * dist, ty = t.y + d[1] * dist;
+    if (canPlace(tx, ty, t, loose)) {
+        t.x = tx; t.y = ty; t.blocked = false; t.tankBlocked = false;
+    } else {
+        var sx = t.x, sy = t.y;
+        if (d[0] > 0) sx = Math.floor(t.x / SUB) * SUB;
+        else if (d[0] < 0) sx = Math.ceil(t.x / SUB) * SUB;
+        else if (d[1] > 0) sy = Math.floor(t.y / SUB) * SUB;
+        else sy = Math.ceil(t.y / SUB) * SUB;
+        if (canPlace(sx, sy, t, loose)) { t.x = sx; t.y = sy; }
+        t.blocked = true;
+        // 地形其實放得下 ⇒ 擋住的是另一台戰車，才需要啟動脫困安全閥
+        t.tankBlocked = canPlace(tx, ty, t, true);
+    }
+    t.track += dist;
+}
+
+function canStep(t, dir, loose) {
+    var d = DIRV[dir];
+    var x = t.x, y = t.y;
+    if (d[0] !== 0) y = Math.round(y / SUB) * SUB;
+    else x = Math.round(x / SUB) * SUB;
+    return canPlace(x + d[0] * 7, y + d[1] * 7, t, loose);
+}
+
+/**
+ * 脫困安全閥。被「另一台戰車」擋住超過 STUCK_FREE 秒，就開一段 0.7 秒的通行窗，
+ * 這段期間只擋地形、不擋戰車，讓互鎖的兩台車一定分得開
+ * （最慢的裝甲型 48px/s × 0.7s ≈ 34px，已超過 26px 的重疊門檻）。
+ * 被牆擋住不算——撞牆本來就該停下來。
+ */
+function stuckRelease(t, dt) {
+    if (t.freePass > 0) { t.freePass -= dt; return true; }
+    if (t.tankBlocked) {
+        t.stuck += dt;
+        if (t.stuck > STUCK_FREE) { t.stuck = 0; t.freePass = 0.7; return true; }
+    } else {
+        t.stuck = 0;
+    }
+    return false;
+}
+
+function cellHasTank(bc, br) {
+    var x = bc * CS, y = br * CS, i, o;
+    for (i = 0; i < s.enemies.length; i++) {
+        o = s.enemies[i];
+        if (Math.abs(o.x - x) < TANK && Math.abs(o.y - y) < TANK) return true;
+    }
+    if (s.p && !s.p.dead && Math.abs(s.p.x - x) < TANK && Math.abs(s.p.y - y) < TANK) return true;
+    return false;
+}
+
+// ======================================================================
+// 射擊
+// ======================================================================
+function countBullets(owner, src) {
+    var n = 0;
+    for (var i = 0; i < s.bullets.length; i++) {
+        var b = s.bullets[i];
+        if (b.dead) continue;
+        if (src) { if (b.src === src) n++; }
+        else if (b.owner === owner) n++;
+    }
+    return n;
+}
+
+function fire(t, owner, speed, power) {
+    var d = DIRV[t.dir];
+    var cx0 = t.x + TANK / 2, cy0 = t.y + TANK / 2;
+    s.bullets.push({
+        x: cx0 + d[0] * 18, y: cy0 + d[1] * 18,
+        dir: t.dir, speed: speed, owner: owner, power: power || 0,
+        src: t, dead: false
+    });
+    RetroAudio.play('shoot');
+    RE.juice.shake(owner === 'p' ? 0.06 : 0.03);
+    P.sparks(cx0 + d[0] * 19, cy0 + d[1] * 19, Math.atan2(d[1], d[0]), owner === 'p' ? 6 : 4,
+             owner === 'p' ? '#ffe9a8' : '#ffc4a8');
+}
+
+function playerFire() {
+    var p = s.p;
+    var max = s.power >= 1 ? 2 : 1;
+    if (countBullets('p') >= max) { RetroAudio.play('blip'); return; }
+    fire(p, 'p', s.power >= 2 ? 330 : 250, s.power);
+}
+
+function killBullet(b, kind) {
+    if (b.dead) return;
+    b.dead = true;
+    var d = DIRV[b.dir];
+    var ang = Math.atan2(-d[1], -d[0]);
+    if (kind === 'edge') {
+        P.sparks(b.x, b.y, ang, 4, '#9aa8a4');
+        RetroAudio.play('blip');
+    } else if (kind === 'steel') {
+        // 打在鋼牆上「彈開」：金屬音 + 較大的震動，明確告訴玩家「這條路現在不通」
+        P.sparks(b.x, b.y, ang, 12, '#dbe9f2');
+        P.ring(b.x, b.y, '#c3d2da', 20);
+        RetroAudio.play('block');
+        RE.juice.shake(0.2);
+        RE.juice.hitstop(0.02);
+    }
+}
+
+function clashBullets(a, b) {
+    a.dead = true; b.dead = true;
+    var mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    P.burst(mx, my, 12, {
+        colors: ['#fff8e7', '#ffd166', '#9be7ff'], speedMin: 60, speedMax: 210,
+        gravity: 0, drag: 0.9, lifeMin: 0.12, lifeMax: 0.32, sizeMax: 4, glow: true
+    });
+    P.ring(mx, my, '#fff8e7', 24);
+    RetroAudio.play('block');
+    RE.juice.hitstop(0.02);
+    RE.juice.shake(0.12);
+    FT.add(mx, my - 14, '抵銷', { color: '#a7f3d0', size: 12, life: 0.6 });
+}
+
+// ======================================================================
+// 砲彈更新
+// ======================================================================
+function updateBullets(dt) {
+    var i, j, b, o;
+    for (i = 0; i < s.bullets.length; i++) {
+        b = s.bullets[i];
+        if (b.dead) continue;
+        var total = b.speed * dt;
+        var steps = Math.max(1, Math.ceil(total / 6));
+        var sd = total / steps;
+        var d = DIRV[b.dir];
+        for (var k = 0; k < steps; k++) {
+            b.x += d[0] * sd; b.y += d[1] * sd;
+            if (b.x < 0 || b.x > W || b.y < 0 || b.y > H) { killBullet(b, 'edge'); break; }
+            for (j = 0; j < s.bullets.length; j++) {
+                o = s.bullets[j];
+                if (o === b || o.dead || o.owner === b.owner) continue;
+                if (Math.abs(o.x - b.x) < 10 && Math.abs(o.y - b.y) < 10) { clashBullets(b, o); break; }
+            }
+            if (b.dead) break;
+            if (bulletTerrain(b)) break;
+            if (s.interrupt) return;
+            if (bulletTanks(b)) break;
+            if (s.interrupt) return;
+        }
+    }
+    for (i = s.bullets.length - 1; i >= 0; i--) if (s.bullets[i].dead) s.bullets.splice(i, 1);
+}
+
+/**
+ * 砲彈與地形。
+ * 取「前緣所在的那一層小格」×「垂直方向 ±7px 涵蓋的兩個小格」，
+ * 也就是一發打掉半格（一個大格的近側兩塊），兩發才打穿——這就是原作的手感。
+ */
+function bulletTerrain(b) {
+    var d = DIRV[b.dir];
+    var cells = [], c, r;
+    if (d[0] !== 0) {
+        c = Math.floor((b.x + d[0] * 5) / SUB);
+        var r0 = Math.floor((b.y - 7) / SUB), r1 = Math.floor((b.y + 7) / SUB);
+        for (r = r0; r <= r1; r++) cells.push([c, r]);
+    } else {
+        r = Math.floor((b.y + d[1] * 5) / SUB);
+        var c0 = Math.floor((b.x - 7) / SUB), c1 = Math.floor((b.x + 7) / SUB);
+        for (c = c0; c <= c1; c++) cells.push([c, r]);
+    }
+
+    var bricks = [], steels = [], hitBase = false, i, cc, rr, v;
+    for (i = 0; i < cells.length; i++) {
+        cc = cells[i][0]; rr = cells[i][1];
+        if (cc < 0 || cc >= SCOLS || rr < 0 || rr >= SROWS) continue;
+        v = s.grid[rr][cc];
+        if (v === 1) bricks.push([cc, rr]);
+        else if (v === 2) steels.push([cc, rr]);
+        else if (v === 5) hitBase = true;
+    }
+
+    if (hitBase) { b.dead = true; destroyBase(); return true; }
+
+    if (bricks.length) {
+        for (i = 0; i < bricks.length; i++) {
+            s.grid[bricks[i][1]][bricks[i][0]] = 0;
+            P.burst(bricks[i][0] * SUB + 8, bricks[i][1] * SUB + 8, 7, {
+                colors: ['#8c4423', '#c8703c', '#e0a06a'], speedMin: 40, speedMax: 170,
+                gravity: 380, lifeMin: 0.18, lifeMax: 0.45, sizeMin: 2, sizeMax: 5
+            });
+        }
+        b.dead = true;
+        RetroAudio.play('hit');
+        // 自己打出去的那一發要有「啃進去」的手感；敵方流彈打牆只給輕微震動，
+        // 否則整場都在頓幀，反而變成卡頓而不是打擊感。
+        if (b.owner === 'p') { RE.juice.hitstop(0.015); RE.juice.shake(0.11); }
+        else RE.juice.shake(0.05);
+        return true;
+    }
+
+    if (steels.length) {
+        if (b.power >= 3) {
+            for (i = 0; i < steels.length; i++) {
+                s.grid[steels[i][1]][steels[i][0]] = 0;
+                P.burst(steels[i][0] * SUB + 8, steels[i][1] * SUB + 8, 10, {
+                    colors: ['#8a9aa4', '#c3d2da', '#fff8e7'], speedMin: 60, speedMax: 220,
+                    gravity: 400, lifeMin: 0.2, lifeMax: 0.55, sizeMin: 2, sizeMax: 5, glow: true
+                });
+            }
+            b.dead = true;
+            RetroAudio.play('heavyHit');
+            RE.juice.shake(0.24);
+            RE.juice.hitstop(0.03);
+            FT.add(b.x, b.y - 14, '穿甲！', { color: '#c3d2da', size: 13, life: 0.7 });
+        } else {
+            killBullet(b, 'steel');
+        }
+        return true;
+    }
+    return false;
+}
+
+function bulletTanks(b) {
+    var i, e, p;
+    if (b.owner === 'p') {
+        for (i = 0; i < s.enemies.length; i++) {
+            e = s.enemies[i];
+            if (e.dying > 0 || e.spawnAnim > 0) continue;
+            if (b.x > e.x && b.x < e.x + TANK && b.y > e.y && b.y < e.y + TANK) {
+                b.dead = true;
+                hitEnemy(e, b);
+                return true;
+            }
+        }
+    } else {
+        p = s.p;
+        if (p && !p.dead && p.spawnAnim <= 0 &&
+            b.x > p.x && b.x < p.x + TANK && b.y > p.y && b.y < p.y + TANK) {
+            b.dead = true;
+            if (p.invuln > 0) {
+                P.ring(p.x + 16, p.y + 16, '#7dd3fc', 34);
+                P.sparks(b.x, b.y, Math.atan2(-DIRV[b.dir][1], -DIRV[b.dir][0]), 10, '#7dd3fc');
+                RetroAudio.play('block');
+                RE.juice.hitstop(0.03);
+                RE.juice.shake(0.16);
+                RE.juice.flash('rgba(125,211,252,0.22)', 0.06);
+                FT.add(p.x + 16, p.y - 6, '護盾擋下', { color: '#7dd3fc', size: 12, life: 0.6 });
+            } else {
+                playerDie();
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+// ======================================================================
+// 敵方戰車
+// ======================================================================
+function updateSpawns(dt) {
+    if (!s.queue.length) return;
+    s.spawnTimer -= dt;
+    if (s.spawnTimer > 0) return;
+    if (s.enemies.length >= s.cfg.maxField) return;
+
+    // 三個出生點輪流用，被佔住就換下一個
+    for (var tries = 0; tries < s.spawnPoints.length; tries++) {
+        var pt = s.spawnPoints[s.spawnIndex % s.spawnPoints.length];
+        s.spawnIndex++;
+        var x = pt.c * CS, y = pt.r * CS;
+        if (!canPlace(x, y, null)) continue;
+        var q = s.queue.shift();
+        var def = ENEMY_DEF[q.type] || ENEMY_DEF.b;
+        s.enemies.push({
+            def: def, x: x, y: y, dir: 'down', speed: def.speed, track: 0,
+            hp: def.hp, drop: q.drop, spawnAnim: 1.0, dying: 0,
+            think: 0, fireCd: RE.rand(0.3, 1.0), wantFire: false, aim: 'base', aimHold: 0,
+            blocked: false, stuck: 0, freePass: 0, tankBlocked: false, flash: 0
+        });
+        s.spawnTimer = s.cfg.spawnGap;
+        RetroAudio.play('select');
+        P.ring(x + 16, y + 16, '#ffd166', 30);
+        G.setStat('left', remainingEnemies());
+        return;
+    }
+    s.spawnTimer = 0.4;
+}
+
+function remainingEnemies() {
+    var n = s.queue.length;
+    for (var i = 0; i < s.enemies.length; i++) if (s.enemies[i].dying <= 0) n++;
+    return n;
+}
+
+function stepOptions(e, loose) {
+    var opts = [];
+    for (var i = 0; i < DIRLIST.length; i++) if (canStep(e, DIRLIST[i], loose)) opts.push(DIRLIST[i]);
+    return opts;
+}
+
+/** 依這次決策已經決定好的目標（e.aim）貪心選路，本身不擲任何骰 */
+function chooseDir(e, loose) {
+    var opts = stepOptions(e, loose);
+    if (!opts.length) return;             // 完全被封死就保持原方向，讓它去轟前面那面牆
+    var tx, ty;
+    if (e.aim === 'player' && s.p && !s.p.dead) { tx = s.p.x + 16; ty = s.p.y + 16; }
+    else { tx = s.baseCell.c * CS + 16; ty = s.baseCell.r * CS + 16; }
+
+    var ex = e.x + 16, ey = e.y + 16;
+    var best = opts[0], bestD = 1e9;
+    for (var i = 0; i < opts.length; i++) {
+        var d = DIRV[opts[i]];
+        var dd = RE.dist(ex + d[0] * CS, ey + d[1] * CS, tx, ty);
+        if (opts[i] === e.dir) dd -= 10;      // 略微偏好維持原方向，避免原地抖動
+        if (dd < bestD) { bestD = dd; best = opts[i]; }
+    }
+    e.dir = best;
+}
+
+/**
+ * AI 決策：**一次決策只擲一次骰**（目標、開火意圖、是否亂走全在這裡決定）。
+ * README 記過這個坑——若每幀重擲，隨機誤差會被平均掉，AI 反而變成永不失誤的完美機器。
+ * 這裡還有第二層影響：撞牆時若每幀重擲 wantFire，敵人會用最高射速把牆鑽穿，
+ * 難度會被這個 bug 悄悄拉高一大截。因此撞牆只呼叫 chooseDir 重新選路，不重擲。
+ */
+function decideEnemy(e, loose) {
+    e.think = RE.rand(0.45, 1.25);
+    e.wantFire = Math.random() < 0.42;
+
+    /* 目標要有黏性。原本每次決策（0.45～1.25 秒）都重擲一次 aim，
+       結果是即使 aggression 拉到 0.75，敵人也會在「衝核心」與「追玩家」之間
+       反覆改主意——從核心的方向走兩步又轉頭，等於原地遊走。
+       實測五場裡有三場護牆一格都沒掉、敵人最近只走到離核心 272～363px，
+       **「回防」這個核心動詞於是從來沒有被逼出來**：
+       拿掉回防的對照組推進得比熟練版還遠。
+       選了核心就堅持 4 秒——那大約是從畫面上緣走到護牆的時間，
+       足夠讓一次進攻真的成形，玩家也才有「非回去不可」的時刻。 */
+    if (e.aimHold > 0) {
+        e.aimHold -= e.think;
+    } else {
+        e.aim = (Math.random() < s.cfg.aggression || !s.p || s.p.dead) ? 'base' : 'player';
+        if (e.aim === 'base') e.aimHold = 4;
+    }
+
+    // 兩成五純亂走，讓行進路線不會太機械
+    if (Math.random() < 0.25) {
+        var opts = stepOptions(e, loose);
+        if (opts.length) e.dir = RE.pick(opts);
+        return;
+    }
+    chooseDir(e, loose);
+}
+
+function aimedAtTarget(e) {
+    var ex = e.x + 16, ey = e.y + 16;
+    var d = DIRV[e.dir];
+    var targets = [{ x: s.baseCell.c * CS + 16, y: s.baseCell.r * CS + 16 }];
+    if (s.p && !s.p.dead) targets.push({ x: s.p.x + 16, y: s.p.y + 16 });
+    for (var i = 0; i < targets.length; i++) {
+        var t = targets[i];
+        if (d[0] !== 0) {
+            if (Math.abs(t.y - ey) < 22 && RE.sign(t.x - ex) === d[0]) return true;
+        } else {
+            if (Math.abs(t.x - ex) < 22 && RE.sign(t.y - ey) === d[1]) return true;
+        }
+    }
+    return false;
+}
+
+function updateEnemies(dt) {
+    for (var i = s.enemies.length - 1; i >= 0; i--) {
+        var e = s.enemies[i];
+        if (e.dying > 0) {
+            e.dying -= dt;
+            if (e.dying <= 0) s.enemies.splice(i, 1);
+            continue;
+        }
+        if (e.spawnAnim > 0) { e.spawnAnim -= dt; continue; }
+
+        e.flash += dt;
+        e.think -= dt;
+        var loose = stuckRelease(e, dt);
+        if (e.think <= 0) decideEnemy(e, loose);
+        else if (e.blocked) chooseDir(e, loose);   // 撞牆只重新選路，不重擲隨機值
+        stepTank(e, dt, loose);
+
+        e.fireCd -= dt;
+        if (e.fireCd <= 0 && countBullets(null, e) === 0) {
+            if (e.wantFire || aimedAtTarget(e)) {
+                e.wantFire = false;
+                e.fireCd = e.def.reload;
+                fire(e, 'e', e.def.bspd, 0);
+            }
+        }
+    }
+}
+
+function hitEnemy(e, b) {
+    e.hp--;
+    if (e.hp > 0) {
+        // 裝甲型：沒毀但要有明確回饋——變色 + 輕擊音 + 小震動
+        RetroAudio.play('hit');
+        RE.juice.hitstop(0.02);
+        RE.juice.shake(0.1);
+        P.sparks(b.x, b.y, Math.atan2(-DIRV[b.dir][1], -DIRV[b.dir][0]), 8, '#fff0aa');
+        FT.add(e.x + 16, e.y - 4, '裝甲 ' + e.hp, { color: ARMOR_COLOR[e.hp - 1] || '#fff8e7', size: 12, life: 0.6 });
+        return;
+    }
+    killEnemy(e);
+}
+
+function killEnemy(e) {
+    e.dying = 0.45;
+    var cx0 = e.x + 16, cy0 = e.y + 16;
+    addScore(e.def.score);
+    FT.add(cx0, cy0 - 14, '+' + e.def.score, { color: e.def.color, size: 16, life: 0.9 });
+
+    RE.juice.hitstop(0.04);
+    RE.juice.shake(0.25);
+    RE.juice.rumble(0.45, 0.1);
+    RetroAudio.play('explosion');
+    P.burst(cx0, cy0, 24, {
+        colors: [e.def.color, '#ffd166', '#fff8e7', '#ff9349'],
+        speedMin: 60, speedMax: 240, gravity: 180, lifeMin: 0.25, lifeMax: 0.7,
+        sizeMin: 2, sizeMax: 6, glow: true
+    });
+    P.ring(cx0, cy0, '#ffd166', 46);
+
+    if (e.def.hp > 1) {
+        // 裝甲型是硬目標，擊毀值得更強的回饋
+        RE.juice.flash('rgba(255,209,102,0.28)', 0.09);
+        RE.juice.hitstop(0.06);
+    }
+
+    if (e.drop) dropItem(cx0, cy0, e.drop);
+    G.setStat('left', remainingEnemies());
+}
+
+// ======================================================================
+// 道具
+// ======================================================================
+function dropItem(x, y, type) {
+    var bc = RE.clamp(Math.round((x - 16) / CS), 0, COLS - 1);
+    var br = RE.clamp(Math.round((y - 16) / CS), 0, ROWS - 1);
+    // 掉落點若卡在牆裡就往上找一格空地
+    for (var tries = 0; tries < 24; tries++) {
+        if (canPlace(bc * CS, br * CS, null)) break;
+        br = (br + 1) % ROWS;
+        if (br === 0) bc = (bc + 3) % COLS;
+    }
+    s.items.push({ type: type, x: bc * CS + 16, y: br * CS + 16, t: 0, life: 22 });
+    RetroAudio.play('powerup');
+    FT.add(bc * CS + 16, br * CS - 4, '道具出現', { color: ITEM_DEF[type].color, size: 13, life: 1.1 });
+}
+
+function updateItems(dt) {
+    var p = s.p;
+    for (var i = s.items.length - 1; i >= 0; i--) {
+        var it = s.items[i];
+        it.t += dt;
+        it.life -= dt;
+        if (it.life <= 0) { s.items.splice(i, 1); continue; }
+        if (p && !p.dead &&
+            Math.abs(p.x + 16 - it.x) < 26 && Math.abs(p.y + 16 - it.y) < 26) {
+            s.items.splice(i, 1);
+            takeItem(it);
+            if (s.interrupt) return;
+        }
+    }
+}
+
+function takeItem(it) {
+    var def = ITEM_DEF[it.type];
+    addScore(500);
+    RetroAudio.play('powerup');
+    RE.juice.flash('rgba(255,209,102,0.3)', 0.14);
+    RE.juice.shake(0.12);
+    P.ring(it.x, it.y, def.color, 60);
+    P.burst(it.x, it.y, 18, {
+        colors: [def.color, '#fff8e7'], speedMin: 50, speedMax: 190,
+        gravity: 60, lifeMin: 0.25, lifeMax: 0.6, glow: true
+    });
+    FT.add(it.x, it.y - 18, def.label, { color: def.color, size: 15, life: 1.4 });
+
+    if (it.type === 'star') {
+        s.power = Math.min(3, s.power + 1);
+        G.setStat('power', s.power);
+        var note = s.power === 1 ? '可同時兩發' : s.power === 2 ? '砲彈加速' : '可擊穿鋼牆';
+        FT.add(it.x, it.y - 38, note, { color: '#fff8e7', size: 13, life: 1.5, vy: -34 });
+    } else if (it.type === 'helmet') {
+        s.p.invuln = Math.max(s.p.invuln, 8);
+        s.p.helmet = true;      // 與「重生無敵」區分開，HUD 才不會把重生的 3.2 秒也標成護盾
+    } else if (it.type === 'shovel') {
+        fortifyWalls();
+    } else if (it.type === 'grenade') {
+        grenade();
+    } else if (it.type === 'life') {
+        s.lives++;
+        G.setLives(s.lives);
+        RetroAudio.play('oneup');
+    }
+}
+
+function grenade() {
+    RE.juice.flash('rgba(255,107,107,0.45)', 0.2);
+    RE.juice.shake(0.7);
+    RE.juice.slowmo(0.4, 0.7);
+    RetroAudio.play('bigExplosion');
+    for (var i = 0; i < s.enemies.length; i++) {
+        var e = s.enemies[i];
+        if (e.dying > 0) continue;
+        e.hp = 1;
+        e.spawnAnim = 0;
+        killEnemy(e);
+    }
+}
+
+function fortifyWalls() {
+    s.shovelTimer = 20;
+    for (var i = 0; i < s.wallCells.length; i++) {
+        var w = s.wallCells[i];
+        if (cellHasTank(w.c, w.r)) continue;
+        setBig(w.c, w.r, 2);
+    }
+    RetroAudio.play('levelUp');
+}
+
+function restoreWalls() {
+    for (var i = 0; i < s.wallCells.length; i++) {
+        var w = s.wallCells[i];
+        if (cellHasTank(w.c, w.r)) continue;
+        setBig(w.c, w.r, 1);
+    }
+    RetroAudio.play('error');
+    FT.add(s.baseCell.c * CS + 16, s.baseCell.r * CS - 30, '護牆恢復成磚牆',
+        { color: '#ff9ebb', size: 13, life: 1.4 });
+}
+
+// ======================================================================
+// 玩家
+// ======================================================================
+function updatePlayer(dt) {
+    var p = s.p;
+    if (!p || p.dead) return;
+    if (p.invuln > 0) p.invuln -= dt;
+    if (p.spawnAnim > 0) { p.spawnAnim -= dt; return; }
+    if (p.stepSfx > 0) p.stepSfx -= dt;
+
+    var ax = RE.Input.axisX(), ay = RE.Input.axisY();
+    var dir = null;
+    if (ay < 0) dir = 'up';
+    else if (ay > 0) dir = 'down';
+    else if (ax < 0) dir = 'left';
+    else if (ax > 0) dir = 'right';
+
+    if (dir) {
+        p.dir = dir;
+        p.moving = true;
+        // 玩家同樣要有卡死安全閥，否則被敵車推成重疊時會完全動彈不得
+        stepTank(p, dt, stuckRelease(p, dt));
+        if (p.stepSfx <= 0 && !p.blocked) { RetroAudio.play('step'); p.stepSfx = 0.17; }
+    } else {
+        p.moving = false;
+        p.stuck = 0;
+    }
+
+    if (RE.Input.pressed('a') || RE.Input.pressed('b')) playerFire();
+}
+
+function playerDie() {
+    var p = s.p;
+    if (p.dead) return;
+    p.dead = true;
+    s.interrupt = true;
+    s.deadTimer = 1.5;
+    s.lives--;
+    G.setLives(s.lives);
+
+    RE.juice.impact(3);
+    RE.juice.flash('rgba(255,107,107,0.42)', 0.18);
+    RE.juice.slowmo(0.3, 0.95);
+    RetroAudio.play('bigExplosion');
+    P.burst(p.x + 16, p.y + 16, 34, {
+        colors: ['#ff6b6b', '#ffd166', '#fff8e7', '#7dd3fc'],
+        speedMin: 60, speedMax: 280, gravity: 200, lifeMin: 0.3, lifeMax: 0.9,
+        sizeMin: 2, sizeMax: 7, glow: true
+    });
+    P.ring(p.x + 16, p.y + 16, '#ff6b6b', 70);
+    s.bullets.length = 0;
+}
+
+function afterPlayerDeath() {
+    if (s.lives <= 0) {
+        s.over = true;
+        /* 結算的建議要對得上**這一次實際的死因**。
+           原本不分情況都寫「先用磚牆把通往核心的走廊封死」，
+           但實測八場全部是坦克被打光（24 次陣亡），**基地一次都沒失守**——
+           等於每一次都在教玩家解決一個他根本沒遇到的問題。
+           分成兩種：基地被打掉才談防守，坦克拼光了就談交火的打法。 */
+        G.gameOver({
+            score: s.score,
+            body: '第 ' + s.stage + ' 關「' + s.cfg.name + '」，機會用完了。' +
+                  (s.baseDown
+                    ? '基地失守了。下一次先用磚牆把通往核心的走廊封死，再出去打。'
+                    : '正面對轟拼不過數量。用轉角卡住它們的射線——'
+                      + '牠們的砲彈跟你的一樣會被磚牆吃掉，先繞到側面再開火。')
+        });
+        return;
+    }
+    // 死亡會退掉一級火力，但不歸零——懲罰要痛，不能絕望
+    s.power = Math.max(0, s.power - 1);
+    G.setStat('power', s.power);
+    spawnPlayer(false);
+    FT.add(W / 2, H / 2, '剩餘機會 ' + s.lives, { color: '#ffd166', size: 18, life: 1.5 });
+}
+
+// ======================================================================
+// 核心被擊毀：本作最重大的事件，回饋強度必須壓過其他所有效果
+// ======================================================================
+function destroyBase() {
+    if (s.baseDown) return;
+    s.baseDown = true;
+    s.interrupt = true;
+    s.baseTimer = 2.0;
+    s.boomTick = 0;
+    setBig(s.baseCell.c, s.baseCell.r, 0);
+
+    RE.juice.slowmo(0.22, 1.5);
+    RE.juice.flash('rgba(255,48,32,0.85)', 0.55);
+    RE.juice.shake(1);
+    RE.juice.punchZoom(0.14);
+    RE.juice.rumble(1, 0.6);
+    RetroAudio.play('bigExplosion');
+
+    var bx = s.baseCell.c * CS + 16, by = s.baseCell.r * CS + 16;
+    P.burst(bx, by, 60, {
+        colors: ['#ff3b30', '#ffd166', '#fff8e7', '#ff9349'],
+        speedMin: 80, speedMax: 380, gravity: 240, lifeMin: 0.4, lifeMax: 1.3,
+        sizeMin: 3, sizeMax: 9, glow: true
+    });
+    P.ring(bx, by, '#ff6b6b', 150);
+    P.ring(bx, by, '#fff8e7', 100);
+    s.bullets.length = 0;
+    FT.add(bx, by - 46, '核心失守', { color: '#ff6b6b', size: 24, life: 2.2 });
+}
+
+function updateBaseBoom(dt) {
+    s.baseTimer -= dt;
+    s.boomTick -= dt;
+    if (s.boomTick <= 0) {
+        s.boomTick = 0.22;
+        var bx = s.baseCell.c * CS + 16 + RE.rand(-46, 46);
+        var by = s.baseCell.r * CS + 16 + RE.rand(-40, 12);
+        P.burst(bx, by, 22, {
+            colors: ['#ff3b30', '#ffd166', '#fff8e7'],
+            speedMin: 60, speedMax: 260, gravity: 200, lifeMin: 0.3, lifeMax: 0.8,
+            sizeMin: 2, sizeMax: 7, glow: true
+        });
+        P.ring(bx, by, '#ff9349', 70);
+        RE.juice.shake(0.6);
+        RE.juice.flash('rgba(255,90,60,0.3)', 0.1);
+        RetroAudio.play('explosion');
+    }
+    P.update(dt); FT.update(dt);
+    if (s.baseTimer <= 0) {
+        s.over = true;
+        G.gameOver({
+            score: s.score,
+            body: '指揮核心在第 ' + s.stage + ' 關「' + s.cfg.name + '」被擊毀。' +
+                  '剩幾條命都沒用了——這正是這款遊戲的重點：' +
+                  '你守的不是自己，而是一個不會移動、也不會反擊的東西。'
+        });
+    }
+}
+
+// ======================================================================
+// 流程
+// ======================================================================
+function addScore(n) { s.score += n; G.setStat('score', s.score); }
+
+function checkClear() {
+    if (s.queue.length || s.enemies.length) return;
+    clearStage();
+}
+
+function clearStage() {
+    s.clearTimer = 2.2;
+    var bonus = 500 * s.stage + s.lives * 200;
+    addScore(bonus);
+    RetroAudio.play('win');
+    RE.juice.flash('rgba(255,209,102,0.34)', 0.2);
+    RE.juice.shake(0.2);
+    FT.add(W / 2, H / 2 - 30, '防線守住！', { color: '#ffd166', size: 26, life: 2.2 });
+    FT.add(W / 2, H / 2 + 6, '關卡獎勵 +' + bonus, { color: '#a7f3d0', size: 15, life: 2.2, vy: -22 });
+    P.burst(s.baseCell.c * CS + 16, s.baseCell.r * CS + 16, 44, {
+        colors: ['#ffd166', '#70e4b5', '#7dd3fc', '#fff8e7'],
+        speedMin: 70, speedMax: 300, gravity: 300, lifeMin: 0.4, lifeMax: 1.2, glow: true
+    });
+    s.bullets.length = 0;
+}
+
+function nextStage() {
+    var n = s.stage + 1;
+    RE.Save.unlockLevel('battle_city', n);
+    if (n > STAGES.length) {
+        s.over = true;
+        G.gameOver({
+            score: s.score, win: true,
+            body: '六道防線全部守住，核心毫髮無傷。' +
+                  '回頭看你打穿的那些牆——它們有一半是為了進攻，另一半是為了回防。' +
+                  '把地圖當成可消耗的資源來用，這就是 1985 年這款遊戲留給後世的東西。'
+        });
+        return;
+    }
+    loadStage(n);
+    G.stageCard(n, s.cfg.name, s.cfg.hint);
+}
+
+// ======================================================================
+function update(dt) {
+    if (s.over) return;
+    s.anim += dt;
+
+    if (s.baseTimer > 0) { updateBaseBoom(dt); return; }
+
+    // 過關慶祝期間凍結所有戰車與砲彈，避免「已經過關卻莫名少一條命」
+    if (s.clearTimer > 0) {
+        s.clearTimer -= dt;
+        P.update(dt); FT.update(dt);
+        if (s.clearTimer <= 0) nextStage();
+        return;
+    }
+
+    if (s.deadTimer > 0) {
+        s.deadTimer -= dt;
+        P.update(dt); FT.update(dt);
+        if (s.deadTimer <= 0) afterPlayerDeath();
+        return;
+    }
+
+    s.interrupt = false;
+
+    updateSpawns(dt);
+    updatePlayer(dt);
+    if (s.interrupt) return;
+    updateEnemies(dt);
+    if (s.interrupt) return;
+    updateBullets(dt);
+    if (s.interrupt) return;
+    updateItems(dt);
+    if (s.interrupt) return;
+
+    if (s.shovelTimer > 0) {
+        s.shovelTimer -= dt;
+        if (s.shovelTimer <= 0) restoreWalls();
+    }
+
+    P.update(dt);
+    FT.update(dt);
+    checkClear();
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function render() {
+    G.clear('#080c0a');
+    G.beginWorld();
+
+    drawFloor();
+    drawBattlefieldGuides();
+    drawTerrain();
+    drawBase();
+    drawItems();
+    drawTankShadows();
+    drawTanks();
+    drawBullets();
+    drawGrass();
+
+    P.draw(ctx);
+    FT.draw(ctx);
+
+    G.endWorld();
+    drawOverlayHud();   // HUD 疊層畫在世界外面，才不會跟著螢幕震動一起晃
+    G.postFX({ scanAlpha: 0.08, vignetteStrength: 0.44 });
+}
+
+function drawFloor() {
+    for (var r = 0; r < ROWS; r++) {
+        for (var c = 0; c < COLS; c++) {
+            ctx.fillStyle = (r + c) % 2 === 0 ? '#17231d' : '#121c17';
+            ctx.fillRect(c * CS, r * CS, CS, CS);
+            ctx.fillStyle = 'rgba(112,228,181,0.025)';
+            ctx.fillRect(c * CS + 2, r * CS + 2, CS - 4, 1);
+            ctx.fillRect(c * CS + 2, r * CS + 2, 1, CS - 4);
+        }
+    }
+}
+
+function drawBattlefieldGuides() {
+    var bx = s.baseCell.c * CS + CS / 2;
+    var by = s.baseCell.r * CS + CS / 2;
+    ctx.save();
+
+    // 三個出生區到指揮核心的低亮度「攻擊走廊」，讓空地也能說明雙重目標。
+    for (var i = 0; i < s.spawnPoints.length; i++) {
+        var sp = s.spawnPoints[i];
+        var sx = sp.c * CS + CS / 2;
+        var sy = sp.r * CS + CS / 2;
+        var lane = ctx.createLinearGradient(sx, sy, bx, by);
+        lane.addColorStop(0, 'rgba(255,107,107,0.075)');
+        lane.addColorStop(0.55, 'rgba(255,209,102,0.018)');
+        lane.addColorStop(1, 'rgba(112,228,181,0.045)');
+        ctx.strokeStyle = lane;
+        ctx.lineWidth = 12;
+        ctx.setLineDash([3, 13]);
+        ctx.beginPath();
+        ctx.moveTo(sx, sy + 10);
+        ctx.lineTo(bx, by - 10);
+        ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    // 核心防區：三圈對應「還有回防距離」，只在地板層，不蓋住地形與戰車。
+    for (var ring = 3; ring >= 1; ring--) {
+        ctx.strokeStyle = 'rgba(112,228,181,' + (0.035 + ring * 0.018) + ')';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(bx, by, ring * 30, 0, RE.TAU);
+        ctx.stroke();
+    }
+
+    // 80 年代雷達式出生標記；舒適模式固定亮度，不持續閃動。
+    var blink = RE.Motion.reduced ? 0.48 : 0.36 + Math.sin(s.anim * 5) * 0.12;
+    ctx.strokeStyle = 'rgba(255,107,107,' + blink + ')';
+    ctx.lineWidth = 2;
+    for (var j = 0; j < s.spawnPoints.length; j++) {
+        var ep = s.spawnPoints[j];
+        var ex = ep.c * CS + CS / 2, ey = ep.r * CS + CS / 2;
+        ctx.strokeRect(ex - 12, ey - 12, 24, 24);
+        ctx.beginPath();
+        ctx.moveTo(ex - 6, ey); ctx.lineTo(ex + 6, ey);
+        ctx.moveTo(ex, ey - 6); ctx.lineTo(ex, ey + 6);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawTerrain() {
+    var t = s.anim;
+    for (var r = 0; r < SROWS; r++) {
+        for (var c = 0; c < SCOLS; c++) {
+            var v = s.grid[r][c];
+            if (v === 0 || v === 3 || v === 5) continue;
+            var x = c * SUB, y = r * SUB;
+            if (v === 1) drawBrickCell(x, y);
+            else if (v === 2) drawSteelCell(x, y, r, c);
+            else if (v === 4) drawWaterCell(x, y, t, r, c);
+        }
+    }
+}
+
+function drawBrickCell(x, y) {
+    ctx.fillStyle = '#6d3319';
+    ctx.fillRect(x, y, SUB, SUB);
+    ctx.fillStyle = '#b35a2c';
+    ctx.fillRect(x + 1, y + 1, 6, 6);
+    ctx.fillRect(x + 9, y + 1, 6, 6);
+    ctx.fillRect(x + 1, y + 9, 6, 6);
+    ctx.fillRect(x + 9, y + 9, 6, 6);
+    ctx.fillStyle = 'rgba(255,220,180,0.22)';
+    ctx.fillRect(x + 1, y + 1, 6, 1);
+    ctx.fillRect(x + 9, y + 9, 6, 1);
+}
+
+function drawSteelCell(x, y, r, c) {
+    // 護盾期間的鋼牆會微微發亮，快結束時閃爍提醒
+    var guard = s.shovelTimer > 0 && isWallSub(c, r);
+    ctx.fillStyle = '#5d6c74';
+    ctx.fillRect(x, y, SUB, SUB);
+    ctx.fillStyle = guard ? (s.shovelTimer < 5 && Math.floor(s.anim * 8) % 2 === 0 ? '#ffd166' : '#a8d8f0') : '#98a9b3';
+    ctx.fillRect(x + 2, y + 2, SUB - 4, SUB - 4);
+    ctx.fillStyle = 'rgba(255,255,255,0.42)';
+    ctx.fillRect(x + 2, y + 2, SUB - 4, 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(x + 2, y + SUB - 4, SUB - 4, 2);
+}
+
+function isWallSub(c, r) {
+    var bc = Math.floor(c / 2), br = Math.floor(r / 2);
+    for (var i = 0; i < s.wallCells.length; i++) {
+        if (s.wallCells[i].c === bc && s.wallCells[i].r === br) return true;
+    }
+    return false;
+}
+
+function drawWaterCell(x, y, t, r, c) {
+    ctx.fillStyle = '#123a5c';
+    ctx.fillRect(x, y, SUB, SUB);
+    var w = Math.sin(t * 2.4 + (c + r) * 0.9);
+    ctx.fillStyle = '#2f77b0';
+    ctx.fillRect(x + 2, y + 4 + w * 1.5, SUB - 4, 3);
+    ctx.fillStyle = 'rgba(180,230,255,0.45)';
+    ctx.fillRect(x + 3 + w * 2, y + 10, 6, 2);
+}
+
+function drawGrass() {
+    ctx.save();
+    ctx.globalAlpha = 0.94;
+    for (var r = 0; r < SROWS; r++) {
+        for (var c = 0; c < SCOLS; c++) {
+            if (s.grid[r][c] !== 3) continue;
+            var x = c * SUB, y = r * SUB;
+            ctx.fillStyle = '#1f5c2c';
+            ctx.fillRect(x, y, SUB, SUB);
+            ctx.fillStyle = '#2f8a3d';
+            ctx.beginPath();
+            ctx.arc(x + 5, y + 6, 4.5, 0, RE.TAU);
+            ctx.arc(x + 12, y + 5, 4, 0, RE.TAU);
+            ctx.arc(x + 8, y + 12, 5, 0, RE.TAU);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(150,230,150,0.3)';
+            ctx.fillRect(x + 3, y + 3, 3, 2);
+            ctx.fillRect(x + 11, y + 10, 3, 2);
+        }
+    }
+    ctx.restore();
+}
+
+function drawBase() {
+    var bx = s.baseCell.c * CS, by = s.baseCell.r * CS;
+    ctx.save();
+    if (s.baseDown) {
+        // 殘骸
+        ctx.fillStyle = '#2a2320';
+        ctx.fillRect(bx + 2, by + 8, CS - 4, CS - 10);
+        ctx.fillStyle = '#4a3a30';
+        ctx.fillRect(bx + 6, by + 14, 8, 8);
+        ctx.fillRect(bx + 18, by + 18, 7, 6);
+        ctx.fillStyle = 'rgba(255,90,60,' + (0.3 + Math.sin(s.anim * 9) * 0.2) + ')';
+        ctx.fillRect(bx + 4, by + CS - 6, CS - 8, 4);
+        ctx.restore();
+        return;
+    }
+    var pulse = 0.6 + Math.sin(s.anim * 3) * 0.4;
+    ctx.shadowBlur = 14 * pulse;
+    ctx.shadowColor = '#70e4b5';
+    ctx.fillStyle = '#1d3a33';
+    RE.Draw.roundRect(ctx, bx + 2, by + 4, CS - 4, CS - 6, 5);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#2f6a58';
+    RE.Draw.roundRect(ctx, bx + 5, by + 7, CS - 10, CS - 12, 4);
+    ctx.fill();
+    // 核心結晶
+    ctx.fillStyle = '#70e4b5';
+    ctx.beginPath();
+    ctx.moveTo(bx + 16, by + 8);
+    ctx.lineTo(bx + 25, by + 17);
+    ctx.lineTo(bx + 16, by + 27);
+    ctx.lineTo(bx + 7, by + 17);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,' + (0.45 + pulse * 0.4) + ')';
+    ctx.beginPath();
+    ctx.moveTo(bx + 16, by + 12);
+    ctx.lineTo(bx + 21, by + 17);
+    ctx.lineTo(bx + 16, by + 23);
+    ctx.lineTo(bx + 11, by + 17);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawItems() {
+    for (var i = 0; i < s.items.length; i++) {
+        var it = s.items[i];
+        var def = ITEM_DEF[it.type];
+        // 快消失時閃爍
+        if (it.life < 4 && Math.floor(it.life * 8) % 2 === 0) continue;
+        var bob = Math.sin(it.t * 4) * 3;
+        ctx.save();
+        ctx.translate(it.x, it.y + bob);
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = def.color;
+        ctx.fillStyle = '#0f1613';
+        RE.Draw.roundRect(ctx, -13, -13, 26, 26, 6);
+        ctx.fill();
+        ctx.strokeStyle = def.color;
+        ctx.lineWidth = 2;
+        RE.Draw.roundRect(ctx, -13, -13, 26, 26, 6);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = def.color;
+        drawItemGlyph(it.type);
+        ctx.restore();
+    }
+}
+
+function drawItemGlyph(type) {
+    if (type === 'star') {
+        ctx.beginPath();
+        for (var i = 0; i < 10; i++) {
+            var a = -Math.PI / 2 + i * Math.PI / 5;
+            var rr = i % 2 === 0 ? 9 : 4;
+            ctx[i === 0 ? 'moveTo' : 'lineTo'](Math.cos(a) * rr, Math.sin(a) * rr);
+        }
+        ctx.closePath(); ctx.fill();
+    } else if (type === 'helmet') {
+        ctx.beginPath();
+        ctx.arc(0, 1, 8, Math.PI, 0);
+        ctx.lineTo(8, 6); ctx.lineTo(-8, 6);
+        ctx.closePath(); ctx.fill();
+    } else if (type === 'shovel') {
+        ctx.fillRect(-2, -9, 4, 10);
+        ctx.beginPath();
+        ctx.moveTo(-6, 1); ctx.lineTo(6, 1); ctx.lineTo(0, 10);
+        ctx.closePath(); ctx.fill();
+    } else if (type === 'grenade') {
+        ctx.beginPath(); ctx.arc(0, 2, 7, 0, RE.TAU); ctx.fill();
+        ctx.fillRect(-3, -9, 6, 4);
+    } else {
+        ctx.fillRect(-8, -6, 16, 10);
+        ctx.fillRect(-5, -9, 10, 4);
+        ctx.fillStyle = '#0f1613';
+        ctx.fillRect(-1, -4, 2, 7);
+        ctx.fillRect(-4, -1, 8, 2);
+    }
+}
+
+function drawTanks() {
+    var i, e;
+    for (i = 0; i < s.enemies.length; i++) {
+        e = s.enemies[i];
+        if (e.spawnAnim > 0) { drawSpawnStar(e.x + 16, e.y + 16, e.spawnAnim); continue; }
+        if (e.dying > 0) { drawDying(e); continue; }
+        var col = e.def.color;
+        if (e.def.hp > 1) col = ARMOR_COLOR[RE.clamp(e.hp - 1, 0, 3)];
+        // 道具車閃紅光
+        if (e.drop && Math.floor(e.flash * 6) % 2 === 0) col = '#ff3b30';
+        drawTank(e, col, '#0f1613', false);
+    }
+
+    var p = s.p;
+    if (!p || p.dead) return;
+    if (p.spawnAnim > 0) { drawSpawnStar(p.x + 16, p.y + 16, p.spawnAnim); return; }
+    if (p.invuln > 0 && Math.floor(p.invuln * 12) % 2 === 0 && p.invuln < 2.2) {
+        drawTank(p, '#e8f4ff', '#0f1613', true);
+    } else {
+        drawTank(p, '#7dd3fc', '#0f1613', p.invuln > 0);
+    }
+}
+
+function drawTankShadows() {
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.34)';
+    for (var i = 0; i < s.enemies.length; i++) {
+        var e = s.enemies[i];
+        if (e.spawnAnim > 0 || e.dying > 0) continue;
+        ctx.beginPath();
+        ctx.ellipse(e.x + 18, e.y + 19, 13, 11, 0, 0, RE.TAU);
+        ctx.fill();
+    }
+    if (s.p && !s.p.dead && s.p.spawnAnim <= 0) {
+        ctx.beginPath();
+        ctx.ellipse(s.p.x + 18, s.p.y + 19, 13, 11, 0, 0, RE.TAU);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawTank(t, color, dark, shield) {
+    ctx.save();
+    ctx.translate(t.x + 16, t.y + 16);
+    ctx.rotate(DIRA[t.dir]);
+
+    // 履帶（紋路隨行進距離捲動，靜止時就看得出來停住了）
+    ctx.fillStyle = '#242e2b';
+    ctx.fillRect(-14, -14, 7, 28);
+    ctx.fillRect(7, -14, 7, 28);
+    ctx.fillStyle = 'rgba(255,255,255,0.16)';
+    var off = (t.track % 8);
+    for (var i = -2; i < 4; i++) {
+        var yy = -14 + i * 8 + off;
+        if (yy < -14 || yy > 10) continue;
+        ctx.fillRect(-14, yy, 7, 2);
+        ctx.fillRect(7, yy, 7, 2);
+    }
+
+    // 車身
+    ctx.fillStyle = color;
+    RE.Draw.roundRect(ctx, -8, -11, 16, 23, 3);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fillRect(-8, 4, 16, 3);
+
+    // 砲塔與砲管
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(0, 2, 6.5, 0, RE.TAU); ctx.fill();
+    ctx.fillStyle = dark;
+    ctx.beginPath(); ctx.arc(0, 2, 3.2, 0, RE.TAU); ctx.fill();
+    ctx.fillStyle = color;
+    ctx.fillRect(-2.5, -17, 5, 15);
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.fillRect(-2.5, -17, 5, 2);
+
+    ctx.restore();
+
+    if (shield) {
+        ctx.save();
+        ctx.globalAlpha = 0.55 + Math.sin(s.anim * 14) * 0.25;
+        ctx.strokeStyle = '#7dd3fc';
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 10; ctx.shadowColor = '#7dd3fc';
+        ctx.beginPath();
+        ctx.arc(t.x + 16, t.y + 16, 20, 0, RE.TAU);
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
+function drawSpawnStar(x, y, t) {
+    var k = 1 - t;            // 0 → 1
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(t * 12);
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = Math.floor(t * 10) % 2 === 0 ? '#ffd166' : '#7dd3fc';
+    ctx.shadowBlur = 12; ctx.shadowColor = '#ffd166';
+    var rr = 6 + k * 10;
+    ctx.beginPath();
+    for (var i = 0; i < 8; i++) {
+        var a = i * Math.PI / 4;
+        var l = i % 2 === 0 ? rr : rr * 0.42;
+        ctx[i === 0 ? 'moveTo' : 'lineTo'](Math.cos(a) * l, Math.sin(a) * l);
+    }
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+}
+
+function drawDying(e) {
+    var k = e.dying / 0.45;
+    ctx.save();
+    ctx.globalAlpha = k;
+    ctx.translate(e.x + 16, e.y + 16);
+    ctx.scale(1 + (1 - k) * 0.8, 1 + (1 - k) * 0.8);
+    ctx.fillStyle = '#ffd166';
+    ctx.shadowBlur = 18; ctx.shadowColor = '#ff9349';
+    ctx.beginPath(); ctx.arc(0, 0, 10 * k + 4, 0, RE.TAU); ctx.fill();
+    ctx.restore();
+}
+
+function drawBullets() {
+    for (var i = 0; i < s.bullets.length; i++) {
+        var b = s.bullets[i];
+        if (b.dead) continue;
+        var d = DIRV[b.dir];
+        ctx.save();
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = b.owner === 'p' ? '#ffe9a8' : '#ffb4a2';
+        ctx.fillStyle = b.owner === 'p' ? '#fff8e7' : '#ffd0c0';
+        ctx.fillRect(b.x - 3 - Math.abs(d[1]) * 1, b.y - 3 - Math.abs(d[0]) * 1, 6, 6);
+        ctx.globalAlpha = 0.35;
+        ctx.fillRect(b.x - d[0] * 7 - 2, b.y - d[1] * 7 - 2, 4, 4);
+        ctx.restore();
+    }
+}
+
+function drawOverlayHud() {
+    // 上緣：剩餘敵人以小方塊呈現，一眼看出還要打幾台
+    var n = remainingEnemies();
+    ctx.save();
+    ctx.globalAlpha = 0.85;
+    for (var i = 0; i < Math.min(n, 20); i++) {
+        var x = 6 + (i % 10) * 11;
+        var y = 5 + Math.floor(i / 10) * 10;
+        ctx.fillStyle = '#ff9ebb';
+        ctx.fillRect(x, y, 7, 7);
+    }
+    ctx.restore();
+
+    if (s.shovelTimer > 0) {
+        RE.Draw.text(ctx, '護牆鋼化 ' + Math.ceil(s.shovelTimer) + 's',
+            W - 8, 6, { size: 13, align: 'right', color: s.shovelTimer < 5 ? '#ff6b6b' : '#a8d8f0' });
+    }
+    if (s.p && !s.p.dead && s.p.helmet && s.p.invuln > 0) {
+        RE.Draw.text(ctx, '護盾 ' + Math.ceil(s.p.invuln) + 's',
+            W - 8, 24, { size: 13, align: 'right',
+                         color: s.p.invuln < 3 && Math.floor(s.anim * 8) % 2 === 0 ? '#ff6b6b' : '#7dd3fc' });
+    }
+    if (s.power > 0) {
+        var stars = '';
+        for (var k = 0; k < s.power; k++) stars += '★';
+        RE.Draw.text(ctx, stars, W / 2, 5, { size: 15, align: 'center', color: '#ffd166' });
+    }
+    RE.Draw.text(ctx, s.baseDown ? '核心失守' : '◆ 核心穩定', W - 8, H - 18, {
+        size: 11, align: 'right', color: s.baseDown ? '#ff6b6b' : '#70e4b5'
+    });
+}
+
+// ======================================================================
+G.on('restart', function () { startNewGame(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '打光所有敵方戰車即可過關，但底部的指揮核心被擊中就直接失敗——包含被你自己的流彈打到。' +
+          '磚牆可打穿、鋼牆要滿級火力、草叢能藏身、水域擋車不擋彈。共六關。',
+    onStart: startNewGame
+});
+</script>
+</body>
+</html>

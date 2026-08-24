@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 幻夢接龍</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   幻夢接龍 — 致敬 Microsoft Solitaire (1990)
+   --------------------------------------------------------------------------
+   這款遊戲被放進 Windows 3.0 的原因，不是為了娛樂。
+
+   1990 年，滑鼠對絕大多數使用者還是個陌生的東西。
+   微軟需要讓幾千萬人在毫無壓力的情況下，反覆練習三件事：
+     · 精準地把游標移到一個小目標上
+     · 按住不放並拖曳
+     · 在正確的位置放開
+
+   一份說明書做不到這件事。一個會給你正回饋的遊戲可以。
+   於是《接龍》成為史上最成功的「隱形教學」——
+   **它教會了整個世代怎麼用滑鼠，而沒有任何人覺得自己在上課。**
+
+   所以這一版的復刻重點不是紙牌規則（那是公版的克朗代克），
+   而是**拖放這件事本身的手感**：
+     · 卡牌要黏在游標上，有輕微的落後與傾斜（像真的被拿著）
+     · 放不下去要用動畫「飛回去」，不是瞬間歸位
+     · 可放置的目標要在你拖曳時亮起來
+     · 完成時要有那個著名的**卡牌瀑布**
+
+   最後一項尤其重要：它是一份「你成功了」的獎勵動畫，
+   而不是一行文字。這也是那個年代最好的正回饋設計之一。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'solitaire',
+    title: '幻夢接龍',
+    tagline: '微軟把它放進 Windows，是為了教你用滑鼠',
+    original: 'Microsoft Solitaire (Microsoft, 1990)',
+    decade: '90s', year: 1990, platform: 'Windows 3.0', genre: '紙牌',
+    developer: 'Wes Cherry／Susan Kare', bgm: '90s',
+    width: 480, height: 320,
+    hud: [
+        { key: 'found', label: '完成', init: '0/52' },
+        { key: 'moves', label: '步數', init: 0 },
+        { key: 'time', label: '時間', init: '0:00' },
+        { key: 'score', label: 'SCORE' }
+    ],
+    touch: 'none',
+    controls: [
+        { keys: ['滑鼠 / 觸控'], desc: '按住卡牌拖曳，放到想去的位置' },
+        { keys: ['點牌庫'], desc: '翻下一張；翻完會重新洗回去' },
+        { keys: ['雙擊卡牌'], desc: '自動送到右上角的完成區' },
+        { keys: ['A'], desc: '自動完成（把所有能送的牌一次送上去）' },
+        { keys: ['P'], desc: '暫停' }
+    ],
+    howto: '<strong>克朗代克接龍</strong>：把 A 到 K 送進四個完成區。' +
+           '下方牌列須<strong>紅黑交替、由大到小</strong>，空欄只能放 K；拖曳卡牌，雙擊可自動送牌。',
+    lesson: {
+        verb: '以拖放重排紅黑交替的降冪牌列，翻開暗牌，再把同花色牌依 A 到 K 送入完成區。',
+        innovation: '把使用者熟悉的實體紙牌變成滑鼠教材：點選、按住、拖曳、命中目標與放開，都在遊戲回饋中被反覆練習。',
+        mission: '完成一次合法拖放、一次故意放錯並觀察回彈，再藉由移動牌列翻開一張暗牌；最後雙擊一張可用牌，觀察它如何自動前往完成區。',
+        evolution: '《Microsoft Solitaire》用既有紙牌規則教圖形介面；《Bejeweled》把同樣的滑鼠直接操作改成交換消除；《Balatro》再從紙牌辨識延伸到牌型與牌組構築。',
+        reflection: '如果所有移動都改成按一下來源、再按一下目的地，規則仍相同，但它還能教會使用者「抓住並搬動螢幕物件」嗎？'
+    },
+    design: '《Microsoft Solitaire》解決的設計問題，是如何不用操作手冊，就讓陌生使用者願意反覆練習滑鼠拖放。' +
+            '克朗代克本身以紅黑交替、降冪牌列、空欄限 K 與四組同花完成區，把隨機牌局轉成「先揭露哪張暗牌」的排序決策。' +
+            'Microsoft 版更重要的設計，是把這套熟悉規則包裝成低壓力的人機介面練習：卡牌是可辨識的拖曳物件，合法目標會接受它，錯誤位置則回彈。' +
+            '本站保留按住、移動、放開的核心，同時加入目標高亮、跟手延遲、自動完成與完成後卡牌瀑布，使操作意圖比 1990 年版本更易讀。' +
+            '**教育性不是在遊戲外加一段說明，而是讓要學的動作本身帶來立即、可理解的回饋。**',
+    history: 'Microsoft 於 1990 年隨 Windows 3.0 推出 Windows Solitaire。The Strong 博物館記錄，最初程式由實習生 Wes Cherry 編寫，牌面由圖示設計先驅 Susan Kare 製作。' +
+             'Microsoft 的 30 週年官方回顧明確指出，當時滑鼠仍很新奇，接龍讓使用者透過移牌自然學會拖放，而不必先閱讀抽象操作手冊。' +
+             '作品長期隨 Windows 散布，並於 2019 年進入世界電玩名人堂；它的重要性不在發明克朗代克，而在證明熟悉的遊戲規則可以成為新介面的入口。',
+    sources: [
+        { label: 'Microsoft／Xbox Wire：Microsoft Solitaire 30 週年回顧', url: 'https://news.xbox.com/en-us/2020/05/22/celebrating-30-years-microsoft-solitaire/' },
+        { label: 'The Strong 世界電玩名人堂：Microsoft Solitaire', url: 'https://www.worldvideogamehalloffame.org/games/microsoft-solitaire/' }
+    ]
+});
+
+var ctx = G.ctx, VW = G.width, VH = G.height;
+var P = new RE.Particles(400);
+var FT = new RE.FloatText();
+
+var CW = 40, CH = 56;                     // 卡牌尺寸
+var SUITS = ['♠', '♥', '♦', '♣'];
+var RED = { 1: true, 2: true };           // ♥ ♦ 是紅色
+var RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+/* 廢牌堆最多倒回牌庫幾次。
+   原本是無限倒（只扣分），而無限倒等於「永遠還有一步可以走」——
+   死局偵測就永遠不會成立，走不通的牌局會一直拖下去。
+   三次是克朗代克常見的折衷：夠讓玩家把牌庫看完三輪、記住牌序，
+   又保證局面一定會收斂。 */
+var RECYCLE_LIMIT = 3;
+
+// 版面座標
+var STOCK = { x: 12, y: 22 };
+var WASTE = { x: 60, y: 22 };
+var FOUND = [];
+for (var i = 0; i < 4; i++) FOUND.push({ x: 244 + i * 46, y: 22 });
+var TABX = 12, TABY = 92, TABGAP = 46, FANY = 15;
+
+// ======================================================================
+// 狀態
+// ======================================================================
+var s = null;
+
+function reset() {
+    s = {
+        stock: [], waste: [], found: [[], [], [], []], tab: [[], [], [], [], [], [], []],
+        drag: null, fly: [], time: 0, timeShown: -1, moves: 0, score: 0,
+        won: false, cascade: null, hintT: 4.0, glowT: 0, lastClick: 0, lastCard: null,
+        recycles: 0, pointerDownSeen: false
+    };
+    P.clear(); FT.clear();
+
+    var deck = [];
+    for (var su = 0; su < 4; su++) for (var r = 1; r <= 13; r++) deck.push({ suit: su, rank: r, up: false });
+    for (var i = deck.length - 1; i > 0; i--) {
+        var j = RE.randInt(0, i);
+        var t = deck[i]; deck[i] = deck[j]; deck[j] = t;
+    }
+    for (var c = 0; c < 7; c++) {
+        for (var k = 0; k <= c; k++) {
+            var card = deck.pop();
+            card.up = (k === c);
+            card.x = TABX + c * TABGAP; card.y = TABY + k * FANY;
+            s.tab[c].push(card);
+        }
+    }
+    s.stock = deck;
+    for (i = 0; i < s.stock.length; i++) { s.stock[i].x = STOCK.x; s.stock[i].y = STOCK.y; s.stock[i].up = false; }
+    G.setStat('found', '0/52'); G.setStat('moves', 0); G.setStat('score', 0); G.setStat('time', '0:00');
+    layout();
+}
+
+function layout() {
+    for (var c = 0; c < 7; c++) {
+        var pile = s.tab[c], y = TABY;
+        for (var k = 0; k < pile.length; k++) {
+            pile[k].tx = TABX + c * TABGAP;
+            pile[k].ty = y;
+            y += pile[k].up ? FANY : 7;      // 蓋著的牌疊得比較密，一眼看得出還剩幾張沒翻
+        }
+    }
+    for (var f = 0; f < 4; f++) {
+        for (var i = 0; i < s.found[f].length; i++) { s.found[f][i].tx = FOUND[f].x; s.found[f][i].ty = FOUND[f].y; }
+    }
+    for (i = 0; i < s.waste.length; i++) {
+        s.waste[i].tx = WASTE.x + Math.min(2, s.waste.length - 1 - i) * -6;
+        s.waste[i].ty = WASTE.y;
+    }
+    for (i = 0; i < s.stock.length; i++) { s.stock[i].tx = STOCK.x; s.stock[i].ty = STOCK.y; }
+}
+
+// ======================================================================
+// 規則
+// ======================================================================
+function isRed(card) { return !!RED[card.suit]; }
+
+/** 能不能疊到下方七疊的某一疊上（紅黑交替、由大到小；空欄只放 K） */
+function canStackTab(card, col) {
+    var pile = s.tab[col];
+    if (pile.length === 0) return card.rank === 13;
+    var top = pile[pile.length - 1];
+    if (!top.up) return false;
+    return isRed(top) !== isRed(card) && top.rank === card.rank + 1;
+}
+
+/** 能不能送進完成區（同花色，A 開始往上一張一張疊） */
+function canStackFound(card, f) {
+    var pile = s.found[f];
+    if (pile.length === 0) return card.rank === 1;
+    var top = pile[pile.length - 1];
+    return top.suit === card.suit && top.rank === card.rank - 1;
+}
+
+function foundOf(card) {
+    for (var f = 0; f < 4; f++) if (canStackFound(card, f)) return f;
+    return -1;
+}
+
+/* --------------------------------------------------------------------------
+   還有沒有任何一步可以走。
+   --------------------------------------------------------------------------
+   為什麼一定要有這個：
+   克朗代克的隨機發牌本來就有一成多是**死局**，而這一版原本只在「四堆完成區
+   都疊滿」時結束——走不通的牌局於是永遠不會結束，玩家既贏不了也輸不了，
+   只能自己按重來。TODO 早就把「會僵持的玩法一定要有收斂條件」寫成通則
+   （文明推進戰那一條），接龍漏掉了。
+   機器人稽核量到的正是這個：六場裡有四場跑滿四萬幀（約十一分鐘）還沒結束。
+
+   判準刻意是「**有沒有會產生進展的一步**」，而不是「有沒有合法的一步」。
+   兩者差很多：克朗代克隨時都可能有一堆合法但可逆的七疊移動
+   （8♠7♥ 搬到 9♥ 上、下一步再搬回來），拿「有沒有合法步」當收斂條件的話，
+   盤面可以合法地空轉到天荒地老——實測機器人就這樣走了 767 步、
+   完成區停在 4 張、跑滿四萬幀還沒結束。
+
+   「有進展」只認四種：
+     · 牌庫還能抽（會露出新資訊）
+     · 廢牌堆還能倒回牌庫（次數未用完）
+     · 有任何一張進得了完成區
+     · 有一步會翻開暗牌（把壓著暗牌的明牌串搬走，或空欄收 K 之後騰出的翻牌）
+   純粹在七疊之間搬來搬去、不翻牌也不進完成區的，一律不算。
+   -------------------------------------------------------------------------- */
+function hasProgressMove() {
+    var col, i, d, c;
+
+    if (s.stock.length) return true;                                  // 還能抽
+    if (s.waste.length && s.recycles < RECYCLE_LIMIT) return true;    // 還能倒回牌庫
+
+    // 廢牌頂進得了完成區
+    if (s.waste.length && foundOf(s.waste[s.waste.length - 1]) >= 0) return true;
+
+    var hasEmpty = false;
+    for (col = 0; col < 7; col++) if (!s.tab[col].length) hasEmpty = true;
+
+    // 廢牌頂的 K 可以填空欄——那會讓七疊多一個落點，是實質進展
+    if (hasEmpty && s.waste.length && s.waste[s.waste.length - 1].rank === 13) return true;
+
+    for (col = 0; col < 7; col++) {
+        var pile = s.tab[col];
+        if (!pile.length) continue;
+        var top = pile[pile.length - 1];
+        if (!top.up) return true;                                     // 頂牌是背面＝馬上會翻開
+        if (foundOf(top) >= 0) return true;
+
+        /* 這一疊底下還壓著暗牌時，把「第一張明牌起的整串」搬走就會翻開一張。
+           要整串一起看，只比對頂牌會漏掉最常見的那一類解法。 */
+        var firstUp = -1;
+        for (i = 0; i < pile.length; i++) if (pile[i].up) { firstUp = i; break; }
+        if (firstUp <= 0) continue;                                   // 沒有暗牌可翻
+        for (d = 0; d < 7; d++) {
+            if (d === col) continue;
+            if (canStackTab(pile[firstUp], d)) return true;
+        }
+        // 空欄收 K 同理（canStackTab 對空欄只認 K，上面那個迴圈已經涵蓋）
+    }
+    return false;
+}
+
+// ======================================================================
+// 拖曳：這款遊戲真正要復刻的東西
+// ======================================================================
+function cardAt(px, py) {
+    // 由上而下找：先找七疊（後面的欄位畫在上層）
+    for (var c = 6; c >= 0; c--) {
+        var pile = s.tab[c];
+        for (var k = pile.length - 1; k >= 0; k--) {
+            var card = pile[k];
+            if (!card.up) break;
+            if (px >= card.tx && px <= card.tx + CW && py >= card.ty && py <= card.ty + CH) {
+                return { card: card, from: 'tab', col: c, idx: k };
+            }
+        }
+    }
+    if (s.waste.length) {
+        var w = s.waste[s.waste.length - 1];
+        if (px >= w.tx && px <= w.tx + CW && py >= w.ty && py <= w.ty + CH) return { card: w, from: 'waste' };
+    }
+    for (var f = 0; f < 4; f++) {
+        var fp = s.found[f];
+        if (!fp.length) continue;
+        var t = fp[fp.length - 1];
+        if (px >= t.tx && px <= t.tx + CW && py >= t.ty && py <= t.ty + CH) return { card: t, from: 'found', col: f };
+    }
+    return null;
+}
+
+function beginDrag(hit, px, py) {
+    var cards;
+    if (hit.from === 'tab') cards = s.tab[hit.col].slice(hit.idx);
+    else cards = [hit.card];
+    // 只有整串都翻開才拖得動
+    for (var i = 0; i < cards.length; i++) if (!cards[i].up) return;
+    s.drag = {
+        cards: cards, from: hit.from, col: hit.col, idx: hit.idx,
+        ox: px - hit.card.tx, oy: py - hit.card.ty,
+        x: hit.card.tx, y: hit.card.ty, vx: 0, tilt: 0
+    };
+    RetroAudio.play('blip');
+}
+
+function dropDrag(px, py) {
+    var d = s.drag;
+    if (!d) return;
+    s.drag = null;
+    var card = d.cards[0];
+    var cx = d.x + CW / 2, cy = d.y + CH / 2;
+
+    // 完成區（只能一張一張送）
+    if (d.cards.length === 1) {
+        for (var f = 0; f < 4; f++) {
+            if (Math.abs(cx - (FOUND[f].x + CW / 2)) < CW && Math.abs(cy - (FOUND[f].y + CH / 2)) < CH &&
+                canStackFound(card, f)) {
+                removeFromSource(d);
+                s.found[f].push(card);
+                afterMove(true);
+                RetroAudio.play('coin');
+                /* 牌進基礎堆是這款唯一的「成功事件」。
+                   紙牌沒有戰鬥，但**手感一樣需要被確認**——
+                   一點頓幀加一點震動，玩家才會覺得那張牌是「卡上去」的。
+                   數值取得比動作類小得多，避免打斷連續收牌的節奏。 */
+                RE.juice.hitstop(0.03);
+                RE.juice.shake(0.06);
+                addScore(100);
+                P.burst(FOUND[f].x + CW / 2, FOUND[f].y + CH / 2, 10, {
+                    colors: ['#ffd166', '#fff3c4'], speedMin: 40, speedMax: 130,
+                    gravity: 120, lifeMin: 0.25, lifeMax: 0.5, glow: true });
+                return;
+            }
+        }
+    }
+    // 七疊
+    for (var c = 0; c < 7; c++) {
+        var tx = TABX + c * TABGAP;
+        if (Math.abs(cx - (tx + CW / 2)) < CW * 0.8 && cy > TABY - CH * 0.5 && canStackTab(card, c)) {
+            removeFromSource(d);
+            for (var i = 0; i < d.cards.length; i++) s.tab[c].push(d.cards[i]);
+            afterMove(false);
+            RetroAudio.play('block');
+            addScore(10);
+            return;
+        }
+    }
+    // 放不下去：飛回原位（不是瞬間歸位——這是手感的一部分）
+    RetroAudio.play('cancel');
+    layout();
+    for (i = 0; i < d.cards.length; i++) {
+        d.cards[i].x = d.x + i * (d.from === 'tab' ? 0 : 0);
+        d.cards[i].y = d.y + i * FANY;
+    }
+}
+
+function removeFromSource(d) {
+    if (d.from === 'tab') s.tab[d.col].length = d.idx;
+    else if (d.from === 'waste') s.waste.pop();
+    else if (d.from === 'found') s.found[d.col].pop();
+}
+
+function afterMove(toFound) {
+    s.moves++; G.setStat('moves', s.moves);
+    // 翻開露出來的底牌
+    for (var c = 0; c < 7; c++) {
+        var pile = s.tab[c];
+        if (pile.length && !pile[pile.length - 1].up) {
+            pile[pile.length - 1].up = true;
+            addScore(50);
+            RetroAudio.play('select');
+        }
+    }
+    layout();
+    checkWin();
+}
+
+function addScore(n) { s.score = Math.max(0, s.score + n); G.setStat('score', s.score); }
+
+function drawStock() {
+    if (s.stock.length === 0) {
+        if (s.waste.length === 0) return;
+        // 翻完就把廢牌堆倒回牌庫（每次要付一點分數，避免無限重來）。
+        // 這裡不能再 reverse 一次：waste 由下而上是 c1,c2,c3，
+        // 一路 pop 回 stock 得到 [c3,c2,c1]，而抽牌是從尾端 pop，
+        // 下一輪正好又從 c1 開始——這才是克朗代克「循環順序不變」的規則。
+        // 多做一次 reverse 會讓第二輪的順序整個顛倒，玩家記下的牌序全部失效。
+        if (s.recycles >= RECYCLE_LIMIT) return;           // 倒完了就不能再倒
+        while (s.waste.length) { var c = s.waste.pop(); c.up = false; s.stock.push(c); }
+        s.recycles++;
+        addScore(-40);
+        RetroAudio.play('rotate');
+        layout();
+        return;
+    }
+    var card = s.stock.pop();
+    card.up = true;
+    s.waste.push(card);
+    card.x = STOCK.x; card.y = STOCK.y;
+    RetroAudio.play('blip');
+    layout();
+}
+
+/** 自動完成：把所有現在能送的牌一次送上去 */
+function autoFinish() {
+    var moved = 0, guard = 0;
+    while (guard++ < 200) {
+        var did = false;
+        for (var c = 0; c < 7; c++) {
+            var pile = s.tab[c];
+            if (!pile.length) continue;
+            var top = pile[pile.length - 1];
+            if (!top.up) continue;
+            var f = foundOf(top);
+            if (f >= 0) { pile.pop(); flyTo(top, FOUND[f], f); did = true; moved++; }
+        }
+        if (s.waste.length) {
+            var w = s.waste[s.waste.length - 1];
+            var f2 = foundOf(w);
+            if (f2 >= 0) { s.waste.pop(); flyTo(w, FOUND[f2], f2); did = true; moved++; }
+        }
+        if (!did) break;
+    }
+    if (moved) { afterMove(true); addScore(moved * 100); RetroAudio.play('levelUp'); }
+    else RetroAudio.play('error');
+}
+
+function flyTo(card, dest, f) {
+    s.found[f].push(card);
+    card.tx = dest.x; card.ty = dest.y;
+}
+
+function checkWin() {
+    var n = 0;
+    for (var f = 0; f < 4; f++) n += s.found[f].length;
+    G.setStat('found', n + '/52');
+    if (n === 52 && !s.won) {
+        s.won = true;
+        startCascade();
+    }
+}
+
+// ======================================================================
+// 卡牌瀑布：這是《接龍》最有名的東西，而它完全沒有功能
+// ======================================================================
+function startCascade() {
+    s.cascade = { cards: [], t: 0, spawn: 0, idx: 0 };
+    RetroAudio.play('newRecord');
+    RE.juice.flash('rgba(255,255,255,0.3)', 0.2);
+    addScore(3000 - Math.min(2500, Math.floor(s.time) * 5));
+}
+
+function updateCascade(dt) {
+    var cc = s.cascade;
+    cc.t += dt; cc.spawn -= dt;
+    if (cc.spawn <= 0 && cc.idx < 52) {
+        cc.spawn = 0.05;
+        var f = 3 - (cc.idx % 4);
+        var pile = s.found[f];
+        if (pile.length) {
+            var card = pile.pop();
+            cc.cards.push({
+                card: card, x: FOUND[f].x, y: FOUND[f].y,
+                vx: RE.rand(-40, 40) + (f - 1.5) * -30, vy: RE.rand(-260, -110), bounces: 0
+            });
+            RetroAudio.play('blip');
+        }
+        cc.idx++;
+    }
+    for (var i = cc.cards.length - 1; i >= 0; i--) {
+        var b = cc.cards[i];
+        b.vy += 900 * dt;
+        b.x += b.vx * dt; b.y += b.vy * dt;
+        if (b.y + CH > VH && b.vy > 0) {
+            b.y = VH - CH; b.vy *= -0.62; b.bounces++;
+            if (Math.abs(b.vy) < 40) b.vy = 0;
+        }
+        if (b.x < -CW - 20 || b.x > VW + CW + 20 || (b.bounces > 6 && Math.abs(b.vy) < 5)) {
+            // 停在原地的就留著，飛出畫面的移除
+            if (b.x < -CW - 20 || b.x > VW + CW + 20) cc.cards.splice(i, 1);
+        }
+    }
+    if (cc.idx >= 52 && cc.t > 6.5) finish(true);
+}
+
+function finish(win) {
+    if (s.done) return;
+    s.done = true;
+    var t = Math.floor(s.time);
+
+    /* 死局收場。克朗代克的隨機發牌本來就有一成多走不通，
+       所以「輸」是這一款正常的結局之一，不是錯誤——
+       但一定要講出來，玩家才不會以為是自己沒看到那一步。 */
+    if (win === false) {
+        var up = 0;
+        for (var f = 0; f < 4; f++) up += s.found[f].length;
+        G.gameOver({
+            win: false, score: s.score,
+            body: '沒有任何一步可以走了：牌庫倒完了三輪，七疊之間也接不上。' +
+                  '這一局送上去 ' + up + ' / 52 張。' +
+                  '克朗代克的隨機發牌本來就有一成多是死局——' +
+                  '<strong>這不是你漏看了哪一步，是這副牌本來就走不通。</strong>' +
+                  '真正的功夫在「哪一張先翻」：先開牌數多的那一疊，' +
+                  '把資訊拿到手，才有得算。'
+        });
+        return;
+    }
+
+    G.gameOver({
+        win: true, score: s.score,
+        body: '全部 52 張都上去了，' + Math.floor(t / 60) + ':' + ('0' + (t % 60)).slice(-2) +
+              '、' + s.moves + ' 步。' +
+              '剛剛那個瀑布沒有任何功能——它不給分、不解鎖、不影響任何東西。' +
+              '但正是因為它太好看，' +
+              '<strong>無數人為了再看一次而又開了一局</strong>。' +
+              '而在那些一局又一局裡，一整個世代學會了怎麼用滑鼠。' +
+              '<strong>最好的教學，是讓玩家為了自己的目的去做你想教的動作。</strong>'
+    });
+}
+
+// ======================================================================
+// 主迴圈
+// ======================================================================
+function pointerPressFresh() {
+    var pt = RE.Input.pointer;
+    if (!pt.down && !pt.pressed) { s.pointerDownSeen = false; return false; }
+    var fresh = pt.pressed || (pt.down && !s.pointerDownSeen);
+    if (fresh) s.pointerDownSeen = true;
+    return fresh;
+}
+
+function update(dt) {
+    if (!s) return;
+    P.update(dt); FT.update(dt);
+    if (s.hintT > 0) s.hintT -= dt;
+
+    if (s.cascade) { updateCascade(dt); return; }
+
+    /* 死局判定。每 0.5 秒問一次就夠——hasAnyMove() 要掃七疊，
+       每幀跑等於白花效能，而玩家也不會在半秒內做出兩步。
+       只在沒有拖曳中、也沒有飛牌動畫時判，否則會在動畫中途誤判。 */
+    if (!s.done && !s.drag && !(s.fly && s.fly.length)) {
+        s.deadT = (s.deadT || 0) + dt;
+        if (s.deadT >= 0.5) {
+            s.deadT = 0;
+            if (!hasProgressMove()) { finish(false); return; }
+        }
+    }
+
+    s.time += dt;
+    var shown = Math.floor(s.time);
+    if (shown !== s.timeShown) {
+        s.timeShown = shown;
+        G.setStat('time', Math.floor(shown / 60) + ':' + ('0' + (shown % 60)).slice(-2));
+    }
+
+    var pt = RE.Input.pointer;
+
+    if (pointerPressFresh()) {
+        // 牌庫
+        if (pt.x >= STOCK.x && pt.x <= STOCK.x + CW && pt.y >= STOCK.y && pt.y <= STOCK.y + CH) {
+            drawStock();
+        } else {
+            var hit = cardAt(pt.x, pt.y);
+            if (hit) {
+                // 雙擊 → 自動送去完成區
+                var now = s.time;
+                if (s.lastCard === hit.card && now - s.lastClick < 0.35) {
+                    var f = foundOf(hit.card);
+                    if (f >= 0 && (hit.from !== 'tab' || hit.idx === s.tab[hit.col].length - 1)) {
+                        removeFromSource({ from: hit.from, col: hit.col, idx: hit.idx });
+                        s.found[f].push(hit.card);
+                        afterMove(true); addScore(100);
+                        RetroAudio.play('coin');
+                        s.lastCard = null;
+                        return;
+                    }
+                }
+                s.lastCard = hit.card; s.lastClick = now;
+                beginDrag(hit, pt.x, pt.y);
+            }
+        }
+    }
+
+    if (s.drag) {
+        var d = s.drag;
+        var nx = pt.x - d.ox, ny = pt.y - d.oy;
+        // 卡牌黏在游標上但略微落後，並依移動速度傾斜——「像真的被拿著」
+        var px = d.x;
+        d.x = RE.lerp(d.x, nx, 1 - Math.pow(0.0006, dt));
+        d.y = RE.lerp(d.y, ny, 1 - Math.pow(0.0006, dt));
+        d.vx = (d.x - px) / Math.max(dt, 0.0001);
+        d.tilt = RE.lerp(d.tilt, RE.clamp(d.vx * 0.00035, -0.22, 0.22), 1 - Math.pow(0.002, dt));
+        if (!pt.down) dropDrag(pt.x, pt.y);
+    }
+
+    if (RE.Input.buffered('a', 0.12)) { RE.Input.consumeBuffer('a'); autoFinish(); }
+
+    // 所有牌用補間滑到目標位置，不會瞬間跳過去
+    var all = allCards();
+    for (var i = 0; i < all.length; i++) {
+        var c = all[i];
+        if (s.drag && s.drag.cards.indexOf(c) >= 0) continue;
+        if (c.tx === undefined) { c.tx = c.x; c.ty = c.y; }
+        if (c.x === undefined) { c.x = c.tx; c.y = c.ty; }
+        c.x = RE.lerp(c.x, c.tx, 1 - Math.pow(0.00004, dt));
+        c.y = RE.lerp(c.y, c.ty, 1 - Math.pow(0.00004, dt));
+    }
+}
+
+function allCards() {
+    var out = [];
+    for (var c = 0; c < 7; c++) out = out.concat(s.tab[c]);
+    for (var f = 0; f < 4; f++) out = out.concat(s.found[f]);
+    return out.concat(s.waste, s.stock);
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function render() {
+    if (!s) return;
+    G.beginWorld();
+    drawFelt();
+    drawSlots();
+    drawPiles();
+    if (s.cascade) drawCascade();
+    drawDrag();
+    P.draw(ctx);
+    FT.draw(ctx);
+    G.endWorld();
+    drawHUD();
+    G.postFX({ scanAlpha: 0.04, vignetteStrength: 0.45 });
+}
+
+function drawFelt() {
+    var g = ctx.createLinearGradient(0, 0, 0, VH);
+    g.addColorStop(0, '#1e5e3a'); g.addColorStop(1, '#12insert'.replace('insert', '3a24'));
+    ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+    ctx.fillStyle = 'rgba(0,0,0,0.05)';
+    for (var y = 0; y < VH; y += 4) ctx.fillRect(0, y, VW, 1);
+}
+
+function slot(x, y, label) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.24)';
+    ctx.lineWidth = 1.5;
+    RE.Draw.roundRect(ctx, x + 0.5, y + 0.5, CW - 1, CH - 1, 4); ctx.stroke();
+    if (label) RE.Draw.text(ctx, label, x + CW / 2, y + CH / 2 - 8,
+        { size: 16, align: 'center', color: 'rgba(255,255,255,0.22)', stroke: false });
+}
+
+function drawSlots() {
+    slot(STOCK.x, STOCK.y, s.stock.length ? '' : '↻');
+    slot(WASTE.x, WASTE.y, '');
+    for (var f = 0; f < 4; f++) {
+        slot(FOUND[f].x, FOUND[f].y, SUITS[f]);
+        // 拖曳中：可以放的位置亮起來。這是拖放介面最重要的一條回饋
+        if (s.drag && s.drag.cards.length === 1 && canStackFound(s.drag.cards[0], f)) highlight(FOUND[f].x, FOUND[f].y);
+    }
+    for (var c = 0; c < 7; c++) {
+        if (s.tab[c].length === 0) slot(TABX + c * TABGAP, TABY, 'K');
+        if (s.drag && canStackTab(s.drag.cards[0], c)) {
+            var pile = s.tab[c];
+            var ty = pile.length ? pile[pile.length - 1].ty + FANY : TABY;
+            highlight(TABX + c * TABGAP, ty);
+        }
+    }
+}
+
+function highlight(x, y) {
+    var k = 0.45 + Math.sin(Date.now() * 0.01) * 0.25;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,224,102,' + k + ')';
+    ctx.lineWidth = 2.5;
+    RE.Draw.roundRect(ctx, x - 2, y - 2, CW + 4, CH + 4, 5); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,224,102,0.10)';
+    RE.Draw.roundRect(ctx, x, y, CW, CH, 4); ctx.fill();
+    ctx.restore();
+}
+
+function drawCard(card, x, y, tilt) {
+    ctx.save();
+    ctx.translate(x + CW / 2, y + CH / 2);
+    if (tilt) ctx.rotate(tilt);
+    ctx.translate(-CW / 2, -CH / 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    RE.Draw.roundRect(ctx, 2, 3, CW, CH, 4); ctx.fill();
+    if (!card.up) {
+        ctx.fillStyle = '#2b4a8a';
+        RE.Draw.roundRect(ctx, 0, 0, CW, CH, 4); ctx.fill();
+        ctx.fillStyle = '#3f63ad';
+        RE.Draw.roundRect(ctx, 3, 3, CW - 6, CH - 6, 3); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 1;
+        for (var i = -2; i < 5; i++) {
+            ctx.beginPath(); ctx.moveTo(3, 8 + i * 12); ctx.lineTo(CW - 3, 8 + i * 12 + 18); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(CW - 3, 8 + i * 12); ctx.lineTo(3, 8 + i * 12 + 18); ctx.stroke();
+        }
+        ctx.restore();
+        return;
+    }
+    ctx.fillStyle = '#fdfbf4';
+    RE.Draw.roundRect(ctx, 0, 0, CW, CH, 4); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 1;
+    RE.Draw.roundRect(ctx, 0.5, 0.5, CW - 1, CH - 1, 4); ctx.stroke();
+    var col = isRed(card) ? '#c8283c' : '#1a1a24';
+    var rk = RANKS[card.rank - 1];
+    ctx.fillStyle = col;
+    ctx.font = 'bold ' + (rk === '10' ? 11 : 13) + 'px "DotGothic16", monospace';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(rk, 3, 2);
+    ctx.font = '11px "DotGothic16", monospace';
+    ctx.fillText(SUITS[card.suit], 3, 15);
+    ctx.save();
+    ctx.translate(CW - 3, CH - 2); ctx.rotate(Math.PI);
+    ctx.font = 'bold ' + (rk === '10' ? 11 : 13) + 'px "DotGothic16", monospace';
+    ctx.fillText(rk, 0, 0);
+    ctx.restore();
+    ctx.font = '22px "DotGothic16", monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(SUITS[card.suit], CW / 2 + 3, CH / 2 + 2);
+    ctx.restore();
+}
+
+function drawPiles() {
+    var i, c, f;
+    for (i = 0; i < Math.min(3, s.stock.length); i++) {
+        drawCard(s.stock[s.stock.length - 1 - i], STOCK.x - i * 1.5, STOCK.y - i * 1.5, 0);
+    }
+    for (i = Math.max(0, s.waste.length - 3); i < s.waste.length; i++) {
+        var w = s.waste[i];
+        if (s.drag && s.drag.cards.indexOf(w) >= 0) continue;
+        drawCard(w, w.x, w.y, 0);
+    }
+    for (f = 0; f < 4; f++) {
+        var fp = s.found[f];
+        if (!fp.length) continue;
+        var top = fp[fp.length - 1];
+        if (fp.length > 1) drawCard(fp[fp.length - 2], FOUND[f].x, FOUND[f].y, 0);
+        drawCard(top, top.x, top.y, 0);
+    }
+    for (c = 0; c < 7; c++) {
+        var pile = s.tab[c];
+        for (i = 0; i < pile.length; i++) {
+            var card = pile[i];
+            if (s.drag && s.drag.cards.indexOf(card) >= 0) continue;
+            drawCard(card, card.x, card.y, 0);
+        }
+    }
+}
+
+function drawDrag() {
+    if (!s.drag) return;
+    var d = s.drag;
+    for (var i = 0; i < d.cards.length; i++) {
+        ctx.save();
+        ctx.globalAlpha = 0.97;
+        drawCard(d.cards[i], d.x, d.y + i * FANY, d.tilt);
+        ctx.restore();
+    }
+}
+
+function drawCascade() {
+    for (var i = 0; i < s.cascade.cards.length; i++) {
+        var b = s.cascade.cards[i];
+        drawCard(b.card, b.x, b.y, 0);
+    }
+}
+
+function drawHUD() {
+    if (s.hintT > 0) {
+        var a = Math.min(1, s.hintT / 0.8);
+        ctx.globalAlpha = a;
+        RE.Draw.text(ctx, '按住卡牌拖曳，可以放的位置會亮起來', VW / 2, VH - 30,
+            { size: 12, align: 'center', color: '#ffe066' });
+        RE.Draw.text(ctx, '雙擊送去完成區　·　A 自動完成　·　點左上角翻牌', VW / 2, VH - 14,
+            { size: 10, align: 'center', color: '#cfe8d8' });
+        ctx.globalAlpha = 1;
+    }
+    if (s.cascade) {
+        RE.Draw.text(ctx, '恭喜！', VW / 2, 130, { size: 26, align: 'center', color: '#ffe066' });
+    }
+}
+
+// ======================================================================
+function openPause() {
+    G._state = 'paused';
+    RetroAudio.play('pause');
+    G.showOverlay({
+        title: '暫停中',
+        body: '微軟把接龍放進 Windows 3.0，真正的目的是讓幾千萬人自願練習滑鼠拖放。',
+        buttons: [
+            { label: '▶ 繼續', onClick: function () { G.resume(); } },
+            { label: '↻ 重新發牌', cls: 'ghost', onClick: function () { G.restart(); } }
+        ],
+        press: '按 P 或 ESC 繼續'
+    });
+}
+G.pause = openPause;
+
+function showTitleScreen() {
+    G._state = 'title';
+    G.showOverlay({
+        title: '幻夢接龍',
+        body: G.cfg.howto,
+        buttons: [{ label: '▶ 發牌', onClick: function () { G.hideOverlay(); G._state = 'playing'; reset(); } }],
+        press: '按 空白鍵 或 Enter 開始'
+    });
+    var onKey = function (e) {
+        if (G._state !== 'title') return;
+        if (e.code === 'Space' || e.code === 'Enter') {
+            e.preventDefault();
+            window.removeEventListener('keydown', onKey);
+            RetroAudio.play('confirm');
+            G.hideOverlay(); G._state = 'playing'; reset();
+        }
+    };
+    window.addEventListener('keydown', onKey);
+}
+
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+showTitleScreen();
+</script>
+</body>
+</html>

@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 爆破小蟲團</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   爆破小蟲團 — 致敬 Worms (Team17, 1995)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. **風向 × 拋物線 × 可破壞地形**三個系統交互。風每回合重擲、
+      地形被每次爆炸永久改寫，所以沒有任何一發砲彈可以照抄上一發——
+      玩家每回合都在解一道新的數學題。
+   2. 地形是 2px 細格的 bitmap（沿用 lemmings 的格狀地形，解析度加倍），
+      爆炸真的挖圓洞。戰場會愈打愈爛，掩體與坑洞都是玩家自己炸出來的。
+   3. 兩種武器互為對照組：火箭彈吃風、直接引爆；彈跳雷不吃風、
+      會彈跳、三秒引信。前者教你補償風偏，後者教你利用地形反彈。
+   4. 回合時限逼迫決策：沒有時限的回合制會讓人無限最佳化，
+      時限讓「算得更準」與「趕快出手」互相拉扯。
+   5. AI 的誤差在瞄準時擲一次骰（不能每幀重擲——每幀重擲會把誤差
+      平均掉，AI 反而變成永不失誤的完美機器，見 README 踩坑錄）。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'worms',
+    title: '爆破小蟲團',
+    tagline: '風向、拋物線、會被炸爛的地形——每一發都是新的數學題',
+    original: 'Worms (Team17, 1995)',
+    decade: '90s', year: 1995, platform: 'Amiga / PC', genre: '回合制砲擊',
+    developer: 'Team17', bgm: '90s',
+    width: 480, height: 320,
+    hud: [
+        { key: 'stage', label: '關卡', init: '1/5' },
+        { key: 'mine', label: '我方', init: 3 },
+        { key: 'foe', label: '敵方', init: 0 },
+        { key: 'wind', label: '風力', init: '—' }
+    ],
+    lives: 3,
+    touch: 'dpad+ab', labelA: '蓄力', labelB: '武器',
+    controls: [
+        { keys: ['←', '→'], desc: '走位（改變面向）' },
+        { keys: ['↑', '↓'], desc: '調整瞄準仰角' },
+        { keys: ['A 按住→放開'], desc: '蓄力→發射（蓄滿自動發射）' },
+        { keys: ['B'], desc: '切換武器' }
+    ],
+    howto: '我方與錫蟲軍團輪流行動。輪到你時：<strong>←→</strong> 走位、' +
+           '<strong>↑↓</strong> 調瞄準角、<strong>B</strong> 換武器、' +
+           '<strong>按住 A 蓄力、放開發射</strong>（蓄滿會自動發射）。' +
+           '<strong>火箭彈會被風吹偏</strong>；<strong>彈跳雷</strong>不受風、會彈跳、三秒後爆炸。' +
+           '爆炸會炸掉地形、造成傷害並把蟲擊飛；<strong>落水即死</strong>，摔太重也會受傷。' +
+           '每回合限時 18 秒。殲滅所有敵蟲過關，共 5 關。' +
+           '畫面上淡淡的虛線是<strong>上一發的軌跡</strong>——拿它當修正的依據。',
+    lesson: {
+        verb: '讀風、調角度與蓄力，讓拋射物改寫地形、生命值與角色位置。',
+        innovation: '把傳統砲擊遊戲變成可持續改寫的回合沙盒：爆炸不只扣血，也會挖洞、破壞掩體、製造落水路線。',
+        mission: '先發射一枚火箭並記住虛線軌跡；下一回合依風向修正角度或力道，再嘗試不用直接打光生命，而以爆風把敵蟲推入水中。',
+        evolution: '早期砲擊遊戲以角度與火力求命中；《Worms》加入角色、武器、可破壞地形與多人幽默；《Angry Birds》再把同類拋物線閱讀改造成觸控關卡。',
+        reflection: '如果每次爆炸只扣生命、地形與站位完全不變，武器選擇還會形成戰術，還是只剩傷害數字比較？'
+    },
+    design: '回合制砲擊容易退化成反覆套用同一組角度與火力。《Worms》的解法，是讓風向、武器特性與可破壞地形彼此改寫。' +
+            '火箭受風影響、彈跳雷依賴反彈與引信；命中後的爆風還會移動角色，因此最佳解可能是炸穿腳下地板、推入海中，或破壞下一回合的掩體，而非追求最高直接傷害。' +
+            '地形一旦被挖掉就永久留下，使上一發同時成為下一發的新題目；回合時限則阻止玩家無限試算。' +
+            '本站以可見的上一發虛線保留 1995 年的拋射核心，同時提供現代化回饋，讓玩家能「觀察、修正、再射擊」。' +
+            '**真正的核心動詞不是開火，而是用一發砲彈重新定義戰場。**',
+    history: 'Andy Davidson 原先以《Total Wormage》之名製作原型，投稿 Amiga Format 程式競賽未受注意後，轉而向 Team17 提案。' +
+             'Team17 的官方回顧指出，他想做一款自己與朋友能長期遊玩、不易厭倦的作品，並在既有砲擊遊戲上加入尖細蟲聲、荒誕武器與個人幽默。' +
+             'Team17 成員協助完成 Amiga 版美術與製作，另有團隊同步開發 PC、PlayStation 等多平台版本；1995 年的《Worms》因此也使原本以 Amiga 作品為主的工作室轉入多平台開發。',
+    sources: [
+        { label: 'Team17：1995 年《Worms》官方開發回顧', url: 'https://www.team17.com/news/team17s-100-games-part-four-1995-worms-alien-breed-3d-more' },
+        { label: 'Team17 官方公司史：Worms 成為代表系列', url: 'https://www.team17.com/our-history' },
+        { label: 'Team17／Steam：初代 Worms 作品頁', url: 'https://store.steampowered.com/app/70640/Worms/' }
+    ]
+});
+
+var ctx = G.ctx, VW = G.width, VH = G.height;
+var P = new RE.Particles(400);
+var FT = new RE.FloatText();
+var WORMS_ART = { image: new Image(), manifest: null };
+WORMS_ART.image.src = '../../assets/games/worms/handpainted-bitmap-atlas.png';
+fetch('../../assets/games/worms/handpainted-bitmap-manifest.json')
+    .then(function (r) { return r.json(); })
+    .then(function (m) { WORMS_ART.manifest = m; })
+    .catch(function () { WORMS_ART.manifest = null; });
+
+function drawWormAsset(name, x, y, w, h, flip, rotation, alpha) {
+    var m = WORMS_ART.manifest;
+    if (!m || !m.assets || !m.assets[name] || !WORMS_ART.image.complete ||
+        !WORMS_ART.image.naturalWidth) return false;
+    var a = m.assets[name];
+    ctx.save();
+    ctx.translate(x, y);
+    if (rotation) ctx.rotate(rotation);
+    if (flip) ctx.scale(-1, 1);
+    if (alpha !== undefined) ctx.globalAlpha *= alpha;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(WORMS_ART.image, a.x, a.y, a.w, a.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+}
+
+// ======================================================================
+// 常數
+// ======================================================================
+var T = 2, GW = 240, GH = 160;         // 2px 一格的 bitmap 地形，爆洞才圓
+var WATER_Y = 294;                     // 初始水面。蟲低於這條線就淹死
+var SUDDEN_ROUNDS = 20;                // 超過這個回合數就進入驟死：海面上升
+var GRAV_P = 700;                      // 拋射物重力
+var GRAV_W = 820;                      // 蟲的重力
+var TURN_TIME = 18;
+var WALK = 42;                         // 蟲走速 px/s
+var STEP_UP = 3;                       // 走路最多自動爬 3 格（6px）的坎
+var CHARGE_SPEED = 0.65;               // 蓄力速度（滿=1）
+var FALL_HURT_V = 280;                 // 落地速度超過這個就摔傷
+
+var WEAPONS = [
+    { key: 'rocket', name: '火箭彈', r: 25, dmg: 42, wind: true,  fuse: 0, bounce: false },
+    { key: 'nade',   name: '彈跳雷', r: 31, dmg: 55, wind: false, fuse: 3, bounce: true }
+];
+
+var NAMES_P = ['朵朵', '布丁', '麻糬'];
+var NAMES_E = ['鐵鏽', '螺絲', '齒輪', '鉚釘'];
+
+// ======================================================================
+// 關卡。地形用高度控制點插值生成，extras 疊實心塊或挖洞。
+// wind = 風力上限（px/s²）、aiErr = AI 瞄準角誤差（度）、
+// aiPow = AI 力度誤差比例、foeHp = 敵蟲血量、foes = 敵蟲 x 座標。
+// 難度來源：敵蟲數量與血量升、AI 誤差降、風力升、地形愈來愈刁。
+// ======================================================================
+var LEVELS = [
+    {
+        name: '第一關 · 平原對決',
+        hint: '風不大、敵人手抖。先感覺一下拋物線怎麼飛。',
+        wind: 20, aiErr: 15, aiPow: 0.14, foeHp: 55, myHp: 90,
+        pts: [[0,250],[60,246],[120,252],[180,242],[240,248],[300,244],[360,252],[420,246],[480,250]],
+        extras: [],
+        mine: [70, 130, 100], foes: [352, 412]
+    },
+    {
+        name: '第二關 · 雙峰山',
+        hint: '中間隔著一座山。抬高仰角，把砲彈丟過稜線。',
+        wind: 32, aiErr: 11, aiPow: 0.11, foeHp: 70, myHp: 90,
+        pts: [[0,258],[70,250],[130,236],[180,192],[240,152],[300,192],[360,236],[420,250],[480,256]],
+        extras: [],
+        mine: [56, 106, 152], foes: [330, 382, 432]
+    },
+    {
+        name: '第三關 · 峽谷強風',
+        hint: '中間是海，風大得離譜。不補償風向，砲彈就進水裡。',
+        wind: 55, aiErr: 8, aiPow: 0.09, foeHp: 70, myHp: 90,
+        pts: [[0,200],[60,196],[110,204],[150,212],[186,340],[240,340],[294,340],[330,212],[380,200],[430,196],[480,200]],
+        extras: [],
+        mine: [46, 96, 142], foes: [342, 392, 440]
+    },
+    {
+        name: '第四關 · 三嶼海戰',
+        hint: '大家都站在小島上。不必打死——把敵蟲轟下海更快。',
+        wind: 45, aiErr: 6, aiPow: 0.07, foeHp: 80, myHp: 90,
+        pts: [[0,340],[26,262],[64,250],[104,260],[138,340],[182,340],[212,254],[240,246],[268,254],[298,340],[342,340],[372,258],[410,248],[450,258],[480,340]],
+        extras: [],
+        mine: [48, 78, 240], foes: [382, 416, 446]
+    },
+    {
+        name: '第五關 · 錫蟲要塞',
+        hint: '敵人躲在鐵壁後面。翻牆高拋、把牆炸穿、或讓彈跳雷滾進去。',
+        wind: 40, aiErr: 4.5, aiPow: 0.055, foeHp: 85, myHp: 100,
+        pts: [[0,252],[60,246],[120,252],[180,244],[240,250],[300,248],[360,250],[420,246],[480,250]],
+        extras: [ { t: 'box', x: 330, y: 168, w: 18, h: 92 } ],
+        mine: [56, 106, 156], foes: [372, 404, 438, 466]
+    }
+];
+
+// ======================================================================
+// 地形 bitmap
+// ======================================================================
+var grid = new Uint8Array(GW * GH);
+var terrainCv = document.createElement('canvas');
+terrainCv.width = VW; terrainCv.height = VH;
+var terrainCtx = terrainCv.getContext('2d');
+var terrainDirty = true;
+
+function solidT(tx, ty) {
+    if (tx < 0 || tx >= GW || ty < 0 || ty >= GH) return false;
+    return grid[ty * GW + tx] === 1;
+}
+function solidPx(px, py) { return solidT(Math.floor(px / T), Math.floor(py / T)); }
+
+function carveCircle(cx, cy, r) {
+    var x0 = Math.floor((cx - r) / T), x1 = Math.ceil((cx + r) / T);
+    var y0 = Math.floor((cy - r) / T), y1 = Math.ceil((cy + r) / T);
+    var r2 = r * r;
+    for (var ty = y0; ty <= y1; ty++) {
+        for (var tx = x0; tx <= x1; tx++) {
+            if (tx < 0 || tx >= GW || ty < 0 || ty >= GH) continue;
+            var dx = tx * T + T / 2 - cx, dy = ty * T + T / 2 - cy;
+            if (dx * dx + dy * dy <= r2) grid[ty * GW + tx] = 0;
+        }
+    }
+    terrainDirty = true;
+}
+
+// 由高度控制點（cosine 插值）＋ extras 生成地形
+function genTerrain(L) {
+    var k;
+    for (k = 0; k < grid.length; k++) grid[k] = 0;
+    var pts = L.pts;
+    for (var tx = 0; tx < GW; tx++) {
+        var x = tx * T + T / 2;
+        var h = 400;
+        for (var i = 0; i < pts.length - 1; i++) {
+            if (x >= pts[i][0] && x <= pts[i + 1][0]) {
+                var t = (x - pts[i][0]) / (pts[i + 1][0] - pts[i][0]);
+                var tt = (1 - Math.cos(t * Math.PI)) / 2;   // cosine 插值：丘陵才圓潤
+                h = pts[i][1] * (1 - tt) + pts[i + 1][1] * tt;
+                break;
+            }
+        }
+        var ty0 = Math.max(0, Math.floor(h / T));
+        for (var ty = ty0; ty < GH; ty++) grid[ty * GW + tx] = 1;
+    }
+    for (k = 0; k < L.extras.length; k++) {
+        var e = L.extras[k];
+        if (e.t === 'box') {
+            for (var by = Math.floor(e.y / T); by < Math.ceil((e.y + e.h) / T); by++)
+                for (var bx = Math.floor(e.x / T); bx < Math.ceil((e.x + e.w) / T); bx++)
+                    if (bx >= 0 && bx < GW && by >= 0 && by < GH) grid[by * GW + bx] = 1;
+        } else if (e.t === 'hole') {
+            carveCircle(e.x, e.y, e.r);
+        }
+    }
+    terrainDirty = true;
+}
+
+function surfaceY(px) {
+    var tx = Math.floor(px / T);
+    for (var ty = 0; ty < GH; ty++) if (solidT(tx, ty)) return ty * T;
+    return GH * T + 60;
+}
+
+// 地形畫在離屏 canvas，只有被炸到才重畫
+function redrawTerrain() {
+    var c = terrainCtx;
+    c.clearRect(0, 0, VW, VH);
+    for (var ty = 0; ty < GH; ty++) {
+        for (var tx = 0; tx < GW; tx++) {
+            if (grid[ty * GW + tx] !== 1) continue;
+            var px = tx * T, py = ty * T;
+            var top = !solidT(tx, ty - 1);
+            if (top) c.fillStyle = '#5f9c4a';
+            else {
+                var d = Math.min(1, ty / GH);
+                var n = (tx * 7 + ty * 13) % 17;
+                c.fillStyle = n < 2 ? '#8a6a44' :
+                              (d > 0.82 ? '#4a3826' : (d > 0.6 ? '#5d4730' : '#6f5638'));
+            }
+            c.fillRect(px, py, T, T);
+            if (top) { c.fillStyle = 'rgba(255,255,255,0.18)'; c.fillRect(px, py, T, 1); }
+        }
+    }
+    terrainDirty = false;
+}
+
+// ======================================================================
+// 狀態
+// ======================================================================
+var s = null;
+
+function reset() {
+    s = { level: 0, total: 0 };
+    P.clear(); FT.clear();
+    G.setLives(3);
+    loadLevel(0);
+}
+
+function loadLevel(i) {
+    var L = LEVELS[i];
+    genTerrain(L);
+    s.level = i; s.L = L;
+    s.worms = [];
+    var k;
+    for (k = 0; k < L.mine.length; k++) spawnWorm(0, L.mine[k], NAMES_P[k], L.myHp);
+    for (k = 0; k < L.foes.length; k++) spawnWorm(1, L.foes[k], NAMES_E[k], L.foeHp);
+    s.proj = null;
+    s.wind = 0;
+    s.waterY = WATER_Y;
+    s.rounds = 0;
+    s.phase = 'turn';
+    s.team = 1;                 // startTurn 會先翻面，所以玩家先手
+    s.turnIdx = [-1, -1];
+    s.turnT = 0;
+    s.fired = false;
+    s.aiPlan = null;
+    s.deathQ = [];
+    s.deathT = 0;
+    s.graves = [];
+    s.artFx = [];
+    s.lastTrail = null;
+    s.banner = L.name; s.bannerT = 2.4;
+    s.settleT = 0;
+    s.over = 0;
+    G.setStat('stage', (i + 1) + '/' + LEVELS.length);
+    startTurn();
+    updateCounts();
+}
+
+function spawnWorm(team, x, name, hp) {
+    s.worms.push({
+        team: team, x: x, y: surfaceY(x) - 1,
+        hp: hp, maxHp: hp, name: name,
+        face: team === 0 ? 1 : -1, elev: 30,
+        vx: 0, vy: 0, flying: false,
+        dying: false, deathT: 0, drown: false, gone: false,
+        power: 0, charging: false, weapon: 0,
+        anim: Math.random() * 7, hurtT: 0
+    });
+}
+
+function updateCounts() {
+    var m = 0, f = 0;
+    for (var i = 0; i < s.worms.length; i++) {
+        var w = s.worms[i];
+        if (!w.gone && !w.dying) (w.team === 0 ? m++ : f++);
+    }
+    G.setStat('mine', m); G.setStat('foe', f);
+    return { m: m, f: f };
+}
+
+function aliveWorms(team) {
+    var arr = [];
+    for (var i = 0; i < s.worms.length; i++) {
+        var w = s.worms[i];
+        if (w.team === team && !w.gone && !w.dying) arr.push(w);
+    }
+    return arr;
+}
+
+// ======================================================================
+// 回合
+// ======================================================================
+function startTurn() {
+    s.team = 1 - s.team;
+    var team = s.team, list = [];
+    for (var i = 0; i < s.worms.length; i++)
+        if (s.worms[i].team === team && !s.worms[i].gone && !s.worms[i].dying) list.push(i);
+    if (!list.length) return;    // 勝負已在 settle 檢查，保險
+    // 隊內輪替：找 turnIdx 之後的下一隻活蟲
+    var next = list[0];
+    for (i = 0; i < list.length; i++) if (list[i] > s.turnIdx[team]) { next = list[i]; break; }
+    s.turnIdx[team] = next;
+    s.active = s.worms[next];
+    s.wind = (Math.random() * 2 - 1) * s.L.wind;
+    s.turnT = TURN_TIME;
+    s.phase = 'turn';
+    s.fired = false;
+    s.active.power = 0; s.active.charging = false;
+    s.banner = (team === 0 ? '▶ 輪到 ' : '▶ 錫蟲 ') + s.active.name + (team === 0 ? '！' : ' 行動');
+    s.bannerT = 1.3;
+    // 驟死：拖太久海面就開始上升，逼雙方分出勝負（原作的招牌收尾）
+    s.rounds++;
+    if (s.rounds > SUDDEN_ROUNDS) {
+        if (s.rounds === SUDDEN_ROUNDS + 1) {
+            RetroAudio.play('pause');
+            RE.juice.flash('rgba(80,140,255,0.25)', 0.25);
+        }
+        s.waterY -= 7;
+        s.banner = '⚠ 海面上升！' + s.banner.replace('▶ ', '');
+        s.bannerT = 1.6;
+    }
+    G.setStat('wind', (s.wind < -1 ? '←' : s.wind > 1 ? '→' : '·') + Math.abs(Math.round(s.wind)));
+    s.aiPlan = team === 1 ? aiPlanFor(s.active) : null;
+    if (team === 0) RetroAudio.play('blip');
+}
+
+// ======================================================================
+// 拋射物。stepProj 由真實遊戲與 AI 模擬共用——物理一致 AI 才算得準。
+// 回傳 null（繼續飛）或 { type:'ground'|'water'|'worm'|'fuse'|'out', x, y }
+// ======================================================================
+function makeProj(worm, sim) {
+    var W = WEAPONS[worm.weapon];
+    var a = worm.face > 0 ? worm.elev : 180 - worm.elev;
+    var rad = a * Math.PI / 180;
+    var v = 150 + worm.power * 400;   // 滿力射程約 430px，全圖最遠對角也搆得到
+    var cx = worm.x, cy = worm.y - 7;
+    return {
+        x: cx + Math.cos(rad) * 12, y: cy - Math.sin(rad) * 12,
+        vx: Math.cos(rad) * v, vy: -Math.sin(rad) * v,
+        w: worm.weapon, fuse: W.fuse, age: 0, shooter: worm,
+        sim: !!sim, trail: [], trailT: 0, spin: 0
+    };
+}
+
+function stepProj(p, dt) {
+    var W = WEAPONS[p.w];
+    p.age += dt;
+    if (W.fuse > 0) {
+        p.fuse -= dt;
+        if (p.fuse <= 0) return { type: 'fuse', x: p.x, y: p.y };
+    }
+    if (W.wind) p.vx += s.wind * dt;
+    p.vy += GRAV_P * dt;
+    p.spin += dt * (p.vx > 0 ? 9 : -9);
+
+    // 依速度細分步進，避免高速穿牆
+    var dist = Math.sqrt(p.vx * p.vx + p.vy * p.vy) * dt;
+    var steps = Math.max(1, Math.ceil(dist / 1.8));
+    for (var k = 0; k < steps; k++) {
+        var nx = p.x + p.vx * dt / steps;
+        var ny = p.y + p.vy * dt / steps;
+        if (ny > s.waterY + 4) return { type: 'water', x: nx, y: ny };
+        if (nx < -50 || nx > VW + 50) return { type: 'out', x: nx, y: ny };
+
+        // 直擊蟲（出膛極短時間內不撞發射者自己）
+        for (var i = 0; i < s.worms.length; i++) {
+            var wm = s.worms[i];
+            if (wm.gone || wm.dying) continue;
+            if (wm === p.shooter && p.age < 0.18) continue;
+            var dx = nx - wm.x, dy = ny - (wm.y - 6);
+            if (dx * dx + dy * dy < 49) {
+                if (!W.bounce) return { type: 'worm', x: nx, y: ny };
+            }
+        }
+
+        if (solidPx(nx, ny)) {
+            if (!W.bounce) return { type: 'ground', x: nx, y: ny };
+            // 彈跳雷：分軸判斷反彈面
+            var hx = solidPx(nx, p.y), hy = solidPx(p.x, ny);
+            if (hy || !hx) { p.vy *= -0.45; p.vx *= 0.72; }
+            if (hx) p.vx *= -0.55;
+            if (!p.sim && Math.abs(p.vy) > 40) RetroAudio.play('bounce');
+            return null;
+        }
+        p.x = nx; p.y = ny;
+    }
+    if (!p.sim) {
+        p.trailT -= dt;
+        if (p.trailT <= 0) { p.trailT = 0.028; p.trail.push({ x: p.x, y: p.y }); }
+    }
+    return null;
+}
+
+// ======================================================================
+// AI：模擬彈道取樣搜尋。誤差在這裡「一次擲定」。
+// ======================================================================
+function simShot(worm, elev, face, power, weapon) {
+    var saved = { elev: worm.elev, face: worm.face, power: worm.power, weapon: worm.weapon };
+    worm.elev = elev; worm.face = face; worm.power = power; worm.weapon = weapon;
+    var p = makeProj(worm, true);
+    worm.elev = saved.elev; worm.face = saved.face; worm.power = saved.power; worm.weapon = saved.weapon;
+    var end = null, t = 0;
+    while (t < 6.5 && !end) { end = stepProj(p, 1 / 60); t += 1 / 60; }
+    return end || { type: 'out', x: p.x, y: p.y };
+}
+
+function aiPlanFor(worm) {
+    var foes = aliveWorms(0);
+    if (!foes.length) return null;
+    // 目標：後期關卡狠一點，專打殘血
+    var tgt;
+    if (s.level >= 3) {
+        tgt = foes[0];
+        for (var i = 1; i < foes.length; i++) if (foes[i].hp < tgt.hp) tgt = foes[i];
+    } else tgt = foes[Math.floor(Math.random() * foes.length)];
+
+    var mates = aliveWorms(1);
+    var best = null, bestScore = 1e9;
+    var tries = 80;
+    for (i = 0; i < tries; i++) {
+        var weapon = (s.level === 0) ? 0 : (i % 3 === 2 ? 1 : 0);   // 第一關只用火箭，之後偶爾用彈跳雷
+        var A = 15 + Math.random() * 150;                            // 絕對角（0=右 90=上）
+        var face = A <= 90 ? 1 : -1;
+        var elev = face > 0 ? A : 180 - A;
+        var pow = 0.28 + Math.random() * 0.72;
+        var end = simShot(worm, elev, face, pow, weapon);
+        var score;
+        if (end.type === 'out') score = 900;
+        else {
+            var dx = end.x - tgt.x, dy = end.y - (tgt.y - 6);
+            score = Math.sqrt(dx * dx + dy * dy);
+            if (end.type === 'water') score += 60;
+            for (var m = 0; m < mates.length; m++) {
+                if (mates[m] === worm) continue;
+                var mx = end.x - mates[m].x, my = end.y - mates[m].y;
+                if (mx * mx + my * my < 40 * 40) { score += 200; break; }
+            }
+            // 太靠近自己也不行
+            var sx = end.x - worm.x, sy = end.y - worm.y;
+            if (sx * sx + sy * sy < 45 * 45) score += 260;
+        }
+        if (score < bestScore) { bestScore = score; best = { elev: elev, face: face, pow: pow, weapon: weapon }; }
+    }
+    if (!best) return null;
+    // 誤差一次擲定：關卡越後面手越穩
+    best.elev += (Math.random() * 2 - 1) * s.L.aiErr;
+    best.pow = Math.max(0.18, Math.min(1, best.pow * (1 + (Math.random() * 2 - 1) * s.L.aiPow)));
+    best.t = 0; best.aimFrom = worm.elev;
+    return best;
+}
+
+// ======================================================================
+// 爆炸與傷害
+// ======================================================================
+function explode(x, y, wi, shooter) {
+    var W = WEAPONS[wi];
+    carveCircle(x, y, W.r);
+    var big = wi === 1;
+    RetroAudio.play(big ? 'bigExplosion' : 'explosion');
+    RE.juice.hitstop(big ? 0.07 : 0.05);
+    RE.juice.shake(big ? 0.55 : 0.4);
+    RE.juice.flash('rgba(255,200,120,0.22)', 0.1);
+    P.burst(x, y, big ? 26 : 18, {
+        colors: ['#ffd166', '#ff9a3c', '#ff5c3c', '#fff3c4'],
+        speedMin: 60, speedMax: 240, gravity: 300, lifeMin: 0.25, lifeMax: 0.6,
+        sizeMin: 2, sizeMax: 4.5, glow: true });
+    P.burst(x, y, big ? 20 : 14, {
+        colors: ['#6f5638', '#8a6a44', '#4a3826'],
+        speedMin: 50, speedMax: 200, gravity: 420, lifeMin: 0.3, lifeMax: 0.8,
+        sizeMin: 1.5, sizeMax: 3.5 });
+    P.ring(x, y, '#ffd9a0', W.r * 0.9);
+    s.artFx.push({ name: 'explosion', x: x, y: y, size: wi === 1 ? 54 : 44, t: 0.38, max: 0.38 });
+
+    var R = W.r + 8;
+    for (var i = 0; i < s.worms.length; i++) {
+        var w = s.worms[i];
+        if (w.gone || w.dying) continue;
+        var dx = w.x - x, dy = (w.y - 6) - y;
+        var d = Math.sqrt(dx * dx + dy * dy);
+        if (d > R) continue;
+        var k = 1 - d / R;
+        var dmg = Math.round(W.dmg * (0.35 + 0.65 * k));
+        var nx = d > 0.01 ? dx / d : 0, ny = d > 0.01 ? dy / d : -1;
+        w.vx += nx * (140 + 240 * k);
+        w.vy += ny * (140 + 240 * k) - 110 * k;
+        w.flying = true;
+        damageWorm(w, dmg, shooter);
+    }
+}
+
+function damageWorm(w, dmg, shooter) {
+    w.hp -= dmg; w.hurtT = 0.5;
+    RetroAudio.play('hurt');
+    FT.add(w.x, w.y - 20, '-' + dmg, { color: w.team === 0 ? '#ff8f8f' : '#ffd166', size: 13 });
+    if (shooter && shooter.team === 0 && w.team === 1) s.total += dmg * 10;
+    if (shooter && shooter.team === 0 && w.team === 0) s.total = Math.max(0, s.total - dmg * 5);
+    if (w.hp <= 0 && !w.dying) {
+        w.dying = true; w.deathT = 0.7;
+        if (shooter && shooter.team === 0 && w.team === 1) s.total += 200;
+        s.deathQ.push(w);
+    }
+    updateCounts();
+}
+
+function drownWorm(w) {
+    if (w.dying || w.gone) return;
+    w.dying = true; w.drown = true; w.deathT = 0.9;
+    RetroAudio.play('splash');
+    P.burst(w.x, s.waterY, 14, { colors: ['#9fd8ff', '#5aa8e0', '#e8f6ff'],
+        speedMin: 40, speedMax: 160, gravity: 380, lifeMin: 0.3, lifeMax: 0.6 });
+    FT.add(w.x, s.waterY - 14, '撲通！', { color: '#9fd8ff', size: 13 });
+    s.artFx.push({ name: 'water_splash', x: w.x, y: s.waterY - 3, size: 42, t: 0.5, max: 0.5 });
+    s.deathQ.push(w);
+    updateCounts();
+}
+
+// 死亡的蟲會自爆（原作的經典連鎖），溺水的直接沉底
+function processDeaths(dt) {
+    if (!s.deathQ.length) return false;
+    s.deathT -= dt;
+    if (s.deathT > 0) return true;
+    var w = s.deathQ.shift();
+    s.deathT = 0.5;
+    if (!w.gone) {
+        w.gone = true;
+        if (!w.drown) {
+            explode(w.x, w.y - 4, 0, null);
+            carveCircle(w.x, w.y - 4, 14);
+            s.graves.push({ x: w.x, y: w.y, team: w.team });
+            FT.add(w.x, w.y - 24, w.name + ' 陣亡', { color: '#ffb0a0', size: 13 });
+        }
+        updateCounts();
+    }
+    return true;
+}
+
+// ======================================================================
+// 蟲物理
+// ======================================================================
+function updateWorm(w, dt) {
+    w.anim += dt;
+    if (w.hurtT > 0) w.hurtT -= dt;
+    if (w.gone) return;
+    if (w.dying && w.drown) { w.y += 46 * dt; return; }   // 沉水
+    if (w.dying) return;
+
+    if (w.y > s.waterY + 2) { drownWorm(w); return; }
+
+    if (w.flying) {
+        w.vy += GRAV_W * dt;
+        var dist = Math.sqrt(w.vx * w.vx + w.vy * w.vy) * dt;
+        var steps = Math.max(1, Math.ceil(dist / 2));
+        for (var k = 0; k < steps; k++) {
+            var nx = w.x + w.vx * dt / steps, ny = w.y + w.vy * dt / steps;
+            if (ny > s.waterY + 2) { w.x = nx; w.y = ny; drownWorm(w); return; }
+            if (solidPx(nx, ny)) {
+                var impact = Math.abs(w.vy);
+                if (impact > 320 || Math.abs(w.vx) > 200) {
+                    var hx = solidPx(nx, w.y), hy = solidPx(w.x, ny);
+                    if (hy || !hx) w.vy *= -0.4;
+                    if (hx) w.vx *= -0.5;
+                    w.vx *= 0.7;
+                } else {
+                    w.flying = false; w.vx = 0; w.vy = 0;
+                    while (solidPx(w.x, w.y - 1)) w.y--;
+                    if (impact > FALL_HURT_V) {
+                        RetroAudio.play('land');
+                        damageWorm(w, Math.round((impact - FALL_HURT_V) * 0.12), null);
+                    }
+                    return;
+                }
+            } else { w.x = nx; w.y = ny; }
+        }
+        return;
+    }
+
+    // 站立：腳下懸空就開始掉
+    if (!solidPx(w.x, w.y)) {
+        var drop = 0;
+        while (!solidPx(w.x, w.y + 1) && drop < 3) { w.y++; drop++; }
+        if (!solidPx(w.x, w.y + 1) && !solidPx(w.x, w.y)) { w.flying = true; w.vx = 0; w.vy = 0; }
+    } else {
+        while (solidPx(w.x, w.y - 1)) w.y--;
+    }
+}
+
+// 走位（同 lemmings 的 step-up：小坎自動爬、高牆擋住）
+function walkWorm(w, dir, dt) {
+    w.face = dir;
+    var nx = w.x + dir * WALK * dt;
+    if (nx < 4 || nx > VW - 4) return;
+    var up = 0;
+    while (up <= STEP_UP && solidPx(nx, w.y - 1 - up * T)) up++;
+    if (up > STEP_UP) return;                 // 太高，走不上去
+    w.x = nx; w.y -= up * T;
+    var drop = 0;
+    while (!solidPx(w.x, w.y) && drop < 5) { w.y++; drop++; }
+    if (!solidPx(w.x, w.y)) { w.flying = true; w.vx = dir * 26; w.vy = 0; }
+    w.anim += dt * 2;
+}
+
+function allSettled() {
+    if (s.proj) return false;
+    for (var i = 0; i < s.worms.length; i++) {
+        var w = s.worms[i];
+        if (!w.gone && w.flying && !w.dying) return false;
+    }
+    return true;
+}
+
+function fire(worm) {
+    s.proj = makeProj(worm, false);
+    s.fired = true;
+    worm.charging = false;
+    s.phase = 'fly';
+    RetroAudio.play('shoot');
+    RE.juice.shake(0.1);
+    P.burst(s.proj.x, s.proj.y, 6, { colors: ['#fff3c4', '#ffd166'],
+        speedMin: 20, speedMax: 80, gravity: 0, lifeMin: 0.1, lifeMax: 0.25, glow: true });
+}
+
+// ======================================================================
+// 主迴圈
+// ======================================================================
+function update(dt) {
+    if (!s) return;
+    P.update(dt); FT.update(dt);
+    if (s.bannerT > 0) s.bannerT -= dt;
+    var i;
+    for (i = s.artFx.length - 1; i >= 0; i--) {
+        s.artFx[i].t -= dt;
+        if (s.artFx[i].t <= 0) s.artFx.splice(i, 1);
+    }
+
+    if (s.over) return;   // 過關演出中凍結世界（README 踩坑錄：空窗期要凍結）
+
+    for (i = 0; i < s.worms.length; i++) updateWorm(s.worms[i], dt);
+
+    if (s.phase === 'turn') {
+        s.turnT -= dt;
+        if (s.turnT <= 0) { s.phase = 'settle'; s.settleT = 0.3; s.banner = '時間到！'; s.bannerT = 1; }
+        else if (s.team === 0) playerControl(s.active, dt);
+        else aiControl(s.active, dt);
+    }
+    else if (s.phase === 'fly') {
+        if (s.proj) {
+            var end = stepProj(s.proj, dt);
+            if (end) {
+                s.lastTrail = s.proj.trail;
+                if (end.type === 'water') {
+                    RetroAudio.play('splash');
+                    P.burst(end.x, s.waterY, 12, { colors: ['#9fd8ff', '#5aa8e0'],
+                        speedMin: 40, speedMax: 150, gravity: 380, lifeMin: 0.3, lifeMax: 0.55 });
+                    FT.add(end.x, s.waterY - 12, '落水…', { color: '#9fd8ff', size: 13 });
+                    s.artFx.push({ name: 'water_splash', x: end.x, y: s.waterY - 3,
+                        size: 40, t: 0.45, max: 0.45 });
+                } else if (end.type !== 'out') {
+                    explode(end.x, end.y, s.proj.w, s.proj.shooter);
+                }
+                s.proj = null;
+                s.phase = 'settle'; s.settleT = 0.45;
+            }
+        } else { s.phase = 'settle'; s.settleT = 0.3; }
+    }
+    else if (s.phase === 'settle') {
+        if (processDeaths(dt)) return;
+        if (!allSettled()) return;
+        s.settleT -= dt;
+        if (s.settleT > 0) return;
+        var c = updateCounts();
+        if (c.f === 0) { endLevel(true); return; }
+        if (c.m === 0) { endLevel(false); return; }
+        startTurn();
+    }
+}
+
+function playerControl(w, dt) {
+    if (w.dying || w.gone || w.flying) return;
+    if (RE.Input.down('left'))  walkWorm(w, -1, dt);
+    else if (RE.Input.down('right')) walkWorm(w, 1, dt);
+    if (RE.Input.down('up'))   w.elev = Math.min(85, w.elev + 90 * dt);
+    if (RE.Input.down('down')) w.elev = Math.max(-75, w.elev - 90 * dt);
+    if (RE.Input.pressed('b')) {
+        w.weapon = (w.weapon + 1) % WEAPONS.length;
+        RetroAudio.play('select');
+        FT.add(w.x, w.y - 26, WEAPONS[w.weapon].name, { color: '#ffd166', size: 13 });
+    }
+    if (RE.Input.down('a')) {
+        w.charging = true;
+        w.power += CHARGE_SPEED * dt;
+        if (w.power >= 1) { w.power = 1; fire(w); }
+    } else if (w.charging) {
+        fire(w);
+    }
+}
+
+function aiControl(w, dt) {
+    var plan = s.aiPlan;
+    if (!plan || w.dying || w.gone) { s.phase = 'settle'; s.settleT = 0.3; return; }
+    if (w.flying) return;
+    plan.t += dt;
+    // 演出：先把準星轉過去，再蓄力，讓玩家看得懂 AI 在幹嘛
+    if (plan.t < 0.9) {
+        w.face = plan.face;
+        w.weapon = plan.weapon;
+        var k = plan.t / 0.9;
+        w.elev = plan.aimFrom + (plan.elev - plan.aimFrom) * k;
+    } else {
+        w.elev = plan.elev;
+        w.charging = true;
+        w.power += CHARGE_SPEED * dt;
+        if (w.power >= plan.pow) { w.power = plan.pow; fire(w); }
+    }
+}
+
+// ======================================================================
+// 關卡結束
+// ======================================================================
+function endLevel(win) {
+    s.over = win ? 1 : -1;
+    var alive = aliveWorms(0).length;
+    if (win) {
+        RetroAudio.play('win');
+        RE.juice.flash('rgba(140,255,180,0.3)', 0.2);
+        s.total += 500 + alive * 150;
+        if (s.level >= LEVELS.length - 1) {
+            G.gameOver({
+                win: true, score: s.total,
+                body: '五張戰場全部清空。回頭看看地形——每個坑都是一次計算的紀錄。' +
+                      '風每回合都在變、地形每一發都被改寫，' +
+                      '所以你從頭到尾沒有打出兩發一樣的砲彈。' +
+                      '《Worms》教的就是這件事：真正耐玩的不是內容量，' +
+                      '而是幾條簡單規則交互出來的、永遠算不完的新題目。'
+            });
+        } else {
+            var n = s.level + 1;
+            G.stageCard(n + 1, LEVELS[n].name, LEVELS[n].hint, function () { loadLevel(n); });
+        }
+    } else {
+        RetroAudio.play('gameover');
+        RE.juice.shake(0.35);
+        G.setLives(G.lives - 1);
+        if (G.lives <= 0) {
+            G.gameOver({
+                win: false, score: s.total,
+                body: '小蟲全滅，錫蟲軍團佔領了菜園。' +
+                      '記住三件事：順風要收力、逆風要加力；' +
+                      '彈跳雷不吃風，大風天它比火箭可靠；' +
+                      '還有——打不中敵人的時候，把牠腳下的地形炸掉也是一種命中。'
+            });
+        } else {
+            var idx = s.level;
+            G.stageCard(idx + 1, LEVELS[idx].name, '全隊陣亡。' + LEVELS[idx].hint,
+                function () { loadLevel(idx); });
+        }
+    }
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function render() {
+    if (!s) return;
+    G.beginWorld();
+    drawSky();
+    if (terrainDirty) redrawTerrain();
+    ctx.drawImage(terrainCv, 0, 0);
+    drawGraves();
+    drawWorms();
+    drawProj();
+    drawWormArtFx();
+    P.draw(ctx);
+    drawWater();
+    FT.draw(ctx);
+    drawTrail();
+    drawAimUI();
+    G.endWorld();
+    drawTopbar();
+    drawBanner();
+    G.postFX({ scanAlpha: 0.06, vignetteStrength: 0.4 });
+}
+
+function drawSky() {
+    var g = ctx.createLinearGradient(0, 0, 0, VH);
+    g.addColorStop(0, '#28406a'); g.addColorStop(0.6, '#3d5a86'); g.addColorStop(1, '#5a749a');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+    // 遠山兩層
+    ctx.fillStyle = 'rgba(30,44,72,0.55)';
+    ctx.beginPath(); ctx.moveTo(0, 210);
+    for (var x = 0; x <= VW; x += 20) ctx.lineTo(x, 190 + Math.sin(x * 0.013 + 2) * 26);
+    ctx.lineTo(VW, VH); ctx.lineTo(0, VH); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(24,34,58,0.7)';
+    ctx.beginPath(); ctx.moveTo(0, 240);
+    for (x = 0; x <= VW; x += 20) ctx.lineTo(x, 228 + Math.sin(x * 0.02 + 5) * 18);
+    ctx.lineTo(VW, VH); ctx.lineTo(0, VH); ctx.closePath(); ctx.fill();
+    // 雲
+    var t = Date.now() * 0.001;
+    ctx.fillStyle = 'rgba(255,255,255,0.10)';
+    for (var i = 0; i < 3; i++) {
+        var cx = ((t * (8 + i * 4) + i * 190) % (VW + 120)) - 60;
+        var cy = 40 + i * 34;
+        RE.Draw.roundRect(ctx, cx, cy, 64 + i * 14, 12, 6); ctx.fill();
+    }
+}
+
+function drawWater() {
+    var t = Date.now() * 0.001;
+    var wy = s.waterY;
+    var sd = s.rounds > SUDDEN_ROUNDS;
+    ctx.fillStyle = sd ? 'rgba(90,70,160,0.75)' : 'rgba(58,120,190,0.72)';
+    ctx.beginPath(); ctx.moveTo(0, wy + 4);
+    for (var x = 0; x <= VW; x += 12) ctx.lineTo(x, wy + 2 + Math.sin(x * 0.06 + t * 2.4) * 2);
+    ctx.lineTo(VW, VH); ctx.lineTo(0, VH); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(120,190,255,0.35)';
+    ctx.beginPath(); ctx.moveTo(0, wy + 7);
+    for (x = 0; x <= VW; x += 12) ctx.lineTo(x, wy + 6 + Math.sin(x * 0.045 - t * 1.8 + 2) * 2.4);
+    ctx.lineTo(VW, VH); ctx.lineTo(0, VH); ctx.closePath(); ctx.fill();
+}
+
+function drawGraves() {
+    for (var i = 0; i < s.graves.length; i++) {
+        var g = s.graves[i];
+        var gy = surfaceY(g.x) - 1;
+        if (gy > s.waterY) continue;
+        if (drawWormAsset(g.team === 0 ? 'grave_player' : 'grave_enemy', g.x, gy - 11, 25, 25, false, 0, 1)) continue;
+        ctx.fillStyle = '#8a93a6';
+        RE.Draw.roundRect(ctx, g.x - 4, gy - 10, 8, 10, 3); ctx.fill();
+        ctx.fillStyle = '#6a7386';
+        ctx.fillRect(g.x - 5, gy - 1, 10, 2);
+        ctx.fillStyle = 'rgba(40,48,66,0.8)';
+        ctx.fillRect(g.x - 1, gy - 8, 2, 5); ctx.fillRect(g.x - 2.5, gy - 6.5, 5, 1.5);
+    }
+}
+
+function drawWorms() {
+    for (var i = 0; i < s.worms.length; i++) {
+        var w = s.worms[i];
+        if (w.gone) continue;
+        var mine = w.team === 0;
+        var body = mine ? '#ffab9a' : '#9fb8d0';
+        var dark = mine ? '#d97a6a' : '#6f8aa8';
+        if (w.hurtT > 0 && Math.floor(w.hurtT * 20) % 2 === 0) body = '#ffffff';
+        if (w.dying && !w.drown && Math.floor(w.deathT * 16) % 2 === 0) body = '#ff5c3c';
+        var state = (w.hurtT > 0 || w.dying) ? 'hurt' : w.flying ? 'air' :
+                    (w === s.active && s.phase === 'turn') ? 'aim' : 'idle';
+        var artName = (mine ? 'player_' : 'enemy_') + state;
+        var artDrawn = drawWormAsset(artName, w.x, w.y - 13, 31, 31, w.face < 0, 0,
+            (w.dying && !w.drown && Math.floor(w.deathT * 16) % 2 === 0) ? 0.55 : 1);
+        if (!artDrawn) {
+        ctx.save();
+        ctx.translate(w.x, w.y);
+        var bob = (!w.flying && !w.dying) ? Math.sin(w.anim * 6) * 0.8 : 0;
+        // 尾巴
+        ctx.fillStyle = dark;
+        ctx.beginPath(); ctx.ellipse(-w.face * 3.5, -2.5, 3.5, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+        // 身體（直立豆形）
+        ctx.fillStyle = body;
+        ctx.beginPath(); ctx.ellipse(0, -6 + bob, 5, 7, 0, 0, Math.PI * 2); ctx.fill();
+        // 肚皮
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.beginPath(); ctx.ellipse(w.face * 1.2, -4.5 + bob, 2.6, 4, 0, 0, Math.PI * 2); ctx.fill();
+        // 眼睛
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.ellipse(w.face * 2, -10 + bob, 2.2, 2.6, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#222';
+        ctx.beginPath(); ctx.arc(w.face * 2.8, -10 + bob, 1.1, 0, Math.PI * 2); ctx.fill();
+        // 敵蟲鉚釘
+        if (!mine) { ctx.fillStyle = '#4a5a70'; ctx.fillRect(-1.5, -14 + bob, 3, 2.5); }
+        // 低血量的冷汗
+        if (w.hp < w.maxHp * 0.3 && !w.dying) {
+            ctx.fillStyle = '#9fd8ff';
+            ctx.beginPath(); ctx.arc(-w.face * 3, -12 + bob + Math.sin(w.anim * 8) * 1.2, 1, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.restore();
+        }
+        // HP 與名字
+        if (!w.dying) {
+            RE.Draw.text(ctx, '' + Math.max(0, w.hp), w.x, w.y - 26,
+                { size: 13, align: 'center', color: mine ? '#ffd9a0' : '#cfe0ff' });
+        }
+        // 當前行動蟲的箭頭
+        if (w === s.active && s.phase === 'turn' && !w.dying) {
+            var ay = w.y - 34 + Math.sin(Date.now() * 0.006) * 2.5;
+            if (drawWormAsset('turn_arrow', w.x, ay + 2, 15, 15, false, 0, 1)) continue;
+            ctx.fillStyle = mine ? '#ffd166' : '#ff8f6a';
+            ctx.beginPath();
+            ctx.moveTo(w.x - 4, ay); ctx.lineTo(w.x + 4, ay); ctx.lineTo(w.x, ay + 6);
+            ctx.closePath(); ctx.fill();
+        }
+    }
+}
+
+function drawProj() {
+    var p = s.proj;
+    if (!p) return;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    if (p.w === 0) {
+        var pa = Math.atan2(p.vy, p.vx);
+        if (drawWormAsset('rocket', 0, 0, 28, 18, false, pa, 1)) {
+            ctx.restore();
+            return;
+        }
+        ctx.rotate(pa);
+        ctx.fillStyle = '#d8dce6';
+        RE.Draw.roundRect(ctx, -5, -2, 10, 4, 2); ctx.fill();
+        ctx.fillStyle = '#ff5c3c';
+        ctx.beginPath(); ctx.moveTo(5, -2); ctx.lineTo(8, 0); ctx.lineTo(5, 2); ctx.closePath(); ctx.fill();
+        // 尾焰
+        ctx.fillStyle = 'rgba(255,180,80,' + (0.5 + Math.random() * 0.4) + ')';
+        ctx.beginPath(); ctx.moveTo(-5, -1.5); ctx.lineTo(-9 - Math.random() * 4, 0); ctx.lineTo(-5, 1.5);
+        ctx.closePath(); ctx.fill();
+    } else {
+        if (drawWormAsset('grenade', 0, 0, 18, 18, false, p.spin, 1)) {
+            ctx.restore();
+            RE.Draw.text(ctx, Math.ceil(Math.max(0, p.fuse)) + '', p.x, p.y - 16,
+                { size: 13, align: 'center', color: '#ffd166' });
+            return;
+        }
+        ctx.rotate(p.spin);
+        ctx.fillStyle = '#5f8a5a';
+        ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#3f5f3c';
+        ctx.fillRect(-4, -1, 8, 2);
+        // 引信閃爍：越接近爆炸閃越快
+        var fu = Math.max(0, p.fuse);
+        if (Math.floor(Date.now() * (0.004 + (3 - fu) * 0.004)) % 2 === 0) {
+            ctx.fillStyle = '#ff5c3c';
+            ctx.beginPath(); ctx.arc(0, -5, 1.5, 0, Math.PI * 2); ctx.fill();
+        }
+    }
+    ctx.restore();
+    // 引信倒數數字
+    if (p.w === 1) {
+        RE.Draw.text(ctx, Math.ceil(Math.max(0, p.fuse)) + '', p.x, p.y - 16,
+            { size: 13, align: 'center', color: '#ffd166' });
+    }
+}
+
+function drawTrail() {
+    if (!s.lastTrail || s.lastTrail.length < 2) return;
+    /* 上一發是玩家修正角度與力道的唯一量尺。原本只有 2px、22% 透明白點，
+       核心事件截圖中幾乎融進遠景；連成細虛線並加標記，讓因果可讀但不冒充預測線。 */
+    ctx.save();
+    ctx.strokeStyle = 'rgba(207,232,255,0.55)';
+    ctx.lineWidth = 1.25;
+    ctx.setLineDash([3, 5]);
+    ctx.beginPath();
+    ctx.moveTo(s.lastTrail[0].x, s.lastTrail[0].y);
+    for (var i = 1; i < s.lastTrail.length; i++) ctx.lineTo(s.lastTrail[i].x, s.lastTrail[i].y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(255,255,255,0.58)';
+    for (i = 0; i < s.lastTrail.length; i += 3) {
+        var pt = s.lastTrail[i];
+        ctx.fillRect(pt.x - 1, pt.y - 1, 2, 2);
+    }
+    var mark = s.lastTrail[Math.floor(s.lastTrail.length * 0.55)];
+    RE.Draw.text(ctx, '上一發', mark.x, mark.y - 9,
+        { size: 13, align: 'center', color: '#cfe8ff' });
+    ctx.restore();
+}
+
+function drawWormArtFx() {
+    for (var i = 0; i < s.artFx.length; i++) {
+        var f = s.artFx[i];
+        var k = Math.max(0, f.t / f.max);
+        drawWormAsset(f.name, f.x, f.y, f.size * (1.15 - k * 0.15), f.size * (1.15 - k * 0.15),
+            false, 0, Math.min(1, k * 2));
+    }
+}
+
+function drawAimUI() {
+    if (s.phase !== 'turn' || !s.active || s.active.dying) return;
+    var w = s.active;
+    if (s.team !== 0 && !w.charging) {
+        // AI 也畫準星，玩家才看得懂它在瞄哪
+    }
+    var a = (w.face > 0 ? w.elev : 180 - w.elev) * Math.PI / 180;
+    var cx = w.x, cy = w.y - 7;
+    // 準星
+    var tx = cx + Math.cos(a) * 32, ty = cy - Math.sin(a) * 32;
+    ctx.strokeStyle = s.team === 0 ? 'rgba(255,209,102,0.9)' : 'rgba(255,143,106,0.8)';
+    ctx.lineWidth = 1.5;
+    var artAim = drawWormAsset('aim_reticle', tx, ty, 17, 17, w.face < 0, 0, 0.92);
+    if (!artAim) {
+    ctx.beginPath(); ctx.arc(tx, ty, 4.5, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(tx - 7, ty); ctx.lineTo(tx - 2, ty); ctx.moveTo(tx + 2, ty); ctx.lineTo(tx + 7, ty);
+    ctx.moveTo(tx, ty - 7); ctx.lineTo(tx, ty - 2); ctx.moveTo(tx, ty + 2); ctx.lineTo(tx, ty + 7);
+    ctx.stroke();
+    }
+    // 瞄準虛線
+    ctx.setLineDash([2, 4]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * 12, cy - Math.sin(a) * 12);
+    ctx.lineTo(tx, ty); ctx.stroke();
+    ctx.setLineDash([]);
+    // 力度條
+    if (w.charging || w.power > 0) {
+        var bw = 30;
+        ctx.fillStyle = 'rgba(0,0,0,0.45)';
+        RE.Draw.roundRect(ctx, w.x - bw / 2, w.y + 6, bw, 5, 2); ctx.fill();
+        var pc = w.power;
+        ctx.fillStyle = pc > 0.8 ? '#ff5c3c' : pc > 0.5 ? '#ffd166' : '#7fe6b0';
+        if (pc > 0.01) { RE.Draw.roundRect(ctx, w.x - bw / 2 + 1, w.y + 7, (bw - 2) * pc, 3, 1.5); ctx.fill(); }
+    }
+}
+
+function drawTopbar() {
+    // 風向計（中央）
+    var t = Date.now() * 0.002;
+    var wmax = Math.max(20, s.L.wind);
+    var frac = s.wind / wmax;
+    var len = Math.abs(frac) * 44;
+    var cx = VW / 2, cy = 14;
+    ctx.fillStyle = 'rgba(10,16,30,0.55)';
+    RE.Draw.roundRect(ctx, cx - 62, 4, 124, 20, 6); ctx.fill();
+    RE.Draw.text(ctx, '風', cx - 52, 9, { size: 13, color: '#9fd8ff' });
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx - 38, cy); ctx.lineTo(cx + 50, cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx + 6, cy - 6); ctx.lineTo(cx + 6, cy + 6); ctx.stroke();
+    if (Math.abs(frac) > 0.02) {
+        var dir = frac > 0 ? 1 : -1;
+        var grad = ctx.createLinearGradient(cx + 6, 0, cx + 6 + dir * len, 0);
+        grad.addColorStop(0, 'rgba(120,220,255,0.25)');
+        grad.addColorStop(1, '#4fd0ff');
+        ctx.strokeStyle = grad; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(cx + 6, cy);
+        var ex = cx + 6 + dir * len + Math.sin(t * 3) * 1.5;
+        ctx.lineTo(ex, cy); ctx.stroke();
+        ctx.fillStyle = '#4fd0ff';
+        ctx.beginPath();
+        ctx.moveTo(ex + dir * 5, cy); ctx.lineTo(ex, cy - 4); ctx.lineTo(ex, cy + 4);
+        ctx.closePath(); ctx.fill();
+    }
+    // 回合計時（右上）
+    if (s.phase === 'turn') {
+        var tt = Math.max(0, Math.ceil(s.turnT));
+        RE.Draw.text(ctx, tt + '', VW - 26, 8, {
+            size: 14, align: 'center',
+            color: tt <= 5 ? (Math.floor(Date.now() * 0.004) % 2 ? '#ff5c3c' : '#ffd166') : '#dbe6f7' });
+    }
+    // 當前蟲與武器（左上）
+    if (s.active && s.phase === 'turn') {
+        var mine = s.team === 0;
+        ctx.fillStyle = 'rgba(10,16,30,0.55)';
+        RE.Draw.roundRect(ctx, 6, 4, 128, 20, 6); ctx.fill();
+        ctx.fillStyle = mine ? '#ffab9a' : '#9fb8d0';
+        ctx.beginPath(); ctx.arc(17, 14, 5, 0, Math.PI * 2); ctx.fill();
+        RE.Draw.text(ctx, s.active.name, 27, 9, { size: 13, color: mine ? '#ffd9a0' : '#cfe0ff' });
+        if (mine) RE.Draw.text(ctx, WEAPONS[s.active.weapon].name, 74, 9, { size: 13, color: '#ffd166' });
+    }
+}
+
+function drawBanner() {
+    if (s.bannerT > 0) {
+        ctx.globalAlpha = Math.min(1, s.bannerT);
+        RE.Draw.text(ctx, s.banner, VW / 2, 40, { size: 15, align: 'center', color: '#ffd166' });
+        if (s.bannerT > 1.4 && s.L.hint) {
+            RE.Draw.text(ctx, s.L.hint, VW / 2, 62, { size: 13, align: 'center', color: '#cfe0ff' });
+        }
+        ctx.globalAlpha = 1;
+    }
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '回合制砲擊：走位、瞄準、蓄力、發射。' +
+          '風會改變火箭彈，地形會被炸爛；共 5 關。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

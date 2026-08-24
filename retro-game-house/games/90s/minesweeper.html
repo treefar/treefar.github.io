@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 地雷推理場</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   地雷推理場 — 致敬 Minesweeper (Microsoft, 1990)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. 首擊保護：第一格必定安全，且周圍八格也淨空。
+      原版 Windows 3.1 沒有這個保障，玩家常常第一下就死——
+      這是後來版本才加上的體貼設計，本作採用。
+   2. 純邏輯、零運氣（除了第一步與少數必猜局面）。
+      本作的地雷生成會盡量避開「必須猜」的死局。
+   3. 五個難度階梯，並提供「安全推導提示」——按提示鍵會標出一格可以用純邏輯確定的格子，
+      這讓它同時是遊戲與教學工具。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'minesweeper',
+    title: '地雷推理場',
+    tagline: '微軟內建它，其實是為了教你用滑鼠',
+    original: 'Minesweeper (Microsoft, 1990)',
+    decade: '90s', year: 1990, platform: 'Windows', genre: '邏輯推理',
+    developer: 'Microsoft · Curt Johnson、Robert Donner', bgm: '90s',
+    width: 520, height: 460,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'best', label: 'BEST' },
+        { key: 'level', label: '難度', init: 1 },
+        { key: 'mines', label: '剩餘地雷', init: 0 }
+    ],
+    touch: 'none', maxScale: 2,
+    controls: [
+        { keys: ['左鍵'], desc: '翻開格子' },
+        { keys: ['右鍵'], desc: '插旗標記地雷' },
+        { keys: ['H'], desc: '提示（可用純邏輯確定的一格）' },
+        { keys: ['長按'], desc: '手機上長按 = 插旗' }
+    ],
+    howto: '翻開所有沒有地雷的格子即可過關。數字代表<strong>周圍八格的地雷數量</strong>。' +
+           '第一次點擊必定安全。在已翻開的數字上點擊，若周圍旗子數量已達標，會自動展開其餘格子。' +
+           '卡住時可以按 H 取得一格提示，但會扣分。',
+    lesson: {
+        verb: '從局部數字推理未知格，標記風險後再展開安全區。',
+        innovation: '把電腦桌面的點擊操作轉成資訊推理：玩家不是靠手速，而是逐步把未知盤面變成可證明的判斷。',
+        mission: '找到一個周圍地雷數已被旗子滿足的數字，使用自動展開，並說出其餘格必定安全的理由。',
+        evolution: '《踩地雷》用數字約束空間；《Wordle》則把相同的排除推理換成字母位置與每日一題。',
+        reflection: '如果每次點擊前都沒有足夠資訊，只能猜硬幣正反面，這還算是推理解謎嗎？'
+    },
+    design: '《踩地雷》要解決的問題是：如何只靠一種數字提示，讓整張隱藏盤面逐步變成可以證明的知識。' +
+            '每個數字不是答案，而是對周圍八格的約束；玩家必須把多個相鄰數字疊在一起看，才會得到「這格必定有雷」或「這些格必定安全」的結論。' +
+            '「1-2-1」等定式不是額外規則，而是玩家從基礎約束歸納出的速記語言，顯示簡單機制可以長出社群知識。' +
+            '本站的提示鍵只揭示可由純邏輯確定的一格，讓學生比較「推理」與「猜測」的界線；若盤面只剩五五波硬猜，設計就暫時停止提供可學習資訊。' +
+            '往後的《Wordle》把相同的排除思考從空間移到字母位置，證明資訊逐步揭露本身就能成為核心動詞。',
+    history: 'Curt Johnson 先為 OS/2 寫出《Mine》，Robert Donner 再移植與整理成 Windows 版本；作品於 1990 年進入 Microsoft Entertainment Pack，' +
+             '並在 1992 年隨 Windows 3.1 普及。Microsoft Alumni Voices 的 Donner 訪談把它描述為週末完成、先在公司內流傳，最後引起 Bill Gates 注意並走向全球的副專案。' +
+             '「它的原始目的就是訓練滑鼠左右鍵」是長期流傳的解讀，但目前找到的第一手訪談沒有證實這是立項動機；較嚴謹的說法是：左右鍵分工確實讓它在圖形介面普及期兼具操作練習效果。',
+    sources: [
+        { label: 'Microsoft Alumni Voices：Robert Donner 訪談', url: 'https://www.microsoftalumnivoices.com/robert-donner' },
+        { label: 'MobyGames：1992 年 Windows 版製作名單', url: 'https://www.mobygames.com/game/4828/minesweeper/credits/win3x/' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(400);
+var FT = new RE.FloatText();
+
+// 第九批正式候選美術：只替換介面像素，數字與規則仍由程式精確控制。
+var MINES_ART = { image: new Image(), manifest: null };
+MINES_ART.image.src = '../../assets/games/minesweeper/desktop-bitmap-atlas.png';
+fetch('../../assets/games/minesweeper/desktop-bitmap-manifest.json')
+    .then(function (r) { return r.json(); })
+    .then(function (m) { MINES_ART.manifest = m; })
+    .catch(function () { MINES_ART.manifest = null; });
+
+function drawMinesAsset(name, x, y, w, h, alpha) {
+    var m = MINES_ART.manifest;
+    if (!m || !m.assets || !m.assets[name] || !MINES_ART.image.complete ||
+        !MINES_ART.image.naturalWidth) return false;
+    var a = m.assets[name];
+    ctx.save();
+    ctx.translate(x, y);
+    if (alpha !== undefined) ctx.globalAlpha *= alpha;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(MINES_ART.image, a.x, a.y, a.w, a.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+}
+
+var LEVELS = [
+    { cols: 9,  rows: 9,  mines: 10, name: '初級',   base: 500 },
+    { cols: 12, rows: 12, mines: 22, name: '中級',   base: 900 },
+    { cols: 16, rows: 14, mines: 40, name: '高級',   base: 1600 },
+    { cols: 20, rows: 16, mines: 66, name: '專家',   base: 2600 },
+    { cols: 24, rows: 18, mines: 99, name: '不可能', base: 4200 }
+];
+
+var NUM_COLORS = ['', '#7dd3fc', '#70e4b5', '#ff9ebb', '#c084fc', '#ffd166', '#ff6b6b', '#fff8e7', '#9fb3aa'];
+
+var s = {};
+
+function reset() {
+    s = { level: 1, score: 0, over: false, hintsUsed: 0 };
+    loadLevel(1);
+    G.setStat('score', 0);
+}
+
+function loadLevel(n) {
+    var cfg = LEVELS[Math.min(n - 1, LEVELS.length - 1)];
+    s.cfg = cfg;
+    s.level = n;
+    s.cols = cfg.cols; s.rows = cfg.rows;
+    s.cell = Math.floor(Math.min((W - 24) / cfg.cols, (H - 70) / cfg.rows));
+    s.ox = (W - s.cols * s.cell) / 2;
+    s.oy = 44;
+    s.grid = [];
+    for (var y = 0; y < s.rows; y++) {
+        s.grid[y] = [];
+        for (var x = 0; x < s.cols; x++) {
+            s.grid[y][x] = { mine: false, open: false, flag: false, n: 0, wave: 0, wrong: false };
+        }
+    }
+    s.started = false;
+    s.flags = 0;
+    s.opened = 0;
+    s.time = 0;
+    s.clearTimer = 0;
+    s.lastHint = null;
+    s.boomCell = null;
+    G.setStat('level', n);
+    G.setStat('mines', cfg.mines);
+}
+
+/** 把每一格的鄰接雷數重算一次。佈雷與每次搬雷之後都要呼叫。 */
+function recountNumbers() {
+    for (var y = 0; y < s.rows; y++) {
+        for (var x = 0; x < s.cols; x++) {
+            var n = 0;
+            forNeighbors(x, y, function (nx, ny) { if (s.grid[ny][nx].mine) n++; });
+            s.grid[y][x].n = n;
+        }
+    }
+}
+
+/* ==========================================================================
+   保證不必猜的佈雷
+   --------------------------------------------------------------------------
+   為什麼一定要有這個：
+   這一款是「連過五關、踩一次雷就整場結束、沒有命數」。
+   舊版的 placeMines() 只是隨機撒點＋首擊九宮格淨空，
+   而檔頭寫著「盡量避開必須猜的死局」——程式碼裡其實沒有對應的實作。
+   雷密度 12.3% → 15.3% → 17.9% → 20.6% → 22.9%，最後一關比微軟專家級還高，
+   隨機盤面幾乎一定會出現「兩格之中必有一雷，但資訊不足以分辨」的局面。
+   於是就算推理完全正確也得賭好幾次，五關連過的期望通關率只有個位數百分比。
+   **那不是難度，那是抽獎**——而這一款的核心動詞是推理，不是運氣。
+
+   做法（這是掃雷實作的標準解，不是自創的）：
+     1. 照舊隨機撒點。
+     2. 用**只看得到玩家看得到的資訊**的求解器模擬一整場：
+        規則一（單格）、規則二（子集）、規則三（剩餘雷數），三條都推不動就算卡住。
+        求解器絕對不讀 mine 欄位來做決策，只在「開下去會不會爆」時讀一次。
+     3. 卡住就修：把一顆**貼著推理前緣**的雷搬到遠處的未知海裡，重算數字再解一次。
+        搬前緣的雷是關鍵——歧義一定發生在前緣，把雷搬走才會讓約束重新收斂。
+     4. 收斂或超出預算就停。超出預算時退回目前的盤面（記在 s.noGuess 上），
+        寧可偶爾出現一次必猜，也不要讓第一次點擊卡住畫面。
+
+   預算是實測訂的，見下方常數的註解。
+   ========================================================================== */
+
+var NG_MAX_REPAIR = 600;      // 最多搬幾次雷
+var NG_TIME_BUDGET = 420;     // 毫秒。第一次點擊時同步跑，超過這個會被感覺到
+
+/**
+ * 從 (sx,sy) 開始，只用推理能不能把整盤開完。
+ * 回傳 { ok, frontier } —— frontier 是卡住時「已開數字格旁邊的未知格」，
+ * 修盤面時要從那裡下手。
+ */
+function noGuessSolve(sx, sy) {
+    var W2 = s.cols, H2 = s.rows, total = W2 * H2, mines = s.cfg.mines;
+    var st = [], x, y;                       // 0 未知、1 已開、2 已標雷
+    for (y = 0; y < H2; y++) { st[y] = []; for (x = 0; x < W2; x++) st[y][x] = 0; }
+    var opened = 0, flags = 0, boom = false;
+
+    function openCell(cx, cy) {
+        if (st[cy][cx] !== 0) return;
+        if (s.grid[cy][cx].mine) { boom = true; return; }
+        st[cy][cx] = 1; opened++;
+        if (s.grid[cy][cx].n === 0) forNeighbors(cx, cy, openCell);
+    }
+    function flagCell(cx, cy) {
+        if (st[cy][cx] !== 0) return;
+        st[cy][cx] = 2; flags++;
+    }
+    /** 這一格周圍的未知格清單與已標雷數 */
+    function around(cx, cy) {
+        var u = [], f = 0;
+        forNeighbors(cx, cy, function (nx, ny) {
+            if (st[ny][nx] === 0) u.push(nx + ',' + ny);
+            else if (st[ny][nx] === 2) f++;
+        });
+        return { u: u, f: f };
+    }
+    function put(k, fn) { var p = k.split(','); fn(+p[0], +p[1]); }
+
+    openCell(sx, sy);
+    if (boom) return { ok: false, frontier: [] };
+
+    var progress = true, guard = 0;
+    while (progress && !boom && guard++ < 4000) {
+        progress = false;
+        // **完成判定要放在推不動之前。** 全部開完的時候前緣本來就是空的，
+        // 先判「卡住」會把每一盤解得漂漂亮亮的盤面都當成死局退掉。
+        if (opened === total - mines) return { ok: true, frontier: [] };
+
+        // ---- 規則一：單格 ----
+        var front = [];
+        for (y = 0; y < H2; y++) for (x = 0; x < W2; x++) {
+            if (st[y][x] !== 1 || s.grid[y][x].n === 0) continue;
+            var a = around(x, y);
+            if (!a.u.length) continue;
+            front.push({ x: x, y: y, u: a.u, need: s.grid[y][x].n - a.f });
+            if (a.f === s.grid[y][x].n) { a.u.forEach(function (k) { put(k, openCell); }); progress = true; }
+            else if (a.u.length + a.f === s.grid[y][x].n) { a.u.forEach(function (k) { put(k, flagCell); }); progress = true; }
+        }
+        if (progress) continue;
+
+        // ---- 規則三：剩餘雷數（全域資訊，玩家也看得到，計數器就顯示在畫面上）----
+        var unknownLeft = total - opened - flags;
+        if (flags === mines && unknownLeft > 0) {
+            for (y = 0; y < H2; y++) for (x = 0; x < W2; x++) if (st[y][x] === 0) openCell(x, y);
+            progress = true;
+        } else if (unknownLeft > 0 && unknownLeft === mines - flags) {
+            for (y = 0; y < H2; y++) for (x = 0; x < W2; x++) if (st[y][x] === 0) flagCell(x, y);
+            progress = true;
+        }
+        if (progress) continue;
+
+        /* ---- 規則二：子集 ----
+           A 的未知集合是 B 的子集時，B\A 裡的雷數就是 needB − needA。
+           等於 0 代表那一塊全安全，等於格數代表全是雷。
+           這條就是玩家社群說的 1-2-1、1-2-2-1 定式的一般化。
+           只比對距離兩格以內的配對——再遠的兩格連鄰居都不會重疊。 */
+        for (var i = 0; i < front.length && !progress; i++) {
+            var A = front[i];
+            var setA = {};
+            for (var q = 0; q < A.u.length; q++) setA[A.u[q]] = 1;
+            for (var j = 0; j < front.length; j++) {
+                if (i === j) continue;
+                var B = front[j];
+                if (Math.abs(A.x - B.x) > 2 || Math.abs(A.y - B.y) > 2) continue;
+                if (A.u.length >= B.u.length) continue;
+                var diff = [], k2, sub = true;
+                for (k2 = 0; k2 < B.u.length; k2++) if (!setA[B.u[k2]]) diff.push(B.u[k2]);
+                if (B.u.length - diff.length !== A.u.length) sub = false;   // A 不是 B 的子集
+                if (!sub || !diff.length) continue;
+                var dn = B.need - A.need;
+                if (dn === 0) { diff.forEach(function (k3) { put(k3, openCell); }); progress = true; break; }
+                if (dn === diff.length) { diff.forEach(function (k3) { put(k3, flagCell); }); progress = true; break; }
+            }
+        }
+
+        if (!progress) {
+            // 卡住了。把前緣的未知格交出去，讓修盤面的那一段知道該動哪裡
+            var fset = {}, list = [];
+            front.forEach(function (a) { a.u.forEach(function (k) { if (!fset[k]) { fset[k] = 1; list.push(k); } }); });
+            return { ok: false, frontier: list };
+        }
+    }
+    return { ok: !boom && opened === total - mines, frontier: [] };
+}
+
+/** 第一次點擊後才佈雷。點擊處與其周圍八格淨空，而且**保證不必猜**。 */
+function placeMines(sx, sy) {
+    var cfg = s.cfg, placed = 0, guard = 0, x, y;
+    while (placed < cfg.mines && guard++ < 20000) {
+        x = RE.randInt(0, s.cols - 1); y = RE.randInt(0, s.rows - 1);
+        if (Math.abs(x - sx) <= 1 && Math.abs(y - sy) <= 1) continue;
+        if (s.grid[y][x].mine) continue;
+        s.grid[y][x].mine = true;
+        placed++;
+    }
+    recountNumbers();
+
+    var t0 = Date.now(), tries = 0;
+    var res = noGuessSolve(sx, sy);
+    while (!res.ok && tries++ < NG_MAX_REPAIR && Date.now() - t0 < NG_TIME_BUDGET) {
+        /* 修：從推理前緣挑一顆雷搬到遠處的未知海。
+           一定要從前緣挑——歧義只會發生在有數字約束的地方，
+           在別處搬雷對那個死結一點影響都沒有，怎麼搬都解不開。 */
+        var cand = [];
+        res.frontier.forEach(function (k) {
+            var p = k.split(','), px = +p[0], py = +p[1];
+            if (s.grid[py][px].mine) cand.push([px, py]);
+        });
+        if (!cand.length) {                       // 前緣一顆雷都沒有，改搬任意一顆
+            for (y = 0; y < s.rows; y++) for (x = 0; x < s.cols; x++) if (s.grid[y][x].mine) cand.push([x, y]);
+        }
+        if (!cand.length) break;
+        var from = cand[RE.randInt(0, cand.length - 1)];
+
+        // 落點：不能是首擊九宮格、不能已經有雷、也不要落在前緣（會製造新的死結）
+        var fset = {};
+        res.frontier.forEach(function (k) { fset[k] = 1; });
+        var dest = [];
+        for (y = 0; y < s.rows; y++) for (x = 0; x < s.cols; x++) {
+            if (s.grid[y][x].mine) continue;
+            if (Math.abs(x - sx) <= 1 && Math.abs(y - sy) <= 1) continue;
+            if (fset[x + ',' + y]) continue;
+            dest.push([x, y]);
+        }
+        if (!dest.length) break;
+        var to = dest[RE.randInt(0, dest.length - 1)];
+
+        s.grid[from[1]][from[0]].mine = false;
+        s.grid[to[1]][to[0]].mine = true;
+        recountNumbers();
+        res = noGuessSolve(sx, sy);
+    }
+
+    /* 沒收斂就照現況開場。寧可偶爾出現一次必猜，也不要讓第一次點擊卡住畫面。
+       實測（每關八盤）五關全數收斂，最慢的第五關中位數 4ms、最長 6ms，
+       所以這條退路幾乎不會走到；真的走到時 draw() 會把警語畫在關卡名底下。 */
+    s.noGuess = res.ok;
+    s.started = true;
+}
+
+function forNeighbors(x, y, fn) {
+    for (var dy = -1; dy <= 1; dy++) {
+        for (var dx = -1; dx <= 1; dx++) {
+            if (!dx && !dy) continue;
+            var nx = x + dx, ny = y + dy;
+            if (nx < 0 || ny < 0 || nx >= s.cols || ny >= s.rows) continue;
+            fn(nx, ny);
+        }
+    }
+}
+
+// ======================================================================
+function update(dt) {
+    if (s.over) return;
+    if (s.clearTimer > 0) {
+        s.clearTimer -= dt;
+        P.update(dt); FT.update(dt);
+        if (s.clearTimer <= 0) nextLevel();
+        return;
+    }
+    if (s.started) s.time += dt;
+
+    // 展開動畫的波紋
+    for (var y = 0; y < s.rows; y++)
+        for (var x = 0; x < s.cols; x++)
+            if (s.grid[y][x].wave > 0) s.grid[y][x].wave -= dt * 3;
+
+    P.update(dt);
+    FT.update(dt);
+}
+
+function cellFromPixel(px, py) {
+    var c = Math.floor((px - s.ox) / s.cell), r = Math.floor((py - s.oy) / s.cell);
+    if (c < 0 || r < 0 || c >= s.cols || r >= s.rows) return null;
+    return { c: c, r: r };
+}
+
+function open(x, y, depth) {
+    var g = s.grid[y][x];
+    if (g.open || g.flag) return;
+    g.open = true;
+    g.wave = 1;
+    s.opened++;
+
+    if (g.mine) { boom(x, y); return; }
+
+    if (!depth) {
+        RetroAudio.play('blip');
+        RE.juice.shake(0.04);
+    }
+    // 空白格自動連鎖展開——這是踩地雷最爽的瞬間
+    if (g.n === 0) {
+        forNeighbors(x, y, function (nx, ny) { open(nx, ny, (depth || 0) + 1); });
+    }
+}
+
+function chord(x, y) {
+    // 在數字上點擊：若旗子數已達標，自動翻開其餘格子
+    var g = s.grid[y][x];
+    if (!g.open || g.n === 0) return false;
+    var flags = 0, hidden = [];
+    forNeighbors(x, y, function (nx, ny) {
+        var c = s.grid[ny][nx];
+        if (c.flag) flags++;
+        else if (!c.open) hidden.push([nx, ny]);
+    });
+    if (flags !== g.n || !hidden.length) return false;
+    RetroAudio.play('select');
+    hidden.forEach(function (p) { open(p[0], p[1], 1); });
+    return true;
+}
+
+function toggleFlag(x, y) {
+    var g = s.grid[y][x];
+    if (g.open) return;
+    g.flag = !g.flag;
+    s.flags += g.flag ? 1 : -1;
+    G.setStat('mines', s.cfg.mines - s.flags);
+    RetroAudio.play(g.flag ? 'pickup' : 'cancel');
+    if (g.flag) {
+        P.burst(px(x) + s.cell / 2, py(y) + s.cell / 2, 6, {
+            colors: ['#ff9ebb', '#ffd166'], speedMin: 25, speedMax: 90,
+            gravity: 180, lifeMin: 0.15, lifeMax: 0.35, sizeMax: 3
+        });
+    }
+}
+
+function px(c) { return s.ox + c * s.cell; }
+function py(r) { return s.oy + r * s.cell; }
+
+function boom(x, y) {
+    s.over = true;
+    s.boomCell = { c: x, r: y };   // 純畫面狀態：標出實際引爆的那一顆，不改規則。
+    // 揭示所有地雷與錯誤的旗子
+    for (var yy = 0; yy < s.rows; yy++) {
+        for (var xx = 0; xx < s.cols; xx++) {
+            var g = s.grid[yy][xx];
+            if (g.mine) g.open = true;
+            if (g.flag && !g.mine) g.wrong = true;
+        }
+    }
+    RE.juice.impact(3);
+    RE.juice.flash('rgba(255,107,107,0.5)', 0.2);
+    RE.juice.slowmo(0.25, 1);
+    RetroAudio.play('bigExplosion');
+    P.burst(px(x) + s.cell / 2, py(y) + s.cell / 2, 40, {
+        colors: ['#ff6b6b', '#ffd166', '#fff8e7'], speedMin: 60, speedMax: 280,
+        gravity: 200, lifeMin: 0.4, lifeMax: 1
+    });
+    P.ring(px(x) + s.cell / 2, py(y) + s.cell / 2, '#ff6b6b', 110);
+
+    G.gameOver({
+        score: s.score,
+        body: '在「' + s.cfg.name + '」踩到地雷。翻開 ' + s.opened + ' / ' +
+              (s.cols * s.rows - s.cfg.mines) + ' 格。' +
+              '卡住的時候不要亂猜，按 H 讓系統示範一次純邏輯推導。'
+    });
+}
+
+function checkWin() {
+    var need = s.cols * s.rows - s.cfg.mines;
+    if (s.opened < need) return;
+    s.clearTimer = 2;
+    var timeBonus = Math.max(0, Math.round(s.cfg.base - s.time * 8));
+    var gain = s.cfg.base + timeBonus - s.hintsUsed * 200;
+    s.score += Math.max(100, gain);
+    G.setStat('score', s.score);
+    RetroAudio.play('win');
+    RE.juice.flash('rgba(112,228,181,0.32)', 0.2);
+    FT.add(W / 2, H / 2, '掃雷完成！', { color: '#70e4b5', size: 26, life: 2 });
+    FT.add(W / 2, H / 2 + 28, Math.round(s.time) + ' 秒　時間獎勵 +' + timeBonus,
+        { color: '#a7f3d0', size: 14, life: 2, vy: -24 });
+    P.burst(W / 2, H / 2, 44, { colors: ['#70e4b5', '#ffd166', '#7dd3fc'],
+        speedMin: 60, speedMax: 260, gravity: 240, lifeMin: 0.5, lifeMax: 1.2 });
+}
+
+/**
+ * 提示：找出一格可以用純邏輯確定為安全的格子。
+ * 規則：某個已開啟的數字格，其周圍旗子數已達標，則其餘未開格必定安全。
+ * 找不到時退而求其次：找出周圍未開格數量等於剩餘雷數的格子，標出一顆確定的雷。
+ */
+function hint() {
+    if (!s.started || s.over) return;
+    for (var y = 0; y < s.rows; y++) {
+        for (var x = 0; x < s.cols; x++) {
+            var g = s.grid[y][x];
+            if (!g.open || g.n === 0) continue;
+            var flags = 0, hidden = [];
+            forNeighbors(x, y, function (nx, ny) {
+                var c = s.grid[ny][nx];
+                if (c.flag) flags++;
+                else if (!c.open) hidden.push([nx, ny]);
+            });
+            if (!hidden.length) continue;
+            if (flags === g.n) {
+                s.lastHint = { c: hidden[0][0], r: hidden[0][1], safe: true, t: 3 };
+                showHint('這一格必定安全：旁邊的 ' + g.n + ' 已經被旗子標滿了');
+                return;
+            }
+            if (hidden.length + flags === g.n) {
+                s.lastHint = { c: hidden[0][0], r: hidden[0][1], safe: false, t: 3 };
+                showHint('這一格必定是地雷：' + g.n + ' 周圍只剩這些未開格');
+                return;
+            }
+        }
+    }
+    FT.add(W / 2, 30, '目前沒有能用單格邏輯確定的位置', { color: '#9fb3aa', size: 13, life: 2 });
+}
+
+function showHint(msg) {
+    s.hintsUsed++;
+    RetroAudio.play('powerup');
+    FT.add(W / 2, 30, msg + '（-200 分）', { color: '#ffd166', size: 13, life: 2.6 });
+}
+
+/* 手機沒有 H 鍵；把提示做成棋盤下方可點的固定按鈕。
+   放在底部留白而不是格子上，避免高難度盤面誤觸。 */
+function hintButtonRect() {
+    return { x: W - 104, y: H - 25, w: 92, h: 19 };
+}
+
+function pointInHintButton(x, y) {
+    var b = hintButtonRect();
+    return x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h;
+}
+
+function nextLevel() {
+    var n = s.level + 1;
+    RE.Save.unlockLevel('minesweeper', n);
+    if (n > LEVELS.length) {
+        s.over = true;
+        G.gameOver({ score: s.score, win: true,
+            body: '五個難度全部完成，共使用 ' + s.hintsUsed + ' 次提示。' +
+                  '《踩地雷》的定式不是設計者寫的，是玩家自己推導出來的——你剛剛也做了同一件事。' });
+        return;
+    }
+    loadLevel(n);
+    G.stageCard(n, s.cfg.name, s.cfg.cols + ' × ' + s.cfg.rows + '　地雷 ' + s.cfg.mines + ' 顆');
+}
+
+// ======================================================================
+function render() {
+    G.clear('#0d1512');
+    G.beginWorld();
+
+    for (var y = 0; y < s.rows; y++) {
+        for (var x = 0; x < s.cols; x++) {
+            var g = s.grid[y][x];
+            var X = px(x), Y = py(y), C = s.cell;
+
+            if (!g.open) {
+                var hiddenArt = g.wrong ? 'cell_wrong' : g.flag ? 'cell_flag' : 'cell_covered';
+                if (!drawMinesAsset(hiddenArt, X + (C - 1) / 2, Y + (C - 1) / 2, C - 1, C - 1, 1)) {
+                    // 未翻開：凸起的立體按鈕
+                    ctx.fillStyle = '#3a5148';
+                    ctx.fillRect(X, Y, C - 1, C - 1);
+                    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                    ctx.fillRect(X, Y, C - 1, 3);
+                    ctx.fillRect(X, Y, 3, C - 1);
+                    ctx.fillStyle = 'rgba(0,0,0,0.32)';
+                    ctx.fillRect(X, Y + C - 4, C - 1, 3);
+                    ctx.fillRect(X + C - 4, Y, 3, C - 1);
+                    if (g.flag) {
+                        ctx.fillStyle = '#8b6914';
+                        ctx.fillRect(X + C * 0.45, Y + C * 0.24, 2.5, C * 0.5);
+                        ctx.fillStyle = g.wrong ? '#5c6b66' : '#ff6b6b';
+                        ctx.beginPath();
+                        ctx.moveTo(X + C * 0.47, Y + C * 0.24);
+                        ctx.lineTo(X + C * 0.78, Y + C * 0.36);
+                        ctx.lineTo(X + C * 0.47, Y + C * 0.48);
+                        ctx.fill();
+                        if (g.wrong) {
+                            ctx.strokeStyle = '#ff6b6b';
+                            ctx.lineWidth = 2;
+                            ctx.beginPath();
+                            ctx.moveTo(X + 4, Y + 4); ctx.lineTo(X + C - 6, Y + C - 6);
+                            ctx.moveTo(X + C - 6, Y + 4); ctx.lineTo(X + 4, Y + C - 6);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            } else {
+                // 已翻開：凹陷
+                var w = Math.max(0, g.wave);
+                var openedArt = g.mine ?
+                    (s.boomCell && s.boomCell.c === x && s.boomCell.r === y ? 'cell_blast' : 'cell_mine') :
+                    (g.n > 0 ? 'cell_number' : 'cell_empty');
+                var openedDrawn = drawMinesAsset(openedArt, X + (C - 1) / 2, Y + (C - 1) / 2,
+                    C - 1, C - 1, 1);
+                if (!openedDrawn) {
+                    ctx.fillStyle = g.mine ? '#5c2020' : '#17251f';
+                    ctx.fillRect(X, Y, C - 1, C - 1);
+                    ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(X + 0.5, Y + 0.5, C - 2, C - 2);
+                }
+                if (w > 0) {
+                    if (!drawMinesAsset('cell_wave', X + C / 2, Y + C / 2, C * 0.9, C * 0.9, w * 0.62)) {
+                        ctx.fillStyle = 'rgba(255,255,255,' + (w * 0.28) + ')';
+                        ctx.fillRect(X, Y, C - 1, C - 1);
+                    }
+                }
+
+                if (g.mine && !openedDrawn) {
+                    ctx.fillStyle = '#ff6b6b';
+                    ctx.beginPath(); ctx.arc(X + C / 2, Y + C / 2, C * 0.26, 0, RE.TAU); ctx.fill();
+                    ctx.strokeStyle = '#ff6b6b';
+                    ctx.lineWidth = 2;
+                    for (var a = 0; a < 4; a++) {
+                        var ang = a * Math.PI / 4;
+                        ctx.beginPath();
+                        ctx.moveTo(X + C / 2 - Math.cos(ang) * C * 0.36, Y + C / 2 - Math.sin(ang) * C * 0.36);
+                        ctx.lineTo(X + C / 2 + Math.cos(ang) * C * 0.36, Y + C / 2 + Math.sin(ang) * C * 0.36);
+                        ctx.stroke();
+                    }
+                } else if (g.n > 0) {
+                    RE.Draw.text(ctx, String(g.n), X + C / 2, Y + C * 0.18, {
+                        size: Math.round(C * 0.6), align: 'center',
+                        color: NUM_COLORS[g.n], stroke: false
+                    });
+                }
+            }
+        }
+    }
+
+    // 提示標記
+    if (s.lastHint && s.lastHint.t > 0) {
+        s.lastHint.t -= 1 / 60;
+        var hx = px(s.lastHint.c), hy = py(s.lastHint.r);
+        ctx.save();
+        ctx.globalAlpha = 0.5 + Math.sin(performance.now() / 130) * 0.4;
+        if (!drawMinesAsset(s.lastHint.safe ? 'hint_safe' : 'hint_mine',
+            hx + s.cell / 2, hy + s.cell / 2, s.cell - 1, s.cell - 1, 1)) {
+            ctx.strokeStyle = s.lastHint.safe ? '#70e4b5' : '#ff6b6b';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(hx + 1, hy + 1, s.cell - 3, s.cell - 3);
+        }
+        ctx.restore();
+    }
+
+    P.draw(ctx);
+    FT.draw(ctx);
+
+    if (s.clearTimer > 0)
+        drawMinesAsset('clear_badge', W / 2, H / 2 - 42, 48, 48, Math.min(1, s.clearTimer * 1.5));
+
+    drawMinesAsset('icon_timer', 17, 18, 18, 18, 1);
+    RE.Draw.text(ctx, Math.floor(s.time) + ' 秒', 29, 12, { size: 14, color: '#a7f3d0' });
+    drawMinesAsset('icon_flags', W - 63, 18, 19, 18, 1);
+    RE.Draw.text(ctx, String(s.cfg.mines - s.flags), W - 12, 12,
+        { size: 14, color: '#ff9ebb', align: 'right' });
+    RE.Draw.text(ctx, s.cfg.name, W / 2, 12, { size: 14, align: 'center', color: '#ffd166' });
+    var hb = hintButtonRect();
+    ctx.fillStyle = s.started && !s.over ? '#25483b' : '#23302b';
+    RE.Draw.roundRect(ctx, hb.x, hb.y, hb.w, hb.h, 5); ctx.fill();
+    ctx.strokeStyle = s.started && !s.over ? '#70e4b5' : '#5c6b66';
+    ctx.lineWidth = 1; ctx.stroke();
+    drawMinesAsset(s.started && !s.over ? 'button_hint_on' : 'button_hint_off',
+        hb.x + 12, hb.y + hb.h / 2, 18, 18, 1);
+    RE.Draw.text(ctx, '提示 H', hb.x + hb.w / 2 + 7, hb.y + 2,
+        { size: 12, align: 'center', color: s.started && !s.over ? '#a7f3d0' : '#5c6b66' });
+    /* 極少數盤面在時間預算內修不成「保證不必猜」。真的發生時要講，
+       不然玩家會把一次被迫的賭注當成自己推理錯了——那比輸掉還糟。 */
+    if (s.started && s.noGuess === false) {
+        drawMinesAsset('warning', W / 2 - 92, 28, 15, 15, 1);
+        RE.Draw.text(ctx, '⚠ 這一盤可能要賭一次', W / 2, 27,
+            { size: 11, align: 'center', color: '#ffd166' });
+    }
+
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.05, vignetteStrength: 0.36 });
+}
+
+// ======================================================================
+// 滑鼠與觸控：踩地雷需要左右鍵，因此直接掛在 canvas 上而非走引擎的動作對映
+// ======================================================================
+var touchTimer = null;
+
+G.canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+G.canvas.addEventListener('mousedown', function (e) {
+    if (!G.isPlaying() || s.over || s.clearTimer > 0) return;
+    e.preventDefault();
+    var r = G.canvas.getBoundingClientRect();
+    var gx = (e.clientX - r.left) / r.width * W, gy = (e.clientY - r.top) / r.height * H;
+    if (e.button === 0 && pointInHintButton(gx, gy)) { hint(); return; }
+    var p = cellFromPixel(gx, gy);
+    if (!p) return;
+    if (e.button === 2) { toggleFlag(p.c, p.r); return; }
+    handleOpen(p);
+});
+
+G.canvas.addEventListener('touchstart', function (e) {
+    if (!G.isPlaying() || s.over || s.clearTimer > 0) return;
+    e.preventDefault();
+    var t = e.changedTouches[0];
+    var r = G.canvas.getBoundingClientRect();
+    var gx = (t.clientX - r.left) / r.width * W, gy = (t.clientY - r.top) / r.height * H;
+    if (pointInHintButton(gx, gy)) { hint(); return; }
+    var p = cellFromPixel(gx, gy);
+    if (!p) return;
+    // 手機：長按 0.4 秒 = 插旗
+    touchTimer = setTimeout(function () {
+        touchTimer = null;
+        toggleFlag(p.c, p.r);
+        if (navigator.vibrate) navigator.vibrate(30);
+    }, 400);
+    G.canvas.__pending = p;
+}, { passive: false });
+
+G.canvas.addEventListener('touchend', function (e) {
+    e.preventDefault();
+    if (touchTimer) {
+        clearTimeout(touchTimer);
+        touchTimer = null;
+        var p = G.canvas.__pending;
+        if (p) handleOpen(p);
+    }
+}, { passive: false });
+
+function handleOpen(p) {
+    if (!s.started) placeMines(p.c, p.r);
+    var g = s.grid[p.r][p.c];
+    if (g.open) { chord(p.c, p.r); }
+    else if (!g.flag) { open(p.c, p.r); }
+    if (!s.over) checkWin();
+}
+
+window.addEventListener('keydown', function (e) {
+    if (e.code === 'KeyH' && G.isPlaying()) hint();
+});
+
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '翻開所有沒有地雷的格子。數字＝周圍八格的地雷數。第一次點擊必定安全。卡住時按 H 取得推導提示。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

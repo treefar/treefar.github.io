@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 星塵防衛軍</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   星塵防衛軍 — 致敬 Space Invaders (Taito, 1978)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. 敵人越少、移動越快——原作是硬體算力不足的意外，卻成為最經典的壓迫感設計。
+      本作刻意保留這個「意外」，並讓速度曲線可被玩家感知。
+   2. 可被摧毀的掩體：玩家與敵人的子彈都會啃掉掩體，資源會隨時間耗損。
+   3. 八個波次的難度曲線 + 每波的編隊變化，取代原作的無盡循環。
+   4. UFO 獎勵目標、連續擊殺加成，提供高分玩家的追求目標。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'space_invaders',
+    title: '星塵防衛軍',
+    tagline: '敵人越少，就跑得越快——史上最著名的「硬體限制變成設計」',
+    original: 'Space Invaders (Taito, 1978)',
+    decade: '70s', year: 1978, platform: '大型街機', genre: '固定射擊',
+    developer: 'Taito · 西角友宏', bgm: '70s',
+    width: 448, height: 400,
+    lives: 3,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'best', label: 'BEST' },
+        { key: 'wave', label: 'WAVE', init: 1 }
+    ],
+    touch: 'dpad+ab', labelA: '射擊',
+    controls: [
+        { keys: ['←', '→'], desc: '移動砲台' },
+        { keys: ['空白'], desc: '射擊' },
+        { keys: ['P'], desc: '暫停' }
+    ],
+    howto: '擊落所有外星編隊即可進入下一波。<strong>敵人數量越少，整個編隊移動越快</strong>——' +
+           '最後一隻會快到難以瞄準。掩體會被雙方的子彈打穿，別把它當成永久防禦。' +
+           '偶爾飛過的紅色 UFO 是高分目標。',
+    lesson: {
+        verb: '橫向移動與射擊，先處理即將壓到地面的敵人縱列。',
+        innovation: '讓整個敵軍以編隊前進，並在數量減少時加速，把玩家的成功反過來變成新的時間壓力。',
+        mission: '保留一段掩體，不要平均亂射；先鎖定最低的一列，觀察剩餘敵人加速後，原本安全的瞄準節奏如何改變。',
+        evolution: '《Space Invaders》建立整齊編隊與下壓威脅；《Galaxian》再讓敵人脫隊俯衝，把隊形閱讀變成個別軌跡判斷。',
+        reflection: '如果敵人永遠維持同一速度、也不會逐步下降，射擊還會有愈來愈緊迫的節奏嗎？'
+    },
+    design: '1970 年代的射擊遊戲多半要求玩家在限時內打固定目標；西角友宏要解決的問題，是讓敵人會還擊，並讓一局遊戲自己形成愈來愈緊迫的節奏。' +
+            '他把多個敵人排成會左右移動、逐步下降的編隊，再加入可被雙方火力侵蝕的掩體，使玩家必須在「安全射擊」與「趕在敵軍壓到底線前清場」之間取捨。' +
+            '硬體每六十分之一秒輪流繪製一隻敵人，剩餘敵人愈少，完成整輪繪製所需的時間就愈短；西角發現加速效果能提升張力，便把限制保留下來。' +
+            '**玩家每次命中都同時減少威脅數量、加快剩餘威脅，成功本身因此改寫了難度曲線。**' +
+            '往後的《Galaxian》再讓敵人脫離編隊俯衝，把「讀整體隊形」推進成「同時判讀隊形與個別軌跡」。',
+    history: 'Taito 於 1978 年推出《Space Invaders》。西角友宏不只規劃玩法與角色，也因當時日本缺乏合用的微電腦開發設備，自行研究 8080 系統並製作開發硬體。' +
+             '產品發表時，業者一度嫌它太難；上市數週後，營運現場卻回報玩家不願離機，生產端也因供不應求而加班。' +
+             '這段歷史比「遊戲造成百圓硬幣短缺」的都市傳說更值得教學：它顯示硬體限制、可讀的敵軍隊形、動態聲音與可破壞掩體，如何共同把簡單射擊轉化為持續升壓的完整體驗。' +
+             '本站因此不再使用缺乏可靠依據的「首創 high score」說法。',
+    sources: [
+        { label: 'WIRED：西角友宏回顧 Space Invaders', url: 'https://www.wired.com/story/space-invaders-45-years-tomohiro-nishikado/' },
+        { label: 'The Guardian：Space Invaders 四十週年訪談', url: 'https://www.theguardian.com/games/2018/jun/04/space-invaders-at-40-tomohiro-nishikado-interview' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(400);
+var FT = new RE.FloatText();
+
+// ---------- 像素圖 ----------
+var PAL = { a: '#70e4b5', b: '#a7f3d0', c: '#ffd166', d: '#ff9ebb', e: '#fff8e7', f: '#ff6b6b', g: '#c084fc' };
+
+var ALIEN_A = [   // 上排：高分小型
+    ['..a..a..', '.aaaaaa.', 'aa.aa.aa', 'aaaaaaaa', '.a.aa.a.', 'a......a'],
+    ['..a..a..', '.aaaaaa.', 'aa.aa.aa', 'aaaaaaaa', '.a.aa.a.', '.a....a.']
+];
+var ALIEN_B = [   // 中排
+    ['.b....b.', '..b..b..', '.bbbbbb.', 'bb.bb.bb', 'bbbbbbbb', 'b.b..b.b', 'b......b'],
+    ['.b....b.', 'b.b..b.b', 'bbbbbbbb', 'bb.bb.bb', 'bbbbbbbb', '..b..b..', '.b....b.']
+];
+var ALIEN_C = [   // 下排：低分大型
+    ['...cc...', '..cccc..', '.cccccc.', 'cc.cc.cc', 'cccccccc', '..c..c..', '.c.cc.c.', 'c.c..c.c'],
+    ['...cc...', '..cccc..', '.cccccc.', 'cc.cc.cc', 'cccccccc', '.c.cc.c.', 'c......c', '.c....c.']
+];
+var SHIP = [
+    '....e....', '...eee...', '...eee...', '.eeeeeee.', 'eeeeeeeee', 'eeeeeeeee', 'ee.....ee'
+];
+var UFO = [
+    '..ffff..', '.ffffff.', 'ffffffff', '.f.ff.f.'
+];
+
+var SCALE = 3;
+var sprites = {};
+function bakeAll() {
+    sprites.alienA = ALIEN_A.map(function (a) { return RE.Draw.bake(a, PAL, SCALE); });
+    sprites.alienB = ALIEN_B.map(function (a) { return RE.Draw.bake(a, PAL, SCALE); });
+    sprites.alienC = ALIEN_C.map(function (a) { return RE.Draw.bake(a, PAL, SCALE); });
+    sprites.ship = RE.Draw.bake(SHIP, PAL, SCALE);
+    sprites.shipHit = RE.Draw.bakeSilhouette(sprites.ship, '#ffffff');
+    sprites.ufo = RE.Draw.bake(UFO, PAL, SCALE);
+}
+bakeAll();
+
+// ---------- 波次設定 ----------
+// 每波改變：起始高度、編隊列數、射擊頻率、基礎速度。
+// 越後面的波次外星人起始位置越低——這是原作用來提高壓力的手法。
+var WAVES = [
+    { rows: 4, cols: 8, startY: 62,  fireRate: 1.35, speed: 1.00, name: '初次接觸' },
+    { rows: 4, cols: 9, startY: 68,  fireRate: 1.15, speed: 1.10, name: '第二波' },
+    { rows: 5, cols: 9, startY: 74,  fireRate: 1.00, speed: 1.18, name: '編隊增援' },
+    { rows: 5, cols: 10, startY: 80, fireRate: 0.88, speed: 1.26, name: '密集轟炸' },
+    { rows: 5, cols: 10, startY: 88, fireRate: 0.76, speed: 1.34, name: '逼近地表' },
+    { rows: 6, cols: 10, startY: 92, fireRate: 0.66, speed: 1.42, name: '總攻擊' },
+    { rows: 6, cols: 11, startY: 98, fireRate: 0.58, speed: 1.52, name: '最後防線' },
+    { rows: 6, cols: 11, startY: 104, fireRate: 0.50, speed: 1.64, name: '殲滅戰' }
+];
+
+var s = {};
+
+function newBunkers() {
+    // 掩體以 4×3 的小格構成，被打中就消掉一格，實現「逐漸被啃食」
+    var list = [];
+    var count = 4, cw = 44, ch = 26, cell = 4;
+    for (var i = 0; i < count; i++) {
+        var bx = (W / (count + 1)) * (i + 1) - cw / 2;
+        var by = H - 92;
+        var grid = [];
+        for (var r = 0; r < ch / cell; r++) {
+            grid[r] = [];
+            for (var c = 0; c < cw / cell; c++) {
+                // 底部中央挖空，做出經典的拱門造型
+                var midStart = cw / cell * 0.35, midEnd = cw / cell * 0.65;
+                var arch = r >= (ch / cell) * 0.55 && c > midStart && c < midEnd;
+                grid[r][c] = arch ? 0 : 1;
+            }
+        }
+        list.push({ x: bx, y: by, cell: cell, grid: grid });
+    }
+    return list;
+}
+
+function buildWave(n) {
+    var cfg = WAVES[Math.min(n - 1, WAVES.length - 1)];
+    var aliens = [];
+    var gapX = 34, gapY = 30;
+    var totalW = (cfg.cols - 1) * gapX;
+    var ox = (W - totalW) / 2;
+    for (var r = 0; r < cfg.rows; r++) {
+        for (var c = 0; c < cfg.cols; c++) {
+            var type = r === 0 ? 'A' : (r <= 2 ? 'B' : 'C');
+            aliens.push({
+                x: ox + c * gapX, y: cfg.startY + r * gapY,
+                type: type, alive: true, col: c, row: r,
+                hitFlash: 0
+            });
+        }
+    }
+    return { cfg: cfg, aliens: aliens };
+}
+
+function reset() {
+    s = {
+        wave: 1, lives: 3, score: 0,
+        ship: { x: W / 2 - 13, y: H - 46, vx: 0, invuln: 0, flash: 0 },
+        bullets: [], bombs: [],
+        aliens: [], cfg: null,
+        dir: 1, stepTimer: 0, dropPending: false,
+        fireTimer: 1.2,
+        ufo: null, ufoTimer: RE.rand(12, 20),
+        killStreak: 0, streakTimer: 0,
+        animFrame: 0, animTimer: 0,
+        bunkers: newBunkers(),
+        over: false, waveClearTimer: 0
+    };
+    var w = buildWave(1);
+    s.aliens = w.aliens; s.cfg = w.cfg;
+    G.setStat('score', 0);
+    G.setStat('wave', 1);
+    G.setLives(3);
+}
+
+function aliveCount() {
+    var n = 0;
+    for (var i = 0; i < s.aliens.length; i++) if (s.aliens[i].alive) n++;
+    return n;
+}
+
+// ======================================================================
+// 更新
+// ======================================================================
+function update(dt) {
+    if (s.over) return;
+
+    // ---- 玩家 ----
+    var ax = RE.Input.axisX();
+    s.ship.vx = RE.approach(s.ship.vx, ax * 210, 1800 * dt);
+    s.ship.x = RE.clamp(s.ship.x + s.ship.vx * dt, 6, W - 33);
+    if (s.ship.invuln > 0) s.ship.invuln -= dt;
+    if (s.ship.flash > 0) s.ship.flash -= dt;
+
+    // 射擊：同時只能有兩發在場，維持原作的節奏感（必須等子彈命中或飛出）
+    if (RE.Input.pressed('a') && s.bullets.length < 2 && s.waveClearTimer <= 0) {
+        s.bullets.push({ x: s.ship.x + 12, y: s.ship.y - 4, vy: -430 });
+        RetroAudio.play('shoot');
+        RE.juice.shake(0.05);
+        P.burst(s.ship.x + 13, s.ship.y - 2, 3, {
+            angle: -Math.PI / 2, spread: 0.4, colors: ['#fff0aa'],
+            speedMin: 30, speedMax: 70, gravity: 0, lifeMin: 0.1, lifeMax: 0.2, sizeMax: 2
+        });
+    }
+
+    // ---- 編隊移動：階梯式跳動，速度隨剩餘數量提升 ----
+    var alive = aliveCount();
+    var total = s.aliens.length;
+    // 這條曲線就是原作的靈魂：剩下 1 隻時大約是滿編時的 12 倍速
+    var speedMul = s.cfg.speed * (1 + (1 - alive / total) * 6.5) * (alive === 1 ? 1.6 : 1);
+    var stepInterval = RE.clamp(0.62 / speedMul, 0.035, 1);
+
+    s.stepTimer += dt;
+    if (s.stepTimer >= stepInterval && alive > 0 && s.waveClearTimer <= 0) {
+        s.stepTimer = 0;
+        stepFormation();
+    }
+
+    // 貼圖動畫與編隊同步跳動，強化「一步一步逼近」的節奏
+    s.animTimer += dt;
+    if (s.animTimer > stepInterval) { s.animTimer = 0; s.animFrame ^= 1; }
+
+    for (var i = 0; i < s.aliens.length; i++) {
+        if (s.aliens[i].hitFlash > 0) s.aliens[i].hitFlash -= dt;
+    }
+
+    // ---- 敵人開火：只有每列最下方的存活者能射擊（與原作一致）----
+    s.fireTimer -= dt;
+    if (s.fireTimer <= 0 && alive > 0 && s.waveClearTimer <= 0) {
+        s.fireTimer = s.cfg.fireRate * RE.rand(0.55, 1.35);
+        var shooters = bottomShooters();
+        if (shooters.length) {
+            var sh = RE.pick(shooters);
+            s.bombs.push({ x: sh.x + 12, y: sh.y + 20, vy: 145 + s.wave * 9, wobble: RE.rand(0, 6) });
+            RetroAudio.play('blip');
+        }
+    }
+
+    // ---- UFO ----
+    s.ufoTimer -= dt;
+    if (s.ufoTimer <= 0 && !s.ufo && alive > 2) {
+        var fromLeft = Math.random() < 0.5;
+        s.ufo = { x: fromLeft ? -30 : W + 30, vx: fromLeft ? 78 : -78, y: 36 };
+        s.ufoTimer = RE.rand(16, 26);
+    }
+    if (s.ufo) {
+        s.ufo.x += s.ufo.vx * dt;
+        if (s.ufo.x < -40 || s.ufo.x > W + 40) s.ufo = null;
+    }
+
+    // ---- 子彈 ----
+    for (var i = s.bullets.length - 1; i >= 0; i--) {
+        var b = s.bullets[i];
+        b.y += b.vy * dt;
+        if (b.y < -8) { s.bullets.splice(i, 1); continue; }
+        if (hitBunker(b.x, b.y, true)) { s.bullets.splice(i, 1); continue; }
+
+        var done = false;
+        // UFO
+        if (s.ufo && b.x > s.ufo.x && b.x < s.ufo.x + 24 && b.y > s.ufo.y && b.y < s.ufo.y + 12) {
+            var bonus = RE.pick([50, 100, 150, 300]);
+            addScore(bonus);
+            FT.add(s.ufo.x + 12, s.ufo.y, '+' + bonus, { color: '#ff6b6b', size: 17 });
+            P.burst(s.ufo.x + 12, s.ufo.y + 6, 22, {
+                colors: ['#ff6b6b', '#ffd166', '#fff8e7'], speedMin: 60, speedMax: 220,
+                gravity: 140, lifeMin: 0.3, lifeMax: 0.7
+            });
+            P.ring(s.ufo.x + 12, s.ufo.y + 6, '#ff6b6b', 46);
+            RetroAudio.play('powerup');
+            RE.juice.impact(2);
+            s.ufo = null;
+            s.bullets.splice(i, 1);
+            continue;
+        }
+        // 外星人
+        for (var j = 0; j < s.aliens.length; j++) {
+            var a = s.aliens[j];
+            if (!a.alive) continue;
+            if (b.x > a.x && b.x < a.x + 26 && b.y > a.y && b.y < a.y + 24) {
+                killAlien(a);
+                s.bullets.splice(i, 1);
+                done = true;
+                break;
+            }
+        }
+        if (done) continue;
+    }
+
+    // ---- 敵彈 ----
+    for (var i = s.bombs.length - 1; i >= 0; i--) {
+        var bo = s.bombs[i];
+        bo.y += bo.vy * dt;
+        bo.wobble += dt * 12;
+        if (bo.y > H) { s.bombs.splice(i, 1); continue; }
+        if (hitBunker(bo.x, bo.y, false)) { s.bombs.splice(i, 1); continue; }
+        if (s.ship.invuln <= 0 &&
+            bo.x > s.ship.x && bo.x < s.ship.x + 27 &&
+            bo.y > s.ship.y && bo.y < s.ship.y + 21) {
+            s.bombs.splice(i, 1);
+            hurt();
+        }
+    }
+
+    // ---- 編隊抵達地面 ----
+    for (var j = 0; j < s.aliens.length; j++) {
+        if (s.aliens[j].alive && s.aliens[j].y + 24 >= s.ship.y) { gameOver(false); return; }
+    }
+
+    // ---- 過關 ----
+    if (alive === 0 && s.waveClearTimer <= 0) {
+        s.waveClearTimer = 1.4;
+        RetroAudio.play('levelUp');
+        FT.add(W / 2, H / 2, 'WAVE CLEAR!', { color: '#70e4b5', size: 22, life: 1.4 });
+        addScore(300 * s.wave);
+    }
+    if (s.waveClearTimer > 0) {
+        s.waveClearTimer -= dt;
+        if (s.waveClearTimer <= 0) nextWave();
+    }
+
+    // 連續擊殺計時：短時間內連續命中才算連段
+    if (s.streakTimer > 0) { s.streakTimer -= dt; if (s.streakTimer <= 0) s.killStreak = 0; }
+
+    P.update(dt);
+    FT.update(dt);
+}
+
+function bottomShooters() {
+    var byCol = {};
+    for (var i = 0; i < s.aliens.length; i++) {
+        var a = s.aliens[i];
+        if (!a.alive) continue;
+        if (!byCol[a.col] || a.y > byCol[a.col].y) byCol[a.col] = a;
+    }
+    var out = [];
+    for (var k in byCol) out.push(byCol[k]);
+    return out;
+}
+
+function stepFormation() {
+    var minX = 1e9, maxX = -1e9;
+    for (var i = 0; i < s.aliens.length; i++) {
+        var a = s.aliens[i];
+        if (!a.alive) continue;
+        if (a.x < minX) minX = a.x;
+        if (a.x > maxX) maxX = a.x;
+    }
+    if (minX > maxX) return;
+
+    var stepX = 9;
+    if ((s.dir > 0 && maxX + stepX > W - 30) || (s.dir < 0 && minX - stepX < 6)) {
+        // 撞牆：整排下降並反向
+        s.dir *= -1;
+        for (var i = 0; i < s.aliens.length; i++) s.aliens[i].y += 14;
+        RetroAudio.play('drop');
+        RE.juice.shake(0.1);
+    } else {
+        for (var i = 0; i < s.aliens.length; i++) s.aliens[i].x += stepX * s.dir;
+        RetroAudio.play('step');
+    }
+}
+
+function killAlien(a) {
+    a.alive = false;
+    var base = a.type === 'A' ? 30 : (a.type === 'B' ? 20 : 10);
+
+    s.killStreak++;
+    s.streakTimer = 1.6;
+    var mult = Math.min(1 + Math.floor(s.killStreak / 3) * 0.5, 4);
+    var gain = Math.round(base * mult);
+    addScore(gain);
+
+    var cx = a.x + 13, cy = a.y + 12;
+    FT.add(cx, cy, '+' + gain + (mult > 1 ? ' ×' + mult : ''),
+           { color: mult > 1 ? '#ffd166' : '#a7f3d0', size: mult > 1 ? 15 : 12, life: 0.65 });
+
+    // 打擊感：頓幀 + 震動 + 火花 + 光環，連段越高回饋越強
+    RE.juice.hitstop(0.028);
+    RE.juice.shake(0.14 + Math.min(s.killStreak, 8) * 0.012);
+    RE.juice.rumble(0.3, 0.06);
+    RetroAudio.play('hit');
+    if (s.killStreak > 1 && s.killStreak % 3 === 0) RetroAudio.play('combo', s.killStreak / 3);
+
+    P.burst(cx, cy, 14, {
+        colors: a.type === 'A' ? ['#70e4b5', '#a7f3d0'] : (a.type === 'B' ? ['#a7f3d0', '#fff8e7'] : ['#ffd166', '#fff0aa']),
+        speedMin: 40, speedMax: 190, gravity: 190, lifeMin: 0.22, lifeMax: 0.55, sizeMax: 4
+    });
+    P.ring(cx, cy, '#fff0aa', 26);
+}
+
+function hitBunker(x, y, fromPlayer) {
+    for (var i = 0; i < s.bunkers.length; i++) {
+        var bk = s.bunkers[i];
+        var gx = Math.floor((x - bk.x) / bk.cell);
+        var gy = Math.floor((y - bk.y) / bk.cell);
+        if (gy < 0 || gy >= bk.grid.length || gx < 0 || gx >= bk.grid[0].length) continue;
+        if (!bk.grid[gy][gx]) continue;
+
+        // 命中：挖掉一小片區域，玩家子彈往上啃、敵彈往下啃
+        var radius = fromPlayer ? 1 : 2;
+        for (var r = -radius; r <= radius; r++) {
+            for (var c = -radius; c <= radius; c++) {
+                var ry = gy + r, rc = gx + c;
+                if (ry < 0 || ry >= bk.grid.length || rc < 0 || rc >= bk.grid[0].length) continue;
+                if (Math.abs(r) + Math.abs(c) <= radius + 1) bk.grid[ry][rc] = 0;
+            }
+        }
+        RetroAudio.play('step');
+        P.burst(x, y, 5, {
+            colors: ['#70e4b5', '#2a5f4a'], speedMin: 30, speedMax: 110,
+            gravity: 260, lifeMin: 0.15, lifeMax: 0.35, sizeMax: 3
+        });
+        return true;
+    }
+    return false;
+}
+
+function hurt() {
+    s.lives--;
+    G.setLives(s.lives);
+    s.ship.invuln = 2.0;
+    s.ship.flash = 0.5;
+    s.killStreak = 0;
+
+    RE.juice.impact(3);
+    RE.juice.flash('rgba(255,107,107,0.5)', 0.14);
+    RE.juice.slowmo(0.35, 0.7);
+    RetroAudio.play('explosion');
+    P.burst(s.ship.x + 13, s.ship.y + 10, 30, {
+        colors: ['#ff6b6b', '#ffd166', '#fff8e7'], speedMin: 60, speedMax: 260,
+        gravity: 220, lifeMin: 0.3, lifeMax: 0.85
+    });
+    P.ring(s.ship.x + 13, s.ship.y + 10, '#ff6b6b', 58);
+
+    if (s.lives <= 0) gameOver(false);
+}
+
+function addScore(n) {
+    s.score += n;
+    G.setStat('score', s.score);
+}
+
+function nextWave() {
+    s.wave++;
+    G.setStat('wave', s.wave);
+    RE.Save.unlockLevel('space_invaders', s.wave);
+
+    if (s.wave > WAVES.length) { gameOver(true); return; }
+
+    var w = buildWave(s.wave);
+    s.aliens = w.aliens; s.cfg = w.cfg;
+    s.bullets = []; s.bombs = [];
+    s.dir = 1; s.stepTimer = 0;
+    // 每兩波修復一次掩體，給玩家喘息，也讓資源管理有節奏
+    if (s.wave % 2 === 1) s.bunkers = newBunkers();
+
+    G.stageCard(s.wave, w.cfg.name,
+        '編隊 ' + w.cfg.rows + ' × ' + w.cfg.cols +
+        (s.wave % 2 === 1 ? '　✦ 掩體已修復' : '　✦ 掩體未修復，小心使用'));
+}
+
+function gameOver(win) {
+    if (s.over) return;
+    s.over = true;
+    RetroAudio.play(win ? 'win' : 'bigExplosion');
+    if (win) RE.Save.unlockLevel('space_invaders', WAVES.length + 1);
+    G.gameOver({
+        score: s.score, win: win,
+        body: win
+            ? '八波全數擊退。1978 年的玩家沒有這種結局——原作是無盡循環，只能一直玩到死。'
+            : '撐到第 ' + s.wave + ' 波「' + s.cfg.name + '」。注意到了嗎？敵人越少，它們就越快。'
+    });
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function render() {
+    G.clear('#080e14');
+    G.beginWorld();
+
+    // 星空背景（以固定亂數種子產生，不會閃爍）
+    ctx.save();
+    for (var i = 0; i < 40; i++) {
+        var sx = (i * 97) % W, sy = (i * 53) % H;
+        ctx.globalAlpha = 0.12 + (i % 4) * 0.06;
+        ctx.fillStyle = '#a7f3d0';
+        ctx.fillRect(sx, sy, 1.5, 1.5);
+    }
+    ctx.restore();
+
+    // 地面線
+    ctx.fillStyle = '#70e4b5';
+    ctx.globalAlpha = 0.6;
+    ctx.fillRect(0, H - 18, W, 2);
+    ctx.globalAlpha = 1;
+
+    // 掩體
+    for (var i = 0; i < s.bunkers.length; i++) {
+        var bk = s.bunkers[i];
+        for (var r = 0; r < bk.grid.length; r++) {
+            for (var c = 0; c < bk.grid[r].length; c++) {
+                if (!bk.grid[r][c]) continue;
+                // 上緣稍亮，做出立體感
+                ctx.fillStyle = r < 2 ? '#8ef0c4' : '#3fa87c';
+                ctx.fillRect(bk.x + c * bk.cell, bk.y + r * bk.cell, bk.cell, bk.cell);
+            }
+        }
+    }
+
+    // 外星人
+    for (var i = 0; i < s.aliens.length; i++) {
+        var a = s.aliens[i];
+        if (!a.alive) continue;
+        var img = a.type === 'A' ? sprites.alienA[s.animFrame]
+                : a.type === 'B' ? sprites.alienB[s.animFrame]
+                : sprites.alienC[s.animFrame];
+        ctx.drawImage(img, Math.round(a.x), Math.round(a.y));
+    }
+
+    // UFO
+    if (s.ufo) {
+        ctx.save();
+        ctx.shadowBlur = 12; ctx.shadowColor = '#ff6b6b';
+        ctx.drawImage(sprites.ufo, Math.round(s.ufo.x), Math.round(s.ufo.y));
+        ctx.restore();
+    }
+
+    // 玩家
+    if (s.ship.invuln <= 0 || Math.floor(s.ship.invuln * 14) % 2 === 0) {
+        ctx.drawImage(s.ship.flash > 0 ? sprites.shipHit : sprites.ship,
+                      Math.round(s.ship.x), Math.round(s.ship.y));
+    }
+
+    // 子彈
+    ctx.fillStyle = '#fff0aa';
+    for (var i = 0; i < s.bullets.length; i++) {
+        var b = s.bullets[i];
+        ctx.save();
+        ctx.shadowBlur = 8; ctx.shadowColor = '#ffd166';
+        ctx.fillRect(b.x - 1.5, b.y, 3, 11);
+        ctx.restore();
+    }
+
+    // 敵彈：鋸齒狀，與玩家子彈明顯區隔
+    ctx.fillStyle = '#ff9ebb';
+    for (var i = 0; i < s.bombs.length; i++) {
+        var bo = s.bombs[i];
+        var w = Math.sin(bo.wobble) * 2.5;
+        ctx.fillRect(bo.x - 1.5 + w, bo.y, 3, 5);
+        ctx.fillRect(bo.x - 1.5 - w, bo.y + 5, 3, 5);
+    }
+
+    P.draw(ctx);
+    FT.draw(ctx);
+
+    // 剩餘敵人提示：讓「越少越快」這件事被玩家意識到
+    var alive = aliveCount();
+    if (alive > 0 && alive <= 5 && !s.over) {
+        ctx.save();
+        ctx.globalAlpha = 0.55 + Math.sin(performance.now() / 180) * 0.3;
+        RE.Draw.text(ctx, '剩 ' + alive + ' 隻　它們正在加速！', W / 2, H - 34,
+                     { size: 13, align: 'center', color: '#ff9ebb' });
+        ctx.restore();
+    }
+
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.12, vignetteStrength: 0.5 });
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '擊落所有外星編隊。注意：敵人越少，整個編隊移動越快——這是 1978 年最著名的「意外設計」。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

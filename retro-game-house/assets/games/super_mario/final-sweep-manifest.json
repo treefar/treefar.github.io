@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "kind": "runtime-integrated-art-candidate",
+  "status": "final-gate-pending",
+  "countedInLedger": false,
+  "game": "super_mario",
+  "set": "set-04-platform-grid-pixel",
+  "tool": "Codex built-in ImageGen",
+  "model": "ImageGen（服務端版本未揭露）",
+  "generatedAt": "2026-08-24",
+  "prompt": "art-production/final-sweep/set-04-platform-grid-pixel/prompt-v002.md",
+  "source": "art-production/final-sweep/set-04-platform-grid-pixel/source/atlas-v002-imagegen.png",
+  "sourceSha256": "f2395cfcf7fc896336b4e7f42b727ab520e151325b76a386d50e2d89c38637dc",
+  "postprocess": "模型 alpha 保留、連通物件裁切、等比例縮放、透明留白與圖集排版；未補畫內容。Set 05 依固定格裁切保留模型背景，實際呈現以圓角裁切避免方形貼紙感。",
+  "atlas": "final-sweep-atlas.png",
+  "atlasSha256": "7f3b708937a63644e8c4de0cda63ee6c243420c3f89c041c239bb8820ee6d5f7",
+  "cellWidth": 128,
+  "cellHeight": 128,
+  "assets": {
+    "courier_run": {
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "主角奔跑"
+    },
+    "courier_jump": {
+      "index": 1,
+      "x": 128,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "主角跳躍"
+    },
+    "seed_beetle": {
+      "index": 2,
+      "x": 256,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "敵人"
+    },
+    "acorn_wood_block": {
+      "index": 3,
+      "x": 384,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "道具／磚塊"
+    },
+    "moss_ground": {
+      "index": 4,
+      "x": 0,
+      "y": 128,
+      "w": 128,
+      "h": 128,
+      "label": "地表模組"
+    },
+    "cottage_pines": {
+      "index": 5,
+      "x": 128,
+      "y": 128,
+      "w": 128,
+      "h": 128,
+      "label": "建築中景"
+    },
+    "mountain_cloud": {
+      "index": 6,
+      "x": 256,
+      "y": 128,
+      "w": 128,
+      "h": 128,
+      "label": "遠景"
+    },
+    "stomp_burst": {
+      "index": 7,
+      "x": 384,
+      "y": 128,
+      "w": 128,
+      "h": 128,
+      "label": "命中特效"
+    },
+    "chapter_crest": {
+      "index": 8,
+      "x": 0,
+      "y": 256,
+      "w": 128,
+      "h": 128,
+      "label": "章節插圖"
+    }
+  },
+  "runtimePresentation": "RetroShell 開場的美術圖譜層；正常流程可見，不介入遊戲亂數、碰撞或更新。",
+  "qa": {
+    "assetCount": 9,
+    "edgePixels": 0,
+    "emptyCells": 0,
+    "humanFinalGate": false
+  }
+}

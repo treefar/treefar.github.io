@@ -1,0 +1,153 @@
+{
+  "version": "1.0",
+  "updated": "2026-08-24",
+  "gateStatus": "production-batch-02",
+  "gate1Signoff": {
+    "date": "2026-08-24",
+    "userText": "①；像素作品採西來之國等級的層次與細節，但保留各年代／作品媒材，不把所有遊戲硬改成同一畫風。",
+    "evidenceFile": "docs/evidence/signoff/gate-1-2026-08-24.md"
+  },
+  "gate2Signoff": {
+    "date": "2026-08-24",
+    "userText": "Gate ②；依暫選三張的方向進入正式拆件與批次重製，仍保留各作品媒材",
+    "evidenceFile": "docs/evidence/signoff/gate-2-2026-08-24.md",
+    "selectionFile": "art-production/gate-2/gate-2-selection.json"
+  },
+  "batch1Signoff": {
+    "date": "2026-08-24",
+    "userText": "第一批正式候選通過；Pong 4 件可入帳，Q*bert 封面替換通過；cozy_farm 與 metal_slug Base Lock 皆為 yes。",
+    "evidenceFile": "docs/evidence/signoff/art-batch-01-and-base-lock-2026-08-24.md"
+  },
+  "allowedTools": ["ImageGen", "Nano Banana", "GPT Image 2", "Codex CLI", "AGY"],
+  "baseline": {
+    "runtimeFormalUnits": 70,
+    "provenance": "legacy-incomplete",
+    "note": "既有 1 主視覺、6 橫幅、57 封面與《轟炸超人》6 個語意格；舊批次缺完整生成帳本，保留為現況基準但不代表通過新規格。"
+  },
+  "entries": [
+    {
+      "id": "pong-crt-field-v001",
+      "game": "pong",
+      "kind": "機台材質",
+      "tool": "ImageGen",
+      "model": "ImageGen（服務端版本未揭露）",
+      "generatedAt": "2026-08-24",
+      "promptFile": "art-production/70s/pong/formal-media/prompt-assets-v001.md",
+      "sourceFile": "art-production/70s/pong/formal-media/pong-crt-field-v001-imagegen.png",
+      "finalFile": "assets/games/pong/crt-field.png",
+      "sha256": "cc40959073d451395aac76a76fa78f6476b15d78544827778551e01dacfeab4e",
+      "postprocess": "3:2 置中裁切（來源已為 3:2）後以 Lanczos 縮至 480×320；未補畫內容。",
+      "runtimeRefs": [
+        {"file": "games/70s/pong.html", "needle": "../../assets/games/pong/crt-field.png"}
+      ],
+      "semanticUnits": [
+        {"id": "pong.crt-field", "description": "Pong 專用 CRT 機台場地材質"}
+      ],
+      "humanReview": {
+        "status": "approved",
+        "reviewedAt": "2026-08-24",
+        "evidenceFile": "docs/evidence/signoff/art-batch-01-and-base-lock-2026-08-24.md",
+        "checks": ["構圖", "造型", "比例", "色彩", "材質", "透視", "一致性", "實際尺寸辨識"]
+      }
+    },
+    {
+      "id": "pong-impact-v001",
+      "game": "pong",
+      "kind": "擊球特效",
+      "tool": "ImageGen",
+      "model": "ImageGen（服務端版本未揭露）",
+      "generatedAt": "2026-08-24",
+      "promptFile": "art-production/70s/pong/formal-media/prompt-assets-v001.md",
+      "sourceFile": "art-production/70s/pong/formal-media/pong-impact-v001-imagegen.png",
+      "finalFile": "assets/games/pong/impact.png",
+      "sha256": "97c7cd2bf35f5bd4b8a30fb0531baabf689d0cd1d0a167e28697cc7ba705fd78",
+      "postprocess": "依模型 alpha 有效內容框裁切，四周加 6% 透明留白後縮至 128×128；未補畫內容。",
+      "runtimeRefs": [
+        {"file": "games/70s/pong.html", "needle": "../../assets/games/pong/impact.png"}
+      ],
+      "semanticUnits": [
+        {"id": "pong.impact", "description": "Pong 擊球瞬間用的獨立光爆特效"}
+      ],
+      "humanReview": {
+        "status": "approved",
+        "reviewedAt": "2026-08-24",
+        "evidenceFile": "docs/evidence/signoff/art-batch-01-and-base-lock-2026-08-24.md",
+        "checks": ["構圖", "造型", "比例", "色彩", "材質", "透視", "一致性", "實際尺寸辨識"]
+      }
+    },
+    {
+      "id": "pong-round-panel-v001",
+      "game": "pong",
+      "kind": "回合轉場",
+      "tool": "ImageGen",
+      "model": "ImageGen（服務端版本未揭露）",
+      "generatedAt": "2026-08-24",
+      "promptFile": "art-production/70s/pong/formal-media/prompt-assets-v001.md",
+      "sourceFile": "art-production/70s/pong/formal-media/pong-round-panel-v001-imagegen.png",
+      "finalFile": "assets/games/pong/round-panel.png",
+      "sha256": "d88a3bb6a5fbdfa8add6a3e6db49ca4b940e83a1cfc3361eb70915caf068bcb0",
+      "postprocess": "3:2 置中裁切（來源已為 3:2）後以 Lanczos 縮至 480×320；未補畫內容。",
+      "runtimeRefs": [
+        {"file": "games/70s/pong.html", "needle": "../../assets/games/pong/round-panel.png"}
+      ],
+      "semanticUnits": [
+        {"id": "pong.round-panel", "description": "Pong 每回合開始用的機台轉場面板"}
+      ],
+      "humanReview": {
+        "status": "approved",
+        "reviewedAt": "2026-08-24",
+        "evidenceFile": "docs/evidence/signoff/art-batch-01-and-base-lock-2026-08-24.md",
+        "checks": ["構圖", "造型", "比例", "色彩", "材質", "透視", "一致性", "實際尺寸辨識"]
+      }
+    },
+    {
+      "id": "pong-victory-panel-v001",
+      "game": "pong",
+      "kind": "結算插圖",
+      "tool": "ImageGen",
+      "model": "ImageGen（服務端版本未揭露）",
+      "generatedAt": "2026-08-24",
+      "promptFile": "art-production/70s/pong/formal-media/prompt-assets-v001.md",
+      "sourceFile": "art-production/70s/pong/formal-media/pong-victory-panel-v001-imagegen.png",
+      "finalFile": "assets/games/pong/victory-panel.png",
+      "sha256": "dc14e9a72bf73b55fcc5fa17dd93def974beff2ac51077111ae5e8ef0882dced",
+      "postprocess": "3:2 置中裁切（來源已為 3:2）後以 Lanczos 縮至 480×320；未補畫內容。",
+      "runtimeRefs": [
+        {"file": "games/70s/pong.html", "needle": "../../assets/games/pong/victory-panel.png"}
+      ],
+      "semanticUnits": [
+        {"id": "pong.victory-panel", "description": "Pong 通關結算用的專用機台插圖"}
+      ],
+      "humanReview": {
+        "status": "approved",
+        "reviewedAt": "2026-08-24",
+        "evidenceFile": "docs/evidence/signoff/art-batch-01-and-base-lock-2026-08-24.md",
+        "checks": ["構圖", "造型", "比例", "色彩", "材質", "透視", "一致性", "實際尺寸辨識"]
+      }
+    },
+    {
+      "id": "qbert-cover-replacement-v001",
+      "game": "qbert",
+      "kind": "正式封面重製",
+      "tool": "ImageGen",
+      "model": "ImageGen（服務端版本未揭露）",
+      "generatedAt": "2026-08-24",
+      "promptFile": "art-production/80s/qbert/cover/prompt-cover-v001.md",
+      "sourceFile": "art-production/80s/qbert/cover/qbert-blockhopper-cover-v001-imagegen.png",
+      "finalFile": "assets/covers/qbert.png",
+      "sha256": "be7d6a90c5ceccec29291c8478b9b450932182ca7d79f462fcc31c26a5c4acb5",
+      "postprocess": "置中維持 16:9，以 Nearest 縮至既有封面規格 320×180；未補畫內容。此為既有封面替換，淨新增 0。",
+      "runtimeRefs": [
+        {"file": "decades/decade.js", "needle": "../assets/covers/"},
+        {"file": "data/gamedb.js", "needle": "{ slug: 'qbert'"}
+      ],
+      "semanticUnits": [],
+      "humanReview": {
+        "status": "approved",
+        "reviewedAt": "2026-08-24",
+        "evidenceFile": "docs/evidence/signoff/art-batch-01-and-base-lock-2026-08-24.md",
+        "checks": ["構圖", "造型", "比例", "色彩", "材質", "透視", "一致性", "實際尺寸辨識"]
+      }
+    }
+  ]
+}

@@ -1,0 +1,645 @@
+/* ==========================================================================
+   年代介紹頁樣式
+   每個十年一頁：發展重點 → 硬體規格 → 年表 → 設計課解讀 → 遊戲清單
+   主色由該年代的 accent 變數驅動，六頁共用同一份版型。
+   ========================================================================== */
+
+:root {
+    --d-bg:      #0d1512;
+    --d-surface: #16241d;
+    --d-surface2:#1d332a;
+    --d-wood:    #2a1910;
+    --d-wood-mid:#4a2c1b;
+    --d-cream:   #fff8e7;
+    --d-muted:   #9fb3aa;
+    --d-gold:    #ffd166;
+    --d-accent:  #ffd166;   /* 由各年代覆寫 */
+    --d-accent-dk: #78350f;
+    --d-font:    'Noto Sans TC', 'DotGothic16', sans-serif;
+    --d-font-px: 'DotGothic16', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+    background:
+        radial-gradient(circle at 84% 8%, color-mix(in srgb, var(--d-accent) 7%, transparent), transparent 28rem),
+        var(--d-bg);
+    color: var(--d-cream);
+    font-family: var(--d-font);
+    line-height: 1.85;
+    -webkit-font-smoothing: antialiased;
+}
+
+.d-skip {
+    position: fixed; left: 14px; top: 8px; z-index: 90;
+    transform: translateY(-150%); padding: 8px 13px;
+    border-radius: 6px; background: var(--d-accent); color: #14100a;
+    font-weight: 900; text-decoration: none;
+}
+.d-skip:focus { transform: translateY(0); }
+
+.d-progress {
+    position: fixed; inset: 0 0 auto; height: 3px; z-index: 80;
+    background: rgba(255,255,255,.05); pointer-events: none;
+}
+.d-progress span {
+    display: block; width: 0; height: 100%; background: var(--d-accent);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--d-accent) 70%, transparent);
+}
+
+img { max-width: 100%; }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+
+/* ---------- 頂部導覽 ---------- */
+.d-nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(13, 21, 18, 0.94);
+    backdrop-filter: blur(10px);
+    border-bottom: 2px solid var(--d-wood);
+}
+
+.d-nav .wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    height: 56px;
+}
+
+.d-nav .home {
+    color: var(--d-gold);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.95rem;
+    white-space: nowrap;
+}
+
+.d-nav .home:hover { color: #fff; }
+
+.d-nav ul {
+    display: flex;
+    gap: 4px;
+    list-style: none;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.d-nav ul::-webkit-scrollbar { display: none; }
+
+.d-nav ul a {
+    display: block;
+    padding: 5px 11px;
+    border-radius: 6px;
+    color: var(--d-muted);
+    text-decoration: none;
+    font-size: 0.88rem;
+    font-weight: 700;
+    white-space: nowrap;
+    transition: all 0.18s;
+}
+
+.d-nav ul a:hover { color: var(--d-cream); background: var(--d-surface2); }
+.d-nav ul a.on {
+    color: #14100a;
+    background: var(--d-accent);
+}
+
+/* ---------- Hero ---------- */
+.d-hero {
+    position: relative;
+    padding: 62px 0 52px;
+    overflow: hidden;
+    border-bottom: 3px solid var(--d-wood);
+    background:
+        radial-gradient(ellipse at 20% 0%, color-mix(in srgb, var(--d-accent) 18%, transparent) 0%, transparent 60%),
+        linear-gradient(170deg, var(--d-surface) 0%, var(--d-bg) 100%);
+}
+
+/* 年代橫幅。交付的構圖是「左三分之一有畫、右邊留白」，
+   所以靠左對齊、蓋在漸層之上、壓在文字之下。
+   透明度壓到 0.5 是為了讓白色標題在圖上仍然讀得到——
+   這一頁的主體是文字，圖只是氣氛。 */
+.d-hero .d-banner {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: auto;
+    max-width: 62%;
+    object-fit: cover;
+    object-position: left center;
+    opacity: 0.5;
+    image-rendering: pixelated;
+    pointer-events: none;
+    z-index: 0;
+    /* 右緣淡出，接回底下的漸層，不要出現一條硬邊 */
+    -webkit-mask-image: linear-gradient(to right, #000 0%, #000 55%, transparent 100%);
+    mask-image: linear-gradient(to right, #000 0%, #000 55%, transparent 100%);
+}
+/* 文字要在圖上面。原本沒有 z-index 是因為以前沒有圖層。 */
+.d-hero .wrap { position: relative; z-index: 2; }
+
+/* 背景的巨大年代數字，作為視覺記憶點 */
+.d-hero .ghost-year {
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--d-font-px);
+    font-size: clamp(9rem, 26vw, 20rem);
+    font-weight: 900;
+    color: var(--d-accent);
+    opacity: 0.07;
+    line-height: 0.8;
+    letter-spacing: -0.04em;
+    pointer-events: none;
+    user-select: none;
+}
+
+.d-hero .wrap { position: relative; z-index: 1; }
+
+.d-hero .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    letter-spacing: 0.24em;
+    color: var(--d-accent);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+}
+
+.d-hero .eyebrow::before {
+    content: '';
+    width: 28px;
+    height: 2px;
+    background: var(--d-accent);
+}
+
+.d-hero h1 {
+    font-size: clamp(1.9rem, 5.5vw, 3.1rem);
+    line-height: 1.25;
+    color: var(--d-cream);
+    margin-bottom: 10px;
+    letter-spacing: 0.01em;
+}
+
+.d-hero .years {
+    font-family: var(--d-font-px);
+    font-size: 1.1rem;
+    color: var(--d-accent);
+    letter-spacing: 0.12em;
+    margin-bottom: 20px;
+}
+
+.d-hero .headline {
+    font-size: clamp(1.05rem, 2.4vw, 1.35rem);
+    font-weight: 700;
+    color: var(--d-accent);
+    margin-bottom: 16px;
+    max-width: 640px;
+}
+
+.d-hero .intro {
+    font-size: 1.02rem;
+    color: #d7e3dd;
+    max-width: 720px;
+}
+
+.d-hero .quickstats {
+    display: flex;
+    gap: 26px;
+    margin-top: 28px;
+    flex-wrap: wrap;
+}
+
+.d-hero .quickstats div { display: flex; flex-direction: column; }
+.d-hero .quickstats b {
+    font-family: var(--d-font-px);
+    font-size: 1.9rem;
+    color: var(--d-accent);
+    line-height: 1.1;
+}
+.d-hero .quickstats span { font-size: 0.8rem; color: var(--d-muted); letter-spacing: 0.08em; }
+
+/* ---------- 章節目錄 ---------- */
+.d-toc {
+    position: fixed; right: max(16px, calc((100vw - 1360px) / 2)); top: 92px; z-index: 42;
+    width: 150px; display: grid; gap: 5px; padding: 10px;
+    background: rgba(13,21,18,.92); border: 2px solid var(--d-wood);
+    box-shadow: inset 0 0 0 1px rgba(255,248,231,.06), 0 8px 24px rgba(0,0,0,.36);
+    border-radius: 10px; backdrop-filter: blur(10px);
+}
+.d-toc::before {
+    content: '本頁章節'; padding: 0 7px 5px; color: var(--d-accent);
+    font-family: var(--d-font-px); font-size: .7rem; letter-spacing: .13em;
+}
+.d-toc a {
+    padding: 6px 8px; border-left: 3px solid transparent; border-radius: 4px;
+    color: var(--d-muted); text-decoration: none; font-size: .74rem; line-height: 1.35;
+}
+.d-toc a:hover { color: var(--d-cream); background: var(--d-surface2); }
+.d-toc a.on { color: var(--d-cream); border-left-color: var(--d-accent); background: var(--d-surface2); }
+
+/* ---------- 區塊標題 ---------- */
+section { padding: 56px 0; }
+section:nth-child(even) { background: rgba(255, 255, 255, 0.017); }
+
+.sec-head { margin-bottom: 30px; }
+
+.sec-head .num {
+    font-family: var(--d-font-px);
+    font-size: 0.78rem;
+    letter-spacing: 0.3em;
+    color: var(--d-accent);
+    display: block;
+    margin-bottom: 6px;
+}
+
+.sec-head h2 {
+    font-size: clamp(1.4rem, 3.4vw, 1.95rem);
+    color: var(--d-cream);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sec-head p { color: var(--d-muted); font-size: 0.95rem; margin-top: 8px; max-width: 620px; }
+
+/* ---------- 發展重點 ---------- */
+.pillars {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 18px;
+}
+
+.pillar {
+    background: linear-gradient(160deg, var(--d-surface2) 0%, var(--d-surface) 100%);
+    border: 2px solid var(--d-wood);
+    border-left: 5px solid var(--d-accent);
+    border-radius: 12px;
+    padding: 22px 24px;
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+    box-shadow: inset 0 0 0 1px rgba(255,248,231,.035);
+}
+
+.pillar:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+}
+
+.pillar .ico { font-size: 1.7rem; display: block; margin-bottom: 8px; }
+
+.pillar h3 {
+    font-size: 1.12rem;
+    color: var(--d-accent);
+    margin-bottom: 10px;
+}
+
+.pillar p { font-size: 0.94rem; color: #d2ded8; }
+.pillar strong { color: var(--d-cream); font-weight: 900; }
+
+/* ---------- 硬體規格 ---------- */
+.spec-box {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) minmax(280px, 1.1fr);
+    gap: 24px;
+    align-items: start;
+}
+
+.spec-table {
+    background: var(--d-surface);
+    border: 2px solid var(--d-wood);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.spec-table h3 {
+    background: linear-gradient(180deg, var(--d-wood-mid), var(--d-wood));
+    padding: 12px 18px;
+    font-size: 1rem;
+    color: var(--d-gold);
+    font-family: var(--d-font-px);
+    letter-spacing: 0.04em;
+}
+
+.spec-table dl { display: grid; grid-template-columns: auto 1fr; }
+
+.spec-table dt,
+.spec-table dd {
+    padding: 9px 18px;
+    font-size: 0.9rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.spec-table dt { color: var(--d-muted); white-space: nowrap; }
+.spec-table dd { color: var(--d-cream); font-family: var(--d-font-px); }
+.spec-table dl > :nth-last-child(-n+2) { border-bottom: none; }
+
+.spec-note {
+    background: rgba(255, 255, 255, 0.03);
+    border-left: 4px solid var(--d-accent);
+    border-radius: 0 10px 10px 0;
+    padding: 18px 22px;
+    font-size: 0.95rem;
+    color: #d2ded8;
+}
+
+.spec-note b { color: var(--d-accent); display: block; margin-bottom: 6px; font-size: 0.8rem; letter-spacing: 0.16em; }
+
+/* ---------- 年表 ---------- */
+.timeline { position: relative; padding-left: 30px; }
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 6px;
+    bottom: 6px;
+    width: 2px;
+    background: linear-gradient(180deg, var(--d-accent), transparent);
+}
+
+.tl-item { position: relative; padding-bottom: 26px; }
+
+.tl-item::before {
+    content: '';
+    position: absolute;
+    left: -30px;
+    top: 7px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--d-bg);
+    border: 3px solid var(--d-accent);
+}
+
+.tl-item:last-child { padding-bottom: 0; }
+
+.tl-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+
+.tl-year {
+    font-family: var(--d-font-px);
+    font-size: 1.18rem;
+    color: var(--d-accent);
+    font-weight: 900;
+}
+
+.tl-title { font-size: 1.02rem; font-weight: 700; color: var(--d-cream); }
+
+.tl-tag {
+    font-size: 0.7rem;
+    padding: 2px 9px;
+    border-radius: 20px;
+    border: 1px solid var(--d-wood-mid);
+    color: var(--d-muted);
+    letter-spacing: 0.08em;
+}
+
+.tl-item p { font-size: 0.93rem; color: #c3d0ca; }
+
+/* ---------- 設計課視角 ---------- */
+.lesson {
+    background:
+        linear-gradient(140deg, color-mix(in srgb, var(--d-accent) 12%, var(--d-surface)) 0%, var(--d-surface) 70%);
+    border: 2px solid var(--d-wood);
+    border-radius: 16px;
+    padding: 30px 32px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(255,248,231,.05), 0 8px 0 rgba(18,8,14,.46);
+}
+
+.lesson::before {
+    content: '“';
+    position: absolute;
+    right: 18px;
+    top: -32px;
+    font-size: 11rem;
+    color: var(--d-accent);
+    opacity: 0.13;
+    font-family: Georgia, serif;
+    line-height: 1;
+}
+
+.lesson .tag {
+    display: inline-block;
+    font-size: 0.74rem;
+    letter-spacing: 0.2em;
+    color: var(--d-accent);
+    border: 1px solid var(--d-accent);
+    padding: 3px 12px;
+    border-radius: 20px;
+    margin-bottom: 14px;
+}
+
+.lesson h3 { font-size: 1.25rem; color: var(--d-cream); margin-bottom: 12px; }
+.lesson p { font-size: 1rem; color: #dbe6e0; max-width: 780px; position: relative; }
+.lesson strong { color: var(--d-accent); font-weight: 900; }
+
+/* ---------- 遊戲卡片 ---------- */
+.game-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+    gap: 16px;
+}
+
+.gcard {
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(165deg, var(--d-surface2) 0%, var(--d-surface) 100%);
+    border: 2px solid var(--d-wood);
+    border-radius: 12px;
+    padding: 18px;
+    text-decoration: none;
+    color: inherit;
+    position: relative;
+    overflow: hidden;           /* 讓封面能貼齊圓角 */
+    transition: transform 0.2s cubic-bezier(0.34, 1.4, 0.64, 1), border-color 0.2s, box-shadow 0.2s;
+}
+
+/* 封面縮圖。原圖是 320×180 的像素畫，一定要 pixelated——
+   預設的平滑縮放會把抖色糊成一團灰。 */
+.gcard .cover {
+    display: block;
+    /* 第 34 行有全域的 img { max-width: 100% }，會把下面這個
+       「比內容區再寬 36px」直接夾回 100%，封面就貼不到卡片邊緣。
+       這一條一定要在這裡解除。 */
+    max-width: none;
+    width: calc(100% + 36px);
+    margin: -18px -18px 14px;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    image-rendering: pixelated;
+    border-bottom: 2px solid var(--d-wood);
+    background: var(--d-bg);
+}
+
+a.gcard:hover {
+    transform: translateY(-5px);
+    border-color: var(--d-accent);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+}
+
+.gcard .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 9px;
+}
+
+.gcard .yr {
+    font-family: var(--d-font-px);
+    font-size: 0.95rem;
+    color: var(--d-accent);
+    font-weight: 900;
+}
+
+.gcard .badge {
+    font-size: 0.66rem;
+    padding: 3px 9px;
+    border-radius: 20px;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+}
+
+.gcard .badge.play {
+    background: var(--d-accent);
+    color: #14100a;
+    font-weight: 900;
+}
+
+.gcard .badge.info {
+    border: 1px solid var(--d-wood-mid);
+    color: var(--d-muted);
+}
+
+.gcard h3 { font-size: 1.06rem; color: var(--d-cream); margin-bottom: 2px; line-height: 1.4; }
+.gcard .zh { font-size: 0.86rem; color: var(--d-accent); margin-bottom: 9px; }
+
+.gcard .core-verb {
+    margin: 2px 0 10px;
+    padding: 8px 10px;
+    border-left: 3px solid var(--d-accent);
+    border-radius: 0 6px 6px 0;
+    background: rgba(8,15,13,.62);
+}
+.gcard .core-verb span {
+    display: block;
+    margin-bottom: 2px;
+    color: var(--d-accent);
+    font-size: .64rem;
+    font-weight: 900;
+    letter-spacing: .12em;
+}
+.gcard .core-verb p {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    color: var(--d-cream);
+    font-size: .79rem;
+    line-height: 1.55;
+}
+
+.gcard .why { font-size: 0.88rem; color: #bfcdc6; flex: 1; margin-bottom: 12px; }
+
+.gcard .foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.74rem;
+    color: var(--d-muted);
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    padding-top: 10px;
+    flex-wrap: wrap;
+}
+
+.gcard .play-cta {
+    color: var(--d-accent);
+    font-weight: 900;
+    font-size: 0.85rem;
+}
+
+.gcard.locked { opacity: 0.82; }
+
+/* 復刻名稱標籤 */
+.gcard .remake-name {
+    font-size: 0.76rem;
+    color: var(--d-muted);
+    font-style: normal;
+}
+
+.gcard .remake-name b { color: var(--d-accent); font-weight: 700; }
+
+/* ---------- 前後年代導覽 ---------- */
+.d-pager {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    padding: 40px 0 60px;
+}
+
+.d-pager a {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 20px 24px;
+    background: var(--d-surface);
+    border: 2px solid var(--d-wood);
+    border-radius: 12px;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.d-pager a:hover { border-color: var(--d-accent); transform: translateY(-3px); }
+.d-pager a.next { text-align: right; align-items: flex-end; }
+.d-pager .dir { font-size: 0.76rem; color: var(--d-muted); letter-spacing: 0.14em; }
+.d-pager .nm { font-size: 1.05rem; color: var(--d-cream); font-weight: 700; }
+.d-pager .empty { visibility: hidden; }
+
+/* ---------- 頁尾 ---------- */
+footer {
+    border-top: 2px solid var(--d-wood);
+    padding: 30px 0 44px;
+    text-align: center;
+    font-size: 0.84rem;
+    color: var(--d-muted);
+    line-height: 1.9;
+}
+
+footer a { color: var(--d-accent); text-decoration: none; }
+
+/* ---------- 響應式 ---------- */
+@media (max-width: 1320px) {
+    .d-toc {
+        position: sticky; top: 56px; right: auto; width: 100%;
+        grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto;
+        border-width: 0 0 2px; border-radius: 0; padding: 8px 18px;
+        scrollbar-width: none;
+    }
+    .d-toc::-webkit-scrollbar { display: none; }
+    .d-toc::before { display: none; }
+    .d-toc a { white-space: nowrap; }
+}
+
+@media (max-width: 780px) {
+    .spec-box { grid-template-columns: 1fr; }
+    section { padding: 40px 0; }
+    .d-hero { padding: 44px 0 38px; }
+    .lesson { padding: 24px 20px; }
+    .d-pager { grid-template-columns: 1fr; }
+    .d-pager a.next { text-align: left; align-items: flex-start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; scroll-behavior: auto; }
+}

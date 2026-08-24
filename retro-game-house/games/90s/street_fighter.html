@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 街頭拳影</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   街頭拳影 — 致敬 Street Fighter II (Capcom, 1991)
+   --------------------------------------------------------------------------
+   復刻重點（本作把「距離戰 × 幀資料 × 取消連段」當成第一優先）：
+
+   1. 四名角色的差異全部落在可量化的參數上：移動速度、攻擊距離倍率、
+      傷害倍率、體力。選誰不只是換皮，而是換一套「該站在哪裡」的問題。
+   2. 每一招都有 startup / active / recovery 三段幀資料（本作以秒計）。
+      出招前後都有硬直，這是格鬥遊戲「賭博感」的來源——
+      按下按鍵那一刻，你就把接下來的 0.3 秒交出去了。
+   3. 取消連段：輕攻擊「命中」後，recovery 可以被下一招取消。
+      這在 SFII 原作裡是程式 bug，卻被玩家挖出來變成技術核心，
+      Capcom 在續作決定保留它。本作忠實重現這個機制。
+   4. 指令輸入：↓↘→ 氣功、→↓↘ 升龍、↓↙← 突進。
+      指令有 0.55 秒的輸入窗，方向記錄採「變化時才寫入」的緩衝。
+   5. 五名手工調參的對手，AI 參數（反應時間、進攻慾望、格擋率、
+      對空率、連段率）全部寫在下方 OPPONENTS 陣列，難度是設計出來的。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'street_fighter',
+    title: '街頭拳影',
+    tagline: '距離、時機，以及那個從 bug 長出來的連段',
+    original: 'Street Fighter II (Capcom, 1991)',
+    decade: '90s', year: 1991, platform: '大型街機 · CPS-1', genre: '對戰格鬥',
+    developer: 'Capcom', bgm: '90s',
+    width: 512, height: 288,
+    lives: 2,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'stage', label: '關卡', init: '1/5' },
+        { key: 'combo', label: '最高連段', init: 0 },
+        { key: 'best', label: 'BEST' }
+    ],
+    touch: 'dpad+ab', labelA: '拳', labelB: '腳',
+    controls: [
+        { keys: ['←', '→'], desc: '前進／後退（後退時自動格擋）' },
+        { keys: ['↓'], desc: '蹲下（蹲著才擋得住下段）' },
+        { keys: ['↑'], desc: '跳躍' },
+        { keys: ['空白', 'Z'], desc: '拳（輕）' },
+        { keys: ['Shift', 'X'], desc: '腳（輕）' },
+        { keys: ['→', '+拳／腳'], desc: '重拳／重腳（前進中出招就是重招）' },
+        { keys: ['↓', '+拳／腳'], desc: '蹲拳／掃腿（掃腿是下段）' },
+        { keys: ['↓', '→', '+拳'], desc: '氣功系必殺' },
+        { keys: ['→', '↓', '→', '+拳'], desc: '升龍系對空' },
+        { keys: ['↓', '←', '+腳'], desc: '突進系必殺' }
+    ],
+    howto: '這不是比誰按得快，是比誰站得對。' +
+           '<strong>後退鍵就是防禦鍵</strong>——但下段攻擊必須蹲著擋，跳躍攻擊必須站著擋。' +
+           '<strong>往前按攻擊會出重招</strong>：傷害高、距離遠，但收招硬直長，被擋到就換你挨打。' +
+           '輕拳／輕腳／蹲拳命中後，硬直可以被下一招<strong>取消</strong>，這就是連段。' +
+           '試試「輕拳 → 前＋重腳」或「輕拳 → 必殺技」。' +
+           '三回合兩勝，打倒五名對手就通關。',
+    lesson: {
+        verb: '控制距離、格擋並在對手收招時反擊，再把命中確認接成連段。',
+        innovation: '用射程、出招與收招時間定義每次交換，讓角色差異與玩家心理同時成為可練習的競技語言。',
+        mission: '先後退擋住一記攻擊，再用輕拳反擊並接重招；完成一次「防禦後確定命中」，不要靠連續亂按碰運氣。',
+        evolution: '《Pong》用落點與角度建立雙人預判；《Street Fighter II》再把距離、招式風險與角色對局擴成完整競技系統。',
+        reflection: '如果所有招式射程、傷害與收招時間都相同，玩家還能透過站位與讀心形成個人風格嗎？'
+    },
+    design: '一對一格鬥若只比誰按得快，很快就會退化成亂按。《快打旋風 II》的解法，是讓攻擊在射程、出招時間、傷害與收招風險上各有代價，再用格擋、跳躍、飛行道具與角色差異形成互相牽制。' +
+            '玩家前後小步移動不是空等，而是在測量一條看不見的界線：跨進去能命中，也可能被對手預先放出的招式截擊；擋住重招後的反擊，則把觀察轉成可確認的回報。' +
+            '一般技接必殺技的「取消」源自特殊技輸入寬容所產生的副作用，開發團隊在製作期間發現它有趣且不破壞系統，決定保留；這比「上市後玩家發現 bug，Capcom 才追認」更精確。' +
+            '**規則提供風險差異，玩家才有機會用距離、節奏與讀心形成風格。**' +
+            '它承接本站《Pong》的雙人預判，再把單一落點博弈擴成多角色、多招式的競技語言。',
+    history: 'Capcom 於 1991 年推出《Street Fighter II: The World Warrior》。它不是第一款一對一格鬥遊戲，卻以可選角色、清楚的招式差異與直接對戰，把街機格鬥推成全球性的類型現象。' +
+             '同一台機器既是遊戲，也是玩家輪流挑戰、觀戰與交換技術的公共場域；勝負從排行榜上的抽象分數，轉成眼前兩名玩家的即時對抗。' +
+             '這種文化確實成為後來格鬥遊戲社群與賽事的重要基礎，但「電子遊戲第一次成為面對面競技」或「EVO 唯一起源」都忽略了更早的競賽史。' +
+             '本站改以博物館可支持的說法：它普及了格鬥遊戲類型，並為其後大量作品建立可辨認的設計框架。',
+    sources: [
+        { label: 'Capcom：Street Fighter II 開發者訪談', url: 'https://game.capcom.com/cfn/sfv/column/132595' },
+        { label: 'Game Developer：西谷亮談取消機制', url: 'https://www.gamedeveloper.com/business/-i-street-fighter-ii-i-designer-opens-up-about-the-cancelling-bug-' },
+        { label: 'The Strong：Street Fighter II 典藏說明', url: 'https://www.museumofplay.org/games/street-fighter-ii/' }
+    ]
+});
+
+var ctx = G.ctx, VW = G.width, VH = G.height;
+var P = new RE.Particles(420);
+var FT = new RE.FloatText();
+
+// ======================================================================
+// 世界常數
+// ======================================================================
+var STAGE_W = 900;          // 舞台總寬，鏡頭在其中捲動
+var GY = 246;               // 地板線
+var GRAVITY = 1750;
+var JUMP_V = -580;
+var ROUND_TIME = 60;        // 每回合秒數
+var WIN_ROUNDS = 2;         // 三回合兩勝
+
+// ======================================================================
+// 角色設定
+// ----------------------------------------------------------------------
+// 差異全部參數化：speed（走速）、reach（攻擊距離倍率）、dmg（傷害倍率）、
+// hp（體力）、jump（跳躍水平推進）。specials 決定三個指令技的性質。
+// ======================================================================
+var CHARS = [
+    {
+        id: 'ran', name: '嵐', title: '道場流 · 均衡型',
+        speed: 126, reach: 1.00, dmg: 1.00, hp: 100, jump: 150,
+        skin: '#f0c9a0', gi: '#f2f0e6', trim: '#d33b3b', hair: '#2a1a10', band: '#d33b3b',
+        specials: { qcf: 'fire', dp: 'upper', qcb: 'rush' },
+        note: '什麼都會一點。氣功控場、升龍對空、突進收尾，先用他把三種指令練熟。'
+    },
+    {
+        id: 'tsuru', name: '鶴', title: '長腿流 · 距離型',
+        speed: 140, reach: 1.20, dmg: 0.84, hp: 94, jump: 168,
+        skin: '#e8b98a', gi: '#3d7fd6', trim: '#f2e9b8', hair: '#151515', band: '#f2e9b8',
+        specials: { qcf: 'rush', dp: 'upper', qcb: 'slide' },
+        note: '打得到你、你打不到她。沒有氣功，靠腿長把對手鎖在中距離。'
+    },
+    {
+        id: 'iwa', name: '岩', title: '相撲流 · 重壓型',
+        // 高傷與厚血同時給滿會疊成無傷通關（實測前四關全滿血），
+        // 所以厚血保留、傷害倍率收斂：他仍是最能一發改變戰局的角色，但不再免疫失誤。
+        speed: 94, reach: 0.84, dmg: 1.24, hp: 106, jump: 118,
+        skin: '#d99a72', gi: '#8c4a2a', trim: '#f0d060', hair: '#1a1008', band: '#f0d060',
+        specials: { qcf: 'quake', dp: 'upper', qcb: 'grab' },
+        note: '兩下就能改變戰局，但每一下都是賭注。走得慢，收招也慢。'
+    },
+    {
+        id: 'rai', name: '雷', title: '電光流 · 速攻型',
+        speed: 158, reach: 0.92, dmg: 0.80, hp: 90, jump: 158,
+        skin: '#f0c9a0', gi: '#e8d040', trim: '#2f9e6e', hair: '#c8a020', band: '#2f9e6e',
+        specials: { qcf: 'fire', dp: 'upper', qcb: 'rush' },
+        note: '單發傷害最低，所以他非連段不可。輕拳取消輕拳取消必殺，一路串下去。'
+    }
+];
+
+// ======================================================================
+// 五名對手 — 難度曲線寫在這裡
+// ----------------------------------------------------------------------
+// react     ：兩次決策之間的間隔（秒），越小越像人在盯著你
+// aggr      ：決策時選擇「進攻」的機率
+// blockRate ：偵測到對手出招時，選擇防禦的機率
+// antiAir   ：對手跳過來時，用對空技迎擊的機率
+// spRate    ：進攻時改用必殺技的機率
+// comboRate ：命中後嘗試取消連段的機率
+// hpMul     ：體力倍率，最後一戰才調高
+// ======================================================================
+var OPPONENTS = [
+    {
+        charIndex: 1, name: '鶴', subtitle: '第一戰 · 學會量距離',
+        hint: '她的腿比你的手長。別站在她最舒服的距離。',
+        ai: { react: 0.52, aggr: 0.42, blockRate: 0.30, antiAir: 0.20, spRate: 0.14, comboRate: 0.10, hpMul: 0.85 },
+        stage: { sky: ['#2b4a7a', '#7ba0c8'], far: '#1d3355', near: '#12233b', floor: '#4a5f7a', accent: '#f2e9b8', name: '黃昏碼頭' }
+    },
+    {
+        charIndex: 3, name: '雷', subtitle: '第二戰 · 學會防守',
+        hint: '他快，但每一下都很輕。擋下來，然後還手。',
+        ai: { react: 0.36, aggr: 0.62, blockRate: 0.34, antiAir: 0.26, spRate: 0.22, comboRate: 0.30, hpMul: 0.88 },
+        stage: { sky: ['#1a1030', '#5b2f7a'], far: '#2a1548', near: '#160a26', floor: '#3d2a52', accent: '#e8d040', name: '霓虹後巷' }
+    },
+    {
+        charIndex: 2, name: '岩', subtitle: '第三戰 · 學會忍耐',
+        hint: '他一下能吃掉你四分之一血。不要亂進，等他收招。',
+        ai: { react: 0.38, aggr: 0.58, blockRate: 0.46, antiAir: 0.34, spRate: 0.26, comboRate: 0.24, hpMul: 1.05 },
+        stage: { sky: ['#7a3a1a', '#d88a3a'], far: '#5a2a12', near: '#331608', floor: '#6b4020', accent: '#f0d060', name: '土俵祭典' }
+    },
+    {
+        charIndex: 0, name: '嵐', subtitle: '第四戰 · 學會不亂跳',
+        hint: '他會用升龍拳迎擊你的跳躍。想進場，用地面。',
+        ai: { react: 0.30, aggr: 0.66, blockRate: 0.52, antiAir: 0.62, spRate: 0.32, comboRate: 0.42, hpMul: 1.00 },
+        stage: { sky: ['#123028', '#3f8f6a'], far: '#0d2a20', near: '#071a13', floor: '#2f5a45', accent: '#d33b3b', name: '雨後道場' }
+    },
+    {
+        charIndex: -1, name: '影', subtitle: '最終戰 · 你的鏡像',
+        hint: '他用你選的角色，參數全面強化。你的習慣就是他的教材。',
+        ai: { react: 0.22, aggr: 0.74, blockRate: 0.58, antiAir: 0.70, spRate: 0.38, comboRate: 0.62, hpMul: 1.20 },
+        stage: { sky: ['#0a0a12', '#2a2a3f'], far: '#141426', near: '#08080f', floor: '#242438', accent: '#c8c8e0', name: '無人擂台' }
+    }
+];
+
+// ======================================================================
+// 招式表（幀資料以秒表示）
+// ----------------------------------------------------------------------
+// startup ：出招前搖，這段被打到就是「被打斷」
+// active  ：判定生效期間
+// rec     ：收招硬直，這段是格鬥遊戲風險的來源
+// h       ：判定高度 mid（都能擋）／ low（要蹲擋）／ over（要站擋）
+// cancel  ：命中後是否可被下一招取消（連段的入口）
+// ======================================================================
+var MOVES = {
+    // 輕招的 hitstun 刻意給到 0.36 秒。
+    // 這是整份幀資料裡最需要調的一個數字：重招起手 0.15 秒，若 hitstun 只有 0.26，
+    // 玩家必須在命中後 1 幀內完成取消輸入，連段等於做不出來。
+    // 給到 0.36 之後窗口約 12 幀——仍要及時，但人手接得到。
+    lp:  { name: '輕拳', startup: 0.05, active: 0.05, rec: 0.13, dmg: 6,  reach: 32, oy: -50, h: 'mid', hitstun: 0.36, blockstun: 0.14, push: 55,  cancel: true,  sfx: 'hit',      lvl: 1 },
+    hp:  { name: '重拳', startup: 0.12, active: 0.06, rec: 0.27, dmg: 13, reach: 42, oy: -52, h: 'mid', hitstun: 0.36, blockstun: 0.18, push: 130, cancel: false, sfx: 'heavyHit', lvl: 2 },
+    lk:  { name: '輕腳', startup: 0.06, active: 0.06, rec: 0.15, dmg: 7,  reach: 38, oy: -34, h: 'mid', hitstun: 0.36, blockstun: 0.14, push: 60,  cancel: true,  sfx: 'hit',      lvl: 1 },
+    hk:  { name: '重腳', startup: 0.15, active: 0.08, rec: 0.30, dmg: 15, reach: 54, oy: -46, h: 'mid', hitstun: 0.38, blockstun: 0.20, push: 160, cancel: false, sfx: 'heavyHit', lvl: 2 },
+    clp: { name: '蹲拳', startup: 0.05, active: 0.05, rec: 0.12, dmg: 5,  reach: 30, oy: -30, h: 'mid', hitstun: 0.34, blockstun: 0.13, push: 45,  cancel: true,  sfx: 'hit',      lvl: 1, crouch: true },
+    clk: { name: '掃腿', startup: 0.10, active: 0.07, rec: 0.24, dmg: 10, reach: 48, oy: -14, h: 'low', hitstun: 0.44, blockstun: 0.18, push: 110, cancel: false, sfx: 'heavyHit', lvl: 2, crouch: true, knockdown: true },
+    jp:  { name: '跳拳', startup: 0.06, active: 0.24, rec: 0.02, dmg: 9,  reach: 34, oy: -30, h: 'over', hitstun: 0.34, blockstun: 0.16, push: 70, cancel: false, sfx: 'hit',      lvl: 1, air: true },
+    jk:  { name: '跳踢', startup: 0.08, active: 0.26, rec: 0.02, dmg: 12, reach: 42, oy: -24, h: 'over', hitstun: 0.36, blockstun: 0.18, push: 90, cancel: false, sfx: 'heavyHit', lvl: 2, air: true }
+};
+
+// 必殺技：依角色 specials 的字串決定行為
+var SPECIALS = {
+    fire:  { name: '氣功彈', startup: 0.18, active: 0.02, rec: 0.40, dmg: 12, hitstun: 0.40, blockstun: 0.22, push: 90,  proj: true,  sfx: 'laser',   lvl: 2 },
+    rush:  { name: '突進拳', startup: 0.14, active: 0.22, rec: 0.36, dmg: 14, reach: 44, oy: -44, h: 'mid', hitstun: 0.42, blockstun: 0.22, push: 190, dash: 330, sfx: 'heavyHit', lvl: 2 },
+    upper: { name: '昇龍擊', startup: 0.06, active: 0.26, rec: 0.52, dmg: 18, reach: 40, oy: -60, h: 'mid', hitstun: 0.50, blockstun: 0.26, push: 150, rise: -520, inv: 0.24, knockdown: true, sfx: 'heavyHit', lvl: 3 },
+    slide: { name: '滑鏟腿', startup: 0.10, active: 0.26, rec: 0.34, dmg: 12, reach: 52, oy: -12, h: 'low', hitstun: 0.44, blockstun: 0.20, push: 150, dash: 300, low: true, knockdown: true, sfx: 'heavyHit', lvl: 2 },
+    quake: { name: '震地掌', startup: 0.24, active: 0.10, rec: 0.44, dmg: 16, reach: 70, oy: -12, h: 'low', hitstun: 0.46, blockstun: 0.24, push: 120, shockwave: true, sfx: 'explosion', lvl: 3 },
+    grab:  { name: '擒抱摔', startup: 0.12, active: 0.20, rec: 0.46, dmg: 22, reach: 34, oy: -40, h: 'mid', hitstun: 0.70, blockstun: 0.30, push: 220, dash: 260, unblockable: true, knockdown: true, sfx: 'bigExplosion', lvl: 3 }
+};
+
+// 指令序列（numpad 記法，寬鬆比對：只要依序出現即可）
+var CMDS = {
+    qcf: [2, 6],       // ↓ → （↘ 可省略）
+    dp:  [6, 2, 6],    // → ↓ ↘
+    qcb: [2, 4]        // ↓ ←
+};
+var CMD_WINDOW = 0.55;
+
+// ======================================================================
+// 姿勢表 — 動畫由關節座標插值產生
+// ----------------------------------------------------------------------
+// 座標以「腳底中心」為原點，x 正向 = 面朝方向，y 向上為負。
+// h=頭 sh=肩 fe/fh=前臂肘與手 be/bh=後臂 fk/ff=前腿膝與腳 bk/bf=後腿
+// ======================================================================
+function pose(h, sh, fe, fh, be, bh, fk, ff, bk, bf, hip) {
+    return { h: h, sh: sh, fe: fe, fh: fh, be: be, bh: bh, fk: fk, ff: ff, bk: bk, bf: bf, hip: hip || [0, -34] };
+}
+var POSE = {
+    idle:      pose([3, -64], [0, -54], [11, -47], [15, -40], [-5, -46], [3, -41], [9, -18], [13, 0], [-9, -18], [-15, 0]),
+    idle2:     pose([3, -62], [0, -52], [11, -45], [15, -38], [-5, -44], [3, -39], [9, -17], [13, 0], [-9, -17], [-15, 0]),
+    walkF:     pose([4, -64], [0, -54], [13, -46], [18, -40], [-6, -45], [2, -40], [13, -20], [20, 0], [-11, -16], [-17, 0]),
+    walkB:     pose([1, -64], [0, -54], [9, -48], [12, -42], [-4, -46], [4, -42], [6, -20], [8, 0], [-13, -18], [-20, 0]),
+    crouch:    pose([4, -42], [0, -34], [10, -30], [14, -25], [-5, -29], [2, -26], [11, -13], [16, 0], [-10, -12], [-14, 0], [0, -20]),
+    jump:      pose([3, -62], [0, -52], [10, -46], [14, -52], [-6, -45], [-2, -50], [10, -24], [8, -12], [-8, -22], [-14, -8]),
+    // 攻擊三段：收 → 伸 → 半收
+    lpS:       pose([3, -64], [0, -54], [5, -48], [1, -44], [-6, -46], [2, -41], [9, -18], [13, 0], [-9, -18], [-15, 0]),
+    lpA:       pose([3, -64], [0, -54], [16, -51], [30, -50], [-7, -46], [0, -42], [9, -18], [14, 0], [-10, -18], [-16, 0]),
+    hpS:       pose([1, -64], [-2, -54], [2, -46], [-6, -42], [-8, -46], [-2, -40], [8, -18], [12, 0], [-10, -18], [-16, 0]),
+    hpA:       pose([5, -64], [2, -54], [20, -53], [40, -52], [-6, -47], [2, -43], [12, -18], [18, 0], [-10, -18], [-16, 0]),
+    lkS:       pose([2, -64], [0, -54], [10, -47], [14, -41], [-5, -46], [3, -41], [8, -22], [6, -14], [-9, -18], [-15, 0]),
+    lkA:       pose([2, -64], [0, -54], [9, -48], [12, -43], [-6, -46], [1, -42], [20, -34], [38, -34], [-9, -18], [-15, 0]),
+    hkS:       pose([0, -64], [-2, -54], [8, -47], [11, -41], [-6, -46], [2, -41], [4, -26], [0, -18], [-10, -18], [-16, 0]),
+    hkA:       pose([4, -66], [1, -56], [12, -50], [16, -46], [-8, -48], [-2, -44], [26, -48], [52, -46], [-11, -18], [-17, 0]),
+    clpA:      pose([4, -42], [0, -34], [14, -31], [28, -30], [-5, -29], [2, -26], [11, -13], [16, 0], [-10, -12], [-14, 0], [0, -20]),
+    clkA:      pose([2, -40], [-2, -32], [8, -28], [10, -22], [-8, -28], [-4, -22], [18, -12], [44, -6], [-10, -10], [-14, 0], [0, -18]),
+    jpA:       pose([3, -62], [0, -52], [14, -48], [26, -40], [-6, -45], [-2, -50], [10, -24], [8, -12], [-8, -22], [-14, -8]),
+    jkA:       pose([3, -62], [0, -52], [8, -46], [10, -52], [-6, -45], [-2, -50], [22, -32], [42, -24], [-8, -22], [-12, -10]),
+    fireS:     pose([1, -64], [-2, -54], [0, -46], [-8, -40], [-8, -46], [-4, -40], [8, -18], [12, 0], [-10, -18], [-16, 0]),
+    fireA:     pose([4, -64], [1, -54], [16, -50], [30, -46], [10, -48], [24, -44], [11, -18], [16, 0], [-10, -18], [-16, 0]),
+    upperA:    pose([2, -66], [0, -56], [8, -68], [14, -80], [-6, -48], [0, -44], [8, -22], [6, -10], [-8, -20], [-12, -4]),
+    rushA:     pose([6, -58], [2, -50], [18, -48], [36, -46], [-6, -44], [2, -40], [14, -20], [22, 0], [-12, -16], [-20, 0]),
+    slideA:    pose([6, -26], [2, -22], [10, -20], [16, -16], [-6, -20], [-2, -16], [22, -10], [50, -4], [-8, -10], [-14, -2], [0, -14]),
+    quakeA:    pose([3, -50], [0, -42], [16, -30], [26, -8], [4, -34], [10, -14], [12, -16], [18, 0], [-12, -16], [-20, 0], [0, -26]),
+    block:     pose([1, -63], [-2, -53], [4, -48], [6, -56], [-4, -46], [2, -46], [6, -19], [8, 0], [-12, -18], [-19, 0]),
+    blockLow:  pose([2, -42], [-2, -34], [4, -30], [6, -38], [-5, -29], [1, -30], [9, -13], [14, 0], [-11, -12], [-15, 0], [0, -20]),
+    hit:       pose([-3, -63], [-4, -53], [6, -44], [4, -34], [-10, -45], [-14, -38], [4, -18], [6, 0], [-12, -18], [-20, 0]),
+    hitLow:    pose([-2, -41], [-4, -33], [4, -28], [2, -20], [-9, -28], [-13, -22], [6, -13], [10, 0], [-12, -12], [-16, 0], [-2, -20]),
+    down:      pose([-24, -12], [-14, -14], [-6, -18], [2, -20], [-14, -8], [-6, -6], [8, -12], [20, -6], [4, -6], [16, -2], [-4, -12]),
+    win:       pose([3, -66], [0, -56], [10, -66], [14, -78], [-6, -48], [0, -44], [9, -18], [13, 0], [-9, -18], [-15, 0])
+};
+
+function lerpPt(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]; }
+function lerpPose(a, b, t) {
+    return {
+        h: lerpPt(a.h, b.h, t), sh: lerpPt(a.sh, b.sh, t),
+        fe: lerpPt(a.fe, b.fe, t), fh: lerpPt(a.fh, b.fh, t),
+        be: lerpPt(a.be, b.be, t), bh: lerpPt(a.bh, b.bh, t),
+        fk: lerpPt(a.fk, b.fk, t), ff: lerpPt(a.ff, b.ff, t),
+        bk: lerpPt(a.bk, b.bk, t), bf: lerpPt(a.bf, b.bf, t),
+        hip: lerpPt(a.hip, b.hip, t)
+    };
+}
+
+// 招式 → 姿勢對應（起手 / 判定 / 收招沿用判定姿勢回彈）
+var MOVE_POSE = {
+    lp: ['lpS', 'lpA'], hp: ['hpS', 'hpA'], lk: ['lkS', 'lkA'], hk: ['hkS', 'hkA'],
+    clp: ['crouch', 'clpA'], clk: ['crouch', 'clkA'],
+    jp: ['jump', 'jpA'], jk: ['jump', 'jkA'],
+    fire: ['fireS', 'fireA'], upper: ['lpS', 'upperA'], rush: ['hpS', 'rushA'],
+    slide: ['crouch', 'slideA'], quake: ['hpS', 'quakeA'], grab: ['hpS', 'rushA']
+};
+
+// ======================================================================
+// 遊戲狀態
+// ======================================================================
+var s = null;
+
+function makeFighter(charIndex, x, face, isAI, hpMul) {
+    var c = CHARS[charIndex];
+    return {
+        c: c, ci: charIndex,
+        x: x, y: GY, vx: 0, vy: 0, face: face,
+        maxHp: Math.round(c.hp * (hpMul || 1)), hp: Math.round(c.hp * (hpMul || 1)),
+        state: 'idle',      // idle | walk | crouch | jump | atk | hit | block | down | win
+        st: 0,              // 狀態計時
+        move: null, mk: null, phase: '', hitDone: false, canCancel: false,
+        cancelT: 0, inv: 0, hitstun: 0, blockstun: 0,
+        holdBack: false, crouching: false, air: false,
+        cmd: [], anim: 0, flash: 0, dizzyT: 0,
+        ai: isAI ? { t: 0, intent: 'wait', intentT: 0, cfg: null, crouchBlock: false, turtle: 0 } : null,
+        pushT: 0
+    };
+}
+
+function reset() {
+    s = {
+        phase: 'select',    // select | ready | fight | roundEnd | matchEnd
+        phaseT: 0, sel: 0, stage: 0,
+        p: null, e: null,
+        winP: 0, winE: 0, round: 1,
+        time: ROUND_TIME, combo: 0, comboT: 0, comboDmg: 0, maxCombo: 0,
+        shots: [], waves: [], banner: '', bannerT: 0, camX: 0,
+        result: '', perfect: false
+    };
+    P.clear(); FT.clear();
+    G.setStat('score', 0);
+    G.setStat('stage', '1/5');
+    G.setStat('combo', 0);
+    G.setLives(2);
+}
+
+function startStage(i) {
+    var op = OPPONENTS[i];
+    var eIndex = op.charIndex < 0 ? s.sel : op.charIndex;
+    s.stage = i;
+    s.winP = 0; s.winE = 0; s.round = 1;
+    s.p = makeFighter(s.sel, 300, 1, false, 1);
+    s.e = makeFighter(eIndex, 600, -1, true, op.ai.hpMul);
+    s.e.ai.cfg = op.ai;
+    s.shots = []; s.waves = [];
+    s.time = ROUND_TIME;
+    s.phase = 'ready'; s.phaseT = 0;
+    s.banner = 'ROUND 1'; s.bannerT = 0;
+    G.setStat('stage', (i + 1) + '/5');
+}
+
+function startRound() {
+    var op = OPPONENTS[s.stage];
+    var eIndex = op.charIndex < 0 ? s.sel : op.charIndex;
+    s.p = makeFighter(s.sel, 300, 1, false, 1);
+    s.e = makeFighter(eIndex, 600, -1, true, op.ai.hpMul);
+    s.e.ai.cfg = op.ai;
+    s.shots = []; s.waves = [];
+    s.time = ROUND_TIME;
+    s.phase = 'ready'; s.phaseT = 0;
+    s.banner = 'ROUND ' + s.round; s.bannerT = 0;
+    P.clear();
+}
+
+// ======================================================================
+// 招式啟動
+// ======================================================================
+function moveOf(f, key) {
+    if (SPECIALS[key]) return SPECIALS[key];
+    return MOVES[key];
+}
+
+function startMove(f, key) {
+    var m = moveOf(f, key);
+    if (!m) return;
+    f.state = 'atk'; f.mk = key; f.move = m; f.st = 0;
+    f.phase = 'startup'; f.hitDone = false; f.canCancel = false;
+    f.crouching = !!m.crouch || !!m.low;
+    if (m.inv) f.inv = m.inv;
+    if (m.rise) { f.vy = m.rise; f.air = true; }
+    if (m.dash) f.vx = m.dash * f.face;
+    if (!m.air && !m.rise && !m.dash) f.vx = 0;
+    RetroAudio.play(m.proj ? 'shoot' : (m.lvl >= 2 ? 'slash' : 'blip'));
+}
+
+/** 命中判定框：只有 active 期間存在 */
+function hitbox(f) {
+    if (f.state !== 'atk' || f.phase !== 'active' || f.hitDone) return null;
+    var m = f.move;
+    if (m.proj) return null;
+    var reach = (m.reach || 36) * f.c.reach;
+    var oy = m.oy || -44;
+    var h = 26;
+    return {
+        x: f.face > 0 ? f.x + 10 : f.x - 10 - reach,
+        y: f.y + oy - h / 2,
+        w: reach, h: h
+    };
+}
+
+function hurtbox(f) {
+    if (f.state === 'down') return { x: f.x - 26, y: f.y - 18, w: 52, h: 18 };
+    if (f.crouching || f.state === 'crouch') return { x: f.x - 17, y: f.y - 46, w: 34, h: 46 };
+    if (f.air) return { x: f.x - 15, y: f.y - 56, w: 30, h: 56 };
+    return { x: f.x - 15, y: f.y - 72, w: 30, h: 72 };
+}
+
+/** 是否處於「有效防禦」姿態 */
+function isBlocking(f, m) {
+    if (f.state === 'atk' || f.state === 'hit' || f.state === 'down' || f.air) return false;
+    if (!f.holdBack) return false;
+    if (m.unblockable) return false;
+    if (m.h === 'low') return f.crouching;      // 下段：必須蹲擋
+    if (m.h === 'over') return !f.crouching;    // 跳擊：必須站擋
+    return true;
+}
+
+// ======================================================================
+// 命中處理
+// ======================================================================
+function applyHit(att, def, m, srcX) {
+    var blocked = isBlocking(def, m);
+    // 真連段的定義：對手還在硬直中就又被打到，中間沒有還手的餘地。
+    // 只用「兩次命中間隔很短」判定會把「他站起來又被打」也算成連段，那是灌水。
+    var wasStunned = (def.state === 'hit' && def.hitstun > 0);
+    var dmg = Math.round(m.dmg * att.c.dmg * (blocked ? 0.22 : 1));
+    var px = (srcX === undefined ? att.x + 28 * att.face : srcX);
+    var py = def.y - (def.crouching ? 30 : 44);
+
+    if (blocked) {
+        def.hp -= dmg;
+        def.blockstun = m.blockstun;
+        def.state = 'block'; def.st = 0;
+        def.vx = m.push * 0.45 * att.face;
+        RetroAudio.play('block');
+        RE.juice.hitstop(0.03);
+        RE.juice.shake(0.10);
+        P.sparks(px, py, att.face > 0 ? -0.5 : Math.PI + 0.5, 7, '#bfe6ff');
+        FT.add(px, py - 14, 'GUARD', { color: '#9fd6ff', size: 14, life: 0.6 });
+        if (att === s.p) addScore(dmg);
+        return 'block';
+    }
+
+    def.hp -= dmg;
+    def.hitstun = m.hitstun;
+    def.state = 'hit'; def.st = 0;
+    def.flash = 0.12;
+    def.vx = m.push * att.face;
+    def.canCancel = false;
+    def.move = null;
+    if (m.knockdown || def.hp <= 0) {
+        def.state = 'down'; def.st = 0; def.air = true;
+        def.vy = -300; def.vx = m.push * 1.1 * att.face;
+    }
+
+    // 打擊感：頓幀 + 震動 + 粒子 + 音效，強度隨招式等級遞增
+    RE.juice.impact(m.lvl || 1);
+    RetroAudio.play(m.sfx || 'hit');
+    P.sparks(px, py, att.face > 0 ? -0.5 : Math.PI + 0.5, 6 + (m.lvl || 1) * 4, '#fff0aa');
+    P.burst(px, py, 4 + (m.lvl || 1) * 3, {
+        colors: ['#ffd166', '#ff8a4c', '#fff0aa'], speedMin: 60, speedMax: 220,
+        sizeMin: 2, sizeMax: 4.5, lifeMin: 0.2, lifeMax: 0.45, gravity: 300
+    });
+    if ((m.lvl || 1) >= 3) P.ring(px, py, '#fff0aa', 46);
+
+    // 連段計數：對手仍在硬直中又被打到，才算連段
+    if (att === s.p) {
+        if (wasStunned && s.combo > 0) { s.combo++; } else { s.combo = 1; s.comboDmg = 0; }
+        s.comboT = 0.9;
+        s.comboDmg += dmg;
+        if (s.combo > s.maxCombo) { s.maxCombo = s.combo; G.setStat('combo', s.maxCombo); }
+        if (s.combo >= 2) {
+            RetroAudio.play('combo', s.combo);
+            FT.add(px, py - 26, s.combo + ' HIT', { color: '#ffd166', size: 15, life: 0.8 });
+        }
+        addScore(dmg * (1 + (s.combo - 1) * 0.5));
+    } else {
+        s.combo = 0; s.comboT = 0;
+    }
+    FT.add(px, py, String(dmg), { color: blocked ? '#9fd6ff' : '#ff9a6c', size: 14 });
+
+    // 命中確認：輕攻擊可取消收招，這就是連段的入口
+    if (m.cancel) { att.canCancel = true; att.cancelT = 0.34; }
+    return 'hit';
+}
+
+function addScore(n) {
+    G.setStat('score', (G.stats.score || 0) + Math.round(n));
+}
+
+// ======================================================================
+// 玩家輸入
+// ======================================================================
+function readDir() {
+    var x = RE.Input.axisX(), y = RE.Input.axisY();
+    // numpad 記法：5 中立、6 前、4 後、2 下、8 上
+    if (y > 0) return x > 0 ? 3 : (x < 0 ? 1 : 2);
+    if (y < 0) return x > 0 ? 9 : (x < 0 ? 7 : 8);
+    return x > 0 ? 6 : (x < 0 ? 4 : 5);
+}
+
+function pushCmd(f, d) {
+    if (f.cmd.length && f.cmd[f.cmd.length - 1].d === d) return;
+    f.cmd.push({ d: d, t: 0 });
+    if (f.cmd.length > 12) f.cmd.shift();
+}
+
+function cmdMatch(f, seq) {
+    var si = seq.length - 1;
+    for (var i = f.cmd.length - 1; i >= 0; i--) {
+        if (f.cmd[i].t > CMD_WINDOW) break;
+        if (f.cmd[i].d === seq[si]) {
+            si--;
+            if (si < 0) return true;
+        }
+    }
+    return false;
+}
+
+function clearCmd(f) { f.cmd.length = 0; }
+
+function updatePlayer(f, dt) {
+    var raw = readDir();
+    // 面向對手時，「後」是相對的
+    var d = raw;
+    if (f.face < 0) {
+        // 鏡像 numpad：6↔4、3↔1、9↔7
+        var mir = { 1: 3, 2: 2, 3: 1, 4: 6, 5: 5, 6: 4, 7: 9, 8: 8, 9: 7 };
+        d = mir[raw];
+    }
+    pushCmd(f, d);
+
+    var back = (d === 4 || d === 1 || d === 7);
+    var fwd = (d === 6 || d === 3 || d === 9);
+    var down = (d === 1 || d === 2 || d === 3);
+    var up = (d === 7 || d === 8 || d === 9);
+    f.holdBack = back;
+
+    if (f.state === 'atk' || f.state === 'hit' || f.state === 'down' || f.state === 'block') {
+        // 取消連段：命中確認後，收招可以被下一招接管
+        if (f.state === 'atk' && f.canCancel && f.phase !== 'startup') {
+            var ck = pickCancel(f, down, fwd);
+            if (ck) { startMove(f, ck); clearCmd(f); }
+        }
+        return;
+    }
+
+    // 空中
+    if (f.air) {
+        if (f.state !== 'atk' && (RE.Input.pressed('a') || RE.Input.pressed('b'))) {
+            startMove(f, RE.Input.pressed('b') ? 'jk' : 'jp');
+        }
+        return;
+    }
+
+    // 起跳
+    if (up) {
+        f.air = true; f.vy = JUMP_V;
+        f.vx = (fwd ? 1 : (back ? -1 : 0)) * f.c.jump * f.face;
+        f.state = 'jump'; f.st = 0;
+        RetroAudio.play('jump');
+        return;
+    }
+
+    f.crouching = down;
+
+    // 必殺技（優先於通常技）
+    var A = RE.Input.pressed('a'), B = RE.Input.pressed('b');
+    if (A || B) {
+        var sp = trySpecial(f, A, B);
+        if (sp) { startMove(f, sp); clearCmd(f); return; }
+        startMove(f, normalOf(A, down, fwd));
+        return;
+    }
+
+    // 移動
+    if (down) {
+        f.state = 'crouch'; f.vx = 0;
+    } else if (fwd) {
+        f.state = 'walk'; f.vx = f.c.speed * f.face;
+    } else if (back) {
+        f.state = 'walk'; f.vx = -f.c.speed * 0.78 * f.face;
+    } else {
+        f.state = 'idle'; f.vx = 0;
+    }
+}
+
+/**
+ * 通常技的選擇規則。
+ * 只有拳／腳兩顆鍵，輕重由「當下的方向」決定：
+ * 前進中出招 = 重招（傷害高、距離遠、收招長），中立或後退 = 輕招，蹲下 = 下段系。
+ * 這讓手機的兩顆虛擬鍵也能打出完整招式表，同時把「往前踏一步」變成一個要付代價的決定。
+ */
+function normalOf(isPunch, down, fwd) {
+    if (down) return isPunch ? 'clp' : 'clk';
+    if (fwd) return isPunch ? 'hp' : 'hk';
+    return isPunch ? 'lp' : 'lk';
+}
+
+/** 取消時可以接什麼：重攻擊或必殺技 */
+function pickCancel(f, down, fwd) {
+    var A = RE.Input.pressed('a'), B = RE.Input.pressed('b');
+    if (!A && !B) return null;
+    var sp = trySpecial(f, A, B);
+    if (sp) return sp;
+    // 取消一律接重招，輕招接輕招在原作也是不成立的
+    if (down) return A ? 'clp' : 'clk';
+    return A ? 'hp' : 'hk';
+}
+
+function trySpecial(f, A, B) {
+    var sp = f.c.specials;
+    if (A && cmdMatch(f, CMDS.dp)) return sp.dp;
+    if (A && cmdMatch(f, CMDS.qcf)) return sp.qcf;
+    if (B && cmdMatch(f, CMDS.qcb)) return sp.qcb;
+    if (B && cmdMatch(f, CMDS.qcf)) return sp.qcf === 'fire' ? null : sp.qcf;
+    return null;
+}
+
+// ======================================================================
+// 對手 AI
+// ----------------------------------------------------------------------
+// 決策採「每次決策擲一次骰」，不是每幀重擲——
+// 每幀重擲會讓隨機性被平均掉，AI 反而變成永不失誤的完美機器。
+// ======================================================================
+function updateAI(f, foe, dt) {
+    var cfg = f.ai.cfg;
+    var d = Math.abs(f.x - foe.x);
+    f.face = foe.x >= f.x ? 1 : -1;
+
+    if (f.state === 'atk' || f.state === 'hit' || f.state === 'down') { f.holdBack = false; return; }
+
+    f.ai.t -= dt;
+    f.ai.intentT -= dt;
+
+    // 識破烏龜：累計對手「一直壓著防禦」的時間。
+    // 蹲防能同時擋掉中段與下段，如果 AI 只會在地面出招，蹲著不動就是萬能解，
+    // 整場對戰會退化成玩家單方面等收招。真正的破防手段有兩種：
+    // 跳躍攻擊（必須站著擋）與不可防禦的擒抱。AI 必須自己找到它們。
+    if (foe.holdBack && !foe.air) f.ai.turtle += dt;
+    else f.ai.turtle = Math.max(0, f.ai.turtle - dt * 1.6);
+
+    // 對空：對手在空中且逼近，用對空技迎擊
+    if (foe.air && foe.y < GY - 40 && d < 90 && f.ai.t <= 0 && !f.air) {
+        f.ai.t = cfg.react * 0.6;
+        if (Math.random() < cfg.antiAir) {
+            startMove(f, d < 60 ? f.c.specials.dp : 'hp');
+            return;
+        }
+    }
+
+    // 偵測對手出招 → 決定要不要防禦
+    var foeThreat = (foe.state === 'atk' && foe.phase !== 'recovery' && d < 96) ||
+                    (s.shots.length > 0 && d > 60);
+    if (foeThreat && f.ai.t <= 0) {
+        f.ai.t = cfg.react * 0.5;
+        if (Math.random() < cfg.blockRate) {
+            f.ai.intent = 'block';
+            f.ai.intentT = 0.42;
+            // 蹲防或站防在「決定防禦的那一刻」擲一次骰。
+            // 若每幀重擲，AI 會在兩種防禦間高速抖動，等於同時擋住上下段——變成完美機器。
+            f.ai.crouchBlock = Math.random() < 0.5;
+        }
+    }
+
+    // 破防決策：對手龜了超過 1 秒就換手段。近距離用擒抱（不可防禦），
+    // 中距離跳進去（跳擊必須站著擋，蹲防吃滿）。
+    if (f.ai.turtle > 1.0 && f.ai.t <= 0 && !f.air && d < 150) {
+        f.ai.t = cfg.react;
+        if (Math.random() < 0.55 + cfg.aggr * 0.3) {
+            f.ai.turtle = 0;
+            if (f.c.specials.qcb === 'grab' && d < 58) { startMove(f, 'grab'); return; }
+            if (d < 46 && Math.random() < 0.4) { startMove(f, 'clk'); return; }   // 近身改掃腿逼對手蹲
+            f.air = true; f.vy = JUMP_V; f.vx = f.c.jump * f.face;
+            f.state = 'jump'; f.ai.intent = 'divekick';
+            RetroAudio.play('jump');
+            return;
+        }
+    }
+
+    if (f.ai.t <= 0) {
+        f.ai.t = cfg.react;
+        var r = Math.random();
+        if (d > 150) {
+            f.ai.intent = r < cfg.aggr + 0.25 ? 'approach' : (r < 0.9 ? 'wait' : 'jump');
+            if (r > 0.94 && cfg.spRate > 0.2) f.ai.intent = 'special';
+        } else if (d > 78) {
+            f.ai.intent = r < cfg.aggr ? 'approach' : (r < cfg.aggr + 0.18 ? 'special' : (r < cfg.aggr + 0.3 ? 'jump' : 'wait'));
+        } else {
+            if (r < cfg.aggr) f.ai.intent = 'attack';
+            else if (r < cfg.aggr + 0.22) f.ai.intent = 'block';
+            else if (r < cfg.aggr + 0.34) f.ai.intent = 'retreat';
+            else f.ai.intent = 'wait';
+        }
+        f.ai.intentT = cfg.react * 1.2;
+    }
+
+    if (f.ai.intentT <= 0) f.ai.intent = 'wait';
+
+    // 執行意圖。
+    // 地面意圖一律不在空中執行——否則 default 分支會把跳躍的水平速度歸零，
+    // AI 會在半空中停下來直直落回原地。
+    f.holdBack = false;
+    f.crouching = false;
+    var sp = f.c.specials;
+    if (f.air) { aiAirAttack(f, d); return; }
+    switch (f.ai.intent) {
+        case 'approach':
+            f.state = 'walk'; f.vx = f.c.speed * f.face;
+            if (d < 70 && Math.random() < 0.4) { f.ai.intent = 'attack'; }
+            break;
+        case 'retreat':
+            f.state = 'walk'; f.vx = -f.c.speed * 0.8 * f.face;
+            f.holdBack = true;
+            break;
+        case 'block':
+            f.state = 'idle'; f.vx = 0; f.holdBack = true;
+            f.crouching = !!f.ai.crouchBlock;
+            break;
+        case 'jump':
+            if (!f.air) {
+                f.air = true; f.vy = JUMP_V; f.vx = f.c.jump * f.face;
+                f.state = 'jump'; RetroAudio.play('jump');
+                f.ai.intent = 'wait';
+            }
+            break;
+        case 'special':
+            if (!f.air) {
+                startMove(f, Math.random() < 0.5 ? sp.qcf : (d < 70 ? sp.qcb : sp.qcf));
+                f.ai.intent = 'wait';
+            }
+            break;
+        case 'attack':
+            if (!f.air) {
+                var rr = Math.random();
+                if (rr < cfg.spRate) startMove(f, d < 60 ? sp.dp : sp.qcb);
+                else if (rr < cfg.spRate + 0.28) startMove(f, 'clk');
+                else if (rr < cfg.spRate + 0.6) startMove(f, Math.random() < 0.5 ? 'lp' : 'lk');
+                else startMove(f, Math.random() < 0.5 ? 'hp' : 'hk');
+                f.ai.intent = 'wait';
+            }
+            break;
+        default:
+            f.state = 'idle'; f.vx = 0;
+            if (d < 60 && Math.random() < 0.02) f.holdBack = true;
+    }
+
+}
+
+/**
+ * 空中攻擊：下落段接近對手時出腳。
+ * 跳到頭上卻不出招，等於白跳一次，還把自己送進對方的對空範圍。
+ */
+function aiAirAttack(f, d) {
+    if (f.state === 'atk') return;
+    if (f.vy > -160 && d < 96) {
+        if (f.ai.intent === 'divekick' || Math.random() < 0.2) {
+            startMove(f, Math.random() < 0.6 ? 'jk' : 'jp');
+            f.ai.intent = 'wait';
+        }
+    }
+}
+
+/** AI 命中後嘗試取消連段 */
+function aiCancel(f) {
+    if (!f.ai || !f.canCancel || f.phase === 'startup') return;
+    if (Math.random() > f.ai.cfg.comboRate) { f.canCancel = false; return; }
+    var sp = f.c.specials;
+    startMove(f, Math.random() < 0.5 ? 'hp' : sp.qcf);
+}
+
+// ======================================================================
+// 角色物理與狀態推進
+// ======================================================================
+function stepFighter(f, foe, dt) {
+    f.anim += dt;
+    if (f.inv > 0) f.inv -= dt;
+    if (f.flash > 0) f.flash -= dt;
+    for (var i = 0; i < f.cmd.length; i++) f.cmd[i].t += dt;
+    if (f.cancelT > 0) { f.cancelT -= dt; if (f.cancelT <= 0) f.canCancel = false; }
+
+    f.st += dt;
+
+    // 攻擊狀態機
+    if (f.state === 'atk') {
+        var m = f.move;
+        if (f.phase === 'startup' && f.st >= m.startup) {
+            f.phase = 'active'; f.st = 0;
+            if (m.proj) spawnShot(f);
+            if (m.shockwave) spawnWave(f);
+        } else if (f.phase === 'active' && f.st >= m.active) {
+            f.phase = 'recovery'; f.st = 0;
+            if (f.ai) aiCancel(f);
+            if (m.dash) f.vx *= 0.3;
+        } else if (f.phase === 'recovery' && f.st >= m.rec) {
+            f.state = f.air ? 'jump' : 'idle'; f.st = 0; f.move = null; f.canCancel = false;
+        }
+    } else if (f.state === 'hit') {
+        f.hitstun -= dt;
+        if (f.hitstun <= 0) { f.state = f.air ? 'jump' : 'idle'; f.st = 0; }
+    } else if (f.state === 'block') {
+        f.blockstun -= dt;
+        if (f.blockstun <= 0) { f.state = 'idle'; f.st = 0; }
+    } else if (f.state === 'down') {
+        if (!f.air && f.st > 0.9 && f.hp > 0) { f.state = 'idle'; f.st = 0; f.inv = 0.4; }
+    }
+
+    // 物理
+    if (f.air) {
+        f.vy += GRAVITY * dt;
+        f.y += f.vy * dt;
+        if (f.y >= GY) {
+            f.y = GY; f.vy = 0; f.air = false;
+            if (f.state === 'jump' || (f.state === 'atk' && f.move && f.move.air)) {
+                f.state = 'idle'; f.move = null; f.st = 0;
+                RetroAudio.play('land');
+                P.burst(f.x, GY, 5, { colors: ['#c9b18a', '#8a7358'], speedMin: 30, speedMax: 90, gravity: 300, lifeMin: 0.15, lifeMax: 0.3, sizeMin: 1.5, sizeMax: 3 });
+            } else if (f.state === 'down') {
+                f.st = 0;
+                RE.juice.shake(0.2);
+                P.burst(f.x, GY, 10, { colors: ['#c9b18a', '#8a7358'], speedMin: 40, speedMax: 150, gravity: 320, lifeMin: 0.2, lifeMax: 0.45, sizeMin: 2, sizeMax: 4 });
+            }
+        }
+    }
+
+    f.x += f.vx * dt;
+    // 地面摩擦：被擊退與突進都會逐漸停下
+    if (!f.air && (f.state === 'hit' || f.state === 'block' || f.state === 'down' ||
+                   (f.state === 'atk' && f.move && f.move.dash))) {
+        f.vx = RE.approach(f.vx, 0, 900 * dt);
+    }
+
+    // 舞台邊界
+    var pad = 24;
+    if (f.x < pad) { f.x = pad; if (f.vx < 0) f.vx = 0; }
+    if (f.x > STAGE_W - pad) { f.x = STAGE_W - pad; if (f.vx > 0) f.vx = 0; }
+
+    // 兩人互推，避免重疊
+    var dx = foe.x - f.x;
+    var minD = 30;
+    if (Math.abs(dx) < minD && !f.air && !foe.air) {
+        var push = (minD - Math.abs(dx)) / 2;
+        var dir = dx >= 0 ? -1 : 1;
+        f.x += push * dir;
+        foe.x -= push * dir;
+    }
+
+    // 非攻擊狀態自動面向對手
+    if (f.state !== 'atk' && f.state !== 'hit' && f.state !== 'down' && !f.air) {
+        f.face = foe.x >= f.x ? 1 : -1;
+    }
+}
+
+// ======================================================================
+// 飛行道具與震波
+// ======================================================================
+function spawnShot(f) {
+    s.shots.push({
+        x: f.x + 26 * f.face, y: f.y - 44, vx: 300 * f.face, face: f.face,
+        owner: f, t: 0, dmg: f.move.dmg, m: f.move, color: f.c.trim
+    });
+    RetroAudio.play('laser');
+    RE.juice.shake(0.08);
+}
+
+function spawnWave(f) {
+    s.waves.push({ x: f.x + 30 * f.face, y: GY, vx: 260 * f.face, owner: f, t: 0, m: f.move, hitDone: false });
+    RE.juice.shake(0.35);
+    RE.juice.hitstop(0.05);
+    P.burst(f.x + 24 * f.face, GY, 14, {
+        colors: ['#f0d060', '#c98a3a', '#8a6030'], speedMin: 60, speedMax: 220,
+        gravity: 420, sizeMin: 2, sizeMax: 5, lifeMin: 0.25, lifeMax: 0.5
+    });
+}
+
+function updateProjectiles(dt) {
+    var i, sh, foe;
+    for (i = s.shots.length - 1; i >= 0; i--) {
+        sh = s.shots[i];
+        sh.t += dt;
+        sh.x += sh.vx * dt;
+        if (sh.t > 0.06 && Math.random() < 0.5) {
+            P.spawn({ x: sh.x, y: sh.y, vx: -sh.vx * 0.1, vy: RE.rand(-20, 20), size: 4, sizeEnd: 0,
+                      color: sh.color, life: 0.25, shape: 'circle', glow: true, gravity: 0 });
+        }
+        if (sh.x < -20 || sh.x > STAGE_W + 20 || sh.t > 4) { s.shots.splice(i, 1); continue; }
+        foe = sh.owner === s.p ? s.e : s.p;
+        var hb = hurtbox(foe);
+        if (foe.inv <= 0 && sh.x > hb.x && sh.x < hb.x + hb.w && sh.y > hb.y && sh.y < hb.y + hb.h) {
+            applyHit(sh.owner, foe, sh.m, sh.x);
+            P.ring(sh.x, sh.y, sh.color, 40);
+            s.shots.splice(i, 1);
+        }
+    }
+
+    for (i = s.waves.length - 1; i >= 0; i--) {
+        var w = s.waves[i];
+        w.t += dt;
+        w.x += w.vx * dt;
+        P.spawn({ x: w.x, y: GY - RE.rand(0, 14), vx: RE.rand(-30, 30), vy: RE.rand(-120, -40),
+                  size: RE.rand(2, 5), sizeEnd: 0, color: '#d8a850', life: 0.3, gravity: 300 });
+        if (w.x < -20 || w.x > STAGE_W + 20 || w.t > 2) { s.waves.splice(i, 1); continue; }
+        foe = w.owner === s.p ? s.e : s.p;
+        if (!w.hitDone && foe.inv <= 0 && !foe.air && Math.abs(foe.x - w.x) < 24) {
+            applyHit(w.owner, foe, w.m, w.x);
+            w.hitDone = true;
+            s.waves.splice(i, 1);
+        }
+    }
+}
+
+// ======================================================================
+// 主更新
+// ======================================================================
+function update(dt) {
+    P.update(dt); FT.update(dt);
+    if (s.comboT > 0) { s.comboT -= dt; if (s.comboT <= 0) s.combo = 0; }
+    if (s.bannerT > 0) s.bannerT -= dt;
+
+    if (s.phase === 'select') { updateSelect(dt); return; }
+    if (!s.p || !s.e) return;
+
+    s.phaseT += dt;
+
+    if (s.phase === 'ready') {
+        // 開場靜止 1.2 秒：READY → FIGHT
+        stepIdleAnim(dt);
+        if (s.phaseT > 1.2) {
+            s.phase = 'fight'; s.phaseT = 0;
+            s.banner = 'FIGHT!'; s.bannerT = 0.9;
+            RetroAudio.play('levelUp');
+        }
+        updateCam();
+        return;
+    }
+
+    if (s.phase === 'fight') {
+        s.time -= dt;
+        updatePlayer(s.p, dt);
+        updateAI(s.e, s.p, dt);
+        stepFighter(s.p, s.e, dt);
+        stepFighter(s.e, s.p, dt);
+        checkHits();
+        updateProjectiles(dt);
+        updateCam();
+
+        if (s.p.hp <= 0 || s.e.hp <= 0 || s.time <= 0) endRound();
+        return;
+    }
+
+    if (s.phase === 'roundEnd') {
+        stepFighter(s.p, s.e, dt);
+        stepFighter(s.e, s.p, dt);
+        updateProjectiles(dt);
+        updateCam();
+        if (s.phaseT > 2.2) resolveRound();
+        return;
+    }
+}
+
+function stepIdleAnim(dt) {
+    s.p.anim += dt; s.e.anim += dt;
+}
+
+function updateCam() {
+    var mid = (s.p.x + s.e.x) / 2;
+    s.camX = RE.clamp(mid - VW / 2, 0, STAGE_W - VW);
+}
+
+function checkHits() {
+    var pairs = [[s.p, s.e], [s.e, s.p]];
+    for (var i = 0; i < 2; i++) {
+        var att = pairs[i][0], def = pairs[i][1];
+        var hb = hitbox(att);
+        if (!hb) continue;
+        if (def.inv > 0) continue;
+        if (RE.aabb(hb, hurtbox(def))) {
+            att.hitDone = true;
+            applyHit(att, def, att.move, hb.x + (att.face > 0 ? hb.w : 0));
+        }
+    }
+}
+
+function endRound() {
+    s.phase = 'roundEnd'; s.phaseT = 0;
+    var pWin;
+    if (s.p.hp <= 0 && s.e.hp <= 0) pWin = null;
+    else if (s.e.hp <= 0) pWin = true;
+    else if (s.p.hp <= 0) pWin = false;
+    else pWin = s.p.hp > s.e.hp ? true : (s.p.hp < s.e.hp ? false : null);
+
+    s.roundWin = pWin;
+    if (pWin === true) {
+        s.winP++;
+        s.banner = s.p.hp >= s.p.maxHp ? 'PERFECT!' : 'K.O.';
+        if (s.p.hp >= s.p.maxHp) addScore(500);
+        addScore(s.p.hp * 8);
+        s.e.state = 'down'; s.e.air = true; s.e.vy = -260; s.e.vx = -160 * s.p.face;
+        RE.juice.slowmo(0.25, 1.0);
+        RE.juice.flash('rgba(255,255,255,0.6)', 0.12);
+        RE.juice.shake(0.6);
+        RetroAudio.play('bigExplosion');
+    } else if (pWin === false) {
+        s.winE++;
+        s.banner = 'K.O.';
+        s.p.state = 'down'; s.p.air = true; s.p.vy = -260; s.p.vx = -160 * s.e.face;
+        RE.juice.slowmo(0.3, 1.0);
+        RE.juice.shake(0.5);
+        RetroAudio.play('explosion');
+    } else {
+        s.banner = 'DRAW';
+        RetroAudio.play('error');
+    }
+    s.bannerT = 2.2;
+}
+
+function resolveRound() {
+    if (s.winP >= WIN_ROUNDS) { winStage(); return; }
+    if (s.winE >= WIN_ROUNDS) { loseStage(); return; }
+    s.round++;
+    if (s.round > 3) {
+        // 三回合打完仍未分勝負：以總勝場判定
+        if (s.winP > s.winE) winStage(); else loseStage();
+        return;
+    }
+    startRound();
+}
+
+function winStage() {
+    addScore(1200 + Math.round(s.time) * 20);
+    s.p.state = 'win';
+    if (s.stage >= OPPONENTS.length - 1) {
+        G.gameOver({
+            win: true,
+            body: '五名對手全部倒下。你不是靠按得比較快贏的——' +
+                  '你贏在知道什麼時候該站在哪裡。最高連段 ' + s.maxCombo + ' 段。'
+        });
+        return;
+    }
+    var next = s.stage + 1;
+    var op = OPPONENTS[next];
+    G.stageCard(next + 1, op.name + '　' + op.subtitle, op.hint, function () { startStage(next); });
+}
+
+function loseStage() {
+    G.setLives(G.lives - 1);
+    if (G.lives <= 0) {
+        G.gameOver({
+            win: false,
+            body: '在第 ' + (s.stage + 1) + ' 戰倒下。' +
+                  '回想一下：你是被打中的，還是自己走進對方的射程？最高連段 ' + s.maxCombo + ' 段。'
+        });
+        return;
+    }
+    var op = OPPONENTS[s.stage];
+    G.stageCard(s.stage + 1, '再戰 · ' + op.name, '續關。這次先看清楚他的收招時間。', function () {
+        var i = s.stage; startStage(i);
+    });
+}
+
+// ======================================================================
+// 選角畫面
+// ======================================================================
+function updateSelect(dt) {
+    if (RE.Input.pressed('left')) { s.sel = (s.sel + CHARS.length - 1) % CHARS.length; RetroAudio.play('select'); }
+    if (RE.Input.pressed('right')) { s.sel = (s.sel + 1) % CHARS.length; RetroAudio.play('select'); }
+    if (RE.Input.pressed('a') || RE.Input.pressed('b') || RE.Input.pressed('start')) {
+        RetroAudio.play('confirm');
+        var op = OPPONENTS[0];
+        G.stageCard(1, op.name + '　' + op.subtitle, op.hint, function () { startStage(0); });
+    }
+}
+
+// ======================================================================
+// 繪圖
+// ======================================================================
+function currentPose(f) {
+    var t;
+    if (f.state === 'down') return POSE.down;
+    if (f.state === 'win') return POSE.win;
+    if (f.state === 'hit') return f.crouching ? POSE.hitLow : POSE.hit;
+    if (f.state === 'block') return f.crouching ? POSE.blockLow : POSE.block;
+    if (f.state === 'atk' && f.move) {
+        var mp = MOVE_POSE[f.mk] || ['lpS', 'lpA'];
+        var a = POSE[mp[0]], b = POSE[mp[1]];
+        if (f.phase === 'startup') {
+            t = RE.clamp(f.st / Math.max(0.01, f.move.startup), 0, 1);
+            return lerpPose(f.air ? POSE.jump : POSE.idle, a, t);
+        }
+        if (f.phase === 'active') {
+            t = RE.clamp(f.st / 0.05, 0, 1);
+            return lerpPose(a, b, t);
+        }
+        t = RE.clamp(f.st / Math.max(0.01, f.move.rec), 0, 1);
+        return lerpPose(b, f.crouching ? POSE.crouch : (f.air ? POSE.jump : POSE.idle), RE.ease.outQuad(t));
+    }
+    if (f.air) return POSE.jump;
+    if (f.crouching || f.state === 'crouch') return POSE.crouch;
+    if (f.state === 'walk') {
+        var fwd = (f.vx * f.face) > 0;
+        t = (Math.sin(f.anim * 9) + 1) / 2;
+        return lerpPose(POSE.idle, fwd ? POSE.walkF : POSE.walkB, t);
+    }
+    t = (Math.sin(f.anim * 3.4) + 1) / 2;
+    return lerpPose(POSE.idle, POSE.idle2, t);
+}
+
+function limb(x1, y1, x2, y2, w, color) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = w;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+}
+
+function drawFighter(f, isPlayer) {
+    var po = currentPose(f);
+    var c = f.c;
+    var fx = f.face;
+    function px(p) { return f.x + p[0] * fx; }
+    function py(p) { return f.y + p[1]; }
+
+    ctx.save();
+    if (f.flash > 0 && Math.floor(f.flash * 40) % 2 === 0) ctx.globalAlpha = 0.85;
+    if (f.inv > 0 && f.state !== 'atk' && Math.floor(f.inv * 20) % 2 === 0) ctx.globalAlpha = 0.55;
+
+    // 影子
+    ctx.fillStyle = 'rgba(0,0,0,0.32)';
+    ctx.beginPath();
+    var shy = GY + 2, sw = 20 * RE.clamp(1 - (GY - f.y) / 200, 0.35, 1);
+    ctx.ellipse(f.x, shy, sw, 4.5, 0, 0, RE.TAU);
+    ctx.fill();
+
+    var dark = shade(c.gi, -0.34);
+    // 後側肢體（暗一階，做出前後層次）
+    limb(px(po.hip), py(po.hip), px(po.bk), py(po.bk), 9, dark);
+    limb(px(po.bk), py(po.bk), px(po.bf), py(po.bf), 7.5, dark);
+    limb(px(po.sh), py(po.sh), px(po.be), py(po.be), 7, shade(c.skin, -0.3));
+    limb(px(po.be), py(po.be), px(po.bh), py(po.bh), 6, shade(c.skin, -0.3));
+
+    // 軀幹
+    ctx.strokeStyle = c.gi;
+    ctx.lineWidth = 17;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(px(po.sh), py(po.sh));
+    ctx.lineTo(px(po.hip), py(po.hip));
+    ctx.stroke();
+    // 腰帶
+    limb(px(po.hip), py(po.hip) - 1, px(po.hip) + 1 * fx, py(po.hip) + 1, 6, c.trim);
+
+    // 前腿
+    limb(px(po.hip), py(po.hip), px(po.fk), py(po.fk), 9.5, c.gi);
+    limb(px(po.fk), py(po.fk), px(po.ff), py(po.ff), 8, c.gi);
+    ctx.fillStyle = shade(c.gi, -0.5);
+    ctx.beginPath(); ctx.arc(px(po.ff), py(po.ff), 4.6, 0, RE.TAU); ctx.fill();
+
+    // 前臂
+    limb(px(po.sh), py(po.sh), px(po.fe), py(po.fe), 7.5, c.skin);
+    limb(px(po.fe), py(po.fe), px(po.fh), py(po.fh), 6.5, c.skin);
+    // 拳套／腳的判定端點在攻擊時發光，讓玩家看得見「哪裡有判定」
+    var glow = (f.state === 'atk' && f.phase === 'active');
+    ctx.fillStyle = glow ? '#fff0aa' : c.trim;
+    if (glow) { ctx.shadowBlur = 10; ctx.shadowColor = '#ffd166'; }
+    ctx.beginPath(); ctx.arc(px(po.fh), py(po.fh), 5.2, 0, RE.TAU); ctx.fill();
+    if (glow && f.move && !f.move.crouch) {
+        ctx.beginPath(); ctx.arc(px(po.ff), py(po.ff), 5.6, 0, RE.TAU); ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+
+    // 頭
+    var hx = px(po.h), hy = py(po.h);
+    ctx.fillStyle = c.skin;
+    ctx.beginPath(); ctx.arc(hx, hy, 8.4, 0, RE.TAU); ctx.fill();
+    // 頭髮
+    ctx.fillStyle = c.hair;
+    ctx.beginPath();
+    ctx.arc(hx, hy - 1.6, 8.4, Math.PI * (fx > 0 ? 0.95 : 0.05), Math.PI * (fx > 0 ? 2.1 : 1.2), fx < 0);
+    ctx.fill();
+    // 頭帶
+    ctx.strokeStyle = c.band; ctx.lineWidth = 2.6;
+    ctx.beginPath(); ctx.arc(hx, hy - 1, 8.4, Math.PI * 0.86, Math.PI * 2.14); ctx.stroke();
+    ctx.fillStyle = c.band;
+    ctx.fillRect(hx - (fx > 0 ? 13 : 4), hy - 5, 9, 2.4);
+    // 眼睛（朝向面向）
+    ctx.fillStyle = '#20140c';
+    ctx.fillRect(hx + (fx > 0 ? 2.5 : -5.5), hy - 1, 3, 2.2);
+
+    // 玩家標記
+    if (isPlayer) {
+        ctx.fillStyle = '#70e4b5';
+        ctx.beginPath();
+        var ay = f.y - 86;
+        ctx.moveTo(f.x, ay + 8); ctx.lineTo(f.x - 5, ay); ctx.lineTo(f.x + 5, ay);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function shade(hex, amt) {
+    var n = parseInt(hex.slice(1), 16);
+    var r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    if (amt < 0) { r *= (1 + amt); g *= (1 + amt); b *= (1 + amt); }
+    else { r += (255 - r) * amt; g += (255 - g) * amt; b += (255 - b) * amt; }
+    return 'rgb(' + Math.round(r) + ',' + Math.round(g) + ',' + Math.round(b) + ')';
+}
+
+function drawStage() {
+    var st = (OPPONENTS[s.stage] || OPPONENTS[0]).stage;
+    // 天空
+    var g = ctx.createLinearGradient(0, 0, 0, GY);
+    g.addColorStop(0, st.sky[0]);
+    g.addColorStop(1, st.sky[1]);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, VW, VH);
+
+    ctx.save();
+    // 遠景（視差 0.25）
+    ctx.translate(-s.camX * 0.25, 0);
+    ctx.fillStyle = st.far;
+    for (var i = 0; i < 14; i++) {
+        var bw = 46 + (i * 37 % 40), bh = 60 + (i * 53 % 90);
+        ctx.fillRect(i * 78 - 40, GY - bh, bw, bh);
+    }
+    ctx.restore();
+
+    ctx.save();
+    // 近景（視差 0.55）
+    ctx.translate(-s.camX * 0.55, 0);
+    ctx.fillStyle = st.near;
+    for (var j = 0; j < 12; j++) {
+        var w2 = 70 + (j * 29 % 50), h2 = 34 + (j * 41 % 46);
+        ctx.fillRect(j * 96 - 30, GY - h2, w2, h2);
+        ctx.fillStyle = st.accent;
+        ctx.globalAlpha = 0.5;
+        ctx.fillRect(j * 96 - 22, GY - h2 + 8, 6, 6);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = st.near;
+    }
+    ctx.restore();
+
+    // 地板
+    ctx.save();
+    ctx.translate(-s.camX, 0);
+    ctx.fillStyle = st.floor;
+    ctx.fillRect(0, GY, STAGE_W, VH - GY);
+    ctx.fillStyle = shade(st.floor, -0.3);
+    for (var k = 0; k < STAGE_W / 32; k++) {
+        ctx.fillRect(k * 32, GY, 2, VH - GY);
+    }
+    ctx.fillStyle = shade(st.floor, 0.25);
+    ctx.fillRect(0, GY, STAGE_W, 2);
+    ctx.restore();
+}
+
+function drawShots() {
+    var i, sh;
+    for (i = 0; i < s.shots.length; i++) {
+        sh = s.shots[i];
+        ctx.save();
+        ctx.shadowBlur = 14; ctx.shadowColor = sh.color;
+        ctx.fillStyle = sh.color;
+        ctx.beginPath();
+        ctx.ellipse(sh.x, sh.y, 13 + Math.sin(sh.t * 30) * 2, 9, 0, 0, RE.TAU);
+        ctx.fill();
+        ctx.fillStyle = '#fff8e7';
+        ctx.beginPath();
+        ctx.ellipse(sh.x - sh.face * 2, sh.y, 6, 4.5, 0, 0, RE.TAU);
+        ctx.fill();
+        ctx.restore();
+    }
+    for (i = 0; i < s.waves.length; i++) {
+        var w = s.waves[i];
+        ctx.save();
+        ctx.strokeStyle = '#f0d060';
+        ctx.lineWidth = 3;
+        ctx.globalAlpha = 0.85;
+        ctx.beginPath();
+        ctx.moveTo(w.x - 16, GY);
+        ctx.lineTo(w.x, GY - 26 - Math.sin(w.t * 20) * 4);
+        ctx.lineTo(w.x + 16, GY);
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
+function bar(x, y, w, h, pct, color, right) {
+    ctx.fillStyle = '#2a1a10';
+    ctx.fillRect(x - 2, y - 2, w + 4, h + 4);
+    ctx.fillStyle = '#4a1f14';
+    ctx.fillRect(x, y, w, h);
+    var bw = Math.max(0, w * pct);
+    var g = ctx.createLinearGradient(0, y, 0, y + h);
+    g.addColorStop(0, shade(color, 0.35));
+    g.addColorStop(1, color);
+    ctx.fillStyle = g;
+    ctx.fillRect(right ? x + w - bw : x, y, bw, h);
+    ctx.strokeStyle = 'rgba(255,248,231,0.35)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+}
+
+function drawHUD() {
+    if (!s.p || !s.e) return;
+    var op = OPPONENTS[s.stage];
+    bar(16, 16, 190, 13, s.p.hp / s.p.maxHp, s.p.hp / s.p.maxHp < 0.28 ? '#e0453e' : '#70e4b5', false);
+    bar(VW - 206, 16, 190, 13, s.e.hp / s.e.maxHp, s.e.hp / s.e.maxHp < 0.28 ? '#e0453e' : '#e8a33e', true);
+
+    RE.Draw.text(ctx, s.p.c.name, 16, 33, { size: 14, color: '#fff8e7' });
+    RE.Draw.text(ctx, s.e.c.name + (op.charIndex < 0 ? '（影）' : ''), VW - 16, 33, { size: 14, color: '#fff8e7', align: 'right' });
+
+    // 回合勝點
+    var i;
+    for (i = 0; i < WIN_ROUNDS; i++) {
+        ctx.fillStyle = i < s.winP ? '#ffd166' : 'rgba(255,248,231,0.22)';
+        ctx.beginPath(); ctx.arc(24 + i * 14, 43, 4.5, 0, RE.TAU); ctx.fill();
+        ctx.fillStyle = i < s.winE ? '#ffd166' : 'rgba(255,248,231,0.22)';
+        ctx.beginPath(); ctx.arc(VW - 24 - i * 14, 43, 4.5, 0, RE.TAU); ctx.fill();
+    }
+
+    // 計時器
+    var t = Math.max(0, Math.ceil(s.time));
+    RE.Draw.text(ctx, t < 10 ? '0' + t : String(t), VW / 2, 14,
+        { size: 26, align: 'center', color: t <= 10 ? '#ff6b6b' : '#fff8e7', strokeWidth: 5 });
+
+    // 連段顯示
+    if (s.combo >= 2 && s.comboT > 0) {
+        RE.Draw.text(ctx, s.combo + ' HIT COMBO', 16, 56, { size: 14, color: '#ffd166' });
+        RE.Draw.text(ctx, s.comboDmg + ' DMG', 16, 74, { size: 14, color: '#ffb066' });
+    }
+
+    // 大字報
+    if (s.bannerT > 0 && s.banner) {
+        var a = RE.clamp(s.bannerT / 0.5, 0, 1);
+        ctx.save();
+        ctx.globalAlpha = a;
+        var sc = s.bannerT > 1.9 ? RE.ease.outBack(RE.clamp((2.2 - s.bannerT) / 0.3, 0, 1)) : 1;
+        ctx.translate(VW / 2, VH / 2 - 26);
+        ctx.scale(sc, sc);
+        RE.Draw.text(ctx, s.banner, 0, 0, { size: 38, align: 'center', baseline: 'middle', color: '#ffd166', strokeWidth: 7 });
+        ctx.restore();
+    }
+
+    // 指令提示（前兩關才顯示，之後讓玩家自己記）
+    if (s.stage < 2 && s.phase === 'fight') {
+        ctx.save();
+        ctx.globalAlpha = 0.55;
+        RE.Draw.text(ctx, '↓→+拳 氣功　→↓→+拳 昇龍　↓←+腳 突進', VW / 2, VH - 16,
+            { size: 14, align: 'center', color: '#cfe6dc', strokeWidth: 3 });
+        ctx.restore();
+    }
+}
+
+function drawSelect() {
+    ctx.fillStyle = '#0d1512';
+    ctx.fillRect(0, 0, VW, VH);
+    // 背景斜紋
+    ctx.save();
+    ctx.globalAlpha = 0.14;
+    ctx.strokeStyle = '#70e4b5';
+    ctx.lineWidth = 8;
+    for (var i = -8; i < 20; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * 34, 0); ctx.lineTo(i * 34 + 90, VH);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    RE.Draw.text(ctx, '選擇你的拳', VW / 2, 16, { size: 20, align: 'center', color: '#ffd166' });
+    RE.Draw.text(ctx, '← → 選擇　拳／腳 確認', VW / 2, 42, { size: 14, align: 'center', color: '#cfe6dc' });
+
+    var slotW = 108, x0 = (VW - slotW * CHARS.length) / 2;
+    for (var j = 0; j < CHARS.length; j++) {
+        var c = CHARS[j], sx = x0 + j * slotW, on = (j === s.sel);
+        ctx.save();
+        ctx.fillStyle = on ? 'rgba(255,209,102,0.16)' : 'rgba(255,255,255,0.05)';
+        RE.Draw.roundRect(ctx, sx + 4, 60, slotW - 8, 180, 8);
+        ctx.fill();
+        if (on) {
+            ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 2;
+            RE.Draw.roundRect(ctx, sx + 4, 60, slotW - 8, 180, 8);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // 以真正的角色繪圖畫縮圖，選角看到的就是打起來的樣子
+        var ghost = {
+            c: c, x: sx + slotW / 2, y: 156, face: 1, state: on ? 'idle' : 'idle',
+            anim: performance.now() / 1000 + j, crouching: false, air: false,
+            flash: 0, inv: 0, move: null, phase: '', vx: 0
+        };
+        drawFighter(ghost, false);
+
+        RE.Draw.text(ctx, c.name, sx + slotW / 2, 166, { size: 17, align: 'center', color: on ? '#ffd166' : '#fff8e7' });
+        var titleParts = c.title.split('·');
+        RE.Draw.text(ctx, titleParts[0].trim(), sx + slotW / 2, 186, { size: 14, align: 'center', color: '#9fb8ac' });
+        RE.Draw.text(ctx, titleParts[1].trim(), sx + slotW / 2, 203, { size: 14, align: 'center', color: '#9fb8ac' });
+
+        // 14px 手機可讀字級放不進原本 11px 行距，改成三格橫排小條。
+        var stats = [['力', c.dmg / 1.4], ['速', c.speed / 160], ['距', c.reach / 1.2]];
+        for (var k = 0; k < 3; k++) {
+            var statX = sx + 18 + k * 34;
+            RE.Draw.text(ctx, stats[k][0], statX, 217, { size: 14, align: 'center', color: '#9fb8ac', strokeWidth: 3 });
+            ctx.fillStyle = 'rgba(255,255,255,0.12)';
+            ctx.fillRect(statX - 12, 231, 24, 5);
+            ctx.fillStyle = on ? '#ffd166' : '#5f9e86';
+            ctx.fillRect(statX - 12, 231, 24 * RE.clamp(stats[k][1], 0.1, 1), 5);
+        }
+    }
+
+    var note = CHARS[s.sel].note;
+    RE.Draw.text(ctx, note.slice(0, 22), VW / 2, 250,
+        { size: 14, align: 'center', color: '#cfe6dc', strokeWidth: 3 });
+    RE.Draw.text(ctx, note.slice(22), VW / 2, 268,
+        { size: 14, align: 'center', color: '#cfe6dc', strokeWidth: 3 });
+}
+
+function render() {
+    if (!s) return;
+    if (s.phase === 'select') {
+        drawSelect();
+        G.postFX({ scanAlpha: 0.10, vignetteStrength: 0.45 });
+        return;
+    }
+    if (!s.p || !s.e) { G.clear('#0d1512'); return; }
+
+    G.beginWorld();
+    drawStage();
+
+    ctx.save();
+    ctx.translate(-s.camX, 0);
+    // 後方角色先畫，前方（血較少的那位不影響）以 x 排序保持遮擋正確
+    if (s.p.x <= s.e.x) { drawFighter(s.e, false); drawFighter(s.p, true); }
+    else { drawFighter(s.p, true); drawFighter(s.e, false); }
+    drawShots();
+    P.draw(ctx);
+    FT.draw(ctx);
+    ctx.restore();
+
+    G.endWorld();
+
+    drawHUD();
+    G.postFX({ scanAlpha: 0.09, vignetteStrength: 0.42 });
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '方向鍵走位；A／B 攻防連段。三回合兩勝。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

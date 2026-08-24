@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 像素乒乓對決</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+<style>
+/* 1970 年代仍由程式維持球拍與球的精準幾何；正式美術只補 CRT 材質與節奏字卡。 */
+.rs-stage-card {
+    background:
+        linear-gradient(rgba(0, 8, 7, 0.28), rgba(0, 8, 7, 0.28)),
+        url('../../assets/games/pong/round-panel.png') center / cover no-repeat;
+}
+.rs-overlay.pong-victory {
+    background:
+        linear-gradient(rgba(0, 7, 6, 0.3), rgba(0, 7, 6, 0.5)),
+        url('../../assets/games/pong/victory-panel.png') center / cover no-repeat;
+}
+</style>
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   像素乒乓對決 — 致敬 Pong (Atari, 1972)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. 擊球點決定反彈角度——這是 Pong 讓「反射」升級為「瞄準」的關鍵設計。
+   2. 每次對打球速遞增，回合越長越緊張，這是街機時代的天然難度曲線。
+   3. 五個回合難度階梯，AI 反應速度與預判能力逐級提升。
+   4. 打擊感：命中頓幀、拖尾殘影、擊球粒子、得分閃白。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'pong',
+    title: '像素乒乓對決',
+    tagline: '一顆球、兩片板子，電子遊戲產業就從這裡開始',
+    original: 'Pong (Atari, 1972)',
+    decade: '70s', year: 1972, platform: '大型街機', genre: '運動／對戰',
+    developer: 'Atari', bgm: '70s',
+    width: 480, height: 320,
+    hud: [
+        { key: 'you', label: '你', init: 0 },
+        { key: 'cpu', label: 'CPU', init: 0 },
+        { key: 'round', label: '回合', init: 1 },
+        { key: 'rally', label: '連續對打', init: 0 }
+    ],
+    touch: 'dpad',
+    controls: [
+        { keys: ['↑', '↓'], desc: '移動球拍' },
+        { keys: ['W', 'S'], desc: '同上' },
+        { keys: ['P'], desc: '暫停' }
+    ],
+    howto: '先得 7 分者贏得該回合。球拍<strong>邊緣擊球會產生更大的角度</strong>，' +
+           '用這個技巧把球打到 CPU 追不到的位置。每次對打球速都會加快，回合越後面 CPU 越強。',
+    lesson: {
+        verb: '移動球拍，選擇碰球位置來控制反彈角度。',
+        innovation: '把「擋回去」加入可瞄準的角度差，讓一條規則同時產生反應、預判與對手博弈。',
+        mission: '連續三次刻意用球拍上緣或下緣擊球，觀察球路是否比打中間更難被 CPU 追到。',
+        evolution: '先在《Pong》看見反彈角度，再到《Breakout》觀察同一動詞如何變成單人清除與關卡規劃。',
+        reflection: '如果球碰到球拍任何位置都只會水平反彈，這還會是一場需要練習的對戰嗎？'
+    },
+    design: '《Pong》要解決的設計問題是：一款只能上下移動球拍的遊戲，如何不退化成被動守門？' +
+            'Al Alcorn 把原作球拍做成八個碰撞區，不同區域會給球不同的回彈角度，長回合還會逐步加速。' +
+            '玩家因此不只要「碰到球」，還要預判落點、選擇接觸位置，並把對手拉離下一球的路線。' +
+            '本站復刻把八段離散角度平滑成連續控制，保留同一個學習重點：輸入極少，仍能靠可讀的因果關係產生技術差。' +
+            '往後的《Breakout》承接相同的反彈語言，再把雙人攻防改造成單人清除與關卡規劃。',
+    history: '1972 年，Atari 把《Pong》交給工程師 Al Alcorn，作為熟悉影像定位電路的公司內練習；' +
+             'Nolan Bushnell 當時甚至虛構了「奇異公司委託」來包裝任務。原型機放進加州 Sunnyvale 的 Andy Capp’s Tavern 後，' +
+             '約兩週便傳出故障。電腦歷史博物館保存的紀錄指出，機器並非損壞，而是臨時充當錢箱的牛奶紙盒塞滿了二十五美分硬幣。' +
+             '這次現場測試讓 Atari 看見：極簡規則也能讓第一次接觸的酒吧客人立刻理解並反覆付費。',
+    sources: [
+        { label: '電腦歷史博物館：Pong 原型', url: 'https://www.computerhistory.org/revolution/computer-games/16/183' },
+        { label: 'WIRED：Pong 開發史節錄', url: 'https://www.wired.com/story/inside-story-of-pong-excerpt/' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(220);
+var FT = new RE.FloatText();
+
+// ---- 遊戲常數 ----
+var PADDLE_W = 8, PADDLE_H = 58, PADDLE_MARGIN = 22;
+var BALL_SIZE = 8;
+var WIN_SCORE = 7;
+var MAX_ROUND = 5;
+
+function loadArt(src) {
+    var image = new Image();
+    image.src = src;
+    return image;
+}
+
+var ART = {
+    field: loadArt('../../assets/games/pong/crt-field.png'),
+    impact: loadArt('../../assets/games/pong/impact.png')
+};
+
+/*
+ * 五個回合的難度階梯。
+ * CPU 的難度主要來自兩個真實的物理限制，而不是「隨機失誤」：
+ *   cpuSpeed — 球拍移動速度上限。球被打到遠處時，CPU 可能來不及趕到。
+ *   react    — 反應門檻。球要越過球場的這個比例，CPU 才開始移動（模擬人類反應時間）。
+ * 這樣玩家的「把球打去遠角」才會真的變成有效戰術，而不是碰運氣。
+ */
+var ROUNDS = [
+    { name: '暖身賽',   cpuSpeed: 172, cpuError: 16, react: 0.62, ballSpeed: 225, accel: 1.045 },
+    { name: '街頭挑戰', cpuSpeed: 205, cpuError: 13, react: 0.52, ballSpeed: 250, accel: 1.05 },
+    { name: '區域錦標', cpuSpeed: 240, cpuError: 10, react: 0.42, ballSpeed: 275, accel: 1.055 },
+    /* 第四、五回合原本是 react 0.32 / 0.18，**兩個都打不贏**。
+       CPU 的唯一弱點是速度上限，而弱點成不成立要算得出來：
+         它從球場中央出發，最遠只需要移動 (H − PADDLE_H)/2 = 131px；
+         而 react 0.32 代表球走到 32% 場寬它就開始追，
+         剩下的飛行時間是 0.68 × 480 / vx，vx≈400 時是 0.816 秒，
+         乘上 cpuSpeed 280 ＝ **能移動 228px**，遠大於需要的 131px。
+       也就是不管球打到哪個角落它都接得到，回合永遠不會結束——
+       機器人稽核跑出來的正是這個：第四回合 0-0、連續對打 738 拍還在打。
+       修法是讓它更晚才開始反應（react 越大，可用的追球時間越短），
+       修法是讓它更晚才開始反應（react 越大，可用的追球時間越短）。
+       實測（每組熟練版與對照組各三場）：
+         0.32 / 0.18（原值）熟練版 0/3，永遠打不完
+         0.44 / 0.50        熟練版 1/3，太嚴
+         0.52 / 0.58        熟練版 3/3，對照組 0/3（卡在第四、五回合）← 採用
+       對照組是「只接球、不瞄準」，它照樣接得到每一球卻永遠贏不了，
+       正好證明這一款的難度確實在瞄準而不在反應。 */
+    { name: '全國決賽', cpuSpeed: 280, cpuError: 7,  react: 0.52, ballSpeed: 300, accel: 1.06 },
+    { name: '機器之心', cpuSpeed: 330, cpuError: 4,  react: 0.58, ballSpeed: 330, accel: 1.07 }
+];
+
+var state = {};
+
+function resetMatch() {
+    state = {
+        round: 1,
+        you: 0, cpu: 0,
+        rally: 0, bestRally: 0,
+        totalScore: 0,
+        player: { y: H / 2 - PADDLE_H / 2, vy: 0 },
+        ai: { y: H / 2 - PADDLE_H / 2, vy: 0, target: H / 2, aimError: null },
+        ball: null,
+        trail: [],
+        hitArt: null,
+        serveTimer: 0,
+        finished: false
+    };
+    G.overlayEl.classList.remove('pong-victory');
+    G.setStat('you', 0); G.setStat('cpu', 0);
+    G.setStat('round', 1); G.setStat('rally', 0);
+    serve(1);
+}
+
+/** dir: 1 往 CPU，-1 往玩家 */
+function serve(dir) {
+    var cfg = ROUNDS[state.round - 1];
+    var ang = RE.rand(-0.35, 0.35);
+    state.ball = {
+        x: W / 2, y: H / 2,
+        vx: Math.cos(ang) * cfg.ballSpeed * dir,
+        vy: Math.sin(ang) * cfg.ballSpeed,
+        speed: cfg.ballSpeed
+    };
+    state.trail = [];
+    state.serveTimer = 0.85;   // 發球前的緩衝，讓玩家有時間就位
+    state.rally = 0;
+    G.setStat('rally', 0);
+}
+
+// ======================================================================
+// 更新
+// ======================================================================
+function update(dt) {
+    if (state.finished) return;
+    if (state.hitArt) {
+        state.hitArt.life -= dt;
+        if (state.hitArt.life <= 0) state.hitArt = null;
+    }
+    var cfg = ROUNDS[state.round - 1];
+    var b = state.ball;
+
+    // ---- 玩家球拍：加速度控制而非瞬間位移，讓移動有重量 ----
+    var input = RE.Input.axisY();
+    var targetV = input * 340;
+    state.player.vy = RE.approach(state.player.vy, targetV, 2400 * dt);
+    state.player.y += state.player.vy * dt;
+    state.player.y = RE.clamp(state.player.y, 4, H - PADDLE_H - 4);
+    if ((state.player.y <= 4 && state.player.vy < 0) ||
+        (state.player.y >= H - PADDLE_H - 4 && state.player.vy > 0)) state.player.vy = 0;
+
+    // ---- CPU：預測球的落點，但加入誤差讓它可被打敗 ----
+    // 誤差必須在「每一次來球」只擲一次骰子。若每幀重擲，隨機誤差會被平均掉，
+    // CPU 會變成永遠不失誤的完美機器——這是這類 AI 最常見的實作陷阱。
+    if (b.vx > 0 && b.x > W * cfg.react) {
+        if (state.ai.aimError === null) state.ai.aimError = RE.rand(-cfg.cpuError, cfg.cpuError);
+        // 球往 CPU 飛且已越過反應門檻，計算預測落點（含牆面反彈）
+        var t = (W - PADDLE_MARGIN - PADDLE_W - b.x) / b.vx;
+        var predY = b.y + b.vy * t;
+        // 把預測落點摺疊回球場範圍內，模擬牆面反彈
+        var span = H - BALL_SIZE;
+        predY = Math.abs(predY % (span * 2));
+        if (predY > span) predY = span * 2 - predY;
+        state.ai.target = predY - PADDLE_H / 2 + state.ai.aimError;
+    } else if (b.vx < 0) {
+        state.ai.aimError = null;
+        // 球往玩家飛，CPU 緩慢回到中央（真人也是這樣）
+        state.ai.target = H / 2 - PADDLE_H / 2;
+    }
+    // 速度上限是 CPU 的真正弱點：球被打到遠角時它趕不及
+    var aiDelta = state.ai.target - state.ai.y;
+    var aiSpeed = cfg.cpuSpeed;
+    state.ai.vy = RE.clamp(aiDelta * 6, -aiSpeed, aiSpeed);
+    state.ai.y += state.ai.vy * dt;
+    state.ai.y = RE.clamp(state.ai.y, 4, H - PADDLE_H - 4);
+
+    // ---- 發球倒數 ----
+    if (state.serveTimer > 0) { state.serveTimer -= dt; return; }
+
+    // ---- 球移動（分段推進，避免高速穿透球拍）----
+    var steps = Math.ceil(Math.max(Math.abs(b.vx), Math.abs(b.vy)) * dt / 4) || 1;
+    var sdt = dt / steps;
+    for (var s = 0; s < steps; s++) {
+        b.x += b.vx * sdt;
+        b.y += b.vy * sdt;
+
+        // 上下牆
+        if (b.y <= 0 && b.vy < 0) { b.y = 0; b.vy = -b.vy; wallHit(); }
+        if (b.y >= H - BALL_SIZE && b.vy > 0) { b.y = H - BALL_SIZE; b.vy = -b.vy; wallHit(); }
+
+        // 玩家球拍
+        if (b.vx < 0 &&
+            b.x <= PADDLE_MARGIN + PADDLE_W && b.x + BALL_SIZE >= PADDLE_MARGIN &&
+            b.y + BALL_SIZE >= state.player.y && b.y <= state.player.y + PADDLE_H) {
+            b.x = PADDLE_MARGIN + PADDLE_W;
+            paddleHit(state.player, 1);
+        }
+
+        // CPU 球拍
+        if (b.vx > 0 &&
+            b.x + BALL_SIZE >= W - PADDLE_MARGIN - PADDLE_W && b.x <= W - PADDLE_MARGIN &&
+            b.y + BALL_SIZE >= state.ai.y && b.y <= state.ai.y + PADDLE_H) {
+            b.x = W - PADDLE_MARGIN - PADDLE_W - BALL_SIZE;
+            paddleHit(state.ai, -1);
+        }
+
+        // 得分
+        if (b.x + BALL_SIZE < 0) { point('cpu'); return; }
+        if (b.x > W) { point('you'); return; }
+    }
+
+    // ---- 殘影拖尾：速度越快尾巴越長，強化速度感 ----
+    state.trail.push({ x: b.x, y: b.y });
+    var maxTrail = Math.floor(RE.clamp(b.speed / 40, 4, 14));
+    while (state.trail.length > maxTrail) state.trail.shift();
+
+    P.update(dt);
+    FT.update(dt);
+}
+
+function wallHit() {
+    RetroAudio.play('blip');
+    RE.juice.shake(0.07);
+    P.burst(state.ball.x + BALL_SIZE / 2, state.ball.y + BALL_SIZE / 2, 4, {
+        colors: ['#fff8e7', '#7dd3fc'], speedMin: 30, speedMax: 90,
+        gravity: 0, lifeMin: 0.12, lifeMax: 0.25, sizeMax: 2.5
+    });
+}
+
+/**
+ * 球拍擊球。dir 為擊出方向（1=往右）。
+ * 這裡實作 Pong 最重要的設計：擊球點相對球拍中心的偏移決定反彈角度。
+ */
+function paddleHit(paddle, dir) {
+    var b = state.ball;
+    var cfg = ROUNDS[state.round - 1];
+
+    // -1（打到上緣）～ +1（打到下緣）
+    var offset = ((b.y + BALL_SIZE / 2) - (paddle.y + PADDLE_H / 2)) / (PADDLE_H / 2);
+    offset = RE.clamp(offset, -1, 1);
+
+    b.speed = Math.min(b.speed * cfg.accel, 620);
+    var angle = offset * (Math.PI / 3.2);      // 最大約 56 度
+    b.vx = Math.cos(angle) * b.speed * dir;
+    b.vy = Math.sin(angle) * b.speed;
+
+    // 球拍自身的移動會傳遞一點動量給球，讓「削球」成為可用技巧
+    b.vy += (paddle.vy || 0) * 0.22;
+
+    state.rally++;
+    if (state.rally > state.bestRally) state.bestRally = state.rally;
+    G.setStat('rally', state.rally);
+
+    // 打擊感：邊緣擊球是高風險高回報，回饋也更強
+    var edge = Math.abs(offset) > 0.65;
+    RE.juice.hitstop(edge ? 0.055 : 0.03);
+    RE.juice.shake(edge ? 0.24 : 0.13);
+    RE.juice.rumble(edge ? 0.5 : 0.25, 0.08);
+    RetroAudio.play(edge ? 'heavyHit' : 'bounce');
+    if (state.rally > 0 && state.rally % 5 === 0) RetroAudio.play('combo', state.rally / 5);
+
+    var hx = dir > 0 ? PADDLE_MARGIN + PADDLE_W : W - PADDLE_MARGIN - PADDLE_W;
+    state.hitArt = {
+        x: hx,
+        y: b.y + BALL_SIZE / 2,
+        life: edge ? 0.22 : 0.16,
+        maxLife: edge ? 0.22 : 0.16
+    };
+    P.sparks(hx, b.y + BALL_SIZE / 2, dir > 0 ? 0 : Math.PI, edge ? 12 : 7,
+             edge ? '#ff9ebb' : '#fff0aa');
+    P.ring(hx, b.y + BALL_SIZE / 2, edge ? '#ff9ebb' : '#7dd3fc', edge ? 34 : 22);
+
+    if (edge) FT.add(hx + dir * 26, b.y, '邊緣球!', { color: '#ff9ebb', size: 13, life: 0.7 });
+    // 每五拍給一次連段提示，讓長回合有獎勵感
+    if (state.rally >= 5 && state.rally % 5 === 0) {
+        FT.add(W / 2, 40, state.rally + ' 連拍!', { color: '#70e4b5', size: 16, life: 0.9 });
+        state.totalScore += state.rally * 5;
+    }
+}
+
+function point(who) {
+    var b = state.ball;
+    RE.juice.flash(who === 'you' ? 'rgba(112,228,181,0.5)' : 'rgba(255,107,107,0.45)', 0.12);
+    RE.juice.shake(0.45);
+    RE.juice.hitstop(0.09);
+    RetroAudio.play(who === 'you' ? 'powerup' : 'hurt');
+    P.burst(RE.clamp(b.x, 10, W - 10), b.y, 24, {
+        colors: who === 'you' ? ['#70e4b5', '#a7f3d0', '#fff8e7'] : ['#ff6b6b', '#ff9ebb', '#fff8e7'],
+        speedMin: 60, speedMax: 260, gravity: 160, lifeMin: 0.3, lifeMax: 0.8
+    });
+
+    state[who]++;
+    G.setStat(who, state[who]);
+    if (who === 'you') state.totalScore += 100;
+
+    FT.add(W / 2, H / 2 - 30, who === 'you' ? '得分！' : '失分',
+           { color: who === 'you' ? '#70e4b5' : '#ff6b6b', size: 22, life: 1.1 });
+
+    if (state[who] >= WIN_SCORE) {
+        roundEnd(who === 'you');
+    } else {
+        serve(who === 'you' ? 1 : -1);
+    }
+}
+
+function roundEnd(playerWon) {
+    G.overlayEl.classList.remove('pong-victory');
+    if (!playerWon) {
+        state.finished = true;
+        G.gameOver({
+            score: state.totalScore,
+            body: '在第 ' + state.round + ' 回合「' + ROUNDS[state.round - 1].name + '」被 CPU 擊敗。' +
+                  '最長連拍 ' + state.bestRally + ' 下。'
+        });
+        return;
+    }
+
+    state.totalScore += 500 * state.round;
+
+    if (state.round >= MAX_ROUND) {
+        state.finished = true;
+        RE.Save.unlockLevel('pong', MAX_ROUND);
+        G.gameOver({
+            score: state.totalScore, win: true,
+            body: '你擊敗了「機器之心」。1972 年的那台機器，也是這樣一球一球贏來整個產業的。'
+        });
+        G.overlayEl.classList.add('pong-victory');
+        return;
+    }
+
+    // 進入下一回合
+    state.round++;
+    state.you = 0; state.cpu = 0;
+    G.setStat('you', 0); G.setStat('cpu', 0);
+    G.setStat('round', state.round);
+    RE.Save.unlockLevel('pong', state.round);
+    RetroAudio.play('levelUp');
+    var cfg = ROUNDS[state.round - 1];
+    G.stageCard(state.round, cfg.name,
+        'CPU 反應速度提升。球速起始 ' + Math.round(cfg.ballSpeed) + '，每次擊球再加速。',
+        function () { serve(-1); });
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function render() {
+    G.clear('#020807');
+    G.beginWorld();
+
+    if (ART.field.complete && ART.field.naturalWidth) {
+        ctx.drawImage(ART.field, 0, 0, W, H);
+    }
+
+    // 中線
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,248,231,0.16)';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([9, 11]);
+    ctx.beginPath();
+    ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H);
+    ctx.stroke();
+    ctx.restore();
+
+    // 大比分浮水印
+    ctx.save();
+    ctx.font = 'bold 68px "DotGothic16", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(255,248,231,0.07)';
+    ctx.fillText(state.you, W / 2 - 70, 78);
+    ctx.fillText(state.cpu, W / 2 + 70, 78);
+    ctx.restore();
+
+    // 球拍
+    drawPaddle(PADDLE_MARGIN, state.player.y, '#70e4b5');
+    drawPaddle(W - PADDLE_MARGIN - PADDLE_W, state.ai.y, '#ff9ebb');
+
+    // 球的殘影
+    for (var i = 0; i < state.trail.length; i++) {
+        var t = state.trail[i];
+        var a = (i + 1) / state.trail.length;
+        ctx.fillStyle = 'rgba(255,240,170,' + (a * 0.42) + ')';
+        var sz = BALL_SIZE * (0.4 + a * 0.6);
+        ctx.fillRect(t.x + (BALL_SIZE - sz) / 2, t.y + (BALL_SIZE - sz) / 2, sz, sz);
+    }
+
+    // 球
+    var b = state.ball;
+    ctx.save();
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = '#ffd166';
+    ctx.fillStyle = '#fff8e7';
+    ctx.fillRect(b.x, b.y, BALL_SIZE, BALL_SIZE);
+    ctx.restore();
+
+    // 模型產出的單一碰撞光爆只承擔材質；座標與時序仍由真實碰撞事件控制。
+    if (state.hitArt && ART.impact.complete && ART.impact.naturalWidth) {
+        var hitT = RE.clamp(state.hitArt.life / state.hitArt.maxLife, 0, 1);
+        var hitSize = 52 + (1 - hitT) * 18;
+        ctx.save();
+        ctx.globalAlpha = hitT;
+        ctx.drawImage(ART.impact,
+            state.hitArt.x - hitSize / 2,
+            state.hitArt.y - hitSize / 2,
+            hitSize, hitSize);
+        ctx.restore();
+    }
+
+    P.draw(ctx);
+    FT.draw(ctx);
+
+    // 發球倒數
+    if (state.serveTimer > 0 && !state.finished) {
+        var n = Math.ceil(state.serveTimer);
+        ctx.save();
+        ctx.globalAlpha = 0.85;
+        RE.Draw.text(ctx, n > 0 ? String(n) : 'GO!', W / 2, H / 2 - 16,
+                     { size: 30, align: 'center', color: '#ffd166' });
+        ctx.restore();
+    }
+
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.1, vignetteStrength: 0.45 });
+}
+
+function drawPaddle(x, y, color) {
+    ctx.save();
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = color;
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, PADDLE_W, PADDLE_H);
+    // 中央亮帶：視覺提示「這裡是直球區，邊緣才有角度」
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fillRect(x + 2, y + PADDLE_H / 2 - 5, PADDLE_W - 4, 10);
+    ctx.restore();
+}
+
+// ======================================================================
+// 啟動
+// ======================================================================
+G.on('restart', function () { resetMatch(); });
+resetMatch();
+G.run(update, render);
+G.showTitle({
+    title: '像素乒乓對決',
+    body: '球拍邊緣擊球會產生更大角度——這是 1972 年就存在的技巧。連續五個回合擊敗 CPU 即通關。',
+    onStart: function () { resetMatch(); }
+});
+</script>
+</body>
+</html>

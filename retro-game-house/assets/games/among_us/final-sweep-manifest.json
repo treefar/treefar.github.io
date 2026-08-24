@@ -1,0 +1,101 @@
+{
+  "version": 2,
+  "kind": "runtime-integrated-art-candidate",
+  "status": "final-gate-pending",
+  "countedInLedger": false,
+  "game": "among_us",
+  "set": "fidelity-rebuild-2026-08-25",
+  "tool": "Codex built-in ImageGen",
+  "model": "ImageGen（服務端版本未揭露）",
+  "generatedAt": "2026-08-25",
+  "prompt": "art-production/fidelity-rebuild-2026-08-25/among_us/prompt-v001.md",
+  "source": "art-production/fidelity-rebuild-2026-08-25/among_us/source/among_us-media-faithful-v001-imagegen.png",
+  "sourceSha256": "03fe8e7ed6c9606cdbcdfc70a1df870d58def81c1b5569c992a4203a4c39da91",
+  "supersedes": "art-production/fidelity-rebuild-2026-08-25/among_us/rejected/among_us-final-sweep-manifest-2026-08-24.json",
+  "supersededReason": "媒材年代不符；原候選保留於 rejected，不計正式帳。",
+  "postprocess": "固定格裁切、等比例縮放、透明留白與 4x4 圖集排版；未去背、未補畫、未修改模型內容。點陣媒材採 nearest-neighbor，向量／網頁媒材採 Lanczos 縮放。",
+  "atlas": "final-sweep-atlas.png",
+  "atlasSha256": "11e53240cca45ca1d068be9127ebf7f2d509126c8e010cae171d6fc7c740936e",
+  "cellWidth": 128,
+  "cellHeight": 128,
+  "assets": {
+    "engineer_walk": {
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "原創維修員行走"
+    },
+    "engineer_task": {
+      "index": 1,
+      "x": 128,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "維修員任務動作"
+    },
+    "engine_room": {
+      "index": 2,
+      "x": 256,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "低階向量引擎模組"
+    },
+    "task_icons": {
+      "index": 3,
+      "x": 384,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "任務圖示組"
+    },
+    "crisis_lamp": {
+      "index": 4,
+      "x": 0,
+      "y": 128,
+      "w": 128,
+      "h": 128,
+      "label": "危機燈"
+    },
+    "meeting_emblem": {
+      "index": 5,
+      "x": 128,
+      "y": 128,
+      "w": 128,
+      "h": 128,
+      "label": "會議桌徽記"
+    },
+    "hatch_door": {
+      "index": 6,
+      "x": 256,
+      "y": 128,
+      "w": 128,
+      "h": 128,
+      "label": "艙門模組"
+    },
+    "success_seal": {
+      "index": 7,
+      "x": 384,
+      "y": 128,
+      "w": 128,
+      "h": 128,
+      "label": "任務成功徽記"
+    }
+  },
+  "runtimePresentation": "RetroShell 開場的美術候選圖譜；正常流程可見，不介入遊戲亂數、碰撞或更新。",
+  "qa": {
+    "assetCount": 8,
+    "sourceSize": [
+      1774,
+      887
+    ],
+    "sourceAlphaMin": 0,
+    "sourceAlphaMax": 255,
+    "edgePixels": 0,
+    "emptyCells": 0,
+    "mediumFidelityPreScreen": true,
+    "humanFinalGate": false
+  }
+}

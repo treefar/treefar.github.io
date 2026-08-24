@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "kind": "runtime-integrated-art-candidate",
+  "status": "final-gate-pending",
+  "countedInLedger": false,
+  "game": "battle_city",
+  "set": "set-04-platform-grid-pixel",
+  "tool": "Codex built-in ImageGen",
+  "model": "ImageGen（服務端版本未揭露）",
+  "generatedAt": "2026-08-24",
+  "prompt": "art-production/final-sweep/set-04-platform-grid-pixel/prompt-v002.md",
+  "source": "art-production/final-sweep/set-04-platform-grid-pixel/source/atlas-v002-imagegen.png",
+  "sourceSha256": "f2395cfcf7fc896336b4e7f42b727ab520e151325b76a386d50e2d89c38637dc",
+  "postprocess": "模型 alpha 保留、連通物件裁切、等比例縮放、透明留白與圖集排版；未補畫內容。Set 05 依固定格裁切保留模型背景，實際呈現以圓角裁切避免方形貼紙感。",
+  "atlas": "final-sweep-atlas.png",
+  "atlasSha256": "1725414e746c4d33481514269905927b582a16183155c06a5c9049f014e6be50",
+  "cellWidth": 128,
+  "cellHeight": 128,
+  "assets": {
+    "tank_north": {
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "坦克方向／履帶"
+    },
+    "tank_east": {
+      "index": 1,
+      "x": 128,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "磚牆受損"
+    },
+    "brick_wall": {
+      "index": 2,
+      "x": 256,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "基地"
+    },
+    "base_tower": {
+      "index": 3,
+      "x": 384,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "地形模組"
+    },
+    "shell_explosion": {
+      "index": 4,
+      "x": 0,
+      "y": 128,
+      "w": 128,
+      "h": 128,
+      "label": "爆炸"
+    }
+  },
+  "runtimePresentation": "RetroShell 開場的美術圖譜層；正常流程可見，不介入遊戲亂數、碰撞或更新。",
+  "qa": {
+    "assetCount": 5,
+    "edgePixels": 0,
+    "emptyCells": 0,
+    "humanFinalGate": false
+  }
+}

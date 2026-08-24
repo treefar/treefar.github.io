@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 方塊金字塔</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   方塊金字塔 — 致敬 Q*bert (Gottlieb, 1982)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. **它把等角座標轉換變成玩家每一步都要處理的操作題。** 畫面是等角投影，
+      但輸入是四方向鍵——「往右上」在螢幕上是斜的，在棋盤上卻是一格。
+      那個轉換沒有任何提示，全靠玩家自己在腦中建立對應，
+      而建立起來的那一刻就是這款遊戲的「學會了」時刻。
+   2. **核心動詞是「踩過」而不是「走到」。** 目標不是抵達某處，
+      而是讓每一塊方塊都被踩過一次——移動本身就是進度，
+      於是「怎麼安排路線」變成唯一的策略。
+   3. 跳出金字塔就會摔死。邊緣不是牆，是懸崖——
+      這讓「往哪跳」的每一次判斷都有代價。
+   4. 追逐者會照同一套規則跳，所以玩家可以預測它；
+      但它不受「踩過就變色」的限制，所以它永遠比你自由。
+
+   幾何寫在這裡，改任何一個數字都要回來看：
+     金字塔 7 列，第 r 列有 r+1 塊（共 28 塊）。
+     方塊座標用 (r, c)，r 是列（0 在頂端）、c 是該列的第幾塊。
+     四個移動方向在棋盤上是：
+       右下 (r+1, c+1)   左下 (r+1, c)
+       右上 (r-1, c)     左上 (r-1, c-1)
+     螢幕座標：x = 中心 + (c - r/2) * CW，y = 頂端 + r * CH。
+     這一條就是「等角投影」的全部——把菱形格陣壓成螢幕的正交座標。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'qbert',
+    title: '方塊金字塔',
+    tagline: '把斜向空間讀法變成操作本身',
+    original: 'Q*bert (Gottlieb, 1982)',
+    decade: '80s', year: 1982, platform: '大型街機', genre: '益智動作',
+    developer: 'Gottlieb', bgm: '80s',
+    width: 480, height: 440,
+    lives: 3,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'best', label: 'BEST' },
+        { key: 'level', label: 'LV', init: 1 },
+        { key: 'left', label: '未踩', init: 28 }
+    ],
+    touch: 'dpad', maxScale: 2,
+    controls: [
+        { keys: ['↑'], desc: '往左上跳' },
+        { keys: ['→'], desc: '往右上跳' },
+        { keys: ['↓'], desc: '往右下跳' },
+        { keys: ['←'], desc: '往左下跳' }
+    ],
+    howto: '把金字塔上<strong>每一塊方塊都踩成目標色</strong>就過關。' +
+           '方向鍵是<strong>斜向</strong>的——↑ 往左上、→ 往右上、↓ 往右下、← 往左下。' +
+           '跳出金字塔外會摔死，被紫色追逐者碰到也會。' +
+           '後面的關卡要踩兩次才會變成目標色，而且踩第三次會變回去。',
+    lesson: {
+        verb: '把四方向輸入翻譯成斜向跳躍，規劃不重複又不跳出邊界的染色路線。',
+        innovation: '用等角投影營造立體金字塔，並把移動、得分與關卡進度壓縮成同一個動作。',
+        mission: '跳之前先說出下一步在畫面上是左上、右上、左下或右下；嘗試完成前三列而不重踩方塊，再比較臨時反應與預排路線的失誤數。',
+        evolution: '《Pac-Man》要求在俯視迷宮中規劃逃生路線；《Q*bert》把路線搬上等角金字塔，讓玩家還要先翻譯畫面座標。',
+        reflection: '如果方向鍵直接對應畫面上下左右，玩家是在解金字塔路線，還是在解另一款普通格子遊戲？'
+    },
+    design: '早期街機的設計問題是：如何在沒有真正 3D 幾何的硬體上呈現比平面迷宮更有空間感的場景，同時只用一支搖桿維持可學性。' +
+            '《Q*bert》的解法，是以等角投影把立方體排成金字塔，再讓四方向輸入對應四條斜向邊。' +
+            '畫面空間與手部輸入不完全一致，玩家必須在腦中建立座標轉換；邊緣又不是牆，翻譯錯誤會直接跳出場外。' +
+            '它也把移動與進度綁在一起：踩過方塊便改色，每一步同時是位移、得分與路線承諾；後期再用踩兩次、重踩退色，把同一張地圖變成奇偶與回訪規劃。' +
+            '**不擴大地圖，只改變空間讀法與重踩規則，就能產生新的解題層次。**' +
+            '本站《Pac-Man》讓玩家在固定俯視迷宮中誘導敵人；《Q*bert》再要求玩家先讀懂投影，才有資格規劃路線。',
+    history: 'Gottlieb 於 1982 年推出《Q*bert》，Warren Davis 擔任設計者與唯一程式設計，Jeff Lee 建立角色與美術，David Thiel 負責聲音。' +
+             'Davis 回憶，專案並非先有完整企劃，而是從立方體圖樣與球體向左右下方彈跳的程式練習逐步演化；約在 1982 年 4 月開始，6、7 月才排入正式產品，年底進入生產。' +
+             '場測時，有些玩家連續跳出金字塔卻不明白死因，但他觀察到玩家會看別人熟練操作後回來再試，因此沒有移除墜落，而是放慢前段節奏。' +
+             '主角鼻子射擊的提案也不是因為「按鍵不夠」而刪除；Davis 說，對首次作品而言，在偽 3D 跳躍上再處理射擊會過度複雜，才選擇把設計收斂成移動與迴避。',
+    sources: [
+        { label: 'GDC Vault：Warren Davis 的 Q*bert 經典回顧', url: 'https://www.gdcvault.com/play/1027730/Classic-Game-Postmortem-Q-bert' },
+        { label: 'Coinop.org：Warren Davis 自述 Q*bert 創作史', url: 'https://www.coinop.org/features/qbstory' },
+        { label: 'Time Extension：Q*bert 四十週年訪談', url: 'https://www.timeextension.com/news/2022/11/interview-qbert-creator-warren-davis-reflects-on-40-years-of-the-arcade-classic' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(360);
+var FT = new RE.FloatText();
+var QBERT_ART = { image: new Image(), manifest: null };
+QBERT_ART.image.src = '../../assets/games/qbert/blockhopper-atlas.png';
+fetch('../../assets/games/qbert/blockhopper-manifest.json')
+    .then(function (r) { if (!r.ok) throw new Error('qbert art manifest ' + r.status); return r.json(); })
+    .then(function (m) { QBERT_ART.manifest = m; })
+    .catch(function () { QBERT_ART.manifest = null; });
+
+// ======================================================================
+// 幾何
+// ======================================================================
+var ROWS = 7;                       // 金字塔列數
+var CW = 56, CH = 44;               // 方塊在螢幕上的水平間距與垂直間距
+var TOP_X = W / 2, TOP_Y = 78;      // 頂端方塊的中心
+var CUBE_W = 52, CUBE_H = 30;       // 單塊的菱形頂面尺寸
+var CUBE_D = 26;                    // 側面高度（畫出立體感用）
+
+/** 第 r 列有幾塊 */
+function rowLen(r) { return r + 1; }
+
+/** (r,c) 是不是金字塔上的合法方塊。跳出去就是摔死，所以這個判斷即勝負。 */
+function onPyramid(r, c) { return r >= 0 && r < ROWS && c >= 0 && c < rowLen(r); }
+
+/** 棋盤座標 → 螢幕座標（等角投影的全部祕密就這兩行） */
+function cellX(r, c) { return TOP_X + (c - r / 2) * CW; }
+function cellY(r) { return TOP_Y + r * CH; }
+
+/* 四個方向。順序刻意排成「上、右、下、左」對應鍵盤的四方向鍵，
+   讓 DIR[i] 可以直接用鍵盤索引取用。 */
+var DIRS = [
+    { key: 'up',    dr: -1, dc: -1, name: '左上' },
+    { key: 'right', dr: -1, dc:  0, name: '右上' },
+    { key: 'down',  dr:  1, dc:  1, name: '右下' },
+    { key: 'left',  dr:  1, dc:  0, name: '左下' }
+];
+
+/* ======================================================================
+   關卡
+   ======================================================================
+   四個參數就撐起整條難度曲線，不靠數值膨脹：
+     needed  要踩幾次才算完成（2 以上就從路徑規劃變成奇偶推理）
+     cycle   踩超過 needed 次會不會退回（true 時踩錯一步要繞回來補）
+     chasers 追逐者數量
+     chaseT  追逐者多久跳一次（秒）——這是真正的壓力來源
+   ====================================================================== */
+/* ⚠ **`cycle`（踩過頭會退回原色）刻意沒有用在任何一關。**
+   程式碼留著，但五關都是 false，理由是**我證不出它一定解得開**：
+   打開之後每一塊的踩踏次數要 ≡ needed (mod needed+1)，
+   而金字塔上的移動是「只能斜向、不能同列平移」的受限圖，
+   要同時滿足 28 個同餘條件，存不存在解並不顯然。
+   這一站已經有好幾款吃過「關卡幾何上不可能通過」的虧
+   （doom2d 第二關的封閉區、pong 後兩回合的 CPU、掃雷的必猜死局），
+   在證明出來之前不放進關卡表。
+   關掉之後 `step = min(needed, step+1)`，**只要把每一塊走過 needed 次就一定過關**，
+   可通過性是顯然的。難度改由追逐者的數量與速度承擔。 */
+var LEVELS = [
+    { name: '第一關 · 認識斜的',   needed: 1, cycle: false, chasers: 0, chaseT: 1.05,
+      hint: '方向鍵是斜的：↑ 左上、→ 右上、↓ 右下、← 左下。先把每一塊都踩過一次。' },
+    { name: '第二關 · 有東西在追', needed: 1, cycle: false, chasers: 1, chaseT: 1.00,
+      hint: '紫色追逐者用跟你一樣的規則跳，所以它下一步跳去哪，你算得出來。' },
+    { name: '第三關 · 踩兩次',     needed: 2, cycle: false, chasers: 1, chaseT: 0.90,
+      hint: '每一塊要踩兩次。路線要重疊，先想好哪幾塊留到最後。' },
+    { name: '第四關 · 追得更緊',   needed: 2, cycle: false, chasers: 1, chaseT: 0.74,
+      hint: '追逐者變快了。被逼到金字塔邊緣時，往下跳比往上跳安全——下面比較寬。' },
+    { name: '第五關 · 兩個追逐者', needed: 2, cycle: false, chasers: 2, chaseT: 0.74,
+      hint: '全部一起來。金字塔只有 28 塊，沒有安全的角落。' }
+];
+
+// ======================================================================
+// 狀態
+// ======================================================================
+var s = null;
+
+function reset() {
+    s = { level: 1, score: 0, over: false };
+    loadLevel(1);
+    G.setStat('score', 0);
+    G.setLives(3);
+}
+
+function loadLevel(n) {
+    var cfg = LEVELS[Math.min(n - 1, LEVELS.length - 1)];
+    s.cfg = cfg;
+    s.level = n;
+
+    /* 方塊狀態：step 是「被踩過幾次」。
+       用二維陣列而不是一維，是因為 (r,c) 的邏輯到處都要用，
+       攤平之後每一處都要換算，反而更容易錯。 */
+    s.cubes = [];
+    for (var r = 0; r < ROWS; r++) {
+        s.cubes[r] = [];
+        for (var c = 0; c < rowLen(r); c++) s.cubes[r][c] = { step: 0, pop: 0 };
+    }
+
+    s.p = { r: 0, c: 0, hop: 0, fr: 0, fc: 0, dead: 0, face: 1, artDir: 'hero_down_right' };
+    s.chasers = [];
+    s.spawnT = 1.6;
+    s.clearTimer = 0;
+    s.hintT = 3.4;
+    s.shake = 0;
+
+    G.setStat('level', n);
+    G.setStat('left', countLeft());
+}
+
+/** 還有幾塊沒到目標色。這是過關條件，也是 HUD 上唯一要看的數字。 */
+function countLeft() {
+    var n = 0;
+    for (var r = 0; r < ROWS; r++)
+        for (var c = 0; c < rowLen(r); c++)
+            if (s.cubes[r][c].step !== s.cfg.needed) n++;
+    return n;
+}
+
+// ======================================================================
+// 更新
+// ======================================================================
+function update(dt) {
+    if (!s || s.over) return;
+    P.update(dt); FT.update(dt);
+    if (s.hintT > 0) s.hintT -= dt;
+    if (s.shake > 0) s.shake -= dt;
+
+    if (s.clearTimer > 0) {
+        s.clearTimer -= dt;
+        if (s.clearTimer <= 0) nextLevel();
+        return;
+    }
+
+    var p = s.p;
+
+    // ---- 死亡演出：往下掉，掉完才重生 ----
+    if (p.dead > 0) {
+        p.dead -= dt;
+        if (p.dead <= 0) respawn();
+        return;
+    }
+
+    // ---- 跳躍中：不吃輸入，落地那一幀才結算 ----
+    if (p.hop > 0) {
+        p.hop -= dt * 5.2;                       // 一次跳躍約 0.19 秒
+        if (p.hop <= 0) {
+            p.hop = 0;
+            land();
+            if (s.over || s.clearTimer > 0 || p.dead > 0) return;
+        }
+    } else {
+        readInput();
+    }
+
+    updateChasers(dt);
+}
+
+/**
+ * 讀輸入。
+ * **四個方向鍵各對應一個斜向**——這就是這款遊戲要教的那件事，
+ * 所以對應關係寫死在 DIRS 裡，不要另外加「直覺模式」：
+ * 加了之後這款遊戲就只剩下踩格子，那個「腦中建立轉換」的過程會整個消失。
+ */
+function readInput() {
+    var p = s.p;
+    for (var i = 0; i < DIRS.length; i++) {
+        if (!RE.Input.pressed(DIRS[i].key)) continue;
+        var d = DIRS[i];
+        p.fr = p.r; p.fc = p.c;                  // 記住起點，跳躍動畫要用
+        p.r += d.dr; p.c += d.dc;
+        p.face = (d.dc > 0 || d.key === 'right') ? 1 : -1;
+        p.artDir = d.key === 'up' ? 'hero_up_left' : d.key === 'right' ? 'hero_up_right' :
+            d.key === 'down' ? 'hero_down_right' : 'hero_down_left';
+        p.hop = 1;
+        RetroAudio.play('jump');
+        return;
+    }
+}
+
+/** 落地。跳出金字塔＝摔死；踩在方塊上＝推進那一塊的狀態。 */
+function land() {
+    var p = s.p;
+    if (!onPyramid(p.r, p.c)) { fall(); return; }
+
+    var cube = s.cubes[p.r][p.c];
+    var before = cube.step;
+
+    /* 踩踏的規則。cycle 打開之後，踩超過 needed 次會退回 0——
+       這一行就是第四關「數清楚再跳」的全部來源。 */
+    if (s.cfg.cycle) cube.step = (cube.step + 1) % (s.cfg.needed + 1);
+    else cube.step = Math.min(s.cfg.needed, cube.step + 1);
+
+    if (cube.step !== before) {
+        cube.pop = 1;
+        var toDone = (cube.step === s.cfg.needed);
+        var fromDone = (before === s.cfg.needed);
+        if (toDone) {
+            addScore(25);
+            RetroAudio.play('coin');
+            P.burst(cellX(p.r, p.c), cellY(p.r), 8, {
+                colors: ['#ffd166', '#fff8e7'], speedMin: 30, speedMax: 110,
+                gravity: 260, lifeMin: 0.2, lifeMax: 0.45, sizeMax: 3
+            });
+        } else if (fromDone) {
+            /* 從完成退回去。要給明確的負回饋，否則玩家不會發現自己踩壞了。 */
+            RetroAudio.play('error');
+            RE.juice.shake(0.12);
+            FT.add(cellX(p.r, p.c), cellY(p.r) - 14, '退回！', { color: '#ff6b6b', size: 13, life: 0.8 });
+        } else {
+            RetroAudio.play('step');
+        }
+        G.setStat('left', countLeft());
+    }
+
+    RE.juice.hitstop(0.02);
+
+    if (countLeft() === 0) {
+        s.clearTimer = 1.6;
+        addScore(300 + s.level * 100);
+        RetroAudio.play('win');
+        RE.juice.flash('rgba(255,209,102,0.25)', 0.2);
+        FT.add(W / 2, cellY(ROWS - 1) + 60, '全部踩完！', { color: '#ffd166', size: 20, life: 1.5 });
+        return;
+    }
+
+    checkHit();
+}
+
+function fall() {
+    var p = s.p;
+    p.dead = 0.9;
+    RetroAudio.play('hurt');
+    RE.juice.shake(0.3);
+    FT.add(cellX(p.fr, p.fc), cellY(p.fr) - 20, '摔下去了', { color: '#ff6b6b', size: 14, life: 1 });
+}
+
+function respawn() {
+    G.setLives(G.lives - 1);
+    if (G.lives <= 0) { gameOver(false); return; }
+    var p = s.p;
+    p.r = 0; p.c = 0; p.fr = 0; p.fc = 0; p.hop = 0; p.dead = 0;
+    /* 重生時把追逐者清掉並重新倒數。
+       不清的話玩家會在頂端直接被等在那裡的追逐者秒殺，
+       那不是難度，那是沒有反應時間。 */
+    s.chasers = [];
+    s.spawnT = 1.8;
+}
+
+// ----------------------------------------------------------------------
+// 追逐者
+// ----------------------------------------------------------------------
+/**
+ * 追逐者用**跟玩家完全一樣的四個斜向**跳。
+ * 這一條是設計上的關鍵：規則相同，玩家才預測得了它下一步在哪。
+ * 它唯一的優勢是不受「踩過就變色」的限制——它自由，你有作業要做。
+ */
+function updateChasers(dt) {
+    if (s.cfg.chasers <= 0) return;
+
+    if (s.chasers.length < s.cfg.chasers) {
+        s.spawnT -= dt;
+        if (s.spawnT <= 0) {
+            s.spawnT = 3.2;
+            s.chasers.push({ r: 0, c: 0, hop: 0, fr: 0, fc: 0, t: 0.6, born: 0.45 });
+            RetroAudio.play('powerup');
+        }
+    }
+
+    for (var i = 0; i < s.chasers.length; i++) {
+        var e = s.chasers[i];
+        if (e.born > 0) { e.born -= dt; continue; }
+        if (e.hop > 0) {
+            e.hop -= dt * 5.2;
+            if (e.hop <= 0) {
+                e.hop = 0;
+                /* 跳出金字塔的追逐者直接消失，不會摔死玩家旁邊的方塊。
+                   讓它自己走掉是刻意的：玩家可以把它「引下去」，
+                   於是「往哪跳」除了避開它，還多了一個主動選項。 */
+                if (!onPyramid(e.r, e.c)) { s.chasers.splice(i--, 1); continue; }
+            }
+            continue;
+        }
+        e.t -= dt;
+        if (e.t > 0) continue;
+        e.t = s.cfg.chaseT;
+
+        // 朝玩家的方向挑一個斜向；平手時挑往下的那個（往下的路比較寬，追得比較久）
+        var best = null, bd = 1e9;
+        for (var d = 0; d < DIRS.length; d++) {
+            var nr = e.r + DIRS[d].dr, nc = e.c + DIRS[d].dc;
+            if (!onPyramid(nr, nc)) continue;
+            var dist = Math.abs(nr - s.p.r) + Math.abs(nc - s.p.c) - DIRS[d].dr * 0.1;
+            if (dist < bd) { bd = dist; best = DIRS[d]; }
+        }
+        if (!best) continue;
+        e.fr = e.r; e.fc = e.c;
+        e.r += best.dr; e.c += best.dc;
+        e.hop = 1;
+    }
+    checkHit();
+}
+
+/** 撞到判定。兩邊都要在方塊上（不在跳躍中）才算，否則會出現「空中對穿」的冤枉死。 */
+function checkHit() {
+    var p = s.p;
+    if (p.dead > 0 || p.hop > 0 || s.clearTimer > 0) return;
+    for (var i = 0; i < s.chasers.length; i++) {
+        var e = s.chasers[i];
+        if (e.born > 0 || e.hop > 0) continue;
+        if (e.r === p.r && e.c === p.c) {
+            p.dead = 0.9;
+            RetroAudio.play('hurt');
+            RE.juice.impact(2);
+            FT.add(cellX(p.r, p.c), cellY(p.r) - 20, '被追上了', { color: '#c084fc', size: 14, life: 1 });
+            return;
+        }
+    }
+}
+
+function addScore(n) {
+    s.score += n;
+    G.addScore(n);
+}
+
+function nextLevel() {
+    var n = s.level + 1;
+    if (n > LEVELS.length) { gameOver(true); return; }
+    G.stageCard(n, LEVELS[n - 1].name, LEVELS[n - 1].hint, function () { loadLevel(n); });
+}
+
+function gameOver(win) {
+    s.over = true;
+    G.gameOver({
+        score: s.score, win: win,
+        body: win
+            ? '五關全破。回頭想一下你剛剛在做什麼：畫面是等角投影的斜面，' +
+              '手指按的卻是正交的四方向鍵——<strong>你的腦在整場遊戲裡一直在跑一套座標轉換</strong>，' +
+              '而且到後來完全不用想了。這就是 1982 年的玩家第一次經歷的事。'
+            : '金字塔只有 28 塊，沒有安全的角落。' +
+              '訣竅是<strong>先想好路線再跳</strong>——尤其在「踩過頭會退回」的關卡，' +
+              '一步走錯要繞一大圈回來補。追逐者跟你用同一套規則跳，所以它下一步在哪，你算得出來。'
+    });
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+/* 三段配色：未踩、踩一次、完成。
+   完成色刻意用最亮的暖色——玩家掃一眼就要能數出「還剩幾塊」。 */
+var CUBE_TOP = ['#4a4a72', '#7a6ab0', '#ffd166'];
+var CUBE_L   = ['#33334f', '#56497c', '#c79a2e'];
+var CUBE_R   = ['#26263c', '#413865', '#9c7722'];
+
+function drawQbertAsset(name, cx, cy, w, h, alpha, flip) {
+    var art = QBERT_ART, m = art.manifest;
+    if (!m || !art.image.complete || !art.image.naturalWidth || !m.assets || !m.assets[name]) return false;
+    var a = m.assets[name];
+    ctx.save();
+    ctx.translate(cx, cy);
+    if (flip) ctx.scale(-1, 1);
+    if (alpha !== undefined) ctx.globalAlpha *= alpha;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(art.image, a.x, a.y, a.w, a.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+}
+
+function drawCube(r, c) {
+    var cube = s.cubes[r][c];
+    var idx = Math.min(2, s.cfg.needed === 1 ? (cube.step > 0 ? 2 : 0) : cube.step);
+    var x = cellX(r, c), y = cellY(r);
+    var pop = cube.pop > 0 ? cube.pop * 3 : 0;
+    if (cube.pop > 0) cube.pop = Math.max(0, cube.pop - 0.06);
+
+    var hw = CUBE_W / 2, hh = CUBE_H / 2;
+    var ty = y - pop;
+
+    var cubeAsset = idx === 0 ? 'cube_unlit' : (idx === 1 ? 'cube_cyan' : 'cube_amber');
+    if (drawQbertAsset(cubeAsset, x, ty + 10, 96, 96)) {
+        if (cube.pop > 0) drawQbertAsset('transform_spark', x, ty - 3, 54, 54, cube.pop);
+        return;
+    }
+
+    // 頂面（菱形）
+    ctx.fillStyle = CUBE_TOP[idx];
+    ctx.beginPath();
+    ctx.moveTo(x, ty - hh);
+    ctx.lineTo(x + hw, ty);
+    ctx.lineTo(x, ty + hh);
+    ctx.lineTo(x - hw, ty);
+    ctx.closePath();
+    ctx.fill();
+
+    // 左側面
+    ctx.fillStyle = CUBE_L[idx];
+    ctx.beginPath();
+    ctx.moveTo(x - hw, ty);
+    ctx.lineTo(x, ty + hh);
+    ctx.lineTo(x, ty + hh + CUBE_D);
+    ctx.lineTo(x - hw, ty + CUBE_D);
+    ctx.closePath();
+    ctx.fill();
+
+    // 右側面
+    ctx.fillStyle = CUBE_R[idx];
+    ctx.beginPath();
+    ctx.moveTo(x + hw, ty);
+    ctx.lineTo(x, ty + hh);
+    ctx.lineTo(x, ty + hh + CUBE_D);
+    ctx.lineTo(x + hw, ty + CUBE_D);
+    ctx.closePath();
+    ctx.fill();
+
+    // 頂面輪廓。1px 深色描邊，讓相鄰方塊在同色時仍分得開
+    ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, ty - hh);
+    ctx.lineTo(x + hw, ty);
+    ctx.lineTo(x, ty + hh);
+    ctx.lineTo(x - hw, ty);
+    ctx.closePath();
+    ctx.stroke();
+}
+
+/** 跳躍中的位置：兩點之間插值，再加一條拋物線當跳躍弧度 */
+function hopPos(fr, fc, r, c, hop) {
+    var t = 1 - hop;                              // hop 從 1 掉到 0，所以 t 是 0→1
+    var x = RE.lerp(cellX(fr, fc), cellX(r, c), t);
+    var y = RE.lerp(cellY(fr), cellY(r), t);
+    return { x: x, y: y - Math.sin(t * Math.PI) * 26 };
+}
+
+function drawHero() {
+    var p = s.p;
+    var pos = p.hop > 0 ? hopPos(p.fr, p.fc, p.r, p.c, p.hop)
+                        : { x: cellX(p.r, p.c), y: cellY(p.r) };
+    var y = pos.y - 16;
+    if (p.dead > 0) y += (0.9 - p.dead) * 260;    // 摔下去：往下掉
+
+    var heroAlpha = p.dead > 0 ? Math.max(0, p.dead / 0.9) : 1;
+    var heroCenterY = pos.y - 24 + (p.dead > 0 ? (0.9 - p.dead) * 260 : 0);
+    if (p.hop > 0 && p.hop < 0.18) drawQbertAsset('landing_spark', pos.x, pos.y + 4, 38, 38, p.hop / 0.18);
+    if (drawQbertAsset(p.artDir || 'hero_down_right', pos.x, heroCenterY, 64, 64, heroAlpha)) return;
+
+    ctx.save();
+    ctx.globalAlpha = p.dead > 0 ? Math.max(0, p.dead / 0.9) : 1;
+    // 身體
+    ctx.fillStyle = '#ff9f43';
+    ctx.beginPath(); ctx.arc(pos.x, y, 13, 0, RE.TAU); ctx.fill();
+    // 鼻子（原作最有辨識度的部位，朝向移動方向）
+    ctx.fillStyle = '#ffb877';
+    ctx.beginPath();
+    ctx.ellipse(pos.x + p.face * 9, y + 3, 6, 4, 0, 0, RE.TAU);
+    ctx.fill();
+    // 眼睛
+    ctx.fillStyle = '#fff8e7';
+    ctx.beginPath(); ctx.arc(pos.x - 4, y - 4, 4.2, 0, RE.TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(pos.x + 4, y - 4, 4.2, 0, RE.TAU); ctx.fill();
+    ctx.fillStyle = '#1a1024';
+    ctx.beginPath(); ctx.arc(pos.x - 4 + p.face, y - 4, 2, 0, RE.TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(pos.x + 4 + p.face, y - 4, 2, 0, RE.TAU); ctx.fill();
+    ctx.restore();
+}
+
+function drawChaser(e, index) {
+    var pos = e.hop > 0 ? hopPos(e.fr, e.fc, e.r, e.c, e.hop)
+                        : { x: cellX(e.r, e.c), y: cellY(e.r) };
+    var y = pos.y - 15;
+    var enemyAssets = ['coil_serpent', 'teal_orb', 'security_drone', 'void_imp'];
+    var enemyName = enemyAssets[(Math.max(1, s.level) + index - 1) % enemyAssets.length];
+    var enemyAlpha = e.born > 0 ? 1 - e.born / 0.45 : 1;
+    if (drawQbertAsset(enemyName, pos.x, pos.y - 23, 56, 56, enemyAlpha)) return;
+    ctx.save();
+    if (e.born > 0) ctx.globalAlpha = 1 - e.born / 0.45;   // 生成時淡入，不要憑空出現
+    ctx.fillStyle = '#c084fc';
+    ctx.shadowBlur = 10; ctx.shadowColor = '#c084fc';
+    ctx.beginPath(); ctx.arc(pos.x, y, 12, 0, RE.TAU); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#2a1040';
+    ctx.beginPath(); ctx.arc(pos.x - 4, y - 3, 2.6, 0, RE.TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(pos.x + 4, y - 3, 2.6, 0, RE.TAU); ctx.fill();
+    ctx.restore();
+}
+
+function render() {
+    /* 外殼會在 reset() 之前先畫一次（標題畫面那一幀），所以 s 可能還是 null。
+       煙霧測試就是這樣抓到的：`render: Cannot read properties of null`。 */
+    if (!s) return;
+    G.beginWorld();
+    ctx.fillStyle = '#0d1018';
+    ctx.fillRect(0, 0, W, H);
+
+    /* 背景的星點。位置用固定式子算，不要用亂數——
+       每幀重擲亂數會讓星星閃爍成雜訊。 */
+    ctx.fillStyle = 'rgba(255,255,255,0.10)';
+    for (var i = 0; i < 46; i++) {
+        var sx = (i * 97) % W, sy = (i * 53) % (H - 60);
+        ctx.fillRect(sx, sy, 2, 2);
+    }
+
+    // 封面語彙延伸成遠景遺跡；降低透明度，避免誤讀成可跳平台。
+    drawQbertAsset('cosmic_pillar', 48, H - 82, 72, 72, 0.34);
+    drawQbertAsset('cosmic_pillar', W - 48, H - 82, 72, 72, 0.28, true);
+    drawQbertAsset('escape_disc', 54, H - 145, 58, 58, 0.28);
+    drawQbertAsset('cube_cracked', W - 56, H - 146, 62, 62, 0.24);
+
+    /* 由上而下、由左而右畫，後畫的蓋住先畫的——
+       等角投影的遮蔽順序就是這一條，畫反了會看到方塊穿幫。 */
+    for (var r = 0; r < ROWS; r++)
+        for (var c = 0; c < rowLen(r); c++)
+            drawCube(r, c);
+
+    for (var k = 0; k < s.chasers.length; k++) drawChaser(s.chasers[k], k);
+    drawHero();
+
+    P.draw(ctx);
+    FT.draw(ctx);
+
+    // 開場提示
+    if (s.hintT > 0) {
+        ctx.globalAlpha = Math.min(1, s.hintT / 0.6);
+        RE.Draw.text(ctx, s.cfg.hint, W / 2, H - 34,
+            { size: 12, align: 'center', color: '#a7f3d0', maxWidth: W - 40 });
+        ctx.globalAlpha = 1;
+    }
+
+    RE.Draw.text(ctx, s.cfg.name, W / 2, 12,
+        { size: 13, align: 'center', color: '#ffd166' });
+
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.05, vignetteStrength: 0.34 });
+}
+
+// ======================================================================
+G.on('restart', reset);
+reset();
+G.run(update, render);
+G.showTitle({
+    title: '方塊金字塔',
+    body: '把金字塔上每一塊方塊都踩成金色就過關。<strong>方向鍵是斜的</strong>——' +
+           '↑ 左上、→ 右上、↓ 右下、← 左下。跳出金字塔會摔死，' +
+           '紫色追逐者碰到也會。共五關。',
+    onStart: reset
+});
+</script>
+</body>
+</html>

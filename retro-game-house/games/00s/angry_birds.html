@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 暴怒鳥彈射隊</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   暴怒鳥彈射隊 — 致敬 Angry Birds (Rovio, 2009)
+   --------------------------------------------------------------------------
+   復刻重點：
+
+   1. 一個手勢完成所有操作。按下、拖曳、放開——沒有選單、沒有模式切換。
+      這是 2009 年觸控螢幕剛普及時，最重要的一堂互動設計課。
+   2. 真正的剛體物理。本檔內含一套完整的 2D 剛體求解器：
+      SAT 分離軸偵測、接觸面裁剪產生穩定接觸點、含摩擦的衝量解算、
+      位置修正與睡眠機制。結構會因為受力而歪斜、失衡、連鎖倒塌——
+      倒塌是算出來的，不是預先做好的動畫。
+   3. 三星評分把「過關」與「精通」分離。
+      打倒所有豬就過關，這是給所有人的；三顆星要求你用更少的鳥、
+      造成更多破壞，這是給想再玩一次的人的。同一關因此有兩種難度。
+   4. 四種鳥的特技都在空中點一下觸發——仍然是同一個手勢。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'angry_birds',
+    title: '暴怒鳥彈射隊',
+    tagline: '拉、放，就這樣。剩下的交給物理',
+    original: 'Angry Birds (Rovio, 2009)',
+    decade: '00s', year: 2009, platform: 'iOS / 多平台', genre: '物理彈射',
+    developer: 'Rovio', bgm: '00s',
+    width: 480, height: 320,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'level', label: '關卡', init: '1/5' },
+        { key: 'birds', label: '剩餘鳥', init: 0 },
+        { key: 'best', label: 'BEST' }
+    ],
+    touch: 'none',
+    controls: [
+        { keys: ['拖曳'], desc: '拉彈弓，放開發射' },
+        { keys: ['飛行中點一下'], desc: '發動該隻鳥的特技' },
+        { keys: ['←', '→'], desc: '調整角度（鍵盤操作）' },
+        { keys: ['↑', '↓'], desc: '調整拉力（鍵盤操作）' },
+        { keys: ['空白'], desc: '發射／發動特技' }
+    ],
+    howto: '往<strong>後下方</strong>拉彈弓再放開，鳥會沿拋物線飛出去。' +
+           '打倒畫面上所有的豬就過關。' +
+           '<strong>飛行中點一下畫面</strong>可以發動特技：黃鳥加速、藍鳥分裂、黑鳥爆炸。' +
+           '過關只要清光豬，但<strong>三顆星</strong>要求你用更少的鳥、砸爛更多結構。' +
+           '木頭好打、冰塊最脆、石頭幾乎砸不動——去找結構的支撐點。',
+    lesson: {
+        verb: '拖曳彈弓預測拋物線，選擇支撐點與鳥種特技，讓一次撞擊引發整座結構的連鎖倒塌。',
+        innovation: '把瞄準、拉力與發射壓縮成觸控螢幕上的同一個拖放手勢，再用可預測但不完全相同的剛體結果，把失敗變成下一發可讀的物理線索。',
+        mission: '第一關先直接瞄準一隻豬，再重開並瞄準承重柱；比較兩種打法消耗的鳥數與星等。第三關用黑鳥飛進結構後才引爆，確認爆心位置會不會比正面撞牆更有效。',
+        evolution: '《Worms》用角度、力道與風建立回合制彈道；《Angry Birds》把同一種預判改寫成單指拖放與結構連鎖；《Suika Game》再讓物理後果持續堆積成整局策略。',
+        reflection: '如果每次倒塌都播放完全相同的預製動畫，玩家還能從失敗結果推理下一發該改瞄哪裡嗎？'
+    },
+    design: '《Angry Birds》的突破不是最早使用拋物線，而是讓觸控手勢、物理預測與短回合重試彼此咬合。' +
+            '玩家往後拖得越遠，初速越高；預測點只揭露前段軌跡，剩下的碰撞、摩擦與倒塌必須自己判讀。' +
+            '木、冰、石不是換色裝飾，而是不同的耐久與阻力：直接打豬通常最確定，打低處支撐則可能用一發換整座塔。' +
+            '黃、藍、黑鳥把飛行中特技放在同一個點擊動作上，新增的是「何時觸發」而不是更多按鍵；本站後兩關因此必須靠黑鳥近爆穿透石牆弱點。' +
+            '星等再把「清光豬」與「用更少資源完成」分成兩層目標，使容易上手不等於容易精通。' +
+            '<strong>玩家真正練習的是讀懂因果鏈：哪一塊承重、哪一發開路、哪一秒引爆。</strong>',
+    history: 'Rovio 的官方紀錄指出，初代《Angry Birds》於 2009 年 12 月在 iOS 推出。' +
+             '原設計師 Jaakko Iisalo 回憶，早期原型沒有彈弓，測試者看不懂如何操作；換成人人熟悉的彈弓後，發射意圖才不需教學。' +
+             '程式設計師 Tuomo Lehtinen 也說明，團隊反覆調整軌跡與方塊穩定度，因為鳥若沒有飛到玩家預期的位置，失敗就無法被理解；把城堡移遠則延長了飛行中的期待。' +
+             'Rovio 後續以《Angry Birds Reloaded》延續相同的物理彈射公式，並明確以更新畫面與新關卡重新包裝，顯示核心手勢與視覺技術可以分層演進。',
+    sources: [
+        { label: 'Rovio：初代 Angry Birds 於 2009 年 12 月推出', url: 'https://www.rovio.com/articles/rovio-entertainment-partners-with-k-swiss-for-limited-edition-sneakers-to-celebrate-10-years-of-angry-birds/' },
+        { label: 'The Guardian：原設計師與程式設計師回顧製作過程', url: 'https://www.theguardian.com/artanddesign/2016/feb/23/how-we-made-angry-birds' },
+        { label: 'Rovio：Reloaded 延續物理彈射並更新視覺與關卡', url: 'https://www.rovio.com/articles/angry-birds-reloaded-now-available-on-apple-arcade/' }
+    ]
+});
+
+var ctx = G.ctx, VW = G.width, VH = G.height;
+var P = new RE.Particles(500);
+var FT = new RE.FloatText();
+var ANGRY_ART = { image: new Image(), manifest: null };
+ANGRY_ART.image.src = '../../assets/games/angry_birds/paper-atlas.png';
+fetch('../../assets/games/angry_birds/paper-manifest.json')
+    .then(function (r) { if (!r.ok) throw new Error('angry art manifest ' + r.status); return r.json(); })
+    .then(function (m) { ANGRY_ART.manifest = m; })
+    .catch(function () { ANGRY_ART.manifest = null; });
+
+/* ==========================================================================
+   第一部分：2D 剛體物理求解器
+   --------------------------------------------------------------------------
+   支援旋轉的矩形（box）與圓形（circle）。流程為每幀：
+     積分速度 → 廣域剔除 → 窄域偵測產生接觸點 → 迭代解算衝量 → 積分位置
+   堆疊之所以能站得住，關鍵在兩件事：
+     (1) 接觸點用「接觸面裁剪」產生兩個點，單點接觸的箱子會不停翻轉；
+     (2) 迭代解算 + 位置修正，讓穿透量逐步收斂而不是一次彈開。
+   ========================================================================== */
+var PHYS = (function () {
+    var GRAV = 1250;
+    var ITER = 18;             // 衝量迭代次數
+    var POS_ITER = 4;          // 位置修正迭代次數
+    var POS_RATE = 0.5;        // 每次修正掉的穿透比例
+    var SLOP = 0.08;           // 容許穿透，避免抖動
+    // SLEEP_V 必須大於一幀的重力增量（1250/60 ≈ 20.8），否則躺著不動的物體
+    // 也會因為「剛加上重力、還沒被解算掉」的瞬時速度而永遠睡不著。
+    // 誤判空中物體的風險很低：自由落體只要兩幀就超過這個值，而入睡要連續 0.5 秒。
+    var SLEEP_V = 24, SLEEP_A = 0.2, SLEEP_T = 0.5;
+
+    var _uid = 0;
+    function Body(o) {
+        this.id = ++_uid;          // 撞擊回報要靠它做每對物體的去重
+        this.shape = o.shape || 'box';
+        this.x = o.x; this.y = o.y;
+        this.w = o.w || 0; this.h = o.h || 0; this.r = o.r || 0;
+        this.angle = o.angle || 0;
+        this.vx = 0; this.vy = 0; this.av = 0;
+        this.st = !!o.static;
+        this.rest = o.rest === undefined ? 0.12 : o.rest;
+        this.fric = o.fric === undefined ? 0.55 : o.fric;
+        this.tag = o.tag || '';
+        this.data = o.data || null;
+        this.dead = false;
+        this.sleep = 0; this.sleeping = false;
+
+        var area = this.shape === 'circle' ? Math.PI * this.r * this.r : this.w * this.h;
+        var m = this.st ? 0 : area * (o.density === undefined ? 0.0012 : o.density);
+        this.mass = m;
+        this.invMass = m > 0 ? 1 / m : 0;
+        var I;
+        if (this.shape === 'circle') I = 0.5 * m * this.r * this.r;
+        else I = m * (this.w * this.w + this.h * this.h) / 12;
+        this.inertia = I;
+        this.invI = I > 0 ? 1 / I : 0;
+    }
+
+    Body.prototype.wake = function () { this.sleeping = false; this.sleep = 0; };
+
+    Body.prototype.applyImpulse = function (ix, iy, rx, ry) {
+        if (this.st) return;
+        this.vx += ix * this.invMass;
+        this.vy += iy * this.invMass;
+        this.av += (rx * iy - ry * ix) * this.invI;
+    };
+
+    Body.prototype.corners = function () {
+        var c = Math.cos(this.angle), s = Math.sin(this.angle);
+        var hw = this.w / 2, hh = this.h / 2;
+        var pts = [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]];
+        var out = [];
+        for (var i = 0; i < 4; i++) {
+            out.push([this.x + pts[i][0] * c - pts[i][1] * s,
+                      this.y + pts[i][0] * s + pts[i][1] * c]);
+        }
+        return out;
+    };
+
+    Body.prototype.aabb = function () {
+        if (this.shape === 'circle') {
+            return { x0: this.x - this.r, y0: this.y - this.r, x1: this.x + this.r, y1: this.y + this.r };
+        }
+        var c = this.corners();
+        var x0 = c[0][0], x1 = c[0][0], y0 = c[0][1], y1 = c[0][1];
+        for (var i = 1; i < 4; i++) {
+            if (c[i][0] < x0) x0 = c[i][0];
+            if (c[i][0] > x1) x1 = c[i][0];
+            if (c[i][1] < y0) y0 = c[i][1];
+            if (c[i][1] > y1) y1 = c[i][1];
+        }
+        return { x0: x0, y0: y0, x1: x1, y1: y1 };
+    };
+
+    // ---- 幾何工具 ----
+    function project(pts, ax, ay) {
+        var mn = Infinity, mx = -Infinity;
+        for (var i = 0; i < pts.length; i++) {
+            var d = pts[i][0] * ax + pts[i][1] * ay;
+            if (d < mn) mn = d;
+            if (d > mx) mx = d;
+        }
+        return [mn, mx];
+    }
+
+    /** 兩個 OBB 的分離軸測試，回傳最小平移向量 */
+    function satBoxBox(a, b) {
+        var ca = a.corners(), cb = b.corners();
+        var axes = [];
+        var c1 = Math.cos(a.angle), s1 = Math.sin(a.angle);
+        var c2 = Math.cos(b.angle), s2 = Math.sin(b.angle);
+        axes.push([c1, s1], [-s1, c1], [c2, s2], [-s2, c2]);
+
+        var best = Infinity, bx = 0, by = 0, fromA = true;
+        for (var i = 0; i < axes.length; i++) {
+            var ax = axes[i][0], ay = axes[i][1];
+            var pa = project(ca, ax, ay), pb = project(cb, ax, ay);
+            var o = Math.min(pa[1], pb[1]) - Math.max(pa[0], pb[0]);
+            if (o <= 0) return null;
+            if (o < best) {
+                best = o; bx = ax; by = ay; fromA = i < 2;
+            }
+        }
+        // 法線一律由 a 指向 b
+        var dx = b.x - a.x, dy = b.y - a.y;
+        if (dx * bx + dy * by < 0) { bx = -bx; by = -by; }
+        return { nx: bx, ny: by, depth: best, fromA: fromA };
+    }
+
+    /** 找出與法線最反平行的那個面，作為裁剪用的入射面 */
+    function incidentFace(b, nx, ny) {
+        var c = b.corners();
+        var best = Infinity, bi = 0;
+        for (var i = 0; i < 4; i++) {
+            var j = (i + 1) % 4;
+            var ex = c[j][0] - c[i][0], ey = c[j][1] - c[i][1];
+            var len = Math.sqrt(ex * ex + ey * ey) || 1;
+            // 面法線（外向）
+            var fnx = ey / len, fny = -ex / len;
+            var d = fnx * nx + fny * ny;
+            if (d < best) { best = d; bi = i; }
+        }
+        return [c[bi], c[(bi + 1) % 4]];
+    }
+
+    /** 找出最支撐該法線的面，作為參考面 */
+    function referenceFace(b, nx, ny) {
+        var c = b.corners();
+        var best = -Infinity, bi = 0;
+        for (var i = 0; i < 4; i++) {
+            var j = (i + 1) % 4;
+            var ex = c[j][0] - c[i][0], ey = c[j][1] - c[i][1];
+            var len = Math.sqrt(ex * ex + ey * ey) || 1;
+            var fnx = ey / len, fny = -ex / len;
+            var d = fnx * nx + fny * ny;
+            if (d > best) { best = d; bi = i; }
+        }
+        return [c[bi], c[(bi + 1) % 4]];
+    }
+
+    /** 以線段對半平面裁剪，保留 (p - o)·n <= 0 的部分 */
+    function clipSegment(seg, ox, oy, nx, ny) {
+        var d0 = (seg[0][0] - ox) * nx + (seg[0][1] - oy) * ny;
+        var d1 = (seg[1][0] - ox) * nx + (seg[1][1] - oy) * ny;
+        var out = [];
+        if (d0 <= 0) out.push(seg[0]);
+        if (d1 <= 0) out.push(seg[1]);
+        if (d0 * d1 < 0) {
+            var t = d0 / (d0 - d1);
+            out.push([seg[0][0] + (seg[1][0] - seg[0][0]) * t,
+                      seg[0][1] + (seg[1][1] - seg[0][1]) * t]);
+        }
+        return out.length > 2 ? [out[0], out[1]] : out;
+    }
+
+    /**
+     * 產生接觸點。
+     * 箱子疊箱子必須有「兩個」接觸點才站得穩：只取單點的話，
+     * 上面那塊會不斷以該點為支點左右翻轉，整座塔會自己抖到倒。
+     */
+    function contactsBoxBox(a, b, mtv) {
+        var ref = mtv.fromA ? a : b;
+        var inc = mtv.fromA ? b : a;
+        var nx = mtv.fromA ? mtv.nx : -mtv.nx;
+        var ny = mtv.fromA ? mtv.ny : -mtv.ny;
+
+        var rf = referenceFace(ref, nx, ny);
+        var inf = incidentFace(inc, nx, ny);
+
+        var ex = rf[1][0] - rf[0][0], ey = rf[1][1] - rf[0][1];
+        var len = Math.sqrt(ex * ex + ey * ey) || 1;
+        var tx = ex / len, ty = ey / len;
+
+        // 用參考面兩端的側平面裁掉超出範圍的部分
+        var seg = clipSegment(inf, rf[0][0], rf[0][1], -tx, -ty);
+        if (seg.length < 2) return [];
+        seg = clipSegment(seg, rf[1][0], rf[1][1], tx, ty);
+        if (seg.length < 2) return [];
+
+        var fnx = ey / len, fny = -ex / len;
+        // 參考面外向法線需與碰撞法線同向
+        if (fnx * nx + fny * ny < 0) { fnx = -fnx; fny = -fny; }
+
+        var out = [];
+        for (var i = 0; i < seg.length; i++) {
+            var sep = (seg[i][0] - rf[0][0]) * fnx + (seg[i][1] - rf[0][1]) * fny;
+            if (sep <= 0.6) out.push({ x: seg[i][0], y: seg[i][1], depth: -sep });
+        }
+        if (!out.length) return [];
+        return out;
+    }
+
+    function collideCircleCircle(a, b) {
+        var dx = b.x - a.x, dy = b.y - a.y;
+        var d = Math.sqrt(dx * dx + dy * dy);
+        var rr = a.r + b.r;
+        if (d >= rr || d === 0) return null;
+        var nx = dx / d, ny = dy / d;
+        return { nx: nx, ny: ny, pts: [{ x: a.x + nx * a.r, y: a.y + ny * a.r, depth: rr - d }] };
+    }
+
+    function collideCircleBox(c, b, flip) {
+        // 轉到 box 的局部座標找最近點
+        var cs = Math.cos(-b.angle), sn = Math.sin(-b.angle);
+        var dx = c.x - b.x, dy = c.y - b.y;
+        var lx = dx * cs - dy * sn, ly = dx * sn + dy * cs;
+        var hw = b.w / 2, hh = b.h / 2;
+        var qx = RE.clamp(lx, -hw, hw), qy = RE.clamp(ly, -hh, hh);
+        var ddx = lx - qx, ddy = ly - qy;
+        var inside = (ddx === 0 && ddy === 0);
+        var depth, nlx, nly;
+        if (inside) {
+            // 圓心在框內：推向最近的邊
+            var dl = hw + lx, dr = hw - lx, dt = hh + ly, db = hh - ly;
+            var m = Math.min(dl, dr, dt, db);
+            if (m === dl) { nlx = -1; nly = 0; depth = c.r + dl; }
+            else if (m === dr) { nlx = 1; nly = 0; depth = c.r + dr; }
+            else if (m === dt) { nlx = 0; nly = -1; depth = c.r + dt; }
+            else { nlx = 0; nly = 1; depth = c.r + db; }
+            qx = lx + nlx * (depth - c.r); qy = ly + nly * (depth - c.r);
+        } else {
+            var d = Math.sqrt(ddx * ddx + ddy * ddy);
+            if (d >= c.r) return null;
+            nlx = ddx / d; nly = ddy / d; depth = c.r - d;
+        }
+        // 轉回世界座標。此處算出的 nw 一律是「由 box 指向 circle」。
+        var cs2 = Math.cos(b.angle), sn2 = Math.sin(b.angle);
+        var nwx = nlx * cs2 - nly * sn2, nwy = nlx * sn2 + nly * cs2;
+        var pwx = b.x + qx * cs2 - qy * sn2, pwy = b.y + qx * sn2 + qy * cs2;
+        // 求解器要求法線由 a 指向 b。flip 表示外層呼叫的順序是 (box, circle)，
+        // 此時 box 就是 a，nw 的方向已經正確；反之要取負。
+        return { nx: flip ? nwx : -nwx, ny: flip ? nwy : -nwy,
+                 pts: [{ x: pwx, y: pwy, depth: depth }] };
+    }
+
+    function collide(a, b) {
+        if (a.shape === 'circle' && b.shape === 'circle') return collideCircleCircle(a, b);
+        if (a.shape === 'circle') {
+            var r1 = collideCircleBox(a, b, false);
+            return r1;
+        }
+        if (b.shape === 'circle') {
+            var r2 = collideCircleBox(b, a, true);
+            return r2;
+        }
+        var mtv = satBoxBox(a, b);
+        if (!mtv) return null;
+        var pts = contactsBoxBox(a, b, mtv);
+        if (!pts.length) pts = [{ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, depth: mtv.depth }];
+        return { nx: mtv.nx, ny: mtv.ny, pts: pts };
+    }
+
+    // ---- 世界 ----
+    function World() {
+        this.bodies = [];
+        this.onImpact = null;   // (a, b, impulse) 回呼，遊戲層用來算破壞
+        this.cache = {};        // 跨幀保留的接觸衝量，warm starting 用
+    }
+
+    World.prototype.add = function (o) {
+        var b = new Body(o);
+        this.bodies.push(b);
+        return b;
+    };
+
+    World.prototype.remove = function (b) { b.dead = true; };
+
+    World.prototype.step = function (dt) {
+        var i, j, bs = this.bodies;
+
+        // 清掉死亡物體
+        for (i = bs.length - 1; i >= 0; i--) if (bs[i].dead) bs.splice(i, 1);
+
+        // 積分速度
+        for (i = 0; i < bs.length; i++) {
+            var b = bs[i];
+            if (b.st || b.sleeping) continue;
+            b.vy += GRAV * dt;
+            b.vx *= Math.pow(0.999, dt * 60);
+            b.av *= Math.pow(0.985, dt * 60);
+        }
+
+        // 廣域 + 窄域
+        var contacts = [];
+        for (i = 0; i < bs.length; i++) {
+            for (j = i + 1; j < bs.length; j++) {
+                var A = bs[i], B = bs[j];
+                if (A.st && B.st) continue;
+                if ((A.sleeping || A.st) && (B.sleeping || B.st)) continue;
+                var aa = A.aabb(), ab = B.aabb();
+                if (aa.x1 < ab.x0 || ab.x1 < aa.x0 || aa.y1 < ab.y0 || ab.y1 < aa.y0) continue;
+                var m = collide(A, B);
+                if (!m) continue;
+                // 只喚醒「正在睡的」那一方。
+                // 對醒著的物體呼叫 wake() 會把它的睡眠計時歸零，若每幀無條件呼叫，
+                // 堆疊就永遠睡不著；但反過來若因為對方速度慢就略過接觸，
+                // 慢慢滑過來的東西會直接穿進睡著的物體裡。
+                // 能走到這裡的配對，必定至少有一方是醒著的動態物體（廣域已篩掉其餘情況）。
+                if (A.sleeping) A.wake();
+                if (B.sleeping) B.wake();
+                for (var k = 0; k < m.pts.length; k++) {
+                    // Warm starting：沿用上一幀同一個接觸點解出來的衝量當起點。
+                    // 少了它，Gauss-Seidel 逐點解算的順序偏差會讓兩側衝量始終差一點點
+                    // （實測 9.2 對 9.1），每幀累積成一點點角度，靜止的塔會自己慢慢翻倒。
+                    var ckey = A.id + '_' + B.id + '_' + k;
+                    var cch = this.cache[ckey];
+                    // 記錄這一刻的接近速度。破壞判定必須看它，不能看接觸衝量——
+                    // 靜止堆疊的支撐力本身就是持續的衝量，拿它當傷害的話，
+                    // 底層柱子會被上面結構的重量活活「壓碎」（實測第 12 幀就碎了）。
+                    var kx = m.pts[k].x, ky = m.pts[k].y;
+                    var qax = A.vx - A.av * (ky - A.y), qay = A.vy + A.av * (kx - A.x);
+                    var qbx = B.vx - B.av * (ky - B.y), qby = B.vy + B.av * (kx - B.x);
+                    var closing = -((qbx - qax) * m.nx + (qby - qay) * m.ny);
+                    contacts.push({
+                        a: A, b: B, nx: m.nx, ny: m.ny,
+                        px: kx, py: ky, depth: m.pts[k].depth,
+                        pn: cch ? cch.n : 0, pt: cch ? cch.t : 0, key: ckey,
+                        closing: closing
+                    });
+                }
+            }
+        }
+
+        // 由下往上解算：支撐力本來就是從地面沿著結構往上傳的，
+        // 依這個順序迭代，衝量一輪就能傳完整條支撐鏈，收斂快得多。
+        contacts.sort(function (p, q) { return q.py - p.py; });
+
+        // 先把沿用下來的衝量套用回去，求解器等於從「上一幀的答案」開始收斂
+        var maxImp = {};
+        for (var wi = 0; wi < contacts.length; wi++) {
+            var wc = contacts[wi];
+            if (wc.pn <= 0 && wc.pt === 0) continue;
+            var wtx = -wc.ny, wty = wc.nx;
+            var ix = wc.nx * wc.pn + wtx * wc.pt;
+            var iy = wc.ny * wc.pn + wty * wc.pt;
+            wc.a.applyImpulse(-ix, -iy, wc.px - wc.a.x, wc.py - wc.a.y);
+            wc.b.applyImpulse(ix, iy, wc.px - wc.b.x, wc.py - wc.b.y);
+        }
+
+        // 迭代解算
+        for (var it = 0; it < ITER; it++) {
+            for (var c = 0; c < contacts.length; c++) {
+                var ct = contacts[c];
+                var A2 = ct.a, B2 = ct.b;
+                var rax = ct.px - A2.x, ray = ct.py - A2.y;
+                var rbx = ct.px - B2.x, rby = ct.py - B2.y;
+
+                // 接觸點的相對速度
+                var vax = A2.vx - A2.av * ray, vay = A2.vy + A2.av * rax;
+                var vbx = B2.vx - B2.av * rby, vby = B2.vy + B2.av * rbx;
+                var rvx = vbx - vax, rvy = vby - vay;
+                var vn = rvx * ct.nx + rvy * ct.ny;
+
+                var rnA = rax * ct.ny - ray * ct.nx;
+                var rnB = rbx * ct.ny - rby * ct.nx;
+                var kn = A2.invMass + B2.invMass + rnA * rnA * A2.invI + rnB * rnB * B2.invI;
+                if (kn <= 0) continue;
+
+                // 這裡刻意「不」把穿透修正加進速度（Baumgarte bias）。
+                // 那樣做等於持續對接觸注入能量，堆疊會永遠微微顫動、睡不著，
+                // 塔自己就會慢慢走位垮掉。穿透改在下方用純位置修正處理。
+                var rest = (it === 0 && vn < -220) ? (A2.rest + B2.rest) * 0.5 * vn : 0;
+                var jn = -(vn + rest) / kn;
+
+                // 累積衝量並箝制為非負，避免物體被「吸住」
+                var old = ct.pn;
+                ct.pn = Math.max(0, old + jn);
+                jn = ct.pn - old;
+
+                A2.applyImpulse(-ct.nx * jn, -ct.ny * jn, rax, ray);
+                B2.applyImpulse(ct.nx * jn, ct.ny * jn, rbx, rby);
+
+                // 摩擦（庫倫近似）
+                var tx = -ct.ny, ty = ct.nx;
+                vax = A2.vx - A2.av * ray; vay = A2.vy + A2.av * rax;
+                vbx = B2.vx - B2.av * rby; vby = B2.vy + B2.av * rbx;
+                var vt = (vbx - vax) * tx + (vby - vay) * ty;
+                var rtA = rax * ty - ray * tx;
+                var rtB = rbx * ty - rby * tx;
+                var kt = A2.invMass + B2.invMass + rtA * rtA * A2.invI + rtB * rtB * B2.invI;
+                if (kt <= 0) continue;
+                // 摩擦也要累積並箝制在庫倫錐內，才能跨幀 warm start。
+                // 每幀從零重算摩擦，堆疊會有肉眼看不見的持續側滑。
+                var jt = -vt / kt;
+                var mu = Math.sqrt(A2.fric * B2.fric);
+                var maxJt = ct.pn * mu;
+                var oldT = ct.pt;
+                ct.pt = RE.clamp(oldT + jt, -maxJt, maxJt);
+                jt = ct.pt - oldT;
+                A2.applyImpulse(-tx * jt, -ty * jt, rax, ray);
+                B2.applyImpulse(tx * jt, ty * jt, rbx, rby);
+            }
+        }
+
+        // 位置修正：只搬位置、不動速度，所以不會餵能量給系統。
+        //
+        // 每次迭代都用「當前位置」重新算分離量，而不是拿最初的 depth 一路扣。
+        // 這一點是整套求解器裡最容易寫錯的地方：
+        //   - 若逐接觸直接扣初始 depth，接觸多的物體會被推好幾次，塔會被撐開；
+        //   - 若把各接觸的修正量平均，中間層被上方往下推、被下方往上推，
+        //     兩者抵消，穿透永遠解不掉，結構會持續下沉幾個像素後突然爆開。
+        // 重算分離量則會自動收斂：一旦某個接觸不再穿透，它就不會再貢獻修正。
+        var pit, pc, bi2;
+        for (bi2 = 0; bi2 < bs.length; bi2++) { bs[bi2]._px0 = bs[bi2].x; bs[bi2]._py0 = bs[bi2].y; }
+        for (pc = 0; pc < contacts.length; pc++) contacts[pc].depth0 = contacts[pc].depth;
+
+        for (pit = 0; pit < POS_ITER; pit++) {
+            for (pc = 0; pc < contacts.length; pc++) {
+                var p1 = contacts[pc];
+                var tm = p1.a.invMass + p1.b.invMass;
+                if (tm <= 0) continue;
+                // 兩者自修正開始以來、沿法線方向的相對位移
+                var mvA = (p1.a.x - p1.a._px0) * p1.nx + (p1.a.y - p1.a._py0) * p1.ny;
+                var mvB = (p1.b.x - p1.b._px0) * p1.nx + (p1.b.y - p1.b._py0) * p1.ny;
+                var sep = p1.depth0 - (mvB - mvA);
+                var corr = Math.max(0, sep - SLOP) * POS_RATE;
+                if (corr <= 0) continue;
+                if (corr > 2.5) corr = 2.5;          // 單次修正上限，避免深度穿透把東西彈飛
+                var ra2 = p1.a.invMass / tm, rb2 = p1.b.invMass / tm;
+                if (!p1.a.st) { p1.a.x -= p1.nx * corr * ra2; p1.a.y -= p1.ny * corr * ra2; }
+                if (!p1.b.st) { p1.b.x += p1.nx * corr * rb2; p1.b.y += p1.ny * corr * rb2; }
+            }
+        }
+
+        // 回報撞擊強度，供遊戲層計算破壞
+        if (this.onImpact) {
+            for (var c2 = 0; c2 < contacts.length; c2++) {
+                var cc = contacts[c2];
+                if (cc.closing > 1) {
+                    var key = cc.a.id + '_' + cc.b.id;
+                    if (!maxImp[key] || maxImp[key].v < cc.closing) {
+                        maxImp[key] = { a: cc.a, b: cc.b, v: cc.closing };
+                    }
+                }
+            }
+            for (var key2 in maxImp) {
+                this.onImpact(maxImp[key2].a, maxImp[key2].b, maxImp[key2].v);
+            }
+        }
+
+        // 把這一幀解出來的衝量存起來給下一幀當起點
+        var nc = {};
+        for (var si = 0; si < contacts.length; si++) {
+            if (contacts[si].pn > 0) nc[contacts[si].key] = { n: contacts[si].pn, t: contacts[si].pt };
+        }
+        this.cache = nc;
+        this.lastContacts = contacts;    // 供除錯檢視
+
+        // 積分位置 + 睡眠判定
+        for (i = 0; i < bs.length; i++) {
+            var b3 = bs[i];
+            if (b3.st || b3.sleeping) continue;
+            // 極小的殘餘速度直接歸零，近似靜摩擦。
+            // 不做的話，堆疊會以每幀千分之一的速度持續走位，幾百幀後仍會垮。
+            if (Math.abs(b3.vx) < 1.2) b3.vx = 0;
+            if (Math.abs(b3.av) < 0.025) b3.av = 0;
+            b3.x += b3.vx * dt;
+            b3.y += b3.vy * dt;
+            b3.angle += b3.av * dt;
+            var spd = Math.abs(b3.vx) + Math.abs(b3.vy);
+            if (spd < SLEEP_V && Math.abs(b3.av) < SLEEP_A) b3.sleep += dt;
+            else b3.sleep = 0;
+        }
+
+        this._islandSleep(contacts, bs);
+    };
+
+    /**
+     * 以「島」為單位決定睡眠：互相接觸的一群物體必須整組一起睡、一起醒。
+     *
+     * 逐物體判定會出事——塔的下層先睡（不再受重力、不再解算），上層還醒著，
+     * 支撐力當場斷掉，整座塔就從中間塌下去。實測 L2 就是這樣垮的。
+     *
+     * 靜態物體不參與連通，否則地面會把場上所有東西連成同一島，
+     * 一隻鳥還在飛就足以讓整個場景醒著。
+     */
+    World.prototype._islandSleep = function (contacts, bs) {
+        var i;
+        for (i = 0; i < bs.length; i++) bs[i]._root = bs[i];
+
+        function find(b) {
+            while (b._root !== b) { b._root = b._root._root; b = b._root; }
+            return b;
+        }
+        for (i = 0; i < contacts.length; i++) {
+            var c = contacts[i];
+            if (c.a.st || c.b.st) continue;
+            var ra = find(c.a), rb = find(c.b);
+            if (ra !== rb) ra._root = rb;
+        }
+
+        // 每座島取成員中最小的睡眠計時：有一個還在動，全島都不准睡
+        var minSleep = {};
+        for (i = 0; i < bs.length; i++) {
+            if (bs[i].st) continue;
+            var r = find(bs[i]);
+            if (!r._iid) r._iid = 'i' + bs[i].id;
+            var key = r._iid;
+            if (minSleep[key] === undefined || bs[i].sleep < minSleep[key]) minSleep[key] = bs[i].sleep;
+        }
+        for (i = 0; i < bs.length; i++) {
+            var b = bs[i];
+            if (b.st) continue;
+            var ms = minSleep[find(b)._iid];
+            if (ms !== undefined && ms > SLEEP_T) {
+                b.sleeping = true;
+                b.vx = b.vy = b.av = 0;
+            } else {
+                b.sleeping = false;
+            }
+        }
+        for (i = 0; i < bs.length; i++) bs[i]._iid = null;
+    };
+
+    World.prototype.settled = function () {
+        for (var i = 0; i < this.bodies.length; i++) {
+            var b = this.bodies[i];
+            if (b.st || b.dead) continue;
+            if (!b.sleeping) return false;
+        }
+        return true;
+    };
+
+    return { World: World, Body: Body };
+})();
+
+/* ==========================================================================
+   第二部分：遊戲
+   ========================================================================== */
+
+var GROUND_Y = 286;
+var SLING_X = 76, SLING_Y = 232;
+var WORLD_W = 960;
+var MAX_PULL = 62;          // 彈弓最大拉距（畫面像素）
+var LAUNCH_K = 15.5;        // 拉距 → 初速的倍率
+
+// 材質：密度、體力、破壞門檻（撞擊速度 px/s）、顏色
+// tough 是「撞多快才開始受傷」，低於它的碰撞完全不痛——
+// 這樣結構才能穩穩承重，而不是被自己的重量壓垮。
+var MAT = {
+    wood: { density: 0.0011, hp: 62,  tough: 140, fill: '#c08a4a', dark: '#8a5c2c', chip: ['#c08a4a', '#8a5c2c', '#e0b070'] },
+    ice:  { density: 0.0007, hp: 30,  tough: 90,  fill: '#8fd3e8', dark: '#4f9ab5', chip: ['#bfeaf5', '#8fd3e8', '#ffffff'] },
+    rock: { density: 0.0026, hp: 128, tough: 260, fill: '#9a9a9e', dark: '#63636a', chip: ['#9a9a9e', '#63636a', '#c8c8cc'] }
+};
+
+// 鳥：質量密度、半徑、特技
+var BIRDS = {
+    red:    { r: 10, density: 0.0034, color: '#e0453e', belly: '#f2c9a0', power: null,    hint: '沒有特技，最單純的一發' },
+    yellow: { r: 9,  density: 0.0030, color: '#f2c94c', belly: '#fff0c0', power: 'dash',  hint: '空中點一下 → 加速衝刺' },
+    blue:   { r: 7,  density: 0.0024, color: '#4fa8e0', belly: '#cfeaff', power: 'split', hint: '空中點一下 → 分裂成三隻' },
+    black:  { r: 11, density: 0.0040, color: '#3a3a42', belly: '#f2c94c', power: 'bomb',  hint: '空中點一下 → 引爆' }
+};
+
+/* 黑鳥的半徑是「作用範圍」，不是「可靠擊殺範圍」。舊版對豬最大傷害 40、豬血 22，
+   代表只有離爆心 33px 內才會擊殺；第五關的石牆弱點實測最近只能引爆在約 43px，
+   結果 12 個固定種子全卡關。72 把可靠核心擴到 51px，仍要求玩家把黑鳥送進結構內，
+   但飛行中特技不再只是把豬打到剩一點血。方塊傷害維持 34，不把石牆變成紙牆。
+   搭配第三／五關各一隻黑鳥後，正式 12 種子由 0/12 變 12/12；固定角度 noCore
+   仍是 0/12、第一關 0 分，代表改善只發生在讀懂結構並使用特技的打法。 */
+var BOMB_RADIUS = 74, BOMB_FORCE = 520;
+var BOMB_PIG_DAMAGE = 72, BOMB_BLOCK_DAMAGE = 34;
+
+/* --------------------------------------------------------------------------
+   五關結構設計。
+   座標一律以「底部 y」宣告，由 loadLevel 換算成質心——
+   手算中心點極容易讓相鄰的兩塊初始就重疊，或讓某塊懸空幾像素，
+   結果是玩家還沒發射，塔就自己垮了。用底部宣告則每一層剛好疊在前一層頂上。
+
+   b: [x, 底部y, w, h, 材質]      p: [x, 底部y]（豬）
+   birds: 出場順序
+   star2 / star3：二星與三星的分數門檻——「過關」與「精通」在這裡分離。
+   -------------------------------------------------------------------------- */
+var GY = GROUND_Y;   // 關卡表裡寫 GY 比較短
+var LEVELS = [
+    {
+        name: '第一關　木箱與屋頂',
+        hint: '瞄準底下的支柱，上面的東西會自己垮下來。',
+        birds: ['red', 'red', 'red'],
+        b: [
+            [600, GY, 14, 48, 'wood'], [672, GY, 14, 48, 'wood'],
+            [636, 238, 100, 12, 'wood'],
+            [636, 226, 14, 28, 'wood'],
+            [636, 198, 64, 10, 'wood']
+        ],
+        p: [[636, GY], [712, GY]],
+        star2: 22000, star3: 29000
+    },
+    {
+        name: '第二關　冰塔',
+        hint: '冰塊最脆。找到那根撐住整座塔的柱子。',
+        birds: ['red', 'yellow', 'red'],
+        b: [
+            [560, GY, 12, 56, 'ice'], [640, GY, 12, 56, 'ice'],
+            [600, 230, 96, 10, 'ice'],
+            [576, 220, 12, 40, 'ice'], [624, 220, 12, 40, 'ice'],
+            [600, 180, 72, 10, 'wood'],
+            [722, GY, 12, 48, 'wood'], [758, GY, 12, 48, 'wood'],
+            [740, 238, 52, 10, 'wood']
+        ],
+        p: [[600, GY], [600, 170], [740, 228]],
+        star2: 25000, star3: 33000
+    },
+    {
+        name: '第三關　石牆之後',
+        hint: '正面砸不動石頭。繞過去，或把它推倒。',
+        // 舊版四鳥在 12 個固定種子全數剩一隻豬：兩隻露天豬各要一發，
+        // 封閉豬又要先拆柱／橫樑再補擊殺。第五隻黑鳥是特技解題資源，不是額外生命；
+        // 三星門檻同步加 10000，避免多一隻鳥讓精通評分自動變容易。
+        birds: ['yellow', 'red', 'black', 'red', 'black'],
+        b: [
+            // 獨立的高柱底面要夠寬。16 寬 92 高（5.75:1）在正確的物理下本來就站不住，
+            // 玩家還沒發射它就自己倒了——那不是難度，那是壞掉。
+            [540, GY, 26, 92, 'rock'],
+            [660, GY, 14, 48, 'wood'], [720, GY, 14, 48, 'wood'],
+            [690, 238, 84, 12, 'wood'],
+            // 一根柱子撐一根寬樑就是倒立擺：重心正好落在支點上，
+            // 數值噪音一定會把它推倒。承重的地方一律用雙柱。
+            [668, 226, 12, 32, 'ice'], [712, 226, 12, 32, 'ice'],
+            [690, 194, 60, 10, 'wood'],
+            [790, GY, 12, 48, 'ice'], [826, GY, 12, 48, 'ice'],
+            [808, 238, 52, 10, 'wood']
+        ],
+        p: [[690, GY], [690, 184], [808, 228]],
+        star2: 37000, star3: 47000
+    },
+    {
+        name: '第四關　雙塔',
+        hint: '兩座塔，三隻豬，鳥不夠用。想清楚每一發要做什麼。',
+        birds: ['blue', 'yellow', 'black'],
+        b: [
+            [560, GY, 12, 56, 'ice'], [620, GY, 12, 56, 'ice'],
+            [590, 230, 76, 10, 'wood'],
+            [590, 220, 12, 34, 'wood'],
+            [590, 186, 56, 10, 'ice'],
+            [740, GY, 14, 68, 'rock'], [810, GY, 14, 68, 'rock'],
+            [775, 218, 90, 12, 'wood'],
+            [775, 206, 12, 32, 'ice'],
+            [775, 174, 64, 10, 'wood']
+        ],
+        p: [[590, GY], [775, GY], [775, 164]],
+        star2: 23000, star3: 30000
+    },
+    {
+        name: '第五關　城塞',
+        hint: '最後一關。石頭包在外面，弱點只有一個——找出來。',
+        // 第三關修通後，舊版四鳥會固定在最後石牆後留下滿血豬；
+        // 補一隻黑鳥，要求玩家把爆心送進 51px 擊殺核心。星等門檻同幅上調。
+        birds: ['yellow', 'blue', 'black', 'red', 'black'],
+        b: [
+            [520, GY, 24, 80, 'rock'],
+            [600, GY, 14, 48, 'ice'], [660, GY, 14, 48, 'ice'],
+            [630, 238, 76, 12, 'wood'],
+            [606, 226, 16, 36, 'rock'], [654, 226, 16, 36, 'rock'],
+            [630, 190, 84, 12, 'wood'],
+            [602, 178, 14, 32, 'ice'], [658, 178, 14, 32, 'ice'],
+            [630, 146, 76, 10, 'wood'],
+            [760, GY, 22, 80, 'rock'], [840, GY, 22, 80, 'rock'],
+            [800, 206, 96, 12, 'wood'],
+            [800, 194, 14, 32, 'ice']
+        ],
+        p: [[630, GY], [630, 136], [800, GY], [770, 194]],
+        star2: 40000, star3: 49000
+    }
+];
+
+var world = null;
+var s = null;
+
+function reset() {
+    s = {
+        level: 0, phase: 'aim',      // aim | fly | settle | levelEnd
+        birds: [], birdIndex: 0,
+        cur: null, extra: [],        // extra：藍鳥分裂出來的分身
+        pigs: [], blocks: [],
+        pull: { on: false, x: SLING_X, y: SLING_Y },
+        aimAngle: -0.6, aimPower: 0.75,   // 鍵盤瞄準用
+        camX: 0, camTarget: 0,
+        settleT: 0, endT: 0,
+        levelScore: 0, totalScore: 0,
+        stars: 0, trail: [], shots: [], artFx: [],
+        powerUsed: false, banner: '', bannerT: 0,
+        pointerDownSeen: false
+    };
+    P.clear(); FT.clear();
+    G.setStat('score', 0);
+    G.setStat('level', '1/5');
+    loadLevel(0);
+}
+
+function loadLevel(i) {
+    var L = LEVELS[i];
+    s.level = i;
+    s.levelScore = 0;
+    s.birdIndex = 0;
+    s.cur = null;
+    s.extra = [];
+    s.trail = [];
+    s.shots = [];
+    s.artFx = [];
+    s.phase = 'aim';
+    s.camX = 0; s.camTarget = 0;
+    s.pull.on = false;
+    s.pointerDownSeen = false;
+    s.aimAngle = -0.6; s.aimPower = 0.75;
+    P.clear();
+
+    world = new PHYS.World();
+    world.onImpact = onImpact;
+
+    // 地面與左右牆
+    world.add({ shape: 'box', x: WORLD_W / 2, y: GROUND_Y + 40, w: WORLD_W + 400, h: 80, static: true, fric: 0.8, tag: 'ground' });
+    world.add({ shape: 'box', x: -30, y: 100, w: 40, h: 500, static: true, tag: 'wall' });
+
+    // 底部 y → 質心 y。多留 0.4px 的空隙，讓物體靠重力自然沉降接觸，
+    // 而不是一開始就互相穿透（穿透會被位置修正推開，塔當場炸掉）。
+    s.blocks = [];
+    for (var k = 0; k < L.b.length; k++) {
+        var d = L.b[k], m = MAT[d[4]];
+        var hpv = m.hp * Math.sqrt(d[2] * d[3]) / 26;
+        var body = world.add({
+            shape: 'box', x: d[0], y: d[1] - d[3] / 2 - 0.4, w: d[2], h: d[3],
+            density: m.density, fric: d[4] === 'ice' ? 0.28 : 0.6,
+            rest: d[4] === 'ice' ? 0.14 : 0.08, tag: 'block',
+            data: { mat: d[4], hp: hpv, maxHp: hpv }
+        });
+        s.blocks.push(body);
+    }
+
+    s.pigs = [];
+    for (var q = 0; q < L.p.length; q++) {
+        var pig = world.add({
+            shape: 'circle', x: L.p[q][0], y: L.p[q][1] - 11 - 0.4, r: 11,
+            density: 0.0016, fric: 0.5, rest: 0.16, tag: 'pig',
+            data: { hp: 22, maxHp: 22, blink: 0 }
+        });
+        s.pigs.push(pig);
+    }
+
+    s.birds = L.birds.slice();
+    G.setStat('level', (i + 1) + '/5');
+    G.setStat('birds', s.birds.length);
+    s.banner = L.name;
+    s.bannerT = 2.0;
+}
+
+// ======================================================================
+// 破壞：撞擊衝量超過材質門檻才會造成傷害
+// ======================================================================
+function onImpact(a, b, imp) {
+    damage(a, b, imp);
+    damage(b, a, imp);
+}
+
+/** imp 為接觸的接近速度（px/s），不是衝量 */
+function damage(target, other, imp) {
+    if (!target.data || target.st) return;
+    var isPig = target.tag === 'pig';
+    var isBlock = target.tag === 'block';
+    if (!isPig && !isBlock) return;
+
+    var tough = isPig ? 70 : MAT[target.data.mat].tough;
+    // 撞到的是鳥就吃滿，物體互撞打折——否則一垮起來會連鎖到整張圖都不剩
+    // 係數 0.1 是照著「一發應該造成什麼結果」校出來的：
+    // 鳥全力（約 700 px/s）直擊 → 木頭一發碎、冰塊粉碎、石頭要四發。
+    // 這正好對應說明文字裡「木頭好打、冰塊最脆、石頭幾乎砸不動」。
+    var mul = other.tag === 'bird' ? 1.25 : 0.5;
+    var dmg = (imp - tough) * mul * 0.1;
+    if (dmg <= 0) return;
+
+    target.data.hp -= dmg;
+    var px = target.x, py = target.y;
+
+    if (isPig) {
+        target.data.blink = 0.18;
+        if (target.data.hp <= 0) killPig(target);
+        else {
+            RetroAudio.play('blip');
+            P.burst(px, py, 3, { colors: ['#8ad46a', '#5fa83e'], speedMin: 30, speedMax: 90, gravity: 300, lifeMin: 0.15, lifeMax: 0.3, sizeMin: 1.5, sizeMax: 3 });
+        }
+        return;
+    }
+
+    var m = MAT[target.data.mat];
+    P.burst(px, py, 3, { colors: m.chip, speedMin: 30, speedMax: 120, gravity: 340, lifeMin: 0.15, lifeMax: 0.35, sizeMin: 1.5, sizeMax: 3.5 });
+    if (target.data.hp <= 0) breakBlock(target);
+    else if (imp > tough * 1.5) RetroAudio.play('hit');
+}
+
+function killPig(pig) {
+    if (pig.dead) return;
+    world.remove(pig);
+    var idx = s.pigs.indexOf(pig);
+    if (idx >= 0) s.pigs.splice(idx, 1);
+    s.artFx.push({ name: 'target_defeat', x: pig.x, y: pig.y, w: 42, h: 42, t: 0.58, max: 0.58, angle: pig.angle * 0.25 });
+    addScore(5000, pig.x, pig.y);
+    RE.juice.impact(2);
+    RetroAudio.play('explosion');
+    P.burst(pig.x, pig.y, 20, {
+        colors: ['#8ad46a', '#5fa83e', '#c8f0a0'], speedMin: 60, speedMax: 240,
+        gravity: 320, lifeMin: 0.3, lifeMax: 0.6, sizeMin: 2, sizeMax: 5
+    });
+    P.ring(pig.x, pig.y, '#8ad46a', 40);
+}
+
+function breakBlock(bl) {
+    if (bl.dead) return;
+    world.remove(bl);
+    var idx = s.blocks.indexOf(bl);
+    if (idx >= 0) s.blocks.splice(idx, 1);
+    s.artFx.push({ name: 'impact_shards', x: bl.x, y: bl.y, w: 52, h: 52, t: 0.42, max: 0.42, angle: bl.angle });
+    var m = MAT[bl.data.mat];
+    addScore(500, bl.x, bl.y);
+    RetroAudio.play(bl.data.mat === 'ice' ? 'lineClear' : 'hit');
+    RE.juice.shake(0.14);
+    P.burst(bl.x, bl.y, 12, {
+        colors: m.chip, speedMin: 50, speedMax: 190, gravity: 380,
+        lifeMin: 0.25, lifeMax: 0.5, sizeMin: 2, sizeMax: 4.5
+    });
+}
+
+function addScore(n, x, y) {
+    s.levelScore += n;
+    G.setStat('score', s.totalScore + s.levelScore);
+    if (x !== undefined) FT.add(x, y - 12, '+' + n, { color: '#ffd166', size: 13 });
+}
+
+// ======================================================================
+// 發射
+// ======================================================================
+function launch(vx, vy) {
+    var kind = s.birds[s.birdIndex];
+    var B = BIRDS[kind];
+    var body = world.add({
+        shape: 'circle', x: SLING_X, y: SLING_Y, r: B.r,
+        density: B.density, fric: 0.4, rest: 0.28, tag: 'bird',
+        data: { kind: kind, born: 0 }
+    });
+    body.vx = vx; body.vy = vy;
+    s.cur = body;
+    s.phase = 'fly';
+    s.powerUsed = false;
+    s.trail = [];
+    s.settleT = 0;
+    RetroAudio.play('shoot');
+    RE.juice.shake(0.16);
+    P.burst(SLING_X, SLING_Y, 8, { colors: ['#e8dcc0', '#c9b18a'], speedMin: 40, speedMax: 130, gravity: 260, lifeMin: 0.2, lifeMax: 0.4, sizeMin: 1.5, sizeMax: 3 });
+}
+
+/** 空中特技：仍然只需要「點一下」這一個手勢 */
+function usePower() {
+    if (!s.cur || s.powerUsed || s.phase !== 'fly') return;
+    var kind = s.cur.data.kind;
+    var B = BIRDS[kind];
+    if (!B.power) return;
+    s.powerUsed = true;
+
+    if (B.power === 'dash') {
+        var sp = Math.sqrt(s.cur.vx * s.cur.vx + s.cur.vy * s.cur.vy) || 1;
+        s.cur.vx = s.cur.vx / sp * (sp * 1.75 + 260);
+        s.cur.vy = s.cur.vy / sp * (sp * 1.75 + 260) * 0.7;
+        RetroAudio.play('dash');
+        RE.juice.punchZoom(0.05);
+        P.burst(s.cur.x, s.cur.y, 12, { colors: ['#f2c94c', '#fff0c0'], speedMin: 60, speedMax: 200, gravity: 0, lifeMin: 0.15, lifeMax: 0.35, sizeMin: 2, sizeMax: 4, glow: true });
+    } else if (B.power === 'split') {
+        // 分裂後改畫三個實際剛體，避免「母表裡的速度殘影＋兩個分身」被誤讀成五隻。
+        s.cur.data.artSplit = true;
+        for (var i = -1; i <= 1; i += 2) {
+            var nb = world.add({
+                shape: 'circle', x: s.cur.x, y: s.cur.y - i * 8, r: 6,
+                density: BIRDS.blue.density, fric: 0.4, rest: 0.28, tag: 'bird',
+                data: { kind: 'blue', born: 0, clone: true }
+            });
+            var a = Math.atan2(s.cur.vy, s.cur.vx) + i * 0.24;
+            var sp2 = Math.sqrt(s.cur.vx * s.cur.vx + s.cur.vy * s.cur.vy);
+            nb.vx = Math.cos(a) * sp2; nb.vy = Math.sin(a) * sp2;
+            s.extra.push(nb);
+        }
+        RetroAudio.play('powerup');
+    } else if (B.power === 'bomb') {
+        explode(s.cur.x, s.cur.y, BOMB_RADIUS, BOMB_FORCE);
+        world.remove(s.cur);
+        s.cur = null;
+        s.phase = 'settle';
+        s.settleT = 0;
+    }
+}
+
+function explode(x, y, radius, force) {
+    RetroAudio.play('bigExplosion');
+    RE.juice.impact(3);
+    RE.juice.shake(0.7);
+    P.ring(x, y, '#ffd166', radius);
+    P.burst(x, y, 30, {
+        colors: ['#ffd166', '#ff8a4c', '#fff0aa', '#8a5c2c'], speedMin: 80, speedMax: 320,
+        gravity: 300, lifeMin: 0.25, lifeMax: 0.7, sizeMin: 2, sizeMax: 6, glow: true
+    });
+    var bs = world.bodies;
+    for (var i = 0; i < bs.length; i++) {
+        var b = bs[i];
+        if (b.st || b.dead) continue;
+        var dx = b.x - x, dy = b.y - y;
+        var d = Math.sqrt(dx * dx + dy * dy);
+        if (d > radius || d === 0) continue;
+        var f = (1 - d / radius) * force;
+        b.wake();
+        b.vx += dx / d * f;
+        b.vy += dy / d * f - f * 0.25;
+        if (b.data && (b.tag === 'block' || b.tag === 'pig')) {
+            b.data.hp -= (1 - d / radius) *
+                (b.tag === 'pig' ? BOMB_PIG_DAMAGE : BOMB_BLOCK_DAMAGE);
+            if (b.data.hp <= 0) {
+                if (b.tag === 'pig') killPig(b); else breakBlock(b);
+            }
+        }
+    }
+}
+
+// ======================================================================
+// 更新
+// ======================================================================
+function update(dt) {
+    P.update(dt); FT.update(dt);
+    if (s.bannerT > 0) s.bannerT -= dt;
+    for (var fx = s.artFx.length - 1; fx >= 0; fx--) {
+        s.artFx[fx].t -= dt;
+        if (s.artFx[fx].t <= 0) s.artFx.splice(fx, 1);
+    }
+
+    if (s.phase === 'levelEnd') {
+        s.endT += dt;
+        world.step(dt);
+        updateCam(dt);
+        if (s.endT > 1.6) finishLevel();
+        return;
+    }
+
+    if (s.phase === 'aim') updateAim(dt);
+    if (s.phase === 'fly') updateFly(dt);
+
+    world.step(dt);
+
+    // 豬被壓在崩塌物下、或摔到地上：以速度變化造成的傷害已在 onImpact 處理，
+    // 這裡只處理掉出畫面的情形
+    var i;
+    for (i = s.pigs.length - 1; i >= 0; i--) {
+        if (s.pigs[i].y > GROUND_Y + 60 || s.pigs[i].x > WORLD_W + 100) killPig(s.pigs[i]);
+        else if (s.pigs[i].data.blink > 0) s.pigs[i].data.blink -= dt;
+    }
+    for (i = s.blocks.length - 1; i >= 0; i--) {
+        if (s.blocks[i].y > GROUND_Y + 80) breakBlock(s.blocks[i]);
+    }
+
+    if (s.phase === 'settle') updateSettle(dt);
+    updateCam(dt);
+
+    // 過關判定
+    if (s.pigs.length === 0 && s.phase !== 'levelEnd') {
+        s.phase = 'levelEnd'; s.endT = 0;
+        s.banner = '過關！'; s.bannerT = 2.0;
+        RetroAudio.play('win');
+        RE.juice.flash('rgba(255,255,255,0.4)', 0.12);
+    }
+}
+
+/*
+ * 觸控裝置有時會在遊戲第一個 update 前清掉 pressed，但 down 仍維持著；
+ * 若只看 pressed，玩家已經按住彈弓卻不會開始拉弦。用 down 的邊緣補一次，
+ * 讓同一個拖曳手勢在手機與桌面都能進入相同的瞄準流程。
+ */
+function pointerPressFresh() {
+    var pt = RE.Input.pointer;
+    if (!pt.down && !pt.pressed) { s.pointerDownSeen = false; return false; }
+    var fresh = pt.pressed || (pt.down && !s.pointerDownSeen);
+    if (fresh) s.pointerDownSeen = true;
+    return fresh;
+}
+
+function updateAim(dt) {
+    var pt = RE.Input.pointer;
+    var sx = SLING_X, sy = SLING_Y;
+    var freshPointer = pointerPressFresh();
+
+    // 滑鼠／觸控：拉彈弓
+    if (freshPointer && RE.dist(pt.x + s.camX, pt.y, sx, sy) < 200) s.pull.on = true;
+    if (s.pull.on) {
+        var dx = (pt.x + s.camX) - sx, dy = pt.y - sy;
+        var d = Math.sqrt(dx * dx + dy * dy);
+        if (d > MAX_PULL) { dx = dx / d * MAX_PULL; dy = dy / d * MAX_PULL; d = MAX_PULL; }
+        s.pull.x = sx + dx; s.pull.y = sy + dy;
+        s.aimAngle = Math.atan2(-dy, -dx);
+        s.aimPower = d / MAX_PULL;
+        if (!pt.down) {
+            s.pull.on = false;
+            if (d > 8) launch(-dx * LAUNCH_K, -dy * LAUNCH_K);
+        }
+        return;
+    }
+
+    // 鍵盤瞄準：沒有滑鼠也要能玩，煙霧測試也靠這條路徑
+    var ax = RE.Input.axisX(), ay = RE.Input.axisY();
+    if (ax) s.aimAngle = RE.clamp(s.aimAngle + ax * 1.4 * dt, -1.45, 0.55);
+    if (ay) s.aimPower = RE.clamp(s.aimPower - ay * 0.9 * dt, 0.15, 1);
+    s.pull.x = sx - Math.cos(s.aimAngle) * MAX_PULL * s.aimPower;
+    s.pull.y = sy + Math.sin(s.aimAngle) * MAX_PULL * s.aimPower;
+
+    if (RE.Input.pressed('a') || RE.Input.pressed('start')) {
+        launch(Math.cos(s.aimAngle) * MAX_PULL * s.aimPower * LAUNCH_K,
+               -Math.sin(s.aimAngle) * MAX_PULL * s.aimPower * LAUNCH_K);
+    }
+}
+
+function updateFly(dt) {
+    if (!s.cur) { s.phase = 'settle'; return; }
+    s.cur.data.born += dt;
+
+    /* 一個手勢：飛行中點一下就是特技。
+       **usePower() 可能會把 s.cur 設成 null**——黑鳥的特技就是就地引爆，
+       它會 world.remove(s.cur) 之後把 s.cur 清掉並切到 settle。
+       少了下面這個重新檢查，接著的 s.cur.data 會直接拋
+       「Cannot read properties of null」，整個遊戲當場停住。
+       這不是機器人才碰得到的邊界情況：玩家照著操作說明在空中按特技鍵就會撞到。 */
+    if (pointerPressFresh() || RE.Input.pressed('a')) {
+        usePower();
+        if (!s.cur) { s.phase = 'settle'; return; }
+    }
+
+    // 拖尾
+    if (s.cur.data.born > 0.02) {
+        s.trail.push({ x: s.cur.x, y: s.cur.y, t: 0 });
+        if (s.trail.length > 46) s.trail.shift();
+    }
+
+    // 黑鳥撞到東西也會爆炸
+    if (s.cur.data.kind === 'black' && s.cur.data.born > 0.1) {
+        var sp = Math.abs(s.cur.vx) + Math.abs(s.cur.vy);
+        if (sp < 200 && s.cur.data.born > 0.5) {
+            explode(s.cur.x, s.cur.y, BOMB_RADIUS, BOMB_FORCE);
+            world.remove(s.cur); s.cur = null;
+            s.phase = 'settle'; s.settleT = 0;
+            return;
+        }
+    }
+
+    var stopped = Math.abs(s.cur.vx) + Math.abs(s.cur.vy) < 30;
+    var offscreen = s.cur.x > WORLD_W + 60 || s.cur.y > GROUND_Y + 60 || s.cur.x < -60;
+    if (stopped || offscreen || s.cur.data.born > 7) {
+        // 飛出界的鳥要立刻收掉。留著它，world.settled() 永遠不會成立，
+        // 玩家得多等 4.5 秒的逾時才能發下一發。
+        if (offscreen) { world.remove(s.cur); s.cur = null; }
+        s.phase = 'settle'; s.settleT = 0;
+    }
+}
+
+/** 等待世界靜止再進入下一發，避免玩家在崩塌中途就被打斷 */
+function updateSettle(dt) {
+    s.settleT += dt;
+    var quiet = world.settled();
+    if ((quiet && s.settleT > 0.5) || s.settleT > 4.5) {
+        // 清掉場上的鳥
+        var bs = world.bodies;
+        for (var i = bs.length - 1; i >= 0; i--) {
+            if (bs[i].tag === 'bird') world.remove(bs[i]);
+        }
+        s.cur = null; s.extra = []; s.trail = [];
+        s.birdIndex++;
+        G.setStat('birds', Math.max(0, s.birds.length - s.birdIndex));
+
+        if (s.pigs.length === 0) {
+            s.phase = 'levelEnd'; s.endT = 0;
+            return;
+        }
+        if (s.birdIndex >= s.birds.length) {
+            // 鳥用完還有豬：這一關失敗
+            s.phase = 'levelEnd'; s.endT = 0;
+            s.banner = '鳥用完了';
+            s.bannerT = 2.0;
+            return;
+        }
+        s.phase = 'aim';
+        s.camTarget = 0;
+    }
+}
+
+function updateCam(dt) {
+    if (s.phase === 'fly' && s.cur) {
+        s.camTarget = RE.clamp(s.cur.x - VW * 0.42, 0, WORLD_W - VW);
+    } else if (s.phase === 'aim') {
+        s.camTarget = 0;
+    } else {
+        // 崩塌中把鏡頭停在結構上，讓玩家看完整場倒塌
+        s.camTarget = RE.clamp(s.camTarget, 0, WORLD_W - VW);
+    }
+    s.camX += (s.camTarget - s.camX) * (1 - Math.pow(0.002, dt));
+}
+
+function finishLevel() {
+    var L = LEVELS[s.level];
+    var cleared = s.pigs.length === 0;
+
+    if (!cleared) {
+        // 失敗：整款遊戲結束（分數保留）
+        G.gameOver({
+            win: false,
+            score: s.totalScore + s.levelScore,
+            body: '鳥用完了，豬還在。' +
+                  '下次試著先找出撐住整個結構的那一根——打倒它，剩下的交給重力。'
+        });
+        return;
+    }
+
+    // 剩餘的鳥換分：這是三星評分的主要來源，也是「精通」的定義
+    var left = s.birds.length - s.birdIndex;
+    if (left > 0) {
+        s.levelScore += left * 10000;
+        FT.add(s.cur ? s.cur.x : 240, 120, '剩餘 ' + left + ' 隻 +' + (left * 10000), { color: '#ffd166', size: 14, life: 1.4 });
+    }
+    s.totalScore += s.levelScore;
+    G.setStat('score', s.totalScore);
+
+    var stars = 1;
+    if (s.levelScore >= L.star3) stars = 3;
+    else if (s.levelScore >= L.star2) stars = 2;
+    s.stars = stars;
+    RE.Save.set('angry_birds', 'stars' + s.level, Math.max(stars, RE.Save.get('angry_birds', 'stars' + s.level, 0)));
+
+    if (s.level >= LEVELS.length - 1) {
+        var total = 0;
+        for (var i = 0; i < LEVELS.length; i++) total += RE.Save.get('angry_birds', 'stars' + i, 0);
+        G.gameOver({
+            win: true,
+            score: s.totalScore,
+            body: '五關全破，累計 ' + total + ' 顆星（滿分 15 顆）。' +
+                  (total >= 13 ? '你不只是通關，你真的讀懂了每一座結構。'
+                               : '過關與精通是兩回事——回頭再打一次，看看能不能把星星補滿。')
+        });
+        return;
+    }
+
+    var next = s.level + 1;
+    G.stageCard(next + 1, LEVELS[next].name, LEVELS[next].hint, function () { loadLevel(next); });
+}
+
+// ======================================================================
+// 繪圖
+// ======================================================================
+function drawAngryAsset(name, cx, cy, w, h, alpha, flip, rotation) {
+    var m = ANGRY_ART.manifest;
+    if (!m || !m.assets || !m.assets[name] || !ANGRY_ART.image.complete ||
+        !ANGRY_ART.image.naturalWidth) return false;
+    var a = m.assets[name];
+    ctx.save();
+    ctx.globalAlpha = alpha === undefined ? 1 : alpha;
+    ctx.translate(cx, cy);
+    if (rotation) ctx.rotate(rotation);
+    if (flip) ctx.scale(-1, 1);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(ANGRY_ART.image, a.x, a.y, a.w, a.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+}
+
+function drawSky() {
+    var g = ctx.createLinearGradient(0, 0, 0, VH);
+    g.addColorStop(0, '#7ec0e8');
+    g.addColorStop(0.62, '#bfe4f2');
+    g.addColorStop(1, '#e8f2d8');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, VW, VH);
+
+    // 雲（視差）
+    ctx.save();
+    ctx.globalAlpha = 0.75;
+    ctx.fillStyle = '#ffffff';
+    for (var i = 0; i < 7; i++) {
+        var cx = ((i * 173 + 60) - s.camX * 0.18) % (WORLD_W + 200) - 100;
+        var cy = 34 + (i * 47 % 70);
+        ctx.beginPath();
+        ctx.arc(cx, cy, 15, 0, RE.TAU);
+        ctx.arc(cx + 16, cy + 4, 11, 0, RE.TAU);
+        ctx.arc(cx - 15, cy + 5, 9, 0, RE.TAU);
+        ctx.fill();
+    }
+    ctx.restore();
+
+    // 遠山
+    ctx.save();
+    ctx.translate(-s.camX * 0.3, 0);
+    ctx.fillStyle = '#8fbf7a';
+    for (var j = 0; j < 8; j++) {
+        var mx = j * 180 - 60, mh = 60 + (j * 37 % 46);
+        ctx.beginPath();
+        ctx.moveTo(mx, GROUND_Y);
+        ctx.lineTo(mx + 90, GROUND_Y - mh);
+        ctx.lineTo(mx + 180, GROUND_Y);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawGround() {
+    ctx.fillStyle = '#6aa84f';
+    ctx.fillRect(0, GROUND_Y, WORLD_W + 200, 8);
+    ctx.fillStyle = '#8a6a3a';
+    ctx.fillRect(0, GROUND_Y + 8, WORLD_W + 200, VH - GROUND_Y);
+    ctx.fillStyle = '#75592f';
+    for (var i = 0; i < (WORLD_W + 200) / 26; i++) {
+        ctx.fillRect(i * 26 + (i % 3) * 4, GROUND_Y + 14 + (i % 4) * 5, 12, 3);
+    }
+}
+
+function drawBlock(b) {
+    var m = MAT[b.data.mat];
+    var dmg = 1 - RE.clamp(b.data.hp / b.data.maxHp, 0, 1);
+    ctx.save();
+    ctx.translate(b.x, b.y);
+    ctx.rotate(b.angle);
+    var assetName = (b.data.mat === 'rock' ? 'stone' : b.data.mat) + '_' +
+        (dmg > 0.25 ? 'cracked' : 'intact');
+    var vertical = b.h > b.w;
+    if (drawAngryAsset(assetName, 0, 0, Math.max(b.w, b.h) + 4, Math.min(b.w, b.h) + 4,
+                       1, false, vertical ? Math.PI / 2 : 0)) {
+        ctx.restore();
+        return;
+    }
+    ctx.fillStyle = m.fill;
+    ctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h);
+    // 邊框與內部紋理
+    ctx.strokeStyle = m.dark;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-b.w / 2 + 1, -b.h / 2 + 1, b.w - 2, b.h - 2);
+    if (b.data.mat === 'wood') {
+        ctx.strokeStyle = 'rgba(90,60,26,0.5)';
+        ctx.lineWidth = 1;
+        var n = Math.max(1, Math.floor(Math.min(b.w, b.h) / 6));
+        for (var i = 1; i < n; i++) {
+            ctx.beginPath();
+            if (b.w > b.h) { ctx.moveTo(-b.w / 2 + i * (b.w / n), -b.h / 2 + 2); ctx.lineTo(-b.w / 2 + i * (b.w / n), b.h / 2 - 2); }
+            else { ctx.moveTo(-b.w / 2 + 2, -b.h / 2 + i * (b.h / n)); ctx.lineTo(b.w / 2 - 2, -b.h / 2 + i * (b.h / n)); }
+            ctx.stroke();
+        }
+    } else if (b.data.mat === 'ice') {
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(-b.w / 2 + 2, -b.h / 2 + 2, Math.max(2, b.w * 0.28), b.h - 4);
+        ctx.globalAlpha = 1;
+    } else {
+        ctx.fillStyle = 'rgba(255,255,255,0.14)';
+        ctx.fillRect(-b.w / 2 + 2, -b.h / 2 + 2, b.w - 4, Math.max(2, b.h * 0.2));
+    }
+    // 裂痕：損傷可視化，玩家才知道再補一發就會碎
+    if (dmg > 0.25) {
+        ctx.strokeStyle = 'rgba(30,18,10,' + (0.35 + dmg * 0.5) + ')';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(-b.w / 4, -b.h / 2 + 2);
+        ctx.lineTo(0, 0);
+        ctx.lineTo(b.w / 5, b.h / 2 - 2);
+        ctx.stroke();
+        if (dmg > 0.6) {
+            ctx.beginPath();
+            ctx.moveTo(b.w / 2 - 2, -b.h / 4);
+            ctx.lineTo(0, 0);
+            ctx.stroke();
+        }
+    }
+    ctx.restore();
+}
+
+function drawPig(p) {
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.angle * 0.4);
+    var hurt = p.data.blink > 0;
+    var hp = RE.clamp(p.data.hp / p.data.maxHp, 0, 1);
+    if (drawAngryAsset(hurt || hp < 0.6 ? 'target_hurt' : 'target_calm', 0, 0, 32, 32, 1, false, 0)) {
+        ctx.restore();
+        return;
+    }
+    ctx.fillStyle = hurt ? '#ffffff' : (hp < 0.5 ? '#7ab85a' : '#8ad46a');
+    ctx.beginPath(); ctx.arc(0, 0, p.r, 0, RE.TAU); ctx.fill();
+    ctx.strokeStyle = '#4e8a36'; ctx.lineWidth = 1.5; ctx.stroke();
+    // 耳朵
+    ctx.fillStyle = hurt ? '#ffffff' : '#7ab85a';
+    ctx.beginPath(); ctx.arc(-6, -8, 3.4, 0, RE.TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(6, -8, 3.4, 0, RE.TAU); ctx.fill();
+    // 眼睛
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(-3.4, -2.4, 3.1, 0, RE.TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(3.4, -2.4, 3.1, 0, RE.TAU); ctx.fill();
+    ctx.fillStyle = '#20140c';
+    ctx.beginPath(); ctx.arc(-2.8, -2.4, 1.5, 0, RE.TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(4.0, -2.4, 1.5, 0, RE.TAU); ctx.fill();
+    // 鼻子
+    ctx.fillStyle = '#6fb84a';
+    ctx.beginPath(); ctx.ellipse(0, 3.4, 4.6, 3.4, 0, 0, RE.TAU); ctx.fill();
+    ctx.fillStyle = '#3e6e2a';
+    ctx.fillRect(-2.4, 2.4, 1.6, 2);
+    ctx.fillRect(0.8, 2.4, 1.6, 2);
+    // 受傷時的眉毛
+    if (hp < 0.6) {
+        ctx.strokeStyle = '#3e6e2a'; ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(-6.4, -7); ctx.lineTo(-1.4, -5);
+        ctx.moveTo(6.4, -7); ctx.lineTo(1.4, -5);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawBird(b) {
+    var B = BIRDS[b.data.kind];
+    ctx.save();
+    ctx.translate(b.x, b.y);
+    ctx.rotate(b.angle);
+    if (!b.data.clone && !b.data.artSplit &&
+        drawAngryAsset('bird_' + b.data.kind, 0, 0, Math.max(24, b.r * 3.4), Math.max(24, b.r * 3.4))) {
+        ctx.restore();
+        return;
+    }
+    ctx.fillStyle = B.color;
+    ctx.beginPath(); ctx.arc(0, 0, b.r, 0, RE.TAU); ctx.fill();
+    ctx.fillStyle = B.belly;
+    ctx.beginPath(); ctx.arc(0, b.r * 0.35, b.r * 0.55, 0, RE.TAU); ctx.fill();
+    // 眼睛
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(b.r * 0.28, -b.r * 0.3, b.r * 0.34, 0, RE.TAU); ctx.fill();
+    ctx.fillStyle = '#20140c';
+    ctx.beginPath(); ctx.arc(b.r * 0.38, -b.r * 0.3, b.r * 0.17, 0, RE.TAU); ctx.fill();
+    // 喙
+    ctx.fillStyle = '#f2a03e';
+    ctx.beginPath();
+    ctx.moveTo(b.r * 0.6, 0);
+    ctx.lineTo(b.r * 1.5, b.r * 0.16);
+    ctx.lineTo(b.r * 0.6, b.r * 0.42);
+    ctx.fill();
+    // 眉毛（決定「憤怒」的關鍵一筆）
+    ctx.strokeStyle = '#20140c';
+    ctx.lineWidth = Math.max(1.4, b.r * 0.18);
+    ctx.beginPath();
+    ctx.moveTo(-b.r * 0.05, -b.r * 0.86);
+    ctx.lineTo(b.r * 0.66, -b.r * 0.5);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawSling() {
+    var x = SLING_X, y = SLING_Y;
+    // 後叉
+    if (!drawAngryAsset('slingshot', x, y + 18, 62, 72)) {
+        ctx.strokeStyle = '#6b4423';
+        ctx.lineWidth = 6; ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x, GROUND_Y); ctx.lineTo(x, y + 6);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x, y + 8); ctx.lineTo(x - 9, y - 6);
+        ctx.moveTo(x, y + 8); ctx.lineTo(x + 9, y - 6);
+        ctx.stroke();
+    }
+
+    // 皮筋：拉的時候才畫
+    if (s.phase === 'aim') {
+        ctx.strokeStyle = '#3a2a1a';
+        ctx.lineWidth = 3.4;
+        ctx.beginPath();
+        ctx.moveTo(x - 9, y - 6); ctx.lineTo(s.pull.x, s.pull.y);
+        ctx.lineTo(x + 9, y - 6);
+        ctx.stroke();
+        // 待發的鳥
+        var kind = s.birds[s.birdIndex];
+        if (kind) {
+            drawBird({ x: s.pull.x, y: s.pull.y, r: BIRDS[kind].r, angle: 0, data: { kind: kind } });
+        }
+        // 預測軌跡：一個手勢也要看得到後果，否則玩家只是在亂丟
+        var vx = (x - s.pull.x) * LAUNCH_K, vy = (y - s.pull.y) * LAUNCH_K;
+        ctx.save();
+        ctx.fillStyle = 'rgba(255,255,255,0.72)';
+        var px = x, py = y, t = 0;
+        for (var i = 0; i < 26; i++) {
+            t += 0.05;
+            px = x + vx * t;
+            py = y + vy * t + 0.5 * 1250 * t * t;
+            if (py > GROUND_Y) break;
+            ctx.beginPath();
+            ctx.arc(px, py, 2.2 - i * 0.05, 0, RE.TAU);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+}
+
+function drawTrail() {
+    ctx.save();
+    for (var i = 0; i < s.trail.length; i++) {
+        var t = i / s.trail.length;
+        ctx.globalAlpha = t * 0.5;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(s.trail[i].x, s.trail[i].y, 1.6 + t * 1.4, 0, RE.TAU);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawAngryArtFx() {
+    for (var i = 0; i < s.artFx.length; i++) {
+        var fx = s.artFx[i];
+        var life = RE.clamp(fx.t / fx.max, 0, 1);
+        var scale = 1 + (1 - life) * 0.24;
+        drawAngryAsset(fx.name, fx.x, fx.y - (1 - life) * 5, fx.w * scale, fx.h * scale,
+            life, false, fx.angle || 0);
+    }
+}
+
+function drawHUD() {
+    var L = LEVELS[s.level];
+    // 手機 390px 寬時畫布會縮到約 75%，原本 11～13px 的提示實際只剩 8～10px，
+    // 玩家在拉弦與飛行中不易讀到核心回饋；放大後仍避開右側豬數與星等列。
+    // 待發鳥列
+    var kinds = s.birds.slice(s.birdIndex + (s.phase === 'aim' ? 1 : 0));
+    for (var i = 0; i < kinds.length; i++) {
+        drawBird({ x: 22 + i * 20, y: GROUND_Y - 8, r: BIRDS[kinds[i]].r * 0.8, angle: 0, data: { kind: kinds[i] } });
+    }
+
+    // 目前這隻鳥的特技提示
+    if (s.phase === 'aim') {
+        var cur = s.birds[s.birdIndex];
+        if (cur) {
+            RE.Draw.text(ctx, BIRDS[cur].hint, 12, 12, { size: 13, color: '#2a3b33', stroke: '#ffffff', strokeWidth: 3 });
+        }
+    } else if (s.phase === 'fly' && s.cur && BIRDS[s.cur.data.kind].power && !s.powerUsed) {
+        RE.Draw.text(ctx, '點一下發動特技！', VW / 2, 14,
+            { size: 15, align: 'center', color: '#ffd166', strokeWidth: 4 });
+    }
+
+    // 剩餘豬
+    RE.Draw.text(ctx, '🐷 × ' + s.pigs.length, VW - 12, 12,
+        { size: 14, align: 'right', color: '#2a3b33', stroke: '#ffffff', strokeWidth: 3 });
+
+    // 星等進度：讓玩家在打的當下就知道自己離三星多遠
+    var pct3 = RE.clamp(s.levelScore / L.star3, 0, 1);
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fillRect(VW - 92, 30, 80, 7);
+    ctx.fillStyle = pct3 >= 1 ? '#ffd166' : '#8ad46a';
+    ctx.fillRect(VW - 92, 30, 80 * pct3, 7);
+    var starN = s.levelScore >= L.star3 ? 3 : (s.levelScore >= L.star2 ? 2 : 1);
+    var starStr = '';
+    for (var q = 0; q < 3; q++) starStr += (q < starN ? '★' : '☆');
+    RE.Draw.text(ctx, starStr, VW - 12, 40,
+        { size: 14, align: 'right', color: '#ffd166', strokeWidth: 3 });
+    drawAngryAsset('star_medal', VW - 108, 46, 28, 28, 0.92);
+
+    if (s.bannerT > 0 && s.banner) {
+        ctx.save();
+        ctx.globalAlpha = RE.clamp(s.bannerT / 0.6, 0, 1);
+        RE.Draw.text(ctx, s.banner, VW / 2, VH / 2 - 40,
+            { size: 24, align: 'center', baseline: 'middle', color: '#fff8e7', strokeWidth: 6 });
+        ctx.restore();
+    }
+}
+
+function render() {
+    if (!s || !world) return;
+    G.beginWorld();
+    drawSky();
+
+    ctx.save();
+    ctx.translate(-s.camX, 0);
+    drawGround();
+    drawSling();
+    drawTrail();
+
+    var bs = world.bodies;
+    for (var i = 0; i < bs.length; i++) {
+        var b = bs[i];
+        if (b.st || b.dead) continue;
+        if (b.tag === 'block') drawBlock(b);
+        else if (b.tag === 'pig') drawPig(b);
+        else if (b.tag === 'bird') drawBird(b);
+    }
+
+    drawAngryArtFx();
+    P.draw(ctx);
+    FT.draw(ctx);
+    ctx.restore();
+
+    G.endWorld();
+    drawHUD();
+    G.postFX({ scanAlpha: 0.06, vignetteStrength: 0.35 });
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '拉彈弓瞄準後放開，清光豬就過關；飛行中點一下發動特技。' +
+          '少用鳥、砸更多東西可拿三星。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

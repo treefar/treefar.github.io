@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 蜂群突擊</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   蜂群突擊 — 致敬 Galaxian (Namco, 1979)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. 《Galaxian》相對於《Space Invaders》最大的革新：敵人會「脫離編隊俯衝」。
+      靜態靶場變成動態威脅，玩家必須同時注意編隊與突襲者。
+   2. 俯衝採用貝茲曲線路徑，讓軌跡優雅且可預判——可預判是關鍵，
+      不可預判的攻擊只會讓玩家覺得不公平。
+   3. 旗艦（Flagship）帶兩架護衛一起俯衝，全部擊落有高額獎勵，
+      這是「風險換高分」的經典設計。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'galaxian',
+    title: '蜂群突擊',
+    tagline: '敵人第一次離開了隊形',
+    original: 'Galaxian (Namco, 1979)',
+    decade: '70s', year: 1979, platform: '大型街機', genre: '固定射擊',
+    developer: 'Namco', bgm: '70s',
+    width: 420, height: 460,
+    lives: 3,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'best', label: 'BEST' },
+        { key: 'stage', label: 'STAGE', init: 1 }
+    ],
+    touch: 'dpad+ab', labelA: '射擊', maxScale: 2,
+    controls: [
+        { keys: ['←', '→'], desc: '移動' },
+        { keys: ['空白'], desc: '射擊' }
+    ],
+    howto: '擊落所有敵機過關。敵人會<strong>脫離編隊俯衝攻擊</strong>——俯衝中的敵人分數加倍。' +
+           '金色旗艦會帶兩架護衛一起下來，把三架全部擊落可得到高額連鎖獎勵。',
+    lesson: {
+        verb: '在畫面底部左右閃避，選擇要安全射擊編隊，或承擔近距離風險擊落正在俯衝的敵機。',
+        innovation: '敵人不再整排平移等待被射擊，而會離開自己的編隊槽，以可預判的曲線俯衝、投彈，再從下方回航。',
+        mission: '先找出畫面上的空編隊槽與同色虛線，沿線追蹤一架俯衝者；接著至少擊落一架俯衝中的敵機，確認分數為編隊內擊落的兩倍。',
+        evolution: '《Space Invaders》建立整齊壓境的敵群，《Galaxian》讓單機脫隊攻擊；《Galaga》再擴張成牽引、被俘與雙機合體。',
+        reflection: '如果敵機只在編隊中左右擺動，彩色角色與捲動星空仍能讓戰鬥產生同樣的空間壓力嗎？'
+    },
+    design: '《Galaxian》解決的問題是：整齊敵群雖然有壓力，反覆橫移久了仍容易被玩家當成固定靶。它的關鍵不是「敵人更多」，而是敵人明顯離開整齊隊形，把安全的遠方目標變成會穿越全場的近身威脅。' +
+            '本站每架俯衝者都沿自己的三次貝茲曲線移動並投彈，離場後再回到原本的編隊槽；旗艦還會帶兩架護衛共同出擊。' +
+            '擊落編隊內敵人比較安全，擊落俯衝者則有兩倍基礎分，讓玩家在生存與高分間做選擇。' +
+            '現代教學層用同一條實際貝茲路徑畫出低透明度預測線，並標出空槽與回航狀態，不改路徑或敵機速度。',
+    history: 'Bandai Namco 的公司沿革記載，Namco 在 1979 年發表大型街機《Galaxian》；官方 Namco Museum 資料則把它列為' +
+             '當時技術上具有劃時代意義的射擊遊戲。另一份官方歷史頁記錄原版於 1979 年 10 月登場，並指出角色物件與背景重疊的技術意義。' +
+             '對遊戲設計史而言，更容易由玩家直接感受到的改變，是彩色敵機從編隊脫離、沿弧線俯衝與回航；' +
+             '本站因此不只把它寫成「全彩顯示器第一款」這類難以限定的硬體首創說法。',
+    sources: [
+        { label: 'Bandai Namco：Namco 公司沿革與 1979 Galaxian', url: 'https://www.bandainamcoent.co.jp/corporate/history/namco/' },
+        { label: 'Bandai Namco：Namco Gallery Vol.2 的 Galaxian 歷史', url: 'https://www.bandainamcoent.co.jp/cs/list/namcogarally2/page02.html' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(420);
+var FT = new RE.FloatText();
+var PAL = { r: '#ff6b6b', y: '#ffd166', b: '#7dd3fc', p: '#c084fc', w: '#fff8e7', g: '#70e4b5' };
+
+var ART = {
+    grunt:  [['..b..','.bbb.','bb.bb','.b.b.','b...b'], ['..b..','.bbb.','bb.bb','b...b','.b.b.']],
+    guard:  [['..p..','.ppp.','ppppp','p.p.p','.p.p.'], ['..p..','.ppp.','ppppp','.ppp.','p...p']],
+    flag:   [['.y.y.','yyyyy','y.y.y','yyyyy','.y.y.'], ['y.y.y','.yyy.','yyyyy','.yyy.','y.y.y']],
+    ship:   [['..w..','..w..','.www.','wwwww','w.w.w']]
+};
+var SC = 4;
+var IMG = {};
+for (var k in ART) IMG[k] = ART[k].map(function (a) { return RE.Draw.bake(a, PAL, SC); });
+
+var STAGES = [
+    { rows: 3, cols: 8,  dive: 2.6, diveSpeed: 1.00, name: '第一編隊' },
+    { rows: 4, cols: 8,  dive: 2.2, diveSpeed: 1.10, name: '增援抵達' },
+    { rows: 4, cols: 9,  dive: 1.8, diveSpeed: 1.20, name: '密集俯衝' },
+    { rows: 5, cols: 9,  dive: 1.5, diveSpeed: 1.32, name: '旗艦出擊' },
+    { rows: 5, cols: 10, dive: 1.25, diveSpeed: 1.45, name: '蜂群怒濤' },
+    { rows: 5, cols: 10, dive: 1.0, diveSpeed: 1.6,  name: '最終編隊' }
+];
+
+var s = {};
+
+function buildStage(n) {
+    var cfg = STAGES[Math.min(n - 1, STAGES.length - 1)];
+    var list = [];
+    var gapX = 32, gapY = 28;
+    var ox = (W - (cfg.cols - 1) * gapX) / 2;
+    for (var r = 0; r < cfg.rows; r++) {
+        for (var c = 0; c < cfg.cols; c++) {
+            var type = r === 0 ? (c % 4 === 1 ? 'flag' : 'guard') : 'grunt';
+            list.push({
+                homeX: ox + c * gapX - 10, homeY: 54 + r * gapY,
+                x: ox + c * gapX - 10, y: 54 + r * gapY,
+                type: type, alive: true, state: 'formation',
+                t: 0, path: null, escort: null, flash: 0, row: r, col: c
+            });
+        }
+    }
+    return { cfg: cfg, enemies: list };
+}
+
+function reset() {
+    s = {
+        stage: 1, lives: 3, score: 0,
+        ship: { x: W / 2 - 10, y: H - 52, vx: 0, invuln: 2 },
+        bullets: [], bombs: [], enemies: [], cfg: null,
+        swayT: 0, diveTimer: 2.4,
+        chain: 0, chainTimer: 0,
+        anim: 0, animT: 0,
+        over: false, clearTimer: 0, deathReason: ''
+    };
+    var st = buildStage(1);
+    s.enemies = st.enemies; s.cfg = st.cfg;
+    G.setStat('score', 0); G.setStat('stage', 1); G.setLives(3);
+}
+
+function alive() { return s.enemies.filter(function (e) { return e.alive; }); }
+
+/** 產生一條俯衝路徑：三次貝茲曲線，起點編隊位置，終點畫面下方 */
+function makeDivePath(e) {
+    var side = e.x < W / 2 ? -1 : 1;
+    return {
+        p0: { x: e.x, y: e.y },
+        p1: { x: e.x + side * RE.rand(60, 130), y: e.y + RE.rand(40, 90) },
+        p2: { x: W / 2 + -side * RE.rand(40, 150), y: H * 0.62 },
+        p3: { x: RE.rand(30, W - 30), y: H + 40 }
+    };
+}
+
+function bezier(p, t) {
+    var u = 1 - t;
+    return {
+        x: u * u * u * p.p0.x + 3 * u * u * t * p.p1.x + 3 * u * t * t * p.p2.x + t * t * t * p.p3.x,
+        y: u * u * u * p.p0.y + 3 * u * u * t * p.p1.y + 3 * u * t * t * p.p2.y + t * t * t * p.p3.y
+    };
+}
+
+// ======================================================================
+function update(dt) {
+    if (s.over) return;
+
+    // ---- 玩家 ----
+    s.ship.vx = RE.approach(s.ship.vx, RE.Input.axisX() * 235, 2200 * dt);
+    s.ship.x = RE.clamp(s.ship.x + s.ship.vx * dt, 6, W - 26);
+    if (s.ship.invuln > 0) s.ship.invuln -= dt;
+
+    if (RE.Input.pressed('a') && s.bullets.length < 2 && s.clearTimer <= 0) {
+        s.bullets.push({ x: s.ship.x + 10, y: s.ship.y - 6 });
+        RetroAudio.play('shoot');
+        RE.juice.shake(0.04);
+    }
+
+    // ---- 編隊左右擺動 ----
+    s.swayT += dt * 0.9;
+    var sway = Math.sin(s.swayT) * 18;
+
+    s.animT += dt;
+    if (s.animT > 0.34) { s.animT = 0; s.anim ^= 1; }
+
+    // ---- 派出俯衝者 ----
+    s.diveTimer -= dt;
+    var living = alive();
+    if (s.diveTimer <= 0 && living.length && s.clearTimer <= 0) {
+        // 剩越少敵人，俯衝越頻繁——維持後段的壓迫感
+        // 原本最低 0.35 會讓清場中的玩家在尾段承受近三倍俯衝頻率；對照組留在滿編隊反而不受罰。
+        // 正式 botlab 12 個固定種子以 0.775 最穩：熟練版 0→2 場通關，平均實際關卡 2.75→5.25、最差 1→3。
+        // 0.70 無通關；0.80～0.90 僅 1～2 場且平均較低，故不再放寬。
+        s.diveTimer = s.cfg.dive * RE.clamp(living.length / (s.cfg.rows * s.cfg.cols), 0.775, 1) * RE.rand(0.7, 1.3);
+        var candidates = living.filter(function (e) { return e.state === 'formation'; });
+        if (candidates.length) {
+            var e = RE.pick(candidates);
+            startDive(e, living);
+        }
+    }
+
+    // ---- 敵人 ----
+    for (var i = 0; i < s.enemies.length; i++) {
+        var e = s.enemies[i];
+        if (!e.alive) continue;
+        if (e.flash > 0) e.flash -= dt;
+
+        if (e.state === 'formation') {
+            e.x = e.homeX + sway;
+            e.y = e.homeY;
+        } else if (e.state === 'dive') {
+            e.t += dt * 0.42 * s.cfg.diveSpeed;
+            var pos = bezier(e.path, Math.min(e.t, 1));
+            var prev = bezier(e.path, Math.max(0, Math.min(e.t, 1) - 0.02));
+            e.angle = Math.atan2(pos.y - prev.y, pos.x - prev.x) - Math.PI / 2;
+            e.x = pos.x - 10; e.y = pos.y;
+
+            // 俯衝中會投彈
+            if (Math.random() < dt * 1.5) {
+                s.bombs.push({ x: e.x + 10, y: e.y + 16, vx: RE.rand(-30, 30), vy: 175 });
+            }
+            if (e.t >= 1) {
+                // 從下方離場，繞回編隊頂端
+                e.state = 'return';
+                e.x = e.homeX + sway;
+                e.y = -30;
+            }
+        } else if (e.state === 'return') {
+            e.y = RE.approach(e.y, e.homeY, 190 * dt);
+            e.x = RE.lerp(e.x, e.homeX + sway, 1 - Math.pow(0.001, dt));
+            e.angle = 0;
+            if (Math.abs(e.y - e.homeY) < 2) { e.state = 'formation'; e.t = 0; }
+        }
+
+        // 撞到玩家
+        if (s.ship.invuln <= 0 && e.state === 'dive' &&
+            Math.abs(e.x + 10 - (s.ship.x + 10)) < 15 && Math.abs(e.y - s.ship.y) < 16) {
+            hurt('被俯衝敵機撞上');
+        }
+    }
+
+    // ---- 子彈 ----
+    for (var i = s.bullets.length - 1; i >= 0; i--) {
+        var b = s.bullets[i];
+        b.y -= 480 * dt;
+        if (b.y < -10) { s.bullets.splice(i, 1); continue; }
+        for (var j = 0; j < s.enemies.length; j++) {
+            var e = s.enemies[j];
+            if (!e.alive) continue;
+            if (b.x > e.x && b.x < e.x + 20 && b.y > e.y && b.y < e.y + 20) {
+                kill(e);
+                s.bullets.splice(i, 1);
+                break;
+            }
+        }
+    }
+
+    // ---- 敵彈 ----
+    for (var i = s.bombs.length - 1; i >= 0; i--) {
+        var bo = s.bombs[i];
+        bo.x += bo.vx * dt; bo.y += bo.vy * dt;
+        if (bo.y > H + 10) { s.bombs.splice(i, 1); continue; }
+        if (s.ship.invuln <= 0 &&
+            bo.x > s.ship.x && bo.x < s.ship.x + 20 &&
+            bo.y > s.ship.y && bo.y < s.ship.y + 20) {
+            s.bombs.splice(i, 1);
+            hurt('被敵彈擊中');
+        }
+    }
+
+    if (s.chainTimer > 0) { s.chainTimer -= dt; if (s.chainTimer <= 0) s.chain = 0; }
+
+    // ---- 過關 ----
+    if (alive().length === 0 && s.clearTimer <= 0) {
+        s.clearTimer = 1.3;
+        RetroAudio.play('levelUp');
+        addScore(500 * s.stage);
+        FT.add(W / 2, H / 2, 'STAGE CLEAR', { color: '#70e4b5', size: 22, life: 1.3 });
+    }
+    if (s.clearTimer > 0) {
+        s.clearTimer -= dt;
+        if (s.clearTimer <= 0) nextStage();
+    }
+
+    P.update(dt);
+    FT.update(dt);
+}
+
+function startDive(e, living) {
+    e.state = 'dive';
+    e.t = 0;
+    e.path = makeDivePath(e);
+    RetroAudio.play('laser');
+
+    // 旗艦帶兩架護衛：擊落全部三架有高額獎勵，這是原作的招牌設計
+    if (e.type === 'flag') {
+        var guards = living.filter(function (o) {
+            return o.state === 'formation' && o.type !== 'flag' &&
+                   Math.abs(o.homeX - e.homeX) < 70 && o.homeY > e.homeY;
+        }).slice(0, 2);
+        e.escortGroup = [e];
+        guards.forEach(function (g, idx) {
+            g.state = 'dive';
+            g.t = -0.12 * (idx + 1);
+            g.path = makeDivePath(g);
+            g.escortOf = e;
+            e.escortGroup.push(g);
+        });
+        if (guards.length) FT.add(e.x + 10, e.y - 18, '旗艦出擊！', { color: '#ffd166', size: 13, life: 1 });
+    }
+}
+
+function kill(e) {
+    e.alive = false;
+    var diving = e.state === 'dive';
+    var base = e.type === 'flag' ? 60 : (e.type === 'guard' ? 40 : 25);
+    // 俯衝中的敵人分數加倍——鼓勵玩家承擔風險去攔截
+    var val = base * (diving ? 2 : 1);
+
+    s.chain++;
+    s.chainTimer = 1.5;
+    var mult = 1 + Math.floor((s.chain - 1) / 3) * 0.5;
+    var gain = Math.round(val * mult);
+    addScore(gain);
+
+    var cx = e.x + 10, cy = e.y + 10;
+    FT.add(cx, cy, '+' + gain, {
+        color: diving ? '#ffd166' : '#a7f3d0', size: diving ? 15 : 12, life: 0.6
+    });
+    if (diving) FT.add(cx, cy - 15, '俯衝擊墜 ×2', { color: '#ff9ebb', size: 11, life: 0.8 });
+
+    RE.juice.hitstop(diving ? 0.04 : 0.025);
+    RE.juice.shake(diving ? 0.2 : 0.12);
+    RE.juice.rumble(0.3, 0.06);
+    RetroAudio.play(e.type === 'flag' ? 'explosion' : 'hit');
+    if (s.chain > 1 && s.chain % 3 === 0) RetroAudio.play('combo', s.chain / 3);
+
+    P.burst(cx, cy, e.type === 'flag' ? 20 : 12, {
+        colors: e.type === 'flag' ? ['#ffd166', '#fff0aa', '#ff9ebb'] : ['#7dd3fc', '#a7f3d0', '#fff8e7'],
+        speedMin: 40, speedMax: 190, gravity: 130, lifeMin: 0.22, lifeMax: 0.55
+    });
+    P.ring(cx, cy, e.type === 'flag' ? '#ffd166' : '#7dd3fc', e.type === 'flag' ? 44 : 26);
+
+    // 旗艦編隊全滅獎勵
+    if (e.escortOf || e.escortGroup) {
+        var grp = e.escortGroup || (e.escortOf && e.escortOf.escortGroup);
+        if (grp && grp.every(function (m) { return !m.alive; })) {
+            addScore(800);
+            FT.add(W / 2, H / 2 - 40, '旗艦編隊全滅  +800', { color: '#ffd166', size: 17, life: 1.4 });
+            RetroAudio.play('powerup');
+            RE.juice.impact(2);
+        }
+    }
+}
+
+function hurt(reason) {
+    s.deathReason = reason || '遭到蜂群攻擊';
+    s.lives--;
+    G.setLives(s.lives);
+    s.ship.invuln = 2.4;
+    s.chain = 0;
+    RE.juice.impact(3);
+    RE.juice.flash('rgba(255,107,107,0.45)', 0.14);
+    RE.juice.slowmo(0.35, 0.7);
+    RetroAudio.play('explosion');
+    P.burst(s.ship.x + 10, s.ship.y + 10, 28, { colors: ['#ff6b6b', '#ffd166', '#fff8e7'],
+        speedMin: 50, speedMax: 240, gravity: 200, lifeMin: 0.3, lifeMax: 0.8 });
+    if (s.lives <= 0) {
+        s.over = true;
+        G.gameOver({ score: s.score,
+            body: '停在第 ' + s.stage + ' 關「' + s.cfg.name + '」。俯衝中的敵人分數加倍，值得冒險攔截。' });
+    }
+}
+
+function addScore(n) { s.score += n; G.setStat('score', s.score); }
+
+function nextStage() {
+    s.stage++;
+    s.clearTimer = 0;
+    if (s.stage > STAGES.length) {
+        s.over = true;
+        RE.Save.unlockLevel('galaxian', STAGES.length + 1);
+        G.gameOver({ score: s.score, win: true,
+            body: '六波蜂群全數擊退。1979 年，敵人第一次學會離開隊形——射擊遊戲從此不一樣了。' });
+        return;
+    }
+    G.setStat('stage', s.stage);
+    RE.Save.unlockLevel('galaxian', s.stage);
+    var st = buildStage(s.stage);
+    s.enemies = st.enemies; s.cfg = st.cfg;
+    s.bullets = []; s.bombs = [];
+    s.diveTimer = 2;
+    s.ship.invuln = 1.5;
+    G.stageCard(s.stage, st.cfg.name, '俯衝頻率提升　✦ 俯衝中的敵人分數加倍');
+}
+
+// ======================================================================
+var stars = [];
+for (var i = 0; i < 60; i++) stars.push({ x: RE.rand(0, W), y: RE.rand(0, H), s: RE.rand(12, 46), r: RE.rand(0.8, 1.9) });
+
+function render() {
+    G.clear('#04070c');
+
+    // 捲動星空：保留 Galaxian 具代表性的太空背景節奏，不宣稱未限定的硬體首創
+    ctx.save();
+    for (var i = 0; i < stars.length; i++) {
+        var st = stars[i];
+        st.y += st.s * 0.016;
+        // 星空回捲只改顯示座標，不消耗遊戲亂數；render() 不應改變俯衝路徑。
+        if (st.y > H) { st.y = -2; st.x = (i * 113 + s.stage * 29) % W; }
+        ctx.globalAlpha = 0.25 + (st.s / 46) * 0.6;
+        ctx.fillStyle = i % 5 === 0 ? '#ff9ebb' : (i % 3 === 0 ? '#7dd3fc' : '#fff8e7');
+        ctx.fillRect(st.x, st.y, st.r, st.r);
+    }
+    ctx.restore();
+
+    G.beginWorld();
+
+    // 直接取敵機實際使用的貝茲路徑，不另畫一條較好看的近似預警。
+    drawDiveForecast(Math.sin(s.swayT) * 18);
+
+    for (var i = 0; i < s.enemies.length; i++) {
+        var e = s.enemies[i];
+        if (!e.alive) continue;
+        var img = IMG[e.type][s.anim];
+        ctx.save();
+        if (e.state === 'dive' && e.angle) {
+            ctx.translate(e.x + 10, e.y + 10);
+            ctx.rotate(e.angle);
+            ctx.drawImage(img, -10, -10);
+        } else {
+            ctx.drawImage(img, Math.round(e.x), Math.round(e.y));
+        }
+        ctx.restore();
+    }
+
+    if (s.ship.invuln <= 0 || Math.floor(s.ship.invuln * 14) % 2 === 0) {
+        ctx.drawImage(IMG.ship[0], Math.round(s.ship.x), Math.round(s.ship.y));
+    }
+
+    ctx.save();
+    ctx.shadowBlur = 8; ctx.shadowColor = '#ffd166';
+    ctx.fillStyle = '#fff0aa';
+    for (var i = 0; i < s.bullets.length; i++) ctx.fillRect(s.bullets[i].x - 1.5, s.bullets[i].y, 3, 12);
+    ctx.restore();
+
+    ctx.fillStyle = '#ff9ebb';
+    for (var i = 0; i < s.bombs.length; i++) {
+        ctx.beginPath(); ctx.arc(s.bombs[i].x, s.bombs[i].y, 3, 0, RE.TAU); ctx.fill();
+    }
+
+    P.draw(ctx);
+    FT.draw(ctx);
+
+    G.endWorld();
+    drawFormationRail();
+    G.postFX({ scanAlpha: 0.1, vignetteStrength: 0.48 });
+}
+
+function drawDiveForecast(sway) {
+    ctx.save();
+    for (var i = 0; i < s.enemies.length; i++) {
+        var e = s.enemies[i];
+        if (!e.alive) continue;
+        var hx = e.homeX + sway, hy = e.homeY;
+        if (e.state === 'dive' && e.path) {
+            // 空槽讓玩家知道這架敵機從哪裡脫隊。
+            ctx.strokeStyle = 'rgba(255,209,102,0.46)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 4]);
+            ctx.strokeRect(Math.round(hx) + 0.5, Math.round(hy) + 0.5, 19, 19);
+
+            // 從目前 t 畫到路徑終點；取樣點全部經過遊戲同一個 bezier()。
+            ctx.strokeStyle = 'rgba(255,158,187,0.34)';
+            ctx.lineWidth = 1.4;
+            ctx.setLineDash([5, 6]);
+            ctx.beginPath();
+            for (var n = 0; n <= 24; n++) {
+                var tt = RE.clamp(e.t, 0, 1) + (1 - RE.clamp(e.t, 0, 1)) * (n / 24);
+                var pos = bezier(e.path, tt);
+                if (n === 0) ctx.moveTo(pos.x, pos.y + 10); else ctx.lineTo(pos.x, pos.y + 10);
+            }
+            ctx.stroke();
+        } else if (e.state === 'return') {
+            ctx.strokeStyle = 'rgba(125,211,252,0.28)';
+            ctx.lineWidth = 1.2;
+            ctx.setLineDash([3, 5]);
+            ctx.beginPath();
+            ctx.moveTo(e.x + 10, e.y + 10);
+            ctx.lineTo(hx + 10, hy + 10);
+            ctx.stroke();
+        }
+    }
+    ctx.restore();
+}
+
+function drawFormationRail() {
+    var count = { formation: 0, dive: 0, 'return': 0 };
+    for (var i = 0; i < s.enemies.length; i++) {
+        var e = s.enemies[i];
+        if (e.alive && count[e.state] !== undefined) count[e.state]++;
+    }
+    ctx.save();
+    ctx.fillStyle = 'rgba(3,7,12,0.82)';
+    RE.Draw.roundRect(ctx, 8, 8, W - 16, 25, 5); ctx.fill();
+    RE.Draw.text(ctx,
+        '編隊 ' + count.formation + '　→　俯衝 ' + count.dive + '（擊落 ×2）　→　回航 ' + count['return'],
+        W / 2, 15, { size: 9, align: 'center', color: count.dive ? '#ffd166' : '#9fb6c9', stroke: false });
+    RE.Draw.text(ctx, count.dive ? '虛線就是本次實際俯衝路徑' : '敵機會從空槽脫隊',
+        W / 2, 25, { size: 8, align: 'center', color: '#6f8da1', stroke: false });
+    ctx.restore();
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '敵人會脫離編隊俯衝——俯衝中擊落分數加倍。金色旗艦帶護衛下來時，全部打掉有高額獎勵。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

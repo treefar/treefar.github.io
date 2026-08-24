@@ -1,0 +1,61 @@
+{
+  "version": 2,
+  "kind": "runtime-integrated-art-candidate",
+  "status": "final-gate-pending",
+  "countedInLedger": false,
+  "game": "solitaire",
+  "set": "fidelity-rebuild-2026-08-25",
+  "tool": "Codex built-in ImageGen",
+  "model": "ImageGen（服務端版本未揭露）",
+  "generatedAt": "2026-08-25",
+  "prompt": "art-production/fidelity-rebuild-2026-08-25/solitaire/prompt-v001.md",
+  "source": "art-production/fidelity-rebuild-2026-08-25/solitaire/source/solitaire-media-faithful-v001-imagegen.png",
+  "sourceSha256": "5cde94754a414001fadc48f3bc68a802b86901e89d4334cf52bbb0a828875ecd",
+  "supersedes": "art-production/fidelity-rebuild-2026-08-25/solitaire/rejected/solitaire-final-sweep-manifest-2026-08-24.json",
+  "supersededReason": "媒材年代不符；原候選保留於 rejected，不計正式帳。",
+  "postprocess": "固定格裁切、等比例縮放、透明留白與 4x4 圖集排版；未去背、未補畫、未修改模型內容。點陣媒材採 nearest-neighbor，向量／網頁媒材採 Lanczos 縮放。",
+  "atlas": "final-sweep-atlas.png",
+  "atlasSha256": "49666a4914c853fd507751c1622c5a7e4f204d1c0462cb85b675952731b06e8c",
+  "cellWidth": 128,
+  "cellHeight": 128,
+  "assets": {
+    "card_back": {
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "早期 Windows 點陣牌背"
+    },
+    "felt_corner": {
+      "index": 1,
+      "x": 128,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "VGA 抖色桌布"
+    },
+    "card_finish": {
+      "index": 2,
+      "x": 256,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "勝利牌瀑布演出"
+    }
+  },
+  "runtimePresentation": "RetroShell 開場的美術候選圖譜；正常流程可見，不介入遊戲亂數、碰撞或更新。",
+  "qa": {
+    "assetCount": 3,
+    "sourceSize": [
+      2172,
+      724
+    ],
+    "sourceAlphaMin": 0,
+    "sourceAlphaMax": 255,
+    "edgePixels": 0,
+    "emptyCells": 0,
+    "mediumFidelityPreScreen": true,
+    "humanFinalGate": false
+  }
+}

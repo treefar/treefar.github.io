@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 雪橇畫線師</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   雪橇畫線師 — 致敬 Line Rider (Boštjan Čadež, 2006)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. 原作**沒有目標、沒有分數、沒有敵人**，只有一支筆和一個物理引擎，
+      玩法是玩家自己發明的。本作用五個挑戰關卡教會你「畫線的語言」
+      （斜率=加速度、曲率=乘坐體驗、紅線=動力），全破後開放自由畫布——
+      把「自己發明玩法」還給你。
+   2. 物理與原作同構：雪橇人是 verlet 質點群＋可斷約束。
+      過彎太急、落地太重，約束就會真的被拉斷，小人真的散架——
+      摔倒不是動畫，是物理。
+   3. 邊播放邊畫線是被刻意保留的：看著小人衝向懸崖時急忙補一筆，
+      正是 Line Rider 最原始的樂趣。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'line_rider',
+    title: '雪橇畫線師',
+    tagline: '一支筆、一個物理引擎，剩下的玩法你自己發明',
+    original: 'Line Rider (Boštjan Čadež, 2006)',
+    decade: '00s', year: 2006, platform: '瀏覽器 Flash', genre: '物理沙盒',
+    developer: 'Boštjan Čadež', bgm: '00s',
+    width: 480, height: 320,
+    hud: [
+        { key: 'stage', label: '關卡', init: '1/5' },
+        { key: 'time', label: '時間', init: '0.0s' },
+        { key: 'falls', label: '摔倒', init: 0 },
+        { key: 'ink', label: '墨水', init: '∞' }
+    ],
+    lives: 3,
+    touch: 'none',
+    controls: [
+        { keys: ['滑鼠 / 觸控'], desc: '選工具後在畫布上拖曳畫線' },
+        { keys: ['A', 'Space'], desc: '播放 / 暫停' },
+        { keys: ['B'], desc: '挑戰模式 ↔ 自由畫布' },
+        { keys: ['←↑→↓'], desc: '平移視角' }
+    ],
+    howto: '用底部工具列選<strong>藍線</strong>（滑行）或<strong>紅線</strong>（沿畫線方向加速），' +
+           '在畫布上拖曳畫線，按 <strong>▶</strong> 讓雪橇人出發。' +
+           '他只會乖乖沿著你畫的線滑——<strong>斜率就是加速度，曲率就是安全性</strong>：' +
+           '彎太急或落地太重，小人會真的散架。把他平安送到旗子就過關。' +
+           '<strong>播放中仍然可以畫線</strong>，來不及就邊滑邊補路。' +
+           '摔倒不限次數（每 10 次扣一條命），大膽實驗。全破後解鎖自由畫布。',
+    lesson: {
+        verb: '畫出軌道、啟動模擬、觀察摔倒原因，再用斜率與曲率反覆修線。',
+        innovation: '把滑鼠筆畫直接變成可測試的物理關卡，讓玩家同時扮演關卡設計者與表演者。',
+        mission: '前兩關各先畫一條最短直線並記錄摔倒次數，再改成平滑曲線重跑；比較線更長之後，完成率與抵達時間如何改變。',
+        evolution: '《Helicopter Game》要玩家穿過作者預先排好的洞口；《Line Rider》把障礙與路線的作者權交給玩家，之後《Among Us》又把故事的作者權交給玩家互動。',
+        reflection: '如果系統替每條軌道評星並指定唯一終點，玩家會更有目標，還是反而失去自己發明玩法的空間？'
+    },
+    design: '2006 年瀏覽器遊戲多半提供固定關卡與明確輸贏，《Line Rider》要解決的問題卻是：' +
+            '<strong>如何讓不會寫程式的人，只用一個動作就創作出可玩的動畫</strong>。' +
+            '它把編輯器壓縮成畫線，把每一筆直接當成碰撞幾何；按下播放後，重力與碰撞立即把筆跡翻譯成速度、跳躍與摔倒。' +
+            '玩家因此不是先讀規則再過關，而是在「畫一筆、跑一次、找原因、再修一筆」的循環中學會斜率、曲率與動量。' +
+            '碰撞演算法的瑕疵也被社群轉化成特技語彙，分享影片則替沒有內建分數的玩具長出競賽。' +
+            '本站先用五關把直線、跨溝、加速線與曲率拆成鷹架，再開放自由畫布；這是教學入口，不是假裝原作本來就有關卡。' +
+            '對照本站《Helicopter Game》的固定洞口，這一款把「路線由誰設計」本身變成核心動詞；' +
+            '往後《Among Us》則用同一個想法，讓玩家不再生產地形，而是共同生產故事。',
+    history: '斯洛維尼亞創作者 Boštjan Čadež 在 2006 年把《Line Rider》上傳至 DeviantArt；' +
+             '他在 2008 年訪談回憶，作品首日約有一萬次瀏覽，熱度從 Digg 等分享網站迅速擴散。' +
+             '概念並非先從關卡遊戲出發：Čadež 原本研究如何用畫線即時改變程序動畫，看到素描本裡的雪橇小人後，才把筆跡、物理與角色結合。' +
+             '原版甚至不能直接輸出影片，但玩家自行錄影、配樂與分享；他形容 YouTube 觀看數意外成了某種高分，玩家做軌道也同時替作品宣傳。' +
+             'inXile 約在 2006 年 11 月聯絡他，後續才發展 Nintendo DS 與 Wii 版本。',
+    sources: [
+        { label: 'Game Developer：Boštjan Čadež 談 Line Rider 創作與社群', url: 'https://www.gamedeveloper.com/game-platforms/q-a-riding-the-lines-with-bostjan-cadez' },
+        { label: 'MFRU：斯洛維尼亞新媒體藝術節的 Line Rider 作品檔案', url: 'https://www.mfru.org/si/projekti/line-rider' }
+    ]
+});
+
+var ctx = G.ctx, VW = G.width, VH = G.height;
+var P = new RE.Particles(300);
+var FT = new RE.FloatText();
+var LINE_RIDER_ART = { image: new Image(), manifest: null };
+LINE_RIDER_ART.image.src = '../../assets/games/line_rider/notebook-ink-atlas.png';
+fetch('../../assets/games/line_rider/notebook-ink-manifest.json')
+    .then(function (r) { return r.json(); })
+    .then(function (m) { LINE_RIDER_ART.manifest = m; })
+    .catch(function () { LINE_RIDER_ART.manifest = null; });
+
+function drawLineRiderAsset(name, x, y, w, h, rotation, alpha) {
+    var m = LINE_RIDER_ART.manifest;
+    if (!m || !m.assets || !m.assets[name] || !LINE_RIDER_ART.image.complete ||
+        !LINE_RIDER_ART.image.naturalWidth) return false;
+    var a = m.assets[name];
+    ctx.save();
+    ctx.translate(x, y);
+    if (rotation) ctx.rotate(rotation);
+    if (alpha !== undefined) ctx.globalAlpha *= alpha;
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(LINE_RIDER_ART.image, a.x, a.y, a.w, a.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+}
+
+// ======================================================================
+// 常數
+// ======================================================================
+var GRAV = 640;                 // 重力 px/s²
+var SUBSTEPS = 4, ITER = 3;     // verlet 子步與約束迭代
+var PT_R = 3.2;                 // 質點半徑
+var BREAK_RATIO = 1.9;          // 約束伸長超過此倍率就斷（小人散架）
+var RED_ACC = 400;              // 紅線沿線加速度。要壓過 30° 上坡的重力分量
+                                // （640·sin30°=320），否則雪橇會在陡的紅線上駐停
+var TOOL_H = 34;                // 底部工具列高
+var TOP_H = 26;                 // 頂部資訊條高
+var GOAL_R = 20;
+var FALLS_PER_LIFE = 10;
+
+// ======================================================================
+// 關卡。terrain 是固定地形折線（不可擦），solution 是實測用的預想解法。
+// ink 是可畫線的總長度（px），tools 限制可用的筆。
+// 難度曲線：直線 → 跨溝 → 紅線動力 → 曲率管理 → 綜合特技。
+// ======================================================================
+var LEVELS = [
+    {
+        name: '第一關 · 第一道坡',
+        hint: '他只會沿著線滑。畫一條通往旗子的坡。',
+        start: { x: 60, y: 62 }, startAngle: 6, goal: { x: 420, y: 244 },
+        ink: Infinity, tools: ['blue'], par: 9,
+        terrain: [ [[36, 64], [96, 70]] ],
+        // 解法線從平台末端「下方」接（落接）。若畫在平台上方，
+        // 線頭會像門檻一樣把雪橇迎面絆翻——玩家畫線也適用同一原則。
+        solution: [ { t: 'blue', pts: [[98, 73], [430, 240]] } ]
+    },
+    {
+        name: '第二關 · 跳躍峽谷',
+        hint: '中間斷了。接一座橋，或做一個起跳坡。',
+        start: { x: 44, y: 70 }, startAngle: 31, goal: { x: 428, y: 208 },
+        ink: 520, tools: ['blue'], par: 10,
+        terrain: [ [[26, 64], [170, 150]], [[300, 208], [456, 214]] ],
+        solution: [ { t: 'blue', pts: [[164, 148], [310, 206]] } ]
+    },
+    {
+        name: '第三關 · 衝上高台',
+        hint: '旗子在上面。藍線滑不上去——紅線會沿著畫線的方向推他。',
+        start: { x: 52, y: 82 }, startAngle: 38, goal: { x: 430, y: 136 },
+        ink: 640, tools: ['blue', 'red'], par: 12,
+        // 台面要接在紅線頂端「下方」一點：接高了會變成一道門檻，
+        // 雪橇全速撞上去直接臉著地
+        terrain: [ [[36, 74], [240, 236]], [[398, 142], [462, 142]] ],
+        // 谷底要先用藍線畫圓弧緩衝：38° 下坡直接折上 35° 紅線是 73° 的
+        // V 形谷，高速通過時騎士會被慣性壓進谷底臉著地——彎要圓，這是本作的核心語言
+        solution: [ { t: 'blue', pts: [[198, 206], [224, 222], [250, 228], [276, 222], [298, 210]] },
+                    { t: 'red', pts: [[298, 210], [400, 140]] } ]
+    },
+    {
+        name: '第四關 · 描拋物線',
+        hint: '他會全速飛出斷崖。順著他「本來會飛」的弧線畫軌道，再慢慢拉平接到對岸。',
+        start: { x: 40, y: 52 }, startAngle: 43, goal: { x: 430, y: 314 },
+        ink: 520, tools: ['blue', 'red'], par: 12,
+        terrain: [ [[20, 44], [150, 184]], [[304, 307], [462, 322]] ],
+        // 解法軌道取自實測的飛出拋物線再往下偏 3px：線順著自然軌跡時
+        // 法向力接近零，滑起來最穩——想改變他的方向，只能用「漸彎」不能用「硬折」。
+        // 這是 Line Rider 玩家畫軌道的真實核心技巧
+        solution: [ { t: 'blue', pts: [[154, 187], [170, 205], [186, 227], [202, 251],
+                                       [218, 276], [236, 294], [258, 303], [282, 306], [306, 305]] } ]
+    },
+    {
+        name: '第五關 · 飛越高牆',
+        hint: '牆跳不過就飛過。做一個帶紅線的起跳坡，抓好起飛角。',
+        start: { x: 46, y: 60 }, startAngle: 28, goal: { x: 436, y: 250 },
+        ink: 560, tools: ['blue', 'red'], par: 18,
+        terrain: [ [[26, 54], [130, 110]],
+                   [[262, 150], [264, 290]],
+                   [[300, 262], [460, 254]] ],
+        solution: [ { t: 'red', pts: [[124, 108], [196, 142]] },
+                    { t: 'blue', pts: [[196, 142], [236, 146]] } ]
+    },
+    {
+        name: '自由畫布',
+        hint: '沒有旗子、沒有墨水限制。想畫什麼就畫什麼。',
+        start: { x: 78, y: 82 }, startAngle: 6, goal: null,
+        ink: Infinity, tools: ['blue', 'red'], par: 0, free: true,
+        terrain: [ [[56, 84], [116, 90]] ],
+        solution: []
+    }
+];
+
+// ======================================================================
+// 狀態
+// ======================================================================
+var s = null;
+
+function reset() {
+    s = { level: 0, total: 0, unlockedFree: false };
+    P.clear(); FT.clear();
+    G.setLives(3);
+    loadLevel(0);
+}
+
+function loadLevel(i) {
+    var L = LEVELS[i];
+    s.level = i; s.L = L;
+    s.lines = [];
+    var k, t;
+    for (k = 0; k < L.terrain.length; k++) {
+        t = L.terrain[k];
+        for (var q = 0; q < t.length - 1; q++)
+            s.lines.push({ ax: t[q][0], ay: t[q][1], bx: t[q + 1][0], by: t[q + 1][1],
+                           type: 'terrain', fixed: true });
+    }
+    s.inkLeft = L.ink;
+    s.tool = 'blue';
+    s.mode = 'edit';            // edit | play | crash | won
+    s.time = 0;
+    s.falls = 0;
+    s.cam = { x: VW / 2, y: VH / 2 };
+    s.drawing = null;
+    s.panning = null;
+    s.pointerDownSeen = false;
+    s.crashT = 0; s.wonT = 0;
+    s.banner = L.name; s.bannerT = 2.6;
+    resetSled();
+    G.setStat('stage', L.free ? '自由' : (i + 1) + '/5');
+    G.setStat('time', '0.0s');
+    G.setStat('falls', 0);
+    updateInk();
+}
+
+function updateInk() {
+    G.setStat('ink', s.inkLeft === Infinity ? '∞' : Math.max(0, Math.round(s.inkLeft)));
+}
+
+// ======================================================================
+// 雪橇人：verlet 質點 + 可斷約束。
+// A=橇頭 B=橇尾 H=臀（後上）D=頭（前上）。
+// 四點六約束＝完全三角化，兩條對角線把手性鎖死，
+// 姿態由幾何自己維持——不要用事後的「擺正修正」，
+// 位置修正在 verlet 裡就是注入能量，實測會讓雪橇憑空亂飛。
+// H 或 D 觸線（騎士著地）、約束拉斷，都算摔倒。
+// ======================================================================
+function mkPt(x, y) { return { x: x, y: y, px: x, py: y }; }
+function resetSled() {
+    var st = s.L.start;
+    s.pts = {
+        A: mkPt(st.x + 14, st.y),
+        B: mkPt(st.x, st.y),
+        H: mkPt(st.x + 1, st.y - 9),
+        D: mkPt(st.x + 13, st.y - 9)
+    };
+    // 沿起始坡面的角度擺放，避免「懸空落到斜坡上」的開場彈跳
+    if (s.L.startAngle) {
+        var a = s.L.startAngle * Math.PI / 180;
+        for (var k in s.pts) rotPt(s.pts[k], st.x + 7, st.y - 4, a);
+    }
+    function dist(p, q) { return Math.hypot(s.pts[p].x - s.pts[q].x, s.pts[p].y - s.pts[q].y); }
+    s.cons = [
+        { a: 'A', b: 'B', len: dist('A', 'B'), rigid: true },
+        { a: 'B', b: 'H', len: dist('B', 'H'), rigid: false },
+        { a: 'A', b: 'D', len: dist('A', 'D'), rigid: false },
+        { a: 'H', b: 'D', len: dist('H', 'D'), rigid: false },
+        { a: 'A', b: 'H', len: dist('A', 'H'), rigid: false },
+        { a: 'B', b: 'D', len: dist('B', 'D'), rigid: false }
+    ];
+    s.ragdoll = false;
+    s.touching = false;
+    s.fallT = 0;
+}
+
+function sledCenter() {
+    return { x: (s.pts.A.x + s.pts.B.x) / 2, y: (s.pts.A.y + s.pts.B.y) / 2 };
+}
+
+function stepPhysics(dt) {
+    var sub = dt / SUBSTEPS;
+    for (var ss = 0; ss < SUBSTEPS; ss++) {
+        var k, p;
+        // verlet 積分
+        for (k in s.pts) {
+            p = s.pts[k];
+            var vx = (p.x - p.px) * 0.999, vy = (p.y - p.py) * 0.999;
+            p.px = p.x; p.py = p.y;
+            p.x += vx; p.y += vy + GRAV * sub * sub;
+        }
+        // 約束
+        for (var it = 0; it < ITER; it++) {
+            for (var c = 0; c < s.cons.length; c++) {
+                var C = s.cons[c];
+                if (C.broken) continue;
+                var a = s.pts[C.a], b = s.pts[C.b];
+                var dx = b.x - a.x, dy = b.y - a.y;
+                var d = Math.sqrt(dx * dx + dy * dy) || 0.001;
+                if (!s.ragdoll && !C.rigid && d > C.len * BREAK_RATIO) { C.broken = true; crash('拉斷'); continue; }
+                var diff = (d - C.len) / d * 0.5;
+                a.x += dx * diff; a.y += dy * diff;
+                b.x -= dx * diff; b.y -= dy * diff;
+            }
+            // 線碰撞
+            s.touching = false;
+            for (k in s.pts) collidePoint(s.pts[k], k, sub);
+        }
+        // 速度上限（640px/s）。verlet 每子步位移超過碰撞推出量就會穿線，
+        // 限速讓「最大穿透量 < 每子步推出量」永遠成立
+        for (k in s.pts) {
+            p = s.pts[k];
+            var ddx = p.x - p.px, ddy = p.y - p.py;
+            var sp2 = ddx * ddx + ddy * ddy;
+            if (sp2 > 2.67 * 2.67) {
+                var f = 2.67 / Math.sqrt(sp2);
+                p.px = p.x - ddx * f; p.py = p.y - ddy * f;
+            }
+        }
+        if (s.touching) s.fallT = 0; else s.fallT += sub;
+        airAlign();
+    }
+}
+
+// 空中姿態：持續下落時讓雪橇慢慢「躺平」（橇底朝下）。
+// 沒有這個的話，雪橇被端點一勾就翻滾著墜落，怎麼畫著陸線都接不住。
+// 注意目標是水平、不是速度方向——對齊速度會變成頭朝下的俯衝，
+// 著陸時頭比橇先碰線，永遠臉著地。
+// 門檻 0.25s：起跳的小落差不調姿。
+function airAlign() {
+    if (s.ragdoll || s.touching || s.fallT < 0.12) return;
+    var A = s.pts.A, B = s.pts.B;
+    var ca = Math.atan2(A.y - B.y, A.x - B.x);
+    // 目標固定為「頭朝右的水平」。「就近躺平」曾經在被端點勾轉
+    // 超過 90° 時反而把雪橇繼續推向倒立，落地必臉著地
+    var diff = -ca;
+    while (diff > Math.PI) diff -= 2 * Math.PI;
+    while (diff < -Math.PI) diff += 2 * Math.PI;
+    var rot = diff * 0.06;
+    var lim = 0.035;                                 // 每子步最多轉 2°
+    if (rot > lim) rot = lim; else if (rot < -lim) rot = -lim;
+    var mx = (A.x + B.x) / 2, my = (A.y + B.y) / 2;
+    rotPt(A, mx, my, rot); rotPt(B, mx, my, rot);
+    rotPt(s.pts.H, mx, my, rot); rotPt(s.pts.D, mx, my, rot);
+}
+// 姿態旋轉：只轉位置、完整保留速度向量。
+// 若把 px/py 也跟著旋轉，等於旋轉了速度——雪橇會變成滑翔翼，
+// 把墜落速度「重定向」成前進，在空中憑空滑翔（實測會飄好幾秒不落地）
+function rotPt(p, cx, cy, ang) {
+    var vx = p.x - p.px, vy = p.y - p.py;
+    var c = Math.cos(ang), si = Math.sin(ang);
+    var dx = p.x - cx, dy = p.y - cy;
+    p.x = cx + dx * c - dy * si;
+    p.y = cy + dx * si + dy * c;
+    p.px = p.x - vx; p.py = p.y - vy;
+}
+
+
+function collidePoint(p, key, sub) {
+    for (var i = 0; i < s.lines.length; i++) {
+        var L = s.lines[i];
+        var abx = L.bx - L.ax, aby = L.by - L.ay;
+        var len2 = abx * abx + aby * aby;
+        if (len2 < 0.01) continue;
+        // t 夾住而不是跳過：端點視為圓頭（capsule），
+        // 否則高速通過折線接點時會從兩段之間的縫隙穿過去
+        var t = ((p.x - L.ax) * abx + (p.y - L.ay) * aby) / len2;
+        t = Math.max(0, Math.min(1, t));
+        var cx = L.ax + abx * t, cy = L.ay + aby * t;
+        var dx = p.x - cx, dy = p.y - cy;
+        var d2 = dx * dx + dy * dy;
+        if (d2 > PT_R * PT_R || d2 < 0.000001) continue;
+        var d = Math.sqrt(d2);
+        // 推出到目前所在的那一側（雙面線）。
+        // 單次推出限幅：verlet 裡位置修正就是速度，若質點一開始就
+        // 深陷線內，一口氣推出去等於瞬間彈射到幾百 px/s
+        var push = Math.min(PT_R - d, 1.1) / d;
+        p.x += dx * push; p.y += dy * push;
+        s.touching = true;
+        // 騎士的身體或頭碰到線＝臉著地
+        if ((key === 'H' || key === 'D') && !s.ragdoll && s.mode === 'play') { crash('臉著地'); return; }
+        // 紅線：沿畫線方向加速（x、y 兩個分量都要推——
+        // 曾經漏掉 y，上坡的紅線推力被砍半，雪橇爬到一半駐停）
+        if (L.type === 'red') {
+            var il = 1 / Math.sqrt(len2);
+            p.x += abx * il * RED_ACC * sub * sub;
+            p.y += aby * il * RED_ACC * sub * sub;
+            if (s.mode === 'play' && Math.random() < 0.3)
+                P.burst(p.x, p.y, 1, { colors: ['#ff8f6a', '#ffd166'], speedMin: 10, speedMax: 50,
+                    gravity: 0, lifeMin: 0.1, lifeMax: 0.3, glow: true });
+        }
+    }
+}
+
+function crash(why) {
+    if (s.mode !== 'play') return;
+    s.mode = 'crash';
+    s.crashT = 1.1;
+    s.ragdoll = true;
+    for (var c = 0; c < s.cons.length; c++) if (!s.cons[c].rigid) s.cons[c].broken = true;
+    s.falls++;
+    G.setStat('falls', s.falls);
+    RetroAudio.play('hurt');
+    RE.juice.hitstop(0.05);
+    RE.juice.shake(0.35);
+    var ce = sledCenter();
+    P.burst(ce.x, ce.y - 6, 14, { colors: ['#fff', '#9fd8ff', '#ffb0a0'],
+        speedMin: 40, speedMax: 160, gravity: 400, lifeMin: 0.3, lifeMax: 0.7 });
+    FT.add(ce.x, ce.y - 20, '摔倒！', { color: '#ff8f8f', size: 13 });
+    // 每摔滿 10 次扣一條命
+    if (!s.L.free && s.falls % FALLS_PER_LIFE === 0) {
+        G.setLives(G.lives - 1);
+        if (G.lives <= 0) {
+            G.gameOver({
+                win: false, score: s.total,
+                body: '摔了 ' + s.falls + ' 次。別灰心——他不是不能摔，' +
+                      '是你還沒找到讓他活下來的那條曲線。' +
+                      '記住兩件事：斜率決定加速度，曲率決定他受不受得了。' +
+                      '陡坡接急彎是散架，陡坡接緩弧才是特技。'
+            });
+        }
+    }
+}
+
+function reachGoal() {
+    s.mode = 'won';
+    s.wonT = 1.4;
+    RetroAudio.play('win');
+    RE.juice.impact(2);
+    var g = s.L.goal;
+    P.burst(g.x, g.y - 10, 24, { colors: ['#7fe6b0', '#ffd166', '#fff3c4', '#9fd8ff'],
+        speedMin: 60, speedMax: 200, gravity: 160, lifeMin: 0.4, lifeMax: 0.9, glow: true });
+    var inkBonus = s.inkLeft === Infinity ? 100 : Math.round(s.inkLeft / (s.L.ink || 1) * 300);
+    var timeBonus = Math.max(0, Math.round((s.L.par * 2 - s.time) * 20));
+    var gain = 400 + inkBonus + timeBonus - Math.min(200, s.falls * 10);
+    s.total += Math.max(100, gain);
+    FT.add(g.x, g.y - 30, '+' + Math.max(100, gain), { color: '#ffd166', size: 14 });
+}
+
+// ======================================================================
+// 畫線與工具
+// ======================================================================
+var TOOLS = [
+    { id: 'blue',  label: '藍線', color: '#5aa8e0' },
+    { id: 'red',   label: '紅線', color: '#ff6a5c' },
+    { id: 'erase', label: '橡皮', color: '#d8b8e8' },
+    { id: 'pan',   label: '平移', color: '#a8c0a0' },
+    { id: 'play',  label: '▶',   color: '#7fe6b0' },
+    { id: 'reset', label: '⟲',   color: '#ffd166' },
+    { id: 'clear', label: '清空', color: '#ff9a8a' }
+];
+var BTN_W = 46, BTN_H = 26;
+function toolbarX() { return (VW - TOOLS.length * BTN_W) / 2; }
+
+function screenToWorld(px, py) {
+    return { x: px + s.cam.x - VW / 2, y: py + s.cam.y - VH / 2 };
+}
+
+function playerInkUsed(seg) {
+    var dx = seg.bx - seg.ax, dy = seg.by - seg.ay;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+function handlePointer(dt) {
+    var pt = RE.Input.pointer;
+    /* 某些手機瀏覽器會在 touchstart 與下一個遊戲 frame 之間清掉
+       pointer.pressed，但 pointer.down 仍正確維持。若只依賴 pressed，
+       玩家看得到游標移動，卻永遠畫不出第一段線；用單次 down 備援建立
+       起點，並在 down 消失時清掉狀態，不會讓桌面滑鼠重複選工具。 */
+    if (!pt.down && !pt.pressed) s.pointerDownSeen = false;
+    var freshPress = pt.pressed || (pt.down && !s.pointerDownSeen);
+    if (freshPress) s.pointerDownSeen = true;
+    // 工具列
+    if (freshPress && pt.y > VH - TOOL_H) {
+        var idx = Math.floor((pt.x - toolbarX()) / BTN_W);
+        if (idx >= 0 && idx < TOOLS.length) clickTool(TOOLS[idx].id);
+        return;
+    }
+    if (freshPress && pt.y <= VH - TOOL_H) {
+        var w = screenToWorld(pt.x, pt.y);
+        if (s.tool === 'pan') s.panning = { x: pt.x, y: pt.y, cx: s.cam.x, cy: s.cam.y };
+        else if (s.tool === 'erase') eraseAt(w.x, w.y);
+        else if (s.tool === 'blue' || s.tool === 'red') {
+            if (s.L.tools.indexOf(s.tool) !== -1) s.drawing = { lx: w.x, ly: w.y };
+        }
+        return;
+    }
+    if (pt.down) {
+        if (s.panning) {
+            s.cam.x = s.panning.cx - (pt.x - s.panning.x);
+            s.cam.y = s.panning.cy - (pt.y - s.panning.y);
+            return;
+        }
+        var w2 = screenToWorld(pt.x, pt.y);
+        if (s.tool === 'erase' && pt.y <= VH - TOOL_H) { eraseAt(w2.x, w2.y); return; }
+        if (s.drawing && pt.y <= VH - TOOL_H) {
+            var dx = w2.x - s.drawing.lx, dy = w2.y - s.drawing.ly;
+            var d = Math.sqrt(dx * dx + dy * dy);
+            if (d >= 7) {
+                var seg = { ax: s.drawing.lx, ay: s.drawing.ly, bx: w2.x, by: w2.y, type: s.tool };
+                var cost = playerInkUsed(seg);
+                if (s.inkLeft >= cost) {
+                    if (s.lines.length < 900) {
+                        s.lines.push(seg);
+                        s.inkLeft -= cost;
+                        updateInk();
+                        if (Math.random() < 0.4) RetroAudio.play('step');
+                    }
+                    s.drawing.lx = w2.x; s.drawing.ly = w2.y;
+                } else {
+                    FT.add(w2.x, w2.y - 10, '墨水不夠了', { color: '#ff9a8a', size: 13 });
+                    s.drawing = null;
+                    RetroAudio.play('error');
+                }
+            }
+        }
+        return;
+    }
+    if (pt.released || !pt.down) {
+        s.drawing = null; s.panning = null; s.pointerDownSeen = false;
+    }
+}
+
+function eraseAt(wx, wy) {
+    for (var i = s.lines.length - 1; i >= 0; i--) {
+        var L = s.lines[i];
+        if (L.fixed) continue;
+        var abx = L.bx - L.ax, aby = L.by - L.ay;
+        var len2 = abx * abx + aby * aby || 0.01;
+        var t = Math.max(0, Math.min(1, ((wx - L.ax) * abx + (wy - L.ay) * aby) / len2));
+        var dx = wx - (L.ax + abx * t), dy = wy - (L.ay + aby * t);
+        if (dx * dx + dy * dy < 81) {
+            // 擦掉退還墨水
+            s.inkLeft = Math.min(s.L.ink, s.inkLeft + playerInkUsed(L));
+            s.lines.splice(i, 1);
+            updateInk();
+            RetroAudio.play('cancel');
+            return;
+        }
+    }
+}
+
+function clickTool(id) {
+    if (id === 'blue' || id === 'red') {
+        if (s.L.tools.indexOf(id) === -1) { RetroAudio.play('error'); FT.add(sledCenter().x, sledCenter().y - 24, '這一關不能用', { color: '#ff9a8a', size: 13 }); return; }
+        s.tool = id; RetroAudio.play('select');
+    } else if (id === 'erase' || id === 'pan') {
+        s.tool = id; RetroAudio.play('select');
+    } else if (id === 'play') {
+        togglePlay();
+    } else if (id === 'reset') {
+        softReset();
+    } else if (id === 'clear') {
+        for (var i = s.lines.length - 1; i >= 0; i--) if (!s.lines[i].fixed) s.lines.splice(i, 1);
+        s.inkLeft = s.L.ink;
+        updateInk();
+        softReset();
+        RetroAudio.play('cancel');
+    }
+}
+
+function togglePlay() {
+    if (s.mode === 'edit') {
+        s.mode = 'play';
+        RetroAudio.play('confirm');
+    } else if (s.mode === 'play') {
+        s.mode = 'edit';
+        RetroAudio.play('pause');
+    }
+}
+
+function softReset() {
+    resetSled();
+    s.mode = 'edit';
+    s.time = 0;
+    G.setStat('time', '0.0s');
+    s.cam.x = s.L.start.x + 120; s.cam.y = s.L.start.y + 60;
+    RetroAudio.play('blip');
+}
+
+// ======================================================================
+// 主迴圈
+// ======================================================================
+function update(dt) {
+    if (!s) return;
+    P.update(dt); FT.update(dt);
+    if (s.bannerT > 0) s.bannerT -= dt;
+
+    handlePointer(dt);
+
+    // 鍵盤
+    if (RE.Input.pressed('a')) togglePlay();
+    if (RE.Input.pressed('b')) {
+        // 挑戰 ↔ 自由畫布
+        if (s.L.free) { loadLevel(0); RetroAudio.play('select'); }
+        else { loadLevel(5); RetroAudio.play('select'); }
+        return;
+    }
+    var panV = 240 * dt;
+    if (RE.Input.down('left'))  s.cam.x -= panV;
+    if (RE.Input.down('right')) s.cam.x += panV;
+    if (RE.Input.down('up'))    s.cam.y -= panV;
+    if (RE.Input.down('down'))  s.cam.y += panV;
+
+    if (s.mode === 'play') {
+        s.time += dt;
+        G.setStat('time', s.time.toFixed(1) + 's');
+        stepPhysics(dt);
+        var ce = sledCenter();
+        // 鏡頭跟隨
+        s.cam.x += (ce.x - s.cam.x) * Math.min(1, dt * 6);
+        s.cam.y += (ce.y - s.cam.y) * Math.min(1, dt * 6);
+        // 抵達旗子
+        var gl = s.L.goal;
+        if (gl) {
+            for (var k in s.pts) {
+                var dx = s.pts[k].x - gl.x, dy = s.pts[k].y - gl.y;
+                if (dx * dx + dy * dy < GOAL_R * GOAL_R) { reachGoal(); return; }
+            }
+        }
+        // 掉出世界
+        if (ce.y > 620) {
+            s.falls++;
+            G.setStat('falls', s.falls);
+            FT.add(s.cam.x, s.cam.y, '掉出世界…', { color: '#9fd8ff', size: 13 });
+            RetroAudio.play('cancel');
+            if (!s.L.free && s.falls % FALLS_PER_LIFE === 0) {
+                G.setLives(G.lives - 1);
+                if (G.lives <= 0) {
+                    G.gameOver({ win: false, score: s.total,
+                        body: '摔了 ' + s.falls + ' 次。斜率決定加速度、曲率決定安全，' +
+                              '先畫一條穩穩到底的路，再追求帥。' });
+                    return;
+                }
+            }
+            softReset();
+        }
+    }
+    else if (s.mode === 'crash') {
+        s.crashT -= dt;
+        stepPhysics(dt);       // ragdoll 繼續散架，這是摔倒的喜劇時刻
+        if (s.crashT <= 0) softReset();
+    }
+    else if (s.mode === 'won') {
+        s.wonT -= dt;
+        if (s.wonT <= 0) {
+            if (s.level >= 4) {
+                s.unlockedFree = true;
+                G.gameOver({
+                    win: true, score: s.total,
+                    body: '五面挑戰畫布全部通過。注意一件事：過關的每一條線都是你畫的，' +
+                          '這個遊戲從頭到尾沒給過你任何一塊現成的路。' +
+                          '《Line Rider》證明了遊戲可以不提供目標、只提供可能性——' +
+                          '玩家會自己發明目標，而發明目標本身就是最好玩的遊戲。' +
+                          '重新開始後按 B 進入自由畫布，去畫你自己的路吧。'
+                });
+            } else {
+                var n = s.level + 1;
+                G.stageCard(n + 1, LEVELS[n].name, LEVELS[n].hint, function () { loadLevel(n); });
+            }
+        }
+    }
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function render() {
+    if (!s) return;
+    G.beginWorld();
+    drawBackdrop();
+    ctx.save();
+    ctx.translate(Math.round(VW / 2 - s.cam.x), Math.round(VH / 2 - s.cam.y));
+    drawGrid();
+    drawStartPad();
+    drawGoal();
+    drawLines();
+    drawSled();
+    P.draw(ctx); FT.draw(ctx);
+    ctx.restore();
+    G.endWorld();
+    drawTopbar();
+    drawToolbar();
+    drawBanner();
+    G.postFX({ scanAlpha: 0.05, vignetteStrength: 0.35 });
+}
+
+function drawBackdrop() {
+    var g = ctx.createLinearGradient(0, 0, 0, VH);
+    g.addColorStop(0, '#eef4fa'); g.addColorStop(1, '#cfdce8');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+}
+
+function drawGrid() {
+    var x0 = s.cam.x - VW / 2, y0 = s.cam.y - VH / 2;
+    ctx.strokeStyle = 'rgba(90,120,150,0.10)';
+    ctx.lineWidth = 1;
+    var gx = Math.floor(x0 / 40) * 40;
+    for (var x = gx; x < x0 + VW + 40; x += 40) {
+        ctx.beginPath(); ctx.moveTo(x, y0 - 20); ctx.lineTo(x, y0 + VH + 20); ctx.stroke();
+    }
+    var gy = Math.floor(y0 / 40) * 40;
+    for (var y = gy; y < y0 + VH + 40; y += 40) {
+        ctx.beginPath(); ctx.moveTo(x0 - 20, y); ctx.lineTo(x0 + VW + 20, y); ctx.stroke();
+    }
+}
+
+function drawStartPad() {
+    var st = s.L.start;
+    if (drawLineRiderAsset('start_pad', st.x + 7, st.y - 2, 42, 31, 0, 0.94)) return;
+    ctx.fillStyle = 'rgba(120,150,180,0.5)';
+    RE.Draw.roundRect(ctx, st.x - 10, st.y + 3, 34, 5, 2); ctx.fill();
+    RE.Draw.text(ctx, '起點', st.x + 7, st.y + 12, { size: 13, align: 'center', color: 'rgba(80,110,140,0.8)', stroke: false });
+}
+
+function drawGoal() {
+    var gl = s.L.goal;
+    if (!gl) return;
+    var t = Date.now() * 0.004;
+    var artGoal = drawLineRiderAsset('goal_flag', gl.x + 7, gl.y - 20, 35, 51, 0, 1);
+    // 旗桿
+    if (!artGoal) {
+    ctx.strokeStyle = '#8a6a44'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(gl.x, gl.y); ctx.lineTo(gl.x, gl.y - 26); ctx.stroke();
+    // 旗布（飄動）
+    ctx.fillStyle = '#ff5c5c';
+    ctx.beginPath();
+    ctx.moveTo(gl.x, gl.y - 26);
+    ctx.quadraticCurveTo(gl.x + 10, gl.y - 24 + Math.sin(t) * 2, gl.x + 19, gl.y - 21 + Math.sin(t + 1) * 2);
+    ctx.quadraticCurveTo(gl.x + 10, gl.y - 18 + Math.sin(t) * 2, gl.x, gl.y - 15);
+    ctx.closePath(); ctx.fill();
+    }
+    if (s.mode === 'won') drawLineRiderAsset('finish_burst', gl.x, gl.y - 18, 50, 50, 0, Math.min(1, s.wonT * 2));
+    // 抵達範圍微光
+    ctx.strokeStyle = 'rgba(127,230,176,' + (0.25 + Math.sin(t * 1.5) * 0.12) + ')';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(gl.x, gl.y - 4, GOAL_R, 0, Math.PI * 2); ctx.stroke();
+}
+
+function drawLines() {
+    var i, L;
+    for (i = 0; i < s.lines.length; i++) {
+        L = s.lines[i];
+        if (L.type === 'terrain') { ctx.strokeStyle = '#5a6f84'; ctx.lineWidth = 3.5; }
+        else if (L.type === 'blue') { ctx.strokeStyle = '#3f88c8'; ctx.lineWidth = 2.5; }
+        else { ctx.strokeStyle = '#ff5c48'; ctx.lineWidth = 2.5; }
+        ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(L.ax, L.ay); ctx.lineTo(L.bx, L.by); ctx.stroke();
+        // 紅線的方向箭頭
+        if (L.type === 'red') {
+            var mx = (L.ax + L.bx) / 2, my = (L.ay + L.by) / 2;
+            var dx = L.bx - L.ax, dy = L.by - L.ay;
+            var d = Math.sqrt(dx * dx + dy * dy) || 1;
+            dx /= d; dy /= d;
+            ctx.fillStyle = '#ff8f6a';
+            ctx.beginPath();
+            ctx.moveTo(mx + dx * 5, my + dy * 5);
+            ctx.lineTo(mx - dx * 2 - dy * 3.2, my - dy * 2 + dx * 3.2);
+            ctx.lineTo(mx - dx * 2 + dy * 3.2, my - dy * 2 - dx * 3.2);
+            ctx.closePath(); ctx.fill();
+        }
+    }
+    // 正在畫的預覽點
+    if (s.drawing) {
+        ctx.fillStyle = s.tool === 'red' ? '#ff5c48' : '#3f88c8';
+        ctx.beginPath(); ctx.arc(s.drawing.lx, s.drawing.ly, 3, 0, Math.PI * 2); ctx.fill();
+    }
+}
+
+function drawSled() {
+    var A = s.pts.A, B = s.pts.B, H = s.pts.H;
+    var D0 = s.pts.D;
+    var mx = (A.x + B.x + H.x + D0.x) / 4;
+    var my = (A.y + B.y + H.y + D0.y) / 4;
+    var artAngle = Math.atan2(A.y - B.y, A.x - B.x);
+    var svx = ((A.x - A.px) + (B.x - B.px)) * 0.5;
+    var svy = ((A.y - A.py) + (B.y - B.py)) * 0.5;
+    var artSpeed = Math.sqrt(svx * svx + svy * svy);
+    var artState = (s.mode === 'crash' || s.ragdoll) ? 'rider_crash' :
+                   (s.mode === 'play' && s.fallT > 0.12) ? 'rider_air' :
+                   (s.mode === 'play' && artSpeed > 0.55) ? 'rider_speed' : 'rider_idle';
+    if (LINE_RIDER_ART.manifest && LINE_RIDER_ART.image.complete && LINE_RIDER_ART.image.naturalWidth) {
+        if (artState === 'rider_speed')
+            drawLineRiderAsset('speed_burst', mx - Math.cos(artAngle) * 25, my - Math.sin(artAngle) * 25,
+                36, 25, artAngle, 0.82);
+        drawLineRiderAsset(artState, mx, my - 4, 52, 42,
+            artState === 'rider_crash' ? 0 : artAngle, 1);
+        if (artState === 'rider_crash')
+            drawLineRiderAsset('crash_stars', mx, my - 24, 34, 30, 0, Math.min(1, s.crashT * 2));
+        return;
+    }
+    // 雪橇板（木色，兩端上翹）
+    ctx.strokeStyle = '#a8683c'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    var dx = A.x - B.x, dy = A.y - B.y;
+    var d = Math.sqrt(dx * dx + dy * dy) || 1;
+    var nx = -dy / d, ny = dx / d;   // 法線（大致朝上）
+    ctx.beginPath();
+    ctx.moveTo(B.x - dx * 0.12 + nx * 3, B.y - dy * 0.12 + ny * 3);
+    ctx.lineTo(B.x, B.y); ctx.lineTo(A.x, A.y);
+    ctx.lineTo(A.x + dx * 0.12 + nx * 3, A.y + dy * 0.12 + ny * 3);
+    ctx.stroke();
+    // 騎士：屁股坐在 H、身體到 D、頭在 D 再往上一點
+    var D = s.pts.D;
+    ctx.strokeStyle = '#2a3550'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(H.x, H.y); ctx.lineTo(D.x, D.y); ctx.stroke();
+    // 腿：H 到橇頭
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(H.x, H.y); ctx.lineTo(A.x - (A.x - B.x) * 0.2, A.y - (A.y - B.y) * 0.2); ctx.stroke();
+    // 圍巾（隨速度飄）
+    var vx = D.x - D.px, vy = D.y - D.py;
+    ctx.strokeStyle = '#ff5c5c'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(D.x, D.y - 1);
+    ctx.lineTo(D.x - vx * 3 - 4, D.y - vy * 3 - 2 + Math.sin(Date.now() * 0.02) * 1.5);
+    ctx.stroke();
+    // 頭
+    ctx.fillStyle = '#f4e0c8';
+    ctx.beginPath(); ctx.arc(D.x + nx * 2.5, D.y + ny * 2.5, 3.5, 0, Math.PI * 2); ctx.fill();
+    // 帽子
+    ctx.fillStyle = '#3f88c8';
+    ctx.beginPath(); ctx.arc(D.x + nx * 2.5, D.y + ny * 2.5 - 1.5, 3.2, Math.PI, Math.PI * 2); ctx.fill();
+    // 摔倒時頭上冒星星
+    if (s.mode === 'crash') {
+        var t = Date.now() * 0.01;
+        for (var st = 0; st < 3; st++) {
+            var ang = t + st * 2.1;
+            ctx.fillStyle = '#ffd166';
+            RE.Draw.text(ctx, '✶', D.x + Math.cos(ang) * 10, D.y - 12 + Math.sin(ang) * 4,
+                { size: 13, align: 'center', stroke: false, color: '#ffd166' });
+        }
+    }
+}
+
+function drawTopbar() {
+    /* 480px 畫布在 390px 手機視窗會縮到約 0.71 倍；原本頂列與工具列
+       10～11px 文字只剩 7～8px。這些標籤直接告訴玩家目前工具、關卡與
+       墨水餘量，放大它們不改變畫線物理或 Flash 時代的編輯器構圖。 */
+    ctx.fillStyle = 'rgba(20,32,48,0.72)';
+    ctx.fillRect(0, 0, VW, TOP_H);
+    var st = s.mode === 'play' ? '▶ 播放中' : s.mode === 'crash' ? '✶ 摔倒' :
+             s.mode === 'won' ? '★ 抵達！' : '✎ 編輯中';
+    RE.Draw.text(ctx, st, 10, 6, { size: 13, color: s.mode === 'play' ? '#7fe6b0' : '#ffd166' });
+    RE.Draw.text(ctx, s.L.free ? '自由畫布' : s.L.name, VW / 2, 6, { size: 13, align: 'center', color: '#dbe6f7' });
+    // 墨水條
+    if (s.inkLeft !== Infinity) {
+        var w = 74, frac = Math.max(0, s.inkLeft / s.L.ink);
+        ctx.fillStyle = 'rgba(255,255,255,0.16)';
+        RE.Draw.roundRect(ctx, VW - w - 12, 9, w, 8, 4); ctx.fill();
+        ctx.fillStyle = frac < 0.25 ? '#ff9a8a' : '#8fd0ff';
+        if (frac > 0.02) { RE.Draw.roundRect(ctx, VW - w - 11, 10, (w - 2) * frac, 6, 3); ctx.fill(); }
+        RE.Draw.text(ctx, '墨水', VW - w - 44, 6, { size: 13, color: '#8fd0ff' });
+    }
+}
+
+function drawToolbar() {
+    ctx.fillStyle = 'rgba(20,32,48,0.85)';
+    ctx.fillRect(0, VH - TOOL_H, VW, TOOL_H);
+    var bx = toolbarX();
+    for (var i = 0; i < TOOLS.length; i++) {
+        var T = TOOLS[i];
+        var x = bx + i * BTN_W, y = VH - TOOL_H + 4;
+        var sel = s.tool === T.id;
+        var disabled = (T.id === 'blue' || T.id === 'red') && s.L.tools.indexOf(T.id) === -1;
+        var isPlay = T.id === 'play';
+        ctx.fillStyle = sel ? 'rgba(255,209,102,0.3)' :
+                        disabled ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.09)';
+        RE.Draw.roundRect(ctx, x + 2, y, BTN_W - 4, BTN_H, 5); ctx.fill();
+        if (sel) { ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 1.5;
+            RE.Draw.roundRect(ctx, x + 2, y, BTN_W - 4, BTN_H, 5); ctx.stroke(); }
+        var label = isPlay ? (s.mode === 'play' ? '⏸' : '▶') : T.label;
+        var toolArt = {
+            blue: 'tool_blue', red: 'tool_red', erase: 'tool_erase', pan: 'tool_pan',
+            play: 'tool_play', reset: 'tool_reset', clear: 'tool_clear'
+        }[T.id];
+        var aa = disabled ? 0.25 : 1;
+        if (T.id === 'play' || T.id === 'reset') {
+            if (!drawLineRiderAsset(toolArt, x + BTN_W / 2, y + BTN_H / 2, 20, 20, 0, aa))
+                RE.Draw.text(ctx, label, x + BTN_W / 2, y + 7,
+                    { size: 13, align: 'center', color: disabled ? 'rgba(255,255,255,0.25)' : T.color, stroke: false });
+        } else {
+            drawLineRiderAsset(toolArt, x + 10, y + BTN_H / 2, 15, 15, 0, aa);
+            RE.Draw.text(ctx, label, x + 29, y + 7,
+                { size: 12, align: 'center',
+                  color: disabled ? 'rgba(255,255,255,0.25)' : T.color, stroke: false });
+        }
+    }
+}
+
+function drawBanner() {
+    if (s.bannerT > 0) {
+        ctx.globalAlpha = Math.min(1, s.bannerT);
+        RE.Draw.text(ctx, s.banner, VW / 2, 44, { size: 15, align: 'center', color: '#2a4a6a',
+            stroke: true, strokeColor: 'rgba(255,255,255,0.85)' });
+        drawWrappedUiText(s.L.hint, VW / 2, 64, VW - 28, 'center', 2);
+        ctx.globalAlpha = 1;
+    }
+}
+
+// 480px 畫布在手機約縮成 0.71 倍；關卡提示若硬塞單行會失去「畫線解法」的教學脈絡。
+function drawWrappedUiText(text, x, y, maxWidth, align, maxLines) {
+    var size = 13, lineGap = 14, lines = [], line = '';
+    ctx.save();
+    ctx.font = 'bold ' + size + 'px "DotGothic16", monospace';
+    for (var i = 0; i < text.length; i++) {
+        var next = line + text[i];
+        if (line && ctx.measureText(next).width > maxWidth) {
+            lines.push(line); line = text[i];
+        } else line = next;
+    }
+    if (line) lines.push(line);
+    ctx.restore();
+    var count = Math.min(lines.length, maxLines || 2);
+    for (var j = 0; j < count; j++) {
+        RE.Draw.text(ctx, lines[j], x, y + j * lineGap,
+            { size: size, align: align || 'center', color: '#3a5a7a', stroke: true,
+              strokeColor: 'rgba(255,255,255,0.85)' });
+    }
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '用筆畫出雪橇路線：斜率帶來加速度，紅線提供動力。' +
+          '先過五個挑戰，再解鎖自由畫布。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

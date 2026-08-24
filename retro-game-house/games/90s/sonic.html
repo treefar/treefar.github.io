@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 疾風刺蝟</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   疾風刺蝟 — 致敬 Sonic the Hedgehog (Sega, 1991)
+   --------------------------------------------------------------------------
+   復刻重點：這款遊戲把「速度」本身設計成獎勵，而不是難度。
+
+   1. 地面速度（groundSpeed）沿著地形切線方向計算，不是單純的 vx。
+      角色跑在斜坡上時，重力會沿切線分解——下坡自動加速、上坡自然減速。
+      這一條就是整個 Sonic 手感的來源：**地形本身在替你加速**。
+   2. 慣性大於操控。加速度小、摩擦低、最高速高，
+      所以「一路順順地跑」永遠比「急停急轉」快。這是在獎勵熟練。
+   3. 迴圈需要速度門檻。速度不夠就會從半途滑下來——
+      迴圈不是裝飾，是一道「你夠快嗎」的檢定。
+   4. 蹲下滾動（Spin Dash 的前身）：摩擦更低、下坡加速更強、可以撞敵人，
+      但無法主動加速。用速度換控制權。
+   5. 金環是命：被撞到時有環就掉環，沒環才會死。
+      這讓高速衝撞的懲罰變成「失去累積」而不是「重來」，玩家因此敢衝。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'sonic',
+    title: '疾風刺蝟',
+    tagline: '走得越順，跑得越快',
+    original: 'Sonic the Hedgehog (Sega, 1991)',
+    decade: '90s', year: 1991, platform: 'Mega Drive / Genesis', genre: '高速平台',
+    developer: 'Sega · 中裕司 / 大島直人 / 安原廣和等', bgm: '90s',
+    width: 480, height: 300,
+    lives: 3,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'rings', label: '金環', init: 0 },
+        { key: 'stage', label: '關卡', init: '1/5' },
+        { key: 'speed', label: '速度', init: 0 }
+    ],
+    touch: 'dpad+ab', labelA: '跳', labelB: '滾',
+    controls: [
+        { keys: ['←', '→'], desc: '加速（慣性很大，別急著轉向）' },
+        { keys: ['↓'], desc: '蹲下；跑動中按住會滾起來' },
+        { keys: ['空白', 'Z'], desc: '跳躍' },
+        { keys: ['Shift', 'X'], desc: '滾動（下坡滾最快）' }
+    ],
+    howto: '<strong>不要一直按住方向鍵不放就以為會快</strong>——這款遊戲的速度來自地形。' +
+           '下坡放著讓它加速、上坡靠慣性衝過去，比死命按方向鍵有效得多。' +
+           '<strong>迴圈需要足夠的速度才上得去</strong>，慢了會從半途滑下來。' +
+           '被敵人撞到時，只要身上有金環就只會掉環不會死；一顆環都沒有才會少一條命。' +
+           '跑到終點的旗標即可過關，共五關。',
+    lesson: {
+        verb: '沿地形加速、跳躍與滾動，把已取得的動能帶過斜坡、敵人與迴圈。',
+        innovation: '把平台關卡從一串精準落點改造成速度路線：坡度會改變動能，金環則把多數碰撞的代價由立即死亡改為失去累積。',
+        mission: '在第一關分別用「順著下坡不停步」與「下坡前急停再起跑」通過同一路段，比較 HUD 速度；再帶著至少一枚金環承受一次敵人碰撞，觀察失去的是環還是生命。',
+        evolution: '《Super Mario Bros.》以助跑距離決定跳躍；《Sonic》進一步讓整段地形保存或消耗速度；《Canabalt》與《Tiny Wings》再把維持動能濃縮成跑酷主循環。',
+        reflection: '如果上坡、下坡與平地都能立刻跑到同一最高速，迴圈還是在檢驗玩家的路線與節奏，還是只剩背景裝飾？'
+    },
+    design: '高速平台遊戲的難題，不是把角色速度調高，而是讓玩家能理解速度從哪裡來、又為何消失。' +
+            '《Sonic the Hedgehog》以低摩擦、慣性與坡度把關卡表面變成動能系統：順著下坡可加速，上坡會消耗先前累積，迴圈遂成為速度檢定而非單純動畫。' +
+            '初代的動作是蹲下滾動，並非續作才加入的 Spin Dash；滾動會降低摩擦並取得攻擊能力，但也交出部分即時控制。' +
+            '金環再把多數受擊從「立刻失去一條命」改成「散落已蒐集資源」，讓玩家敢以高速探索，卻仍會為失誤付出路線與分數代價。' +
+            '**速度感來自地形、慣性、風險回饋共同運作，不是單一最高速數字。**' +
+            '本站《Canabalt》把動能路線壓縮成自動奔跑，《Tiny Wings》則把下坡蓄速與上坡放飛變成整套操作。',
+    history: 'SEGA 於 1991 年在 Mega Drive／Genesis 推出初代《Sonic the Hedgehog》。官方回顧將高速動作、關卡機關、圖像、音樂與容易理解的金環系統列為作品能同時吸引新手與熟練玩家的關鍵。' +
+             '角色設計者大島直人與關卡設計者安原廣和在 GDC 回顧中說明，刺蝟形象與「蜷成球也能造成傷害」的動作概念彼此相扣；中裕司則負責讓高速、曲面移動成立的程式基礎。' +
+             'SEGA 公司年表記錄初代銷量超過四百萬套，且作品帶動 Mega Drive／Genesis 的全球普及；因此本頁把焦點放在「以關卡塑造速度」，不只把 Sonic 當成企業吉祥物。',
+    sources: [
+        { label: 'SEGA《Sonic Origins》：初代作品官方回顧', url: 'https://sonic.sega.jp/SonicOrigins/about/' },
+        { label: 'SEGA 公司年表：1991 年 Sonic 系列首發', url: 'https://www.sega.jp/history/companyTimeline/en/' },
+        { label: 'GDC／Game Developer：大島直人、安原廣和回顧 Sonic 起源', url: 'https://www.gamedeveloper.com/design/-i-sonic-the-hedgehog-i-s-origin-story-according-to-the-devs-who-made-him' }
+    ]
+});
+
+var ctx = G.ctx, VW = G.width, VH = G.height;
+var P = new RE.Particles(420);
+var FT = new RE.FloatText();
+
+// ======================================================================
+// 物理常數 — Sonic 手感的全部秘密都在這幾個數字的比例上
+// ----------------------------------------------------------------------
+// ACC 很小、FRC 更小、TOP 很高：所以「維持」比「加速」重要得多。
+// SLOPE 是重力沿地形切線的分量，下坡加速、上坡減速就是它做的。
+// ======================================================================
+var ACC = 320;          // 地面加速度
+var FRC = 190;          // 地面摩擦（沒按方向鍵時）
+var DEC = 1500;         // 反向煞車
+var TOP = 560;          // 一般最高速（下坡可以超過）
+var SLOPE = 800;        // 斜坡重力分量
+var SLOPE_ROLL_DOWN = 1050;  // 滾動下坡的加速（比走路強）
+var SLOPE_ROLL_UP = 520;     // 滾動上坡的減速（比走路弱）
+var ROLL_FRC = 62;      // 滾動摩擦（比走路低很多，所以滾得遠）
+var AIR_ACC = 300;      // 空中控制力
+var GRAVITY = 1500;
+var JUMP_V = -520;
+var FALL_OFF = 220;     // 低於這個速度就抓不住陡坡與迴圈
+/* ✗ 試過並回退：220 → 320，想擋住稽核台判的「亂按版 100% 通關」。
+   熟練版仍 6/6 通關但慢了 15%（2438 → 2817 幀）、分數 -4.6%，
+   而**完全沒擋住那個機器人**。
+
+   查清楚之後發現稽核台的標籤容易誤讀：真正 100% 通關的是「亂按**前進**」
+   （4/4，也就是一直按右），純隨機亂按是 0/4、掛機 0/3、亂點 0/4。
+   一直按右在平地會加速到 TOP=560，而爬 29.1 度坡（本作最陡）的淨減速只有
+   ACC 320 − SLOPE·sin 390 = 70 px/s²，從 560 掉到 320 要 3.4 秒、
+   約 1500px 的**連續**陡坡；實際坡段只有 200px 上下，衝勁根本用不完。
+   所以提高門檻這條路走不通，除非重做地形。
+
+   ⚠ 這牽涉設計哲學，不是純粹的 bug：**Sonic 原作本來就能一直按右過關**，
+   往右跑正是這款遊戲的動線設計。要不要把它當缺陷修，要先決定
+   「這一款想驗收的是『能不能到終點』還是『跑得多好』」——
+   後者的答案已經在分數裡（熟練 28272 對照 10336，2.7 倍）。 */
+var MAX_SPD = 900;
+
+// 上迴圈所需的最低速度。以迴圈重力係數 0.35、半徑 64 計算，
+// 470 進入時頂點還剩約 294，高於 FALL_OFF；再慢一點就真的會滑下來。
+var LOOP_MIN = 470;
+
+// ======================================================================
+// 五關地形
+// ----------------------------------------------------------------------
+// 地形由控制點定義，點之間用 smoothstep 插值，
+// 因此不必手動處理接縫，斜坡與丘陵天生連續可微。
+// pts:     [x, y] 控制點（y 越小越高）
+// loops:   [cx, cy, r] 迴圈（需要速度才上得去）
+// rings:   [x, y] 金環
+// enemies: [x, 型別]  walker=地面巡邏  hopper=會跳
+// springs: [x, 強度]  彈簧
+// goal:    終點 x
+// par:     「一路順順衝完」該有的秒數，時間獎勵以它為基準（實測值 ×1.4）
+// ======================================================================
+var LEVELS = [
+    {
+        name: '第一關　綠丘起跑',
+        hint: '下坡不要煞車。讓它跑。',
+        sky: ['#4fa8e0', '#bfe8f5'], hill: '#2f9e6e', hill2: '#1f7a52', ground: '#c08a4a',
+        pts: [[0, 230], [300, 230], [520, 176], [760, 246], [1000, 246], [1260, 190],
+              [1520, 250], [1820, 250], [2080, 196], [2340, 252], [2600, 252]],
+        loops: [[1660, 190, 62]],
+        rings: [[340, 200], [380, 190], [420, 180], [560, 150], [600, 150],
+                [900, 215], [940, 215], [1180, 175], [1220, 165], [1420, 200],
+                [1460, 210], [1900, 210], [1940, 200], [2180, 170], [2220, 170],
+                [2420, 215], [2460, 215]],
+        enemies: [[820, 'walker'], [1340, 'walker'], [2000, 'hopper'], [2260, 'walker']],
+        springs: [[1120, 1]],
+        goal: 2560, par: 16
+    },
+    {
+        name: '第二關　連環丘陵',
+        hint: '一個丘陵的出口就是下一個的入口。串起來。',
+        sky: ['#3f92d0', '#a8ddf0'], hill: '#2f9e6e', hill2: '#1f7a52', ground: '#c08a4a',
+        pts: [[0, 232], [260, 232], [440, 168], [640, 240], [840, 172], [1040, 244],
+              [1260, 180], [1480, 250], [1720, 250], [1980, 182], [2240, 252],
+              [2500, 200], [2760, 252], [3000, 252]],
+        loops: [[1140, 194, 66], [2380, 196, 62]],
+        rings: [[300, 205], [340, 195], [480, 145], [520, 145], [680, 200], [720, 190],
+                [880, 148], [920, 148], [1300, 158], [1340, 158], [1560, 210], [1600, 220],
+                [1800, 215], [1840, 205], [2020, 158], [2060, 158], [2560, 175], [2600, 175],
+                [2820, 218], [2860, 218]],
+        enemies: [[700, 'walker'], [1560, 'hopper'], [1860, 'walker'], [2660, 'walker'], [2900, 'hopper']],
+        springs: [[1640, 1], [2680, 1]],
+        goal: 2960, par: 17
+    },
+    {
+        name: '第三關　高速迴圈',
+        hint: '三個迴圈。速度不夠會從半途滑下來——先去下坡把速度賺回來。',
+        sky: ['#7a4fd0', '#d0bff5'], hill: '#8a6ac0', hill2: '#5f4a95', ground: '#9a7ad0',
+        pts: [[0, 234], [240, 234], [420, 164], [620, 244], [900, 244], [1120, 168],
+              [1360, 250], [1660, 250], [1900, 172], [2160, 252], [2460, 252],
+              [2700, 186], [2960, 254], [3240, 254]],
+        loops: [[760, 196, 64], [1520, 194, 68], [2320, 198, 62]],
+        rings: [[280, 208], [320, 198], [460, 140], [500, 140], [960, 212], [1000, 212],
+                [1160, 145], [1200, 145], [1720, 216], [1760, 206], [1940, 150], [1980, 150],
+                [2520, 218], [2560, 208], [2740, 162], [2780, 162], [3040, 220], [3080, 220]],
+        enemies: [[980, 'walker'], [1740, 'hopper'], [2540, 'walker'], [3060, 'walker'], [3160, 'hopper']],
+        springs: [[880, 1], [2440, 1]],
+        goal: 3200, par: 16
+    },
+    {
+        name: '第四關　陡坡與彈簧',
+        hint: '陡坡上不去就先蹲下滾，用滾動保住速度。',
+        sky: ['#d06a3a', '#f5cfa0'], hill: '#b0703a', hill2: '#8a5228', ground: '#7a4a24',
+        pts: [[0, 236], [220, 236], [380, 150], [560, 250], [780, 154], [980, 254],
+              [1200, 160], [1420, 254], [1700, 254], [1940, 158], [2200, 256],
+              [2440, 174], [2700, 256], [2960, 190], [3220, 256], [3480, 256]],
+        loops: [[1560, 192, 66], [2840, 198, 60]],
+        rings: [[260, 210], [300, 200], [420, 126], [460, 126], [820, 130], [860, 130],
+                [1240, 136], [1280, 136], [1760, 220], [1800, 210], [1980, 134], [2020, 134],
+                [2500, 150], [2540, 150], [3000, 166], [3040, 166], [3280, 224], [3320, 224]],
+        enemies: [[700, 'hopper'], [1100, 'walker'], [1780, 'walker'], [2280, 'hopper'],
+                  [3080, 'walker'], [3380, 'walker']],
+        springs: [[600, 1.15], [1020, 1.15], [2240, 1]],
+        goal: 3440, par: 22
+    },
+    {
+        name: '第五關　一鏡到底',
+        hint: '最後一關。這條路線是可以不停下來跑完的——找到它。',
+        sky: ['#1a2a4a', '#5a7ab0'], hill: '#3a5a8a', hill2: '#26406a', ground: '#4a3a6a',
+        pts: [[0, 238], [200, 238], [360, 156], [540, 248], [740, 158], [940, 250],
+              [1160, 164], [1380, 252], [1620, 168], [1860, 254], [2140, 254],
+              [2380, 170], [2640, 256], [2900, 178], [3160, 256], [3440, 256],
+              [3680, 184], [3940, 258], [4200, 258]],
+        loops: [[1040, 190, 64], [1740, 194, 66], [2760, 196, 64], [3560, 200, 62]],
+        rings: [[240, 212], [280, 202], [400, 132], [440, 132], [780, 134], [820, 134],
+                [1200, 140], [1240, 140], [1660, 144], [1700, 144], [1920, 222], [1960, 212],
+                [2420, 146], [2460, 146], [2940, 154], [2980, 154], [3480, 224], [3520, 214],
+                [3720, 160], [3760, 160], [4000, 226], [4040, 226]],
+        enemies: [[620, 'walker'], [1300, 'hopper'], [1960, 'walker'], [2500, 'walker'],
+                  [3020, 'hopper'], [3500, 'walker'], [4080, 'walker']],
+        springs: [[880, 1.1], [2300, 1.1], [3500, 1]],   // 原本 3380 落在斷崖 3210~3420 裡面，懸空了
+        /* 最後一關的斷崖。稽核台量到「亂按前進」（一直按右、從不按跳）
+           4/4 通關——往右跑本身就是通關條件，核心動詞「養速度」從沒被驗收。
+           試過用陡坡擋（FALL_OFF 220→320），算完發現做不到：
+           一直按右在平地會衝到 TOP=560，爬本作最陡的 29.1 度坡淨減速只有
+           ACC 320 − SLOPE·sin 390 = 70 px/s²，要掉到門檻以下需要 1500px 的連續陡坡，
+           換算垂直上升 548px，而地形總共只有 130px 的垂直空間。
+           斷崖才是對的工具：跳躍滯空 2×520/1500 = 0.69 秒，
+           速度 560 能跨 386px、320 只能跨 221px——**寬度直接換算成速度門檻**。
+           設 210px：要 305px/s 以上才跳得過，而且非跳不可。 */
+        pits: [[3210, 3420]],
+        goal: 4160, par: 24
+    }
+];
+
+// ======================================================================
+// 地形：控制點 + smoothstep 插值
+// ----------------------------------------------------------------------
+// 用 smoothstep 而不是直線，斜坡在兩端自然收尾、中段最陡，
+// 跑起來的加速曲線才會像丘陵而不是像三角形屋頂。
+// ======================================================================
+function smoothstep(t) { return t * t * (3 - 2 * t); }
+
+/** 這個 x 是不是落在斷崖裡 */
+function inPit(x) {
+    var ps = s.pits;
+    for (var i = 0; i < ps.length; i++) if (x > ps[i][0] && x < ps[i][1]) return true;
+    return false;
+}
+
+function groundY(x) {
+    /* 斷崖區沒有地面。回傳畫面外的深度就同時解決三件事：
+       玩家踩空往下掉、地面繪製的 lineTo 自然畫出缺口、
+       切線角度在崖邊變陡（跑過去會被自然地帶下去）。 */
+    if (inPit(x)) return VH + 400;
+    var pts = s.pts;
+    if (x <= pts[0][0]) return pts[0][1];
+    var last = pts[pts.length - 1];
+    if (x >= last[0]) return last[1];
+    for (var i = 0; i < pts.length - 1; i++) {
+        if (x >= pts[i][0] && x < pts[i + 1][0]) {
+            var t = (x - pts[i][0]) / (pts[i + 1][0] - pts[i][0]);
+            return pts[i][1] + (pts[i + 1][1] - pts[i][1]) * smoothstep(t);
+        }
+    }
+    return last[1];
+}
+
+/** 地形切線角度（弧度）。正值 = 往右是下坡 */
+function groundAngle(x) {
+    var d = 6;
+    return Math.atan2(groundY(x + d) - groundY(x - d), d * 2);
+}
+
+// ======================================================================
+// 狀態
+// ======================================================================
+var s = null;
+
+function reset() {
+    s = { level: 0, totalScore: 0 };
+    P.clear(); FT.clear();
+    G.setStat('score', 0);
+    G.setLives(3);
+    loadLevel(0);
+}
+
+function loadLevel(i) {
+    var L = LEVELS[i];
+    var k;
+    s = s || {};
+    s.level = i;
+    s.L = L;
+    s.pts = L.pts;
+    s.pits = L.pits || [];
+    // 迴圈圓心的 y 一律由地形算出來，關卡表裡的那個值只當參考。
+    // 手填的話很容易跟地形對不上（實測有一關差了 43px），迴圈會浮在半空中。
+    s.loops = [];
+    for (k = 0; k < L.loops.length; k++) {
+        var lr = L.loops[k][2];
+        s.loops.push({ cx: L.loops[k][0], cy: groundY(L.loops[k][0]) - lr, r: lr });
+    }
+    s.rings = [];
+    for (k = 0; k < L.rings.length; k++) {
+        s.rings.push({ x: L.rings[k][0], y: L.rings[k][1], got: false, t: k * 0.3 });
+    }
+    s.enemies = [];
+    for (k = 0; k < L.enemies.length; k++) {
+        var ex = L.enemies[k][0];
+        s.enemies.push({
+            x: ex, y: groundY(ex) - 12, x0: ex, type: L.enemies[k][1],
+            dir: -1, dead: 0, t: k * 0.7, vy: 0
+        });
+    }
+    s.springs = [];
+    for (k = 0; k < L.springs.length; k++) {
+        s.springs.push({ x: L.springs[k][0], power: L.springs[k][1], t: 0 });
+    }
+    s.loose = [];          // 被撞飛的金環
+    s.goal = L.goal;
+    s.camX = 0; s.camY = 0;
+    s.time = 0;
+    s.rings_n = 0;
+    s.levelScore = 0;
+    s.done = 0;
+    s.bonus = null;
+    s.topSpeed = 0;
+    s.banner = ''; s.bannerT = 0;
+
+    s.p = {
+        x: 60, y: groundY(60), gsp: 0, vx: 0, vy: 0,
+        ground: true, angle: 0, face: 1,
+        roll: false, crouch: false, jump: false,
+        invuln: 0, hurt: 0, dead: 0,
+        loop: null, loopT: 0, loopDir: 1,
+        anim: 0, spin: 0
+    };
+
+    G.setStat('rings', 0);
+    G.setStat('stage', (i + 1) + '/5');
+    G.setStat('speed', 0);
+    s.banner = L.name;
+    s.bannerT = 2.0;
+}
+
+// ======================================================================
+// 玩家更新
+// ======================================================================
+function updatePlayer(dt) {
+    var p = s.p;
+    p.anim += dt;
+    if (p.invuln > 0) p.invuln -= dt;
+    if (p.hurt > 0) { p.hurt -= dt; updateHurt(dt); return; }
+    if (p.dead > 0) { updateDead(dt); return; }
+
+    var ax = RE.Input.axisX();
+    var down = RE.Input.axisY() > 0;
+    var jumpPressed = RE.Input.pressed('a') || RE.Input.buffered('a', 0.12);
+
+    if (p.loop) { updateLoop(dt, ax); return; }
+
+    if (p.ground) {
+        // ---- 斜坡重力：Sonic 手感的核心 ----
+        // 下坡時 sin(angle) 為正，順著跑的方向加速；上坡則相反。
+        var sf = p.roll
+            ? ((p.gsp > 0) === (Math.sin(p.angle) > 0) ? SLOPE_ROLL_DOWN : SLOPE_ROLL_UP)
+            : SLOPE;
+        p.gsp += sf * Math.sin(p.angle) * dt;
+
+        if (p.roll) {
+            // 滾動：不能主動加速，只能靠地形。摩擦極低所以滾得遠。
+            p.gsp = RE.approach(p.gsp, 0, ROLL_FRC * dt);
+            if (ax !== 0 && RE.sign(ax) !== RE.sign(p.gsp)) {
+                p.gsp = RE.approach(p.gsp, 0, DEC * 0.4 * dt);
+            }
+            if (Math.abs(p.gsp) < 90) { p.roll = false; }
+        } else {
+            if (ax !== 0) {
+                if (RE.sign(ax) === RE.sign(p.gsp) || p.gsp === 0) {
+                    // 已達最高速時不再主動加速——超過 TOP 的速度只能靠斜坡賺
+                    if (Math.abs(p.gsp) < TOP) p.gsp += ACC * ax * dt;
+                } else {
+                    p.gsp += DEC * ax * dt;    // 反向 = 煞車，比加速快得多
+                    if (Math.abs(p.gsp) > 240) {
+                        P.burst(p.x, p.y, 2, { colors: ['#e8e8e8', '#c0c0c0'], speedMin: 20, speedMax: 70, gravity: 200, lifeMin: 0.1, lifeMax: 0.25, sizeMin: 1.5, sizeMax: 3 });
+                    }
+                }
+                p.face = RE.sign(ax);
+            } else {
+                p.gsp = RE.approach(p.gsp, 0, FRC * dt);
+            }
+            // 跑動中蹲下 = 滾起來
+            p.crouch = down && Math.abs(p.gsp) < 40;
+            if (down && Math.abs(p.gsp) >= 120) {
+                p.roll = true;
+                RetroAudio.play('dash');
+            }
+        }
+        if (RE.Input.pressed('b') && Math.abs(p.gsp) >= 100) p.roll = true;
+
+        p.gsp = RE.clamp(p.gsp, -MAX_SPD, MAX_SPD);
+
+        /* 跳躍：沿地面法線方向彈出，斜坡上跳會偏向坡面外側。
+           ⚠ 垂直分量原本寫成 `- JUMP_V * cos(n)`，而 JUMP_V 是 -520（負＝朝上），
+           兩個負號抵銷之後平地代入得 vy = **+520，方向朝下**。
+           結果是同一幀就被「vy >= 0 且 y >= 地面」的落地判定接回地面，
+           而落地時 gsp = vx·cos + vy·sin 展開後又恰好等於原本的 gsp——
+           **A 鍵在這一款只有音效與粒子，位移完全是零**。
+           三種坡度代入都一樣朝下：平地 +520、20 度 +625、45 度 +650。
+           水平分量那一行是對的（`+ JUMP_V * sin(n)`），只有垂直這一行的符號錯。
+           這也解釋了為什麼稽核一直報「拿掉核心動詞仍能通關」——
+           跳躍本來就不存在，拿不拿掉都一樣。 */
+        if (jumpPressed) {
+            RE.Input.consumeBuffer('a');
+            var n = p.angle;
+            p.vx = p.gsp * Math.cos(n) + JUMP_V * Math.sin(n);
+            p.vy = p.gsp * Math.sin(n) + JUMP_V * Math.cos(n);
+            p.ground = false;
+            p.jump = true;
+            p.roll = false;
+            RetroAudio.play('jump');
+        } else {
+            // 沿切線方向移動
+            p.vx = p.gsp * Math.cos(p.angle);
+            p.vy = p.gsp * Math.sin(p.angle);
+        }
+    } else {
+        // ---- 空中 ----
+        if (ax !== 0) {
+            p.vx += AIR_ACC * ax * dt;
+            p.vx = RE.clamp(p.vx, -MAX_SPD, MAX_SPD);
+            p.face = RE.sign(ax);
+        }
+        // 可變跳躍高度：放開按鍵時若還在上升，立刻削掉速度
+        if (p.jump && !RE.Input.down('a') && p.vy < -240) p.vy = -240;
+        p.vy += GRAVITY * dt;
+    }
+
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+
+    // ---- 貼地 ----
+    var gy = groundY(p.x);
+    if (p.ground) {
+        p.y = gy;
+        p.angle = groundAngle(p.x);
+        /* 陡坡上速度太慢會滑回坡底（y 軸向下：右上坡 sin < 0，gsp 被往左推）。
+           門檻原本是 0.72，也就是要 46.1 度的坡才算「陡」——
+           而五關的地形最陡只做到 29.1 度（第四關），**這個分支從來沒有執行過**。
+           核心動詞是「把地形換成速度」，可是關卡兩道速度門檻都是空的：
+           迴圈上不去只是少拿 200 分，陡坡則根本不存在。慢慢走照樣通關，
+           對照組也就 100% 通關——不是機器人太強，是關卡沒在驗收。
+           改成 0.45（26.7 度）之後：前三關最陡 16.3 / 19.8 / 21.8 度仍不觸發，
+           第四關 29.1 度與第五關 27.1 度的那一段開始要求速度。
+           難度曲線因此對得上——前三關教你把速度養起來，後兩關才收學費。 */
+        if (Math.abs(p.gsp) < FALL_OFF && Math.abs(Math.sin(p.angle)) > 0.45) {
+            p.gsp += SLOPE * Math.sin(p.angle) * dt * 2;
+        }
+    } else if (p.vy >= 0 && p.y >= gy) {
+        // 落地：把空中速度投影回地面切線，這樣落在斜坡上會順順地接著跑
+        p.y = gy;
+        p.ground = true;
+        p.jump = false;
+        p.angle = groundAngle(p.x);
+        p.gsp = p.vx * Math.cos(p.angle) + p.vy * Math.sin(p.angle);
+        if (Math.abs(p.vy) > 260) {
+            RetroAudio.play('land');
+            RE.juice.shake(0.08);
+            P.burst(p.x, p.y, 5, { colors: ['#d8c8a0', '#b0a080'], speedMin: 30, speedMax: 110, gravity: 300, lifeMin: 0.15, lifeMax: 0.3, sizeMin: 1.5, sizeMax: 3 });
+        }
+        if (RE.Input.axisY() > 0 && Math.abs(p.gsp) >= 120) p.roll = true;
+    }
+
+    // 邊界
+    if (p.x < 12) { p.x = 12; p.gsp = Math.max(0, p.gsp); p.vx = Math.max(0, p.vx); }
+
+    if (Math.abs(p.gsp) > s.topSpeed) s.topSpeed = Math.abs(p.gsp);
+    checkLoopEntry();
+}
+
+/** 受傷後的擊退：這段不能操作，但也不會死 */
+function updateHurt(dt) {
+    var p = s.p;
+    p.vy += GRAVITY * 0.8 * dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    var gy = groundY(p.x);
+    if (p.y >= gy) {
+        p.y = gy; p.vy = 0; p.vx = 0; p.gsp = 0;
+        p.ground = true;
+        p.hurt = 0;
+    }
+}
+
+function updateDead(dt) {
+    var p = s.p;
+    p.dead -= dt;
+    p.vy += GRAVITY * 0.7 * dt;
+    p.y += p.vy * dt;
+    if (p.dead <= 0) afterDeath();
+}
+
+// ======================================================================
+// 迴圈：需要速度才上得去
+// ======================================================================
+function checkLoopEntry() {
+    var p = s.p;
+    if (p.loop || !p.ground) return;
+    for (var i = 0; i < s.loops.length; i++) {
+        var lp = s.loops[i];
+        if (Math.abs(p.x - lp.cx) < 16 && Math.abs(p.gsp) >= LOOP_MIN) {
+            p.loop = lp;
+            p.loopT = 0;
+            p.loopDir = RE.sign(p.gsp);
+            RetroAudio.play('powerup');
+            RE.juice.punchZoom(0.05);
+            addScore(200, p.x, p.y - 40, '迴圈！');
+            return;
+        }
+    }
+}
+
+function updateLoop(dt, ax) {
+    var p = s.p;
+    var lp = p.loop;
+    // 沿圓周推進：角速度 = 線速度 / 半徑
+    p.loopT += Math.abs(p.gsp) * dt / lp.r;
+    // 圓周上的重力分量：上半圈（sin > 0）減速、下半圈加速。
+    // 係數 0.35 而非 1.0 是刻意的——完全寫實的話，
+    // 依能量守恆上迴圈需要 sqrt(4gr) ≈ 620 的速度，比平地最高速還快，
+    // 玩家會覺得迴圈根本上不去。0.35 讓門檻落在「需要一段下坡助跑」的位置。
+    p.gsp -= GRAVITY * 0.35 * Math.sin(p.loopT) * dt * p.loopDir;
+
+    // 速度不足又還在上半圈 → 掉下來
+    if (Math.abs(p.gsp) < FALL_OFF && p.loopT > 0.8 && p.loopT < RE.TAU - 0.8) {
+        p.loop = null;
+        p.ground = false;
+        p.vx = p.gsp * 0.4;
+        p.vy = 60;
+        RetroAudio.play('cancel');
+        FT.add(p.x, p.y - 30, '速度不足！', { color: '#ff9a6c', size: 13, life: 1.0 });
+        return;
+    }
+
+    p.x = lp.cx + Math.sin(p.loopT) * lp.r * p.loopDir;
+    p.y = lp.cy + Math.cos(p.loopT) * lp.r;
+    p.angle = -p.loopT * p.loopDir;
+    p.spin += dt * 22;
+
+    if (p.loopT >= RE.TAU) {
+        p.loop = null;
+        p.ground = true;
+        p.x = lp.cx + lp.r * 0.5 * p.loopDir;
+        p.y = groundY(p.x);
+        p.angle = groundAngle(p.x);
+        addScore(300, p.x, p.y - 44, '通過！');
+        RE.juice.shake(0.2);
+    }
+}
+
+// ======================================================================
+// 互動物件
+// ======================================================================
+function updateObjects(dt) {
+    var p = s.p, i;
+
+    // 金環
+    for (i = 0; i < s.rings.length; i++) {
+        var r = s.rings[i];
+        if (r.got) continue;
+        r.t += dt;
+        if (Math.abs(p.x - r.x) < 18 && Math.abs(p.y - 22 - r.y) < 26) {
+            r.got = true;
+            s.rings_n++;
+            G.setStat('rings', s.rings_n);
+            addScore(10);
+            RetroAudio.play('coin');
+            P.burst(r.x, r.y, 5, { colors: ['#ffd166', '#fff0aa'], speedMin: 40, speedMax: 120, gravity: 260, lifeMin: 0.15, lifeMax: 0.3, sizeMin: 1.5, sizeMax: 3, glow: true });
+        }
+    }
+
+    // 掉出去的金環（可以撿回來一部分）
+    for (i = s.loose.length - 1; i >= 0; i--) {
+        var lr = s.loose[i];
+        lr.t += dt;
+        lr.vy += GRAVITY * 0.55 * dt;
+        lr.x += lr.vx * dt;
+        lr.y += lr.vy * dt;
+        var g2 = groundY(lr.x);
+        if (lr.y > g2) { lr.y = g2; lr.vy *= -0.5; lr.vx *= 0.7; }
+        if (lr.t > 4.5) { s.loose.splice(i, 1); continue; }
+        if (lr.t > 0.7 && Math.abs(p.x - lr.x) < 18 && Math.abs(p.y - 22 - lr.y) < 28) {
+            s.loose.splice(i, 1);
+            s.rings_n++;
+            G.setStat('rings', s.rings_n);
+            addScore(10);
+            RetroAudio.play('coin');
+        }
+    }
+
+    // 彈簧
+    for (i = 0; i < s.springs.length; i++) {
+        var sp = s.springs[i];
+        if (sp.t > 0) sp.t -= dt;
+        var sy = groundY(sp.x);
+        if (Math.abs(p.x - sp.x) < 22 && Math.abs(p.y - sy) < 26 && p.vy >= -50) {
+            sp.t = 0.32;
+            p.ground = false;
+            p.loop = null;
+            p.vy = JUMP_V * 1.55 * sp.power;
+            p.jump = false;
+            p.roll = false;
+            RetroAudio.play('bounce');
+            RE.juice.shake(0.22);
+            addScore(50);
+        }
+    }
+
+    // 敵人
+    for (i = 0; i < s.enemies.length; i++) {
+        var e = s.enemies[i];
+        if (e.dead > 0) { e.dead -= dt; continue; }
+        e.t += dt;
+        if (e.type === 'walker') {
+            e.x += e.dir * 46 * dt;
+            if (Math.abs(e.x - e.x0) > 56) e.dir *= -1;
+            e.y = groundY(e.x) - 12;
+        } else {
+            // hopper：定時起跳
+            e.vy += GRAVITY * 0.8 * dt;
+            e.y += e.vy * dt;
+            var eg = groundY(e.x) - 12;
+            if (e.y >= eg) {
+                e.y = eg;
+                e.vy = 0;
+                if (e.t > 1.4) { e.vy = -330; e.t = 0; }
+            }
+        }
+        if (p.dead > 0 || p.hurt > 0) continue;
+        if (Math.abs(p.x - e.x) < 20 && Math.abs((p.y - 16) - e.y) < 22) {
+            // 滾動或下落中撞到 = 擊破；否則受傷
+            var attacking = p.roll || (!p.ground && p.vy > 40) || p.loop;
+            if (attacking) killEnemy(e);
+            else hurtPlayer(e.x);
+        }
+    }
+
+    // 終點
+    if (!s.done && p.x >= s.goal) finishLevel();
+}
+
+function killEnemy(e) {
+    e.dead = 1.2;
+    addScore(100, e.x, e.y - 10);
+    RetroAudio.play('explosion');
+    RE.juice.impact(2);
+    P.burst(e.x, e.y, 16, {
+        colors: ['#ffd166', '#ff8a4c', '#e8e8e8'], speedMin: 60, speedMax: 220,
+        gravity: 320, lifeMin: 0.2, lifeMax: 0.5, sizeMin: 2, sizeMax: 4.5
+    });
+    P.ring(e.x, e.y, '#fff0aa', 32);
+    // 踩到敵人後的小彈跳，讓連續擊破變得可能
+    if (!s.p.ground) s.p.vy = -300;
+}
+
+/**
+ * 受傷。有金環就只掉環不會死——
+ * 這個設計讓「高速衝撞」的懲罰變成失去累積，而不是重來，玩家因此敢衝。
+ */
+function hurtPlayer(fromX) {
+    var p = s.p;
+    if (p.invuln > 0 || p.hurt > 0 || p.dead > 0) return;
+
+    if (s.rings_n > 0) {
+        var drop = Math.min(s.rings_n, 14);
+        for (var i = 0; i < drop; i++) {
+            var a = (i / drop) * RE.TAU;
+            s.loose.push({
+                x: p.x, y: p.y - 20, t: 0,
+                vx: Math.cos(a) * RE.rand(60, 170),
+                vy: Math.sin(a) * RE.rand(60, 170) - 130
+            });
+        }
+        s.rings_n = 0;
+        G.setStat('rings', 0);
+        p.hurt = 0.6;
+        p.invuln = 1.8;
+        p.ground = false;
+        p.loop = null;
+        p.roll = false;
+        p.vx = (p.x < fromX ? -1 : 1) * 160;
+        p.vy = -280;
+        p.gsp = 0;
+        RetroAudio.play('hurt');
+        RE.juice.impact(2);
+        RE.juice.shake(0.4);
+        return;
+    }
+
+    // 一顆環都沒有：死亡
+    p.dead = 1.6;
+    p.loop = null;
+    p.vy = -420;
+    p.ground = false;
+    RetroAudio.play('gameover');
+    RE.juice.slowmo(0.3, 0.9);
+    RE.juice.shake(0.5);
+}
+
+function afterDeath() {
+    G.setLives(G.lives - 1);
+    if (G.lives <= 0) {
+        G.gameOver({
+            win: false,
+            score: s.totalScore + s.levelScore,
+            body: '在第 ' + (s.level + 1) + ' 關倒下。' +
+                  '記住：速度不是按出來的，是地形給的。下坡放手讓它跑，' +
+                  '上坡靠慣性衝——而且只要身上有一顆環，你就不會死。'
+        });
+        return;
+    }
+    var i = s.level;
+    G.stageCard(i + 1, LEVELS[i].name, '再來一次。這次試著不要在下坡按反方向。', function () {
+        loadLevel(i);
+    });
+}
+
+function addScore(n, x, y, label) {
+    s.levelScore += n;
+    G.setStat('score', s.totalScore + s.levelScore);
+    if (x !== undefined) {
+        FT.add(x, y, label || ('+' + n), { color: '#ffd166', size: label ? 14 : 12 });
+    }
+}
+
+function finishLevel() {
+    s.done = 1;
+    var p = s.p;
+    p.roll = false;
+    RetroAudio.play('win');
+    RE.juice.flash('rgba(255,255,255,0.45)', 0.14);
+
+    // 時間獎勵：par 是「順順地跑完」該有的秒數，衝得越順拿越多
+    var timeBonus = Math.max(0, Math.round((s.L.par - s.time) * 200));
+    var ringBonus = s.rings_n * 100;
+    var speedBonus = Math.round(s.topSpeed);
+    s.levelScore += timeBonus + ringBonus + speedBonus;
+    s.totalScore += s.levelScore;
+    G.setStat('score', s.totalScore);
+
+    s.banner = '過關！';
+    s.bannerT = 2.4;
+    s.bonus = { time: timeBonus, ring: ringBonus, speed: speedBonus };
+}
+
+function nextLevel() {
+    if (s.level >= LEVELS.length - 1) {
+        G.gameOver({
+            win: true,
+            score: s.totalScore,
+            body: '五關全破，最高速度 ' + Math.round(s.topSpeed) + '。' +
+                  '關卡從來沒有變過——變的是你。第一次玩撞得七零八落的那些地方，' +
+                  '現在你可以一路衝過去，這就是這款遊戲要給的東西。'
+        });
+        return;
+    }
+    var n = s.level + 1;
+    G.stageCard(n + 1, LEVELS[n].name, LEVELS[n].hint, function () { loadLevel(n); });
+}
+
+// ======================================================================
+// 主迴圈
+// ======================================================================
+function update(dt) {
+    P.update(dt); FT.update(dt);
+    if (s.bannerT > 0) s.bannerT -= dt;
+
+    if (s.done) {
+        s.done += dt;
+        // 過關演出：讓角色自己跑出畫面
+        var pp = s.p;
+        pp.gsp = RE.approach(pp.gsp, 0, 300 * dt);
+        pp.x += pp.gsp * dt;
+        pp.y = groundY(pp.x);
+        pp.anim += dt;
+        updateCam(dt);
+        if (s.done > 2.6) nextLevel();
+        return;
+    }
+
+    s.time += dt;
+    updatePlayer(dt);
+    updateObjects(dt);
+    updateCam(dt);
+
+    // 掉出世界
+    if ((s.p.y > groundY(s.p.x) + 300 || (inPit(s.p.x) && s.p.y > VH + 60)) && s.p.dead <= 0) {
+        s.rings_n = 0;
+        G.setStat('rings', 0);
+        hurtPlayerFall();
+    }
+
+    G.setStat('speed', Math.round(Math.abs(s.p.ground ? s.p.gsp : s.p.vx)));
+}
+
+function hurtPlayerFall() {
+    var p = s.p;
+    if (p.dead > 0) return;
+    p.dead = 1.0;
+    RetroAudio.play('gameover');
+}
+
+function updateCam(dt) {
+    var p = s.p;
+    // 前瞻：跑越快看越遠，玩家才有時間反應
+    var lead = RE.clamp(p.vx * 0.34, -140, 140);
+    var tx = p.x + lead - VW / 2;
+    var ty = p.y - VH * 0.62;
+    var maxX = s.pts[s.pts.length - 1][0] - VW;
+    s.camX += (RE.clamp(tx, 0, Math.max(0, maxX)) - s.camX) * (1 - Math.pow(0.0006, dt));
+    s.camY += (RE.clamp(ty, -160, 120) - s.camY) * (1 - Math.pow(0.004, dt));
+}
+
+// ======================================================================
+// 繪圖
+// ======================================================================
+function drawSky() {
+    var L = s.L;
+    var g = ctx.createLinearGradient(0, 0, 0, VH);
+    g.addColorStop(0, L.sky[0]);
+    g.addColorStop(1, L.sky[1]);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, VW, VH);
+
+    // 遠景丘陵（視差）
+    ctx.save();
+    ctx.globalAlpha = 0.45;
+    ctx.fillStyle = L.hill2;
+    var off = -s.camX * 0.18;
+    for (var i = 0; i < 12; i++) {
+        var hx = (i * 210 + off) % (VW + 420) - 210;
+        ctx.beginPath();
+        ctx.arc(hx, VH * 0.72 - s.camY * 0.1, 130, Math.PI, 0);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 0.7;
+    ctx.fillStyle = L.hill;
+    off = -s.camX * 0.35;
+    for (var j = 0; j < 14; j++) {
+        var hx2 = (j * 165 + off) % (VW + 330) - 165;
+        ctx.beginPath();
+        ctx.arc(hx2, VH * 0.86 - s.camY * 0.2, 96, Math.PI, 0);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawTerrain() {
+    var L = s.L;
+    var x0 = s.camX - 20, x1 = s.camX + VW + 20;
+    ctx.beginPath();
+    ctx.moveTo(x0, groundY(x0));
+    for (var x = x0; x <= x1; x += 6) ctx.lineTo(x, groundY(x));
+    ctx.lineTo(x1, s.camY + VH + 200);
+    ctx.lineTo(x0, s.camY + VH + 200);
+    ctx.closePath();
+    ctx.fillStyle = L.ground;
+    ctx.fill();
+
+    // 草皮
+    ctx.beginPath();
+    ctx.moveTo(x0, groundY(x0));
+    for (var x2 = x0; x2 <= x1; x2 += 6) ctx.lineTo(x2, groundY(x2));
+    ctx.lineWidth = 9;
+    ctx.strokeStyle = L.hill;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+    ctx.stroke();
+
+    // 地層紋理
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = '#000';
+    for (var tx = Math.floor(x0 / 46) * 46; tx < x1; tx += 46) {
+        ctx.fillRect(tx, groundY(tx) + 26, 22, 5);
+        ctx.fillRect(tx + 24, groundY(tx + 24) + 48, 16, 5);
+    }
+    ctx.restore();
+}
+
+function drawLoops() {
+    for (var i = 0; i < s.loops.length; i++) {
+        var lp = s.loops[i];
+        ctx.save();
+        ctx.strokeStyle = s.L.ground;
+        ctx.lineWidth = 13;
+        ctx.beginPath();
+        ctx.arc(lp.cx, lp.cy, lp.r, 0, RE.TAU);
+        ctx.stroke();
+        ctx.strokeStyle = s.L.hill;
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.arc(lp.cx, lp.cy, lp.r - 5, 0, RE.TAU);
+        ctx.stroke();
+        // 速度不足時的提示
+        var p = s.p;
+        if (!p.loop && Math.abs(p.x - lp.cx) < 190 && Math.abs(p.gsp) < LOOP_MIN) {
+            ctx.globalAlpha = 0.75;
+            RE.Draw.text(ctx, '需要速度 ' + LOOP_MIN, lp.cx, lp.cy - lp.r - 26,
+                { size: 13, align: 'center', color: '#ffd166', strokeWidth: 3 });
+        }
+        ctx.restore();
+    }
+}
+
+function drawRings() {
+    var i;
+    for (i = 0; i < s.rings.length; i++) {
+        var r = s.rings[i];
+        if (r.got) continue;
+        if (r.x < s.camX - 30 || r.x > s.camX + VW + 30) continue;
+        drawRing(r.x, r.y, r.t);
+    }
+    for (i = 0; i < s.loose.length; i++) {
+        drawRing(s.loose[i].x, s.loose[i].y, s.loose[i].t * 2);
+    }
+}
+
+function drawRing(x, y, t) {
+    // 用寬度變化模擬旋轉
+    var w = Math.abs(Math.cos(t * 3.4)) * 8 + 2;
+    ctx.save();
+    ctx.strokeStyle = '#ffd166';
+    ctx.lineWidth = 3;
+    ctx.shadowBlur = 8; ctx.shadowColor = '#ffd166';
+    ctx.beginPath();
+    ctx.ellipse(x, y, w, 10, 0, 0, RE.TAU);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawSprings() {
+    for (var i = 0; i < s.springs.length; i++) {
+        var sp = s.springs[i];
+        if (sp.x < s.camX - 40 || sp.x > s.camX + VW + 40) continue;
+        var y = groundY(sp.x);
+        var sq = sp.t > 0 ? 1 - sp.t * 1.6 : 1;
+        ctx.save();
+        ctx.fillStyle = '#e0453e';
+        ctx.fillRect(sp.x - 15, y - 10 * sq, 30, 10 * sq);
+        ctx.fillStyle = '#f2f0e6';
+        ctx.fillRect(sp.x - 15, y - 3, 30, 3);
+        ctx.fillStyle = '#ffd166';
+        ctx.beginPath();
+        ctx.moveTo(sp.x, y - 16 * sq);
+        ctx.lineTo(sp.x - 7, y - 10 * sq);
+        ctx.lineTo(sp.x + 7, y - 10 * sq);
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+function drawEnemies() {
+    for (var i = 0; i < s.enemies.length; i++) {
+        var e = s.enemies[i];
+        if (e.dead > 0) continue;
+        if (e.x < s.camX - 40 || e.x > s.camX + VW + 40) continue;
+        ctx.save();
+        ctx.translate(e.x, e.y);
+        if (e.type === 'walker') {
+            ctx.fillStyle = '#9a5fd0';
+            RE.Draw.roundRect(ctx, -11, -10, 22, 20, 6);
+            ctx.fill();
+            ctx.fillStyle = '#3a2a4a';
+            ctx.fillRect(-8, 8, 5, 4);
+            ctx.fillRect(3, 8, 5, 4);
+            ctx.fillStyle = '#ff6b6b';
+            ctx.beginPath(); ctx.arc(e.dir * 4, -2, 3.4, 0, RE.TAU); ctx.fill();
+        } else {
+            ctx.fillStyle = '#e08a3a';
+            ctx.beginPath(); ctx.arc(0, 0, 11, 0, RE.TAU); ctx.fill();
+            ctx.fillStyle = '#4a2a10';
+            ctx.beginPath(); ctx.arc(-3.5, -2, 2.6, 0, RE.TAU); ctx.fill();
+            ctx.beginPath(); ctx.arc(3.5, -2, 2.6, 0, RE.TAU); ctx.fill();
+            ctx.fillStyle = '#f2c94c';
+            ctx.fillRect(-9, 8, 18, 4);
+        }
+        ctx.restore();
+    }
+}
+
+function drawGoal() {
+    var gx = s.goal, gy = groundY(gx);
+    ctx.save();
+    ctx.fillStyle = '#e8e8e8';
+    ctx.fillRect(gx - 2, gy - 76, 4, 76);
+    var wave = Math.sin(performance.now() / 180) * 4;
+    ctx.fillStyle = s.done ? '#70e4b5' : '#ffd166';
+    ctx.beginPath();
+    ctx.moveTo(gx + 2, gy - 76);
+    ctx.lineTo(gx + 34 + wave, gy - 66);
+    ctx.lineTo(gx + 2, gy - 54);
+    ctx.fill();
+    ctx.fillStyle = '#e0453e';
+    ctx.beginPath(); ctx.arc(gx, gy - 78, 5, 0, RE.TAU); ctx.fill();
+    ctx.restore();
+}
+
+function drawPlayer() {
+    var p = s.p;
+    if (p.invuln > 0 && Math.floor(p.invuln * 16) % 2 === 0) return;
+
+    ctx.save();
+    ctx.translate(p.x, p.y - 16);
+    var rolling = p.roll || p.loop || (!p.ground && p.jump);
+
+    if (rolling) {
+        // 蜷成球：Sonic 把「移動」與「攻擊」合併成同一個動作
+        p.spin += Math.abs(p.gsp || p.vx) * 0.0006 + 0.12;
+        ctx.rotate(p.spin);
+        ctx.fillStyle = '#2f6fd0';
+        ctx.beginPath(); ctx.arc(0, 0, 15, 0, RE.TAU); ctx.fill();
+        ctx.fillStyle = '#1f4f9a';
+        for (var i = 0; i < 5; i++) {
+            var a = i / 5 * RE.TAU;
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(a) * 6, Math.sin(a) * 6);
+            ctx.lineTo(Math.cos(a + 0.5) * 15, Math.sin(a + 0.5) * 15);
+            ctx.lineTo(Math.cos(a - 0.5) * 15, Math.sin(a - 0.5) * 15);
+            ctx.fill();
+        }
+    } else {
+        ctx.rotate(p.ground ? p.angle : 0);
+        ctx.scale(p.face, 1);
+        var run = Math.abs(p.gsp) > 60;
+        var ph = p.anim * (8 + Math.abs(p.gsp) * 0.02);
+        var sq = p.crouch ? 0.6 : 1;
+        // 刺
+        ctx.fillStyle = '#1f4f9a';
+        ctx.beginPath();
+        ctx.moveTo(-4, -6 * sq);
+        ctx.lineTo(-20, 2 * sq);
+        ctx.lineTo(-4, 6 * sq);
+        ctx.fill();
+        // 身體
+        ctx.fillStyle = '#2f6fd0';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 13, 14 * sq, 0, 0, RE.TAU);
+        ctx.fill();
+        // 臉
+        ctx.fillStyle = '#f2c9a0';
+        ctx.beginPath();
+        ctx.ellipse(6, 1 * sq, 8, 8 * sq, 0, 0, RE.TAU);
+        ctx.fill();
+        ctx.fillStyle = '#20140c';
+        ctx.beginPath(); ctx.arc(7, -2 * sq, 2, 0, RE.TAU); ctx.fill();
+        // 腳：跑起來畫成「8」字模糊，這是原作表現速度的手法
+        ctx.fillStyle = '#e0453e';
+        if (run && p.ground) {
+            ctx.beginPath();
+            ctx.ellipse(0, 15 * sq, 11, 5, 0, 0, RE.TAU);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            ctx.lineWidth = 1.6;
+            ctx.beginPath();
+            ctx.ellipse(0, 15 * sq, 11, 5, 0, 0, RE.TAU);
+            ctx.stroke();
+        } else {
+            ctx.fillRect(-9, 12 * sq, 8, 5);
+            ctx.fillRect(2 + Math.sin(ph) * 2, 12 * sq, 8, 5);
+        }
+    }
+    ctx.restore();
+
+    // 高速拖影
+    if (Math.abs(p.gsp) > TOP * 0.8 || p.loop) {
+        ctx.save();
+        ctx.globalAlpha = 0.3;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        for (var k = 1; k <= 3; k++) {
+            ctx.beginPath();
+            ctx.moveTo(p.x - p.face * k * 16, p.y - 16 - 6 + k * 3);
+            ctx.lineTo(p.x - p.face * (k * 16 + 20), p.y - 16 - 6 + k * 3);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+}
+
+function drawHUD() {
+    // 速度計：把「速度是獎勵」這件事顯示出來
+    var spd = Math.abs(s.p.ground ? s.p.gsp : s.p.vx);
+    var pct = RE.clamp(spd / MAX_SPD, 0, 1);
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(12, VH - 22, 130, 9);
+    var g = ctx.createLinearGradient(12, 0, 142, 0);
+    g.addColorStop(0, '#70e4b5');
+    g.addColorStop(0.62, '#ffd166');
+    g.addColorStop(1, '#ff6b6b');
+    ctx.fillStyle = g;
+    ctx.fillRect(12, VH - 22, 130 * pct, 9);
+    // 迴圈門檻標線
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(12 + 130 * (LOOP_MIN / MAX_SPD), VH - 25, 2, 15);
+    RE.Draw.text(ctx, '速度', 12, VH - 38, { size: 13, color: '#fff8e7', strokeWidth: 3 });
+    ctx.restore();
+
+    RE.Draw.text(ctx, '時間 ' + s.time.toFixed(1) + 's　目標 ' + s.L.par + 's',
+        VW - 12, 10, { size: 13, align: 'right', color: '#fff8e7', strokeWidth: 3 });
+
+    if (s.rings_n === 0 && !s.done) {
+        RE.Draw.text(ctx, '⚠ 沒有金環，再被撞到就會死', VW / 2, 10,
+            { size: 13, align: 'center', color: '#ff9a6c', strokeWidth: 3 });
+    }
+
+    if (s.bannerT > 0 && s.banner) {
+        ctx.save();
+        ctx.globalAlpha = RE.clamp(s.bannerT / 0.6, 0, 1);
+        RE.Draw.text(ctx, s.banner, VW / 2, VH / 2 - 50,
+            { size: 24, align: 'center', baseline: 'middle', color: '#fff8e7', strokeWidth: 6 });
+        ctx.restore();
+    }
+
+    if (s.done && s.bonus) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        RE.Draw.roundRect(ctx, VW / 2 - 110, VH / 2 - 26, 220, 76, 8);
+        ctx.fill();
+        RE.Draw.text(ctx, '時間獎勵　' + s.bonus.time, VW / 2, VH / 2 - 18, { size: 13, align: 'center' });
+        RE.Draw.text(ctx, '金環獎勵　' + s.bonus.ring, VW / 2, VH / 2 + 2, { size: 13, align: 'center' });
+        RE.Draw.text(ctx, '最高速度　' + s.bonus.speed, VW / 2, VH / 2 + 22, { size: 13, align: 'center', color: '#ffd166' });
+        ctx.restore();
+    }
+}
+
+function render() {
+    if (!s || !s.p) return;
+    G.beginWorld();
+    drawSky();
+
+    ctx.save();
+    ctx.translate(-s.camX, -s.camY);
+    drawTerrain();
+    drawLoops();
+    drawSprings();
+    drawRings();
+    drawEnemies();
+    drawGoal();
+    drawPlayer();
+    P.draw(ctx);
+    FT.draw(ctx);
+    ctx.restore();
+
+    G.endWorld();
+    drawHUD();
+    G.postFX({ scanAlpha: 0.07, vignetteStrength: 0.4 });
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '利用下坡加速、上坡慣性與迴圈速度；身上有金環被撞也不會死。' +
+          '共五關。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

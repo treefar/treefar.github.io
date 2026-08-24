@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 菌森毒蜈蚣</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   菌森毒蜈蚣 — 致敬 Centipede (Atari, 1981)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. 這款遊戲最聰明的設計：**蘑菇場地會被玩家自己改變**。
+      你打掉的蘑菇會讓蜈蚣走得更順、留下的蘑菇會讓它更快下降。
+      玩家的每一發子彈都在重新塑造戰場，這在 1981 年是極前衛的想法。
+   2. 蜈蚣被打中會斷成兩截，中間變成新的蘑菇——擊殺行為本身製造新障礙。
+   3. 玩家只能在下方區域移動，這個限制讓「往上射」成為唯一的攻擊方向，
+      戰場因此有明確的縱深感。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'centipede',
+    title: '菌森毒蜈蚣',
+    tagline: '你打出的每一發子彈，都在改變戰場本身',
+    original: 'Centipede (Atari, 1981)',
+    decade: '80s', year: 1981, platform: '大型街機', genre: '固定射擊',
+    developer: 'Atari · Dona Bailey & Ed Logg', bgm: '80s',
+    width: 448, height: 512,
+    lives: 3,
+    hud: [{ key: 'score', label: 'SCORE' }, { key: 'best', label: 'BEST' }, { key: 'wave', label: 'WAVE', init: 1 }],
+    touch: 'dpad+ab', labelA: '射擊', maxScale: 2,
+    controls: [
+        { keys: ['↑', '↓', '←', '→'], desc: '移動（僅限下方區域）' },
+        { keys: ['空白'], desc: '射擊（可連射）' },
+        { keys: ['滑鼠'], desc: '直接拖曳移動' }
+    ],
+    howto: '擊落整條蜈蚣即可過波。<strong>蜈蚣碰到蘑菇就會下降一層並轉向</strong>——' +
+           '蘑菇越多，它下來得越快。打中蜈蚣身體會讓它斷成兩截，並在該處長出新蘑菇。' +
+           '蜘蛛會靠近你，蘑菇被它吃掉會消失。',
+    lesson: {
+        verb: '在下方自由移動並向上射擊，同時決定要清掉蘑菇，還是利用它改變蜈蚣路線。',
+        innovation: '敵人被擊碎後會長出新障礙；玩家解決眼前威脅的行為，會親手重寫下一秒的戰場。',
+        mission: '刻意擊中蜈蚣中段，確認後半段產生新頭、命中處長出蘑菇；接著保留那株蘑菇，觀察新蜈蚣何時被迫下降。',
+        evolution: '《Asteroids》先把大型敵人拆成更多小威脅；《Centipede》讓碎裂同時改造地形，《Vampire Survivors》再把敵群密度與走位空間擴張成整局的成長壓力。',
+        reflection: '如果擊中蜈蚣只會扣除一節、不會生成蘑菇與新頭，玩家還需要思考射擊位置嗎？'
+    },
+    design: '固定射擊通常獎勵「看見目標就開火」；《Centipede》卻讓命中位置帶來後果。蜈蚣身體被擊中會斷裂，後段產生新的頭，命中處又長成蘑菇；蘑菇接著迫使蜈蚣轉向下降。' +
+            '玩家因此不只在消滅敵人，也在決定未來敵人會從哪一列逼近。軌跡球提供二維自由移動，而玩家只能活動於下方區域，形成「上方改造路線、下方處理危機」的雙層節奏。' +
+            '本站把蘑菇耐久畫成四個亮點、用菌絲深度尺標示下降壓力，並保留擊碎、長菇、新頭與蜘蛛清場的循環；跳蚤、蠍子等原作敵種則未納入。' +
+            '這種「解法會生成新問題」的設計，從《Asteroids》的碎裂威脅一路延伸到現代群體生存遊戲的空間管理。',
+    history: 'Atari 在 1981 年推出街機《Centipede》，由 Ed Logg 與 Dona Bailey 共同設計。The Strong 的館藏資料將 Bailey 記為 Atari 街機部門第一位女性程式設計師，並指出她參與的是一個四人團隊；因此，本站不再把她簡化成「當時 Atari 唯一的女性程式設計師」。' +
+             '原作使用軌跡球與單一射擊鍵，蜈蚣穿過蘑菇場向下移動，蜘蛛、跳蚤與蠍子構成不同方向的壓力。The Strong 也記錄它擁有當時規模突出的女性玩家群，並引用團隊對色彩與受眾的思考。' +
+             '這不代表某一種操作或配色天然屬於特定性別；更值得教學討論的是，控制器手感、明亮視覺與不同於軍事射擊的題材，如何共同擴大街機的參與者。',
+    sources: [
+        { label: 'The Strong：World Video Game Hall of Fame—Centipede', url: 'https://www.museumofplay.org/games/centipede/' },
+        { label: 'The Strong：Dona Bailey 生平與 Atari 團隊資料', url: 'https://www.museumofplay.org/collections/icheg/women-in-games-initiative/2018-speakers/' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(420);
+var FT = new RE.FloatText();
+
+var CELL = 16;
+var COLS = W / CELL, ROWS = H / CELL;
+var PLAYER_ZONE = ROWS - 7;   // 玩家只能在最下方 7 列活動
+
+var WAVES = [
+    { len: 10, speed: 42, spiderCount: 2, spiderSpeed: 60,  fieldMushrooms: 24, name: '第一波' },
+    { len: 11, speed: 50, spiderCount: 2, spiderSpeed: 74,  fieldMushrooms: 28, name: '增生' },
+    { len: 12, speed: 58, spiderCount: 3, spiderSpeed: 88,  fieldMushrooms: 32, name: '蔓延' },
+    { len: 12, speed: 68, spiderCount: 3, spiderSpeed: 102, fieldMushrooms: 36, name: '菌毯' },
+    { len: 13, speed: 78, spiderCount: 4, spiderSpeed: 116, fieldMushrooms: 40, name: '毒霧' },
+    { len: 14, speed: 90, spiderCount: 4, spiderSpeed: 130, fieldMushrooms: 44, name: '深林之心' }
+];
+
+var s = {};
+
+function reset() {
+    s = { wave: 1, lives: 3, score: 0, over: false };
+    loadWave(1);
+    G.setStat('score', 0); G.setLives(3);
+}
+
+function loadWave(n) {
+    var cfg = WAVES[Math.min(n - 1, WAVES.length - 1)];
+    s.cfg = cfg;
+    s.wave = n;
+    s.mush = [];
+    for (var y = 0; y < ROWS; y++) {
+        s.mush[y] = [];
+        for (var x = 0; x < COLS; x++) s.mush[y][x] = 0;
+    }
+    // 蘑菇不長在最底兩列，玩家才有安全的起始空間
+    for (var i = 0; i < cfg.fieldMushrooms; i++) {
+        var mx = RE.randInt(0, COLS - 1), my = RE.randInt(2, ROWS - 4);
+        s.mush[my][mx] = 4;   // 耐久度 4，需要打四次
+    }
+    s.segments = [];
+    spawnCentipede(cfg.len);
+    s.spiders = [];
+    s.spiderTimer = 5;
+    s.bullets = [];
+    s.fireCool = 0;
+    s.chain = 0; s.chainTimer = 0;
+    s.clearTimer = 0;
+    if (!s.p) s.p = {};
+    s.p.x = W / 2; s.p.y = H - 34; s.p.invuln = 1.5;
+    G.setStat('wave', n);
+}
+
+function spawnCentipede(len) {
+    for (var i = 0; i < len; i++) {
+        s.segments.push({
+            x: (COLS / 2 - len / 2 + i) * CELL, y: 0,
+            dir: 1, head: i === 0, alive: true, down: 0, wobble: i * 0.5
+        });
+    }
+}
+
+function mushAt(x, y) {
+    var c = Math.floor(x / CELL), r = Math.floor(y / CELL);
+    if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return 0;
+    return s.mush[r][c];
+}
+
+// ======================================================================
+function update(dt) {
+    if (s.over) return;
+
+    if (s.clearTimer > 0) {
+        s.clearTimer -= dt;
+        P.update(dt); FT.update(dt);
+        if (s.clearTimer <= 0) nextWave();
+        return;
+    }
+
+    var p = s.p;
+    if (p.invuln > 0) p.invuln -= dt;
+
+    // ---- 玩家：限制在下方區域 ----
+    if (RE.Input.pointer.down) {
+        p.x = RE.lerp(p.x, RE.Input.pointer.x, 1 - Math.pow(0.0006, dt));
+        p.y = RE.lerp(p.y, RE.clamp(RE.Input.pointer.y, PLAYER_ZONE * CELL, H - 20), 1 - Math.pow(0.0006, dt));
+    } else {
+        p.x += RE.Input.axisX() * 230 * dt;
+        p.y += RE.Input.axisY() * 200 * dt;
+    }
+    p.x = RE.clamp(p.x, 10, W - 10);
+    p.y = RE.clamp(p.y, PLAYER_ZONE * CELL, H - 20);
+
+    // ---- 射擊：連射但有冷卻，維持節奏 ----
+    s.fireCool -= dt;
+    if ((RE.Input.down('a') || RE.Input.pointer.down) && s.fireCool <= 0) {
+        s.fireCool = 0.13;
+        s.bullets.push({ x: p.x, y: p.y - 12 });
+        RetroAudio.play('shoot');
+        RE.juice.shake(0.035);
+    }
+
+    // ---- 子彈 ----
+    for (var i = s.bullets.length - 1; i >= 0; i--) {
+        var b = s.bullets[i];
+        b.y -= 640 * dt;
+        if (b.y < -8) { s.bullets.splice(i, 1); continue; }
+
+        // 打蘑菇
+        var c = Math.floor(b.x / CELL), r = Math.floor(b.y / CELL);
+        if (r >= 0 && r < ROWS && c >= 0 && c < COLS && s.mush[r][c] > 0) {
+            s.mush[r][c]--;
+            RetroAudio.play('hit');
+            P.burst(c * CELL + 8, r * CELL + 8, 4, { colors: ['#c084fc', '#e9d5ff'],
+                speedMin: 25, speedMax: 90, gravity: 200, lifeMin: 0.12, lifeMax: 0.3, sizeMax: 3 });
+            if (s.mush[r][c] === 0) {
+                addScore(5);
+                P.ring(c * CELL + 8, r * CELL + 8, '#c084fc', 20);
+            }
+            s.bullets.splice(i, 1);
+            continue;
+        }
+
+        // 打蜈蚣
+        var hit = false;
+        for (var j = 0; j < s.segments.length; j++) {
+            var sg = s.segments[j];
+            if (!sg.alive) continue;
+            if (Math.abs(b.x - (sg.x + 8)) < 9 && Math.abs(b.y - (sg.y + 8)) < 9) {
+                killSegment(j);
+                s.bullets.splice(i, 1);
+                hit = true;
+                break;
+            }
+        }
+        if (hit) continue;
+
+        // 打蜘蛛
+        for (var j = s.spiders.length - 1; j >= 0; j--) {
+            var sp = s.spiders[j];
+            if (Math.abs(b.x - sp.x) < 12 && Math.abs(b.y - sp.y) < 12) {
+                var val = sp.y > H - 80 ? 900 : 300;   // 越近分數越高，鼓勵冒險
+                addScore(val);
+                FT.add(sp.x, sp.y, '+' + val, { color: '#ff6b6b', size: 16 });
+                P.burst(sp.x, sp.y, 20, { colors: ['#ff6b6b', '#ffd166'], speedMin: 50, speedMax: 190,
+                    gravity: 160, lifeMin: 0.25, lifeMax: 0.6 });
+                RE.juice.impact(2);
+                RetroAudio.play('explosion');
+                s.spiders.splice(j, 1);
+                s.bullets.splice(i, 1);
+                break;
+            }
+        }
+    }
+
+    // ---- 蜈蚣 ----
+    var spd = s.cfg.speed * (1 + (1 - aliveCount() / s.cfg.len) * 0.9);
+    for (var i = 0; i < s.segments.length; i++) {
+        var sg = s.segments[i];
+        if (!sg.alive) continue;
+        sg.wobble += dt * 8;
+
+        if (sg.down > 0) {
+            sg.y += spd * 2 * dt;
+            sg.down -= spd * 2 * dt;
+            if (sg.down <= 0) { sg.y = Math.round(sg.y / CELL) * CELL; }
+            continue;
+        }
+
+        sg.x += sg.dir * spd * dt;
+
+        // 碰到蘑菇或牆就下降一層並轉向
+        var ahead = sg.x + (sg.dir > 0 ? CELL : -1);
+        if (ahead < 0 || ahead > W - CELL || mushAt(ahead, sg.y + 8) > 0) {
+            sg.dir = -sg.dir;
+            sg.down = CELL;
+            sg.x = RE.clamp(sg.x, 0, W - CELL);
+        }
+
+        // 到達玩家區域底部後往上折返，避免無限往下消失
+        if (sg.y > H - CELL * 2) { sg.y = H - CELL * 2; sg.down = 0; }
+
+        // 撞到玩家
+        if (p.invuln <= 0 && Math.abs(sg.x + 8 - p.x) < 12 && Math.abs(sg.y + 8 - p.y) < 12) { hurt(); return; }
+    }
+
+    // ---- 蜘蛛：斜向彈跳並吃掉蘑菇 ----
+    s.spiderTimer -= dt;
+    if (s.spiderTimer <= 0 && s.spiders.length < s.cfg.spiderCount) {
+        s.spiderTimer = RE.rand(6, 11);
+        s.spiders.push({
+            x: Math.random() < 0.5 ? -10 : W + 10, y: H - 90,
+            vx: (Math.random() < 0.5 ? 1 : -1) * s.cfg.spiderSpeed,
+            vy: s.cfg.spiderSpeed * 0.7, t: 0
+        });
+        RetroAudio.play('laser');
+    }
+    for (var i = s.spiders.length - 1; i >= 0; i--) {
+        var sp = s.spiders[i];
+        sp.t += dt;
+        sp.x += sp.vx * dt;
+        sp.y += sp.vy * dt;
+        if (sp.y < PLAYER_ZONE * CELL - 40 || sp.y > H - 14) sp.vy = -sp.vy;
+        if (sp.x < -30 || sp.x > W + 30) { s.spiders.splice(i, 1); continue; }
+        // 吃蘑菇
+        var mc = Math.floor(sp.x / CELL), mr = Math.floor(sp.y / CELL);
+        if (mr >= 0 && mr < ROWS && mc >= 0 && mc < COLS && s.mush[mr][mc] > 0 && Math.random() < dt * 8) {
+            s.mush[mr][mc] = 0;
+            P.burst(mc * CELL + 8, mr * CELL + 8, 5, { colors: ['#c084fc'], speedMin: 25, speedMax: 80,
+                gravity: 180, lifeMin: 0.15, lifeMax: 0.35, sizeMax: 3 });
+        }
+        if (p.invuln <= 0 && Math.abs(sp.x - p.x) < 13 && Math.abs(sp.y - p.y) < 13) { hurt(); return; }
+    }
+
+    if (s.chainTimer > 0) { s.chainTimer -= dt; if (s.chainTimer <= 0) s.chain = 0; }
+
+    if (aliveCount() === 0 && s.clearTimer <= 0) {
+        s.clearTimer = 1.4;
+        RetroAudio.play('levelUp');
+        addScore(600 * s.wave);
+        FT.add(W / 2, H / 2, 'WAVE CLEAR', { color: '#70e4b5', size: 24, life: 1.4 });
+    }
+
+    P.update(dt);
+    FT.update(dt);
+}
+
+function aliveCount() {
+    var n = 0;
+    for (var i = 0; i < s.segments.length; i++) if (s.segments[i].alive) n++;
+    return n;
+}
+
+function killSegment(index) {
+    var sg = s.segments[index];
+    sg.alive = false;
+
+    s.chain++;
+    s.chainTimer = 1.4;
+    var val = (sg.head ? 100 : 10) * (1 + Math.floor((s.chain - 1) / 4) * 0.5);
+    addScore(Math.round(val));
+
+    var cx = sg.x + 8, cy = sg.y + 8;
+    FT.add(cx, cy, '+' + Math.round(val), { color: sg.head ? '#ffd166' : '#a7f3d0', size: sg.head ? 15 : 11 });
+
+    RE.juice.hitstop(0.022);
+    RE.juice.shake(0.11);
+    RetroAudio.play('hit');
+    if (s.chain > 1 && s.chain % 4 === 0) RetroAudio.play('combo', s.chain / 4);
+
+    P.burst(cx, cy, 10, { colors: ['#70e4b5', '#a7f3d0', '#fff8e7'], speedMin: 40, speedMax: 160,
+        gravity: 220, lifeMin: 0.2, lifeMax: 0.5 });
+
+    // 被擊中的位置長出新蘑菇——擊殺會製造新障礙
+    var c = Math.floor(sg.x / CELL), r = Math.floor(sg.y / CELL);
+    if (r >= 0 && r < ROWS && c >= 0 && c < COLS && !s.mush[r][c]) s.mush[r][c] = 4;
+
+    // 斷成兩截：後面那一節變成新的頭
+    if (index + 1 < s.segments.length && s.segments[index + 1].alive) {
+        s.segments[index + 1].head = true;
+    }
+}
+
+function hurt() {
+    s.lives--;
+    G.setLives(s.lives);
+    s.p.invuln = 2;
+    s.chain = 0;
+    RE.juice.impact(3);
+    RE.juice.flash('rgba(255,107,107,0.45)', 0.16);
+    RE.juice.slowmo(0.32, 0.8);
+    RetroAudio.play('bigExplosion');
+    P.burst(s.p.x, s.p.y, 28, { colors: ['#ff6b6b', '#ffd166', '#fff8e7'],
+        speedMin: 50, speedMax: 230, gravity: 200, lifeMin: 0.3, lifeMax: 0.8 });
+    if (s.lives <= 0) {
+        s.over = true;
+        G.gameOver({ score: s.score,
+            body: '停在第 ' + s.wave + ' 波「' + s.cfg.name + '」。' +
+                  '想想看：場上的蘑菇該打掉還是留著？那才是這款遊戲真正的問題。' });
+    } else {
+        // 清掉玩家附近的蘑菇，讓復活後不會立刻又死
+        for (var r = ROWS - 4; r < ROWS; r++)
+            for (var c = 0; c < COLS; c++) s.mush[r][c] = 0;
+    }
+}
+
+function addScore(n) { s.score += n; G.setStat('score', s.score); }
+
+function nextWave() {
+    var n = s.wave + 1;
+    RE.Save.unlockLevel('centipede', n);
+    if (n > WAVES.length) {
+        s.over = true;
+        G.gameOver({ score: s.score, win: true,
+            body: '六波全數清空。1981 年，Dona Bailey 用這個「玩家自己塑造戰場」的點子，' +
+                  '做出了最早吸引大量女性玩家的街機遊戲。' });
+        return;
+    }
+    loadWave(n);
+    G.stageCard(n, s.cfg.name, '蜈蚣 ' + s.cfg.len + ' 節　✦ 蘑菇 ' + s.cfg.fieldMushrooms + ' 株　✦ 蜘蛛 ' + s.cfg.spiderCount + ' 隻');
+}
+
+// ======================================================================
+function render() {
+    G.clear('#060d0a');
+    G.beginWorld();
+
+    drawFungalBackdrop();
+
+    // 玩家活動區底色
+    var zoneG = ctx.createLinearGradient(0, PLAYER_ZONE * CELL, 0, H);
+    zoneG.addColorStop(0, 'rgba(112,228,181,0.035)');
+    zoneG.addColorStop(1, 'rgba(112,228,181,0.105)');
+    ctx.fillStyle = zoneG;
+    ctx.fillRect(0, PLAYER_ZONE * CELL, W, H - PLAYER_ZONE * CELL);
+    ctx.strokeStyle = 'rgba(112,228,181,0.18)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([6, 6]);
+    ctx.beginPath();
+    ctx.moveTo(0, PLAYER_ZONE * CELL); ctx.lineTo(W, PLAYER_ZONE * CELL);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    RE.Draw.text(ctx, '軌跡球活動區', 8, PLAYER_ZONE * CELL + 7,
+        { size: 10, color: 'rgba(167,243,208,0.58)' });
+
+    // 蘑菇：亮度與帽上的亮點數都對應耐久度，受損狀態不再只靠微小色差。
+    for (var r = 0; r < ROWS; r++) {
+        for (var c = 0; c < COLS; c++) {
+            var hp = s.mush[r][c];
+            if (!hp) continue;
+            var x = c * CELL, y = r * CELL;
+            var a = 0.4 + hp / 4 * 0.6;
+            ctx.save();
+            ctx.fillStyle = 'rgba(0,0,0,0.35)';
+            ctx.beginPath();
+            ctx.ellipse(x + 8.5, y + 14, 6, 2, 0, 0, RE.TAU);
+            ctx.fill();
+            ctx.globalAlpha = a;
+            ctx.fillStyle = '#c084fc';
+            ctx.beginPath();
+            ctx.arc(x + 8, y + 7, 6.5, Math.PI, 0);
+            ctx.fill();
+            ctx.fillStyle = '#e9d5ff';
+            ctx.fillRect(x + 6, y + 7, 4, 7);
+            var spots = [[5, 3], [9, 3], [7, 6], [11, 6]];
+            ctx.fillStyle = '#fff8e7';
+            for (var q = 0; q < hp; q++) ctx.fillRect(x + spots[q][0], y + spots[q][1], 2, 2);
+            ctx.restore();
+        }
+    }
+
+    // 蜈蚣
+    drawCentipedeLinks();
+    for (var i = s.segments.length - 1; i >= 0; i--) {
+        var sg = s.segments[i];
+        if (!sg.alive) continue;
+        var cx = sg.x + 8, cy = sg.y + 8 + Math.sin(sg.wobble) * 1.5;
+        ctx.save();
+        ctx.shadowBlur = sg.head ? 14 : 6;
+        ctx.shadowColor = sg.head ? '#ffd166' : '#70e4b5';
+        ctx.fillStyle = sg.head ? '#ffd166' : '#4ec49a';
+        ctx.beginPath(); ctx.arc(cx, cy, 7, 0, RE.TAU); ctx.fill();
+        if (!sg.head) {
+            ctx.fillStyle = '#a7f3d0';
+            ctx.beginPath(); ctx.arc(cx - sg.dir * 2, cy - 2, 2, 0, RE.TAU); ctx.fill();
+        }
+        ctx.restore();
+        // 腳
+        ctx.strokeStyle = sg.head ? '#c08a1a' : '#2f7a5c';
+        ctx.lineWidth = 1.6;
+        var legs = Math.sin(sg.wobble * 2) * 3;
+        ctx.beginPath();
+        ctx.moveTo(cx - 6, cy); ctx.lineTo(cx - 10, cy + legs);
+        ctx.moveTo(cx + 6, cy); ctx.lineTo(cx + 10, cy - legs);
+        ctx.stroke();
+        if (sg.head) {
+            ctx.fillStyle = '#2a1a0a';
+            ctx.fillRect(cx - 3, cy - 2, 2, 2);
+            ctx.fillRect(cx + 1, cy - 2, 2, 2);
+            ctx.strokeStyle = '#ffd166';
+            ctx.globalAlpha = 0.72;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 10.5, -0.65, 0.65);
+            ctx.stroke();
+        }
+    }
+
+    // 蜘蛛
+    for (var i = 0; i < s.spiders.length; i++) {
+        var sp = s.spiders[i];
+        ctx.save();
+        ctx.strokeStyle = '#ff6b6b';
+        ctx.lineWidth = 2;
+        var wig = Math.sin(sp.t * 14) * 3;
+        for (var k = -1; k <= 1; k += 2) {
+            for (var j = 0; j < 3; j++) {
+                ctx.beginPath();
+                ctx.moveTo(sp.x, sp.y);
+                ctx.lineTo(sp.x + k * (10 + j * 2), sp.y - 6 + j * 6 + wig * k);
+                ctx.stroke();
+            }
+        }
+        ctx.shadowBlur = 10; ctx.shadowColor = '#ff6b6b';
+        ctx.fillStyle = '#ff6b6b';
+        ctx.beginPath(); ctx.arc(sp.x, sp.y, 7, 0, RE.TAU); ctx.fill();
+        ctx.restore();
+    }
+
+    // 子彈
+    ctx.save();
+    ctx.shadowBlur = 8; ctx.shadowColor = '#ffd166';
+    ctx.fillStyle = '#fff0aa';
+    for (var i = 0; i < s.bullets.length; i++) ctx.fillRect(s.bullets[i].x - 1.5, s.bullets[i].y, 3, 10);
+    ctx.restore();
+
+    // 玩家
+    var p = s.p;
+    if (p.invuln <= 0 || Math.floor(p.invuln * 14) % 2 === 0) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.beginPath(); ctx.ellipse(p.x + 1, p.y + 9, 11, 4, 0, 0, RE.TAU); ctx.fill();
+        ctx.shadowBlur = 10; ctx.shadowColor = '#70e4b5';
+        ctx.fillStyle = '#70e4b5';
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y - 11);
+        ctx.lineTo(p.x + 10, p.y + 8);
+        ctx.lineTo(p.x, p.y + 3);
+        ctx.lineTo(p.x - 10, p.y + 8);
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+    }
+
+    P.draw(ctx);
+    FT.draw(ctx);
+
+    var left = aliveCount();
+    RE.Draw.text(ctx, '蜈蚣剩 ' + left + ' 節', 8, 8, { size: 12, color: '#a7f3d0' });
+    var mushCount = 0;
+    for (var r = 0; r < ROWS; r++) for (var c = 0; c < COLS; c++) if (s.mush[r][c]) mushCount++;
+    RE.Draw.text(ctx, '蘑菇 ' + mushCount + ' 株', W - 8, 8, { size: 12, color: '#c084fc', align: 'right' });
+
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.09, vignetteStrength: 0.46 });
+}
+
+function drawFungalBackdrop() {
+    var t = RE.Motion.reduced ? 0 : s.wave * 0.35 + performance.now() * 0.00012;
+    var bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#07130f');
+    bg.addColorStop(0.72, '#091811');
+    bg.addColorStop(1, '#0b2118');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // 菌絲網同時是下降深度尺：越靠近玩家區域，紋理越亮、壓力越高。
+    ctx.lineWidth = 1;
+    for (var x = 16; x < W; x += 32) {
+        ctx.strokeStyle = 'rgba(112,228,181,0.045)';
+        ctx.beginPath();
+        for (var y = 0; y <= H; y += 16) {
+            var ox = Math.sin(y * 0.035 + x * 0.09 + t) * 7;
+            if (y === 0) ctx.moveTo(x + ox, y);
+            else ctx.lineTo(x + ox, y);
+        }
+        ctx.stroke();
+    }
+    for (var row = 4; row < ROWS; row += 4) {
+        var yy = row * CELL;
+        ctx.strokeStyle = row >= PLAYER_ZONE ? 'rgba(255,107,107,0.11)' : 'rgba(192,132,252,0.07)';
+        ctx.setLineDash([2, 14]);
+        ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(W, yy); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    var danger = ctx.createLinearGradient(0, PLAYER_ZONE * CELL - 64, 0, PLAYER_ZONE * CELL);
+    danger.addColorStop(0, 'rgba(255,107,107,0)');
+    danger.addColorStop(1, 'rgba(255,107,107,0.055)');
+    ctx.fillStyle = danger;
+    ctx.fillRect(0, PLAYER_ZONE * CELL - 64, W, 64);
+}
+
+function drawCentipedeLinks() {
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = 'rgba(78,196,154,0.58)';
+    for (var i = 1; i < s.segments.length; i++) {
+        var prev = s.segments[i - 1], cur = s.segments[i];
+        if (!prev.alive || !cur.alive || cur.head) continue;
+        var ax = prev.x + 8, ay = prev.y + 8;
+        var bx = cur.x + 8, by = cur.y + 8;
+        if (RE.dist(ax, ay, bx, by) > CELL * 1.55) continue;
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+    }
+    ctx.restore();
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '擊落整條蜈蚣過波。蜈蚣碰到蘑菇會下降——蘑菇越多它下來得越快。打掉還是留著，是你的決定。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

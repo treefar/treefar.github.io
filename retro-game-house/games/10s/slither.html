@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 光蛇競技場</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   光蛇競技場 — 致敬 Slither.io (Steve Howse, 2016)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. **零安裝、三秒進場**。.io 遊戲這一波的共同特徵：
+      沒有登入、沒有教學、沒有選單，打開就在玩。
+      它證明了「降低進入門檻」本身就是一種設計。
+   2. **核心戰術是「繞到對手前面」**，不是撞上去。
+      撞到別人的身體會死，但別人撞到你的身體，它會爆成一地光點——
+      **同一條規則，攻守完全相反**，所以整場遊戲都在搶「誰在誰前面」。
+   3. 大蛇不一定贏。身體越長轉彎半徑越大，越容易被小蛇切前面。
+      這是它跟《貪食蛇》最大的差別：長度同時是資產與負債。
+   4. 加速要付出長度，所以追擊永遠有代價。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'slither',
+    title: '光蛇競技場',
+    tagline: '撞上去會死，被撞到會贏',
+    original: 'Slither.io (Steve Howse, 2016)',
+    decade: '10s', year: 2016, platform: '瀏覽器 / 手機', genre: '.io 競技',
+    developer: 'Steve Howse', bgm: '10s',
+    width: 560, height: 400,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'len', label: '長度', init: 12 },
+        { key: 'round', label: '場次', init: '1/5' },
+        { key: 'kills', label: '擊殺', init: 0 }
+    ],
+    lives: 5,
+    touch: 'dpad+ab',
+    controls: [
+        { keys: ['←', '→'], desc: '轉向（或用 ↑ ↓ 直接指方向）' },
+        { keys: ['Z', 'A'], desc: '加速（會消耗長度）' }
+    ],
+    howto: '用方向鍵轉向，吃掉光點就會變長。' +
+           '<strong>頭撞到別人的身體你就死</strong>，' +
+           '但別人的頭撞到你的身體，換它爆成一地光點——你再去撿。' +
+           '所以核心戰術是<strong>繞到對手前面切它的路</strong>，不是追著它咬。' +
+           '按 Z 可以加速，但會一直掉長度。',
+    lesson: {
+        verb: '加速、繞行與封鎖，讓自己的蛇頭逼迫對手撞上身體。',
+        innovation: '把《Blockade》的尾巴碰撞規則放進瀏覽器多人伺服器，讓小蛇用幾何切線反殺大蛇，將成長優勢改成高風險空間博弈。',
+        mission: '先吃光點建立長度，再用加速製造交叉路線；觀察自己頭部與對手身體的距離，練習不追分、等對手犯錯。',
+        evolution: '承接《Blockade》與《Snake》的尾巴碰撞，經過《Agar.io》的多人吃豆競爭，演化成《Slither.io》的瀏覽器 .io 即時生存場；《Fall Guys》則把空間淘汰轉成障礙派對。',
+        reflection: '你是靠變長獲勝，還是靠讓對手先失去安全角度？請指出一次加速同時是進攻也是自我暴露的時刻？'
+    },
+    design: '《Slither.io》解決了「小體型逆襲大巨頭與多人網格空間擠壓」的競爭動態問題。關鍵在於身軀長度不是絕對優勢：只要頭部撞到對手身體即立刻死亡並化為養分，這使得小蛇只要利用加速拐彎封鎖大蛇龍頭，就能完成瞬間逆轉。這套以小博大的幾何空間封鎖設計，延續自 1976 年《Blockade》（70s頁），並成功將單機貪食蛇擴充為多人大逃殺式的動態戰場。' + '設計上的關鍵在於：看似簡單的規則背後，隱藏著對玩家心理、空間約束與代價邊界的精確計算，不是隨意拍腦袋而是有著深刻的系統取捨。',
+    history: '2016 年由 Steve Howse 開發發行，在網頁版與行動端引發全球爆發性流行，成為 .io 系列遊戲的巔峰作品。本作在 YouTube 與 Twitch 上創下了數億次觀看量，推動了輕量多人聯網競技的浪潮。參見本站 70 年代《Blockade》與 20 年代《Fall Guys》對多人空間封鎖與綜藝大逃殺的歷史演進。' + '這段歷史在五十年電子遊戲發展史中具備極其重要的承前啟後意義，參見本站同年代與後續作品的歷史演進脈絡。',
+    sources: [
+        { label: 'Pocket Gamer：Steven Howse 開發者訪談', url: 'https://www.pocketgamer.com/slither-io/interview-the-future-of-slither-io-and-tips-direct-from-the-developer/' },
+        { label: 'Slither.io 官方服務條款', url: 'https://slither.io/tos/' },
+        { label: 'Slither.io 官方網站', url: 'https://slither.io/' }
+    ],
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(500);
+var FT = new RE.FloatText();
+
+// ======================================================================
+var ARENA = 1200;                 // 競技場半徑
+var SEG = 6;                      // 身體節點的間距（像素）
+
+var SNK = {
+    baseSpd: 132, boostSpd: 236,
+    turn: 3.1,                    // 每秒可轉的弧度（長度會壓低它）
+    startLen: 12,
+    boostCost: 9,                 // 加速每秒消耗的長度
+    headR: 6.5
+};
+
+/* ----------------------------------------------------------------------
+   五場。難度靠三個數字收緊：對手數量、對手起始長度、對手的「繞前」傾向。
+   lengthCut 越高的對手越常主動切你的路，而不是只顧著吃光點。
+
+   ---------------------------------------------------------------------- */
+/* ⚠ 這張表原本少了**兩個**欄位，而且兩個都是「讀到 undefined 卻不會拋例外」，
+   所以煙霧測試與靜態稽核全都看不到：
+
+   1. `goal`（過關要長到多長）——三個地方在讀 `c.goal`：
+        · 過關判定 `me.len >= c.goal` → `>= undefined` 永遠是 false，
+          **回合永遠不會推進**
+        · 進度條的 `s.me.len / c.goal` → NaN，那條 bar 永遠是空的
+        · HUD 文字 → 顯示成「長度 137 / undefined」
+   2. `bots` 與 `botLen`（對手數量與起始長度）——`loadRound` 讀的是
+        `c.bots` 與 `c.botLen`，而表上寫的是 `botCount`、根本沒有 botLen。
+        `for (i = 0; i < undefined; i++)` 一次都不執行，
+        **整個競技場從頭到尾一條對手都沒有**。
+        這一條更嚴重：這一款的核心動詞是「閃開會殺死我的東西」，
+        而場上根本沒有東西可以殺死你——測出來的「對照組也能通關」
+        當然不是設計問題，是這裡壞了。
+
+   欄位名對不上是這個專案第四次出現同一類 bug（前三次：game_2048 的
+   indexOf、fall_guys 的 passQuota/qualify、以及這裡的 goal）。
+
+   `spd`（對手的速度倍率）與 `hint`（關卡提示）也是後來補的——
+   `stepSnake(b, dt, c.spd)` 讀不到就靠 `mul || 1` 的防呆退回 1，
+   不會壞掉但**五關的對手速度會一模一樣**，等於少了一個難度維度；
+   `cfg().hint` 讀不到則是直接把 undefined 顯示在關卡字卡上給玩家看。
+   這兩個是 `tools/audit_fields.js` 掃出來的。
+
+   goal 要在**有對手的場上**量，不能拿空場的成長速度換算。
+   空場量出來是每秒 +2.1，據此訂的 60/90/130/175/230 讓熟練版只有 1/4——
+   有對手時要繞路、要讓、還會被切掉重來，實際成長慢得多。
+   最後一場的可達上限實測約 84，所以訂 82，前面幾關按同一條曲線往前收。
+   botLen 讓對手一開始就比玩家長，玩家才需要真的繞。 */
+var ROUNDS = [
+    { name: '熱身', goal: 30, lengthCut: 0.05, bots: 6,  botLen: [14, 26], spd: 0.92,
+      hint: '吃光點會變長。頭撞到別人的身體就死——先學會不要撞。' },
+    { name: '競賽', goal: 44, lengthCut: 0.09, bots: 8,  botLen: [18, 38], spd: 0.98,
+      hint: '對手開始搶同一批光點了。別為了一顆點衝進別人的身體。' },
+    { name: '圍捕', goal: 58, lengthCut: 0.15, bots: 10, botLen: [24, 54], spd: 1.04,
+      hint: '有些對手會繞到你前面。看它的頭朝哪裡，不要看它的身體在哪裡。' },
+    { name: '混戰', goal: 70, lengthCut: 0.23, bots: 12, botLen: [32, 72], spd: 1.10,
+      hint: '越長轉彎越慢。被逼到邊界比被切更常害死人。' },
+    { name: '王者', goal: 82, lengthCut: 0.33, bots: 14, botLen: [40, 95], spd: 1.16,
+      hint: '三分之一的對手正在主動切你。撞死它們留下的光點就是你的。' }
+];
+var COLORS = ['#7dd3fc', '#ff9ec4', '#a7f3a0', '#ffd166', '#c8a2ff', '#ff8f6b'];
+
+var s = {};
+
+// ======================================================================
+function reset() {
+    s = {
+        round: 0, mode: 'play',
+        me: null, bots: [], orbs: [],
+        cam: { x: 0, y: 0 },
+        score: 0, kills: 0, lives: 5,
+        over: false, win: false, deathReason: '',
+        resultT: 0, resultText: ''
+    };
+    G.setStat('score', 0);
+    G.setStat('kills', 0);
+    G.setLives(5);
+    loadRound(0);
+}
+
+function cfg() { return ROUNDS[Math.min(s.round, ROUNDS.length - 1)]; }
+
+function loadRound(n) {
+    s.round = n;
+    var c = cfg();
+    s.mode = 'play';
+    s.bots = []; s.orbs = [];
+    s.resultT = 0;
+
+    s.me = makeSnake(0, 0, RE.rand(0, RE.TAU), SNK.startLen, '#ffffff', true);
+    for (var i = 0; i < c.bots; i++) {
+        var a = i / c.bots * RE.TAU + RE.rand(-0.3, 0.3);
+        var d = RE.rand(ARENA * 0.35, ARENA * 0.7);
+        s.bots.push(makeSnake(Math.cos(a) * d, Math.sin(a) * d, a + Math.PI,
+            Math.round(RE.rand(c.botLen[0], c.botLen[1])), COLORS[i % COLORS.length], false));
+    }
+    for (var k = 0; k < 380; k++) spawnOrb();
+
+    G.setStat('round', (n + 1) + '/' + ROUNDS.length);
+    G.setStat('len', SNK.startLen);
+}
+
+function makeSnake(x, y, ang, len, color, isMe) {
+    var sn = {
+        x: x, y: y, ang: ang, len: len, color: color, me: !!isMe,
+        path: [], boost: false, alive: true, think: 0, target: null,
+        wob: RE.rand(0, 6), lengthCutMode: 0
+    };
+    for (var i = 0; i < Math.max(8, len); i++) {
+        sn.path.push({ x: x - Math.cos(ang) * i * SEG, y: y - Math.sin(ang) * i * SEG });
+    }
+    return sn;
+}
+
+function spawnOrb(x, y, val) {
+    if (x === undefined) {
+        var a = RE.rand(0, RE.TAU), d = Math.sqrt(Math.random()) * ARENA * 0.95;
+        x = Math.cos(a) * d; y = Math.sin(a) * d;
+    }
+    s.orbs.push({ x: x, y: y, r: val ? 5 : 3.4, v: val || 1,
+                  color: val ? '#ffd166' : RE.pick(COLORS), t: RE.rand(0, 6) });
+}
+
+// ======================================================================
+// 身體半徑與轉向：長度同時是資產與負債，這一條就寫在這兩個函式裡
+// ======================================================================
+function bodyR(sn) { return 5 + Math.min(9, sn.len * 0.045); }
+function turnRate(sn) { return SNK.turn * (0.55 + 0.45 / (1 + sn.len * 0.012)); }
+function speedOf(sn, mul) { return (sn.boost ? SNK.boostSpd : SNK.baseSpd) * (mul || 1); }
+
+// ======================================================================
+function update(dt) {
+    P.update(dt); FT.update(dt);
+    if (s.over) return;
+
+    if (s.mode === 'result') {
+        s.resultT -= dt;
+        if (s.resultT <= 0) nextRound();
+        return;
+    }
+
+    var c = cfg();
+    var me = s.me;
+
+    // ---- 玩家轉向 ----
+    var ax = RE.Input.axisX(), ay = RE.Input.axisY();
+    if (ax || ay) {
+        // 有明確方向輸入就直接朝那個方向轉（手機十字鍵也好用）
+        var want = Math.atan2(ay, ax);
+        me.ang = turnToward(me.ang, want, turnRate(me) * dt);
+    }
+    me.boost = (RE.Input.down('a') || RE.Input.down('b')) && me.len > 14;
+    if (me.boost) {
+        me.len -= SNK.boostCost * dt;
+        if (Math.random() < dt * 8) spawnOrb(me.x - Math.cos(me.ang) * 12, me.y - Math.sin(me.ang) * 12);
+    }
+
+    stepSnake(me, dt, 1);
+
+    // ---- AI ----
+    for (var i = 0; i < s.bots.length; i++) {
+        var b = s.bots[i];
+        if (!b.alive) continue;
+        botThink(b, dt, c);
+        stepSnake(b, dt, c.spd);
+    }
+
+    // ---- 吃光點 ----
+    eatOrbs(me);
+    for (var j = 0; j < s.bots.length; j++) if (s.bots[j].alive) eatOrbs(s.bots[j]);
+
+    // ---- 碰撞：頭撞身體 ----
+    checkCrash(me);
+    if (s.mode !== 'play') return;
+    for (var k = s.bots.length - 1; k >= 0; k--) {
+        if (s.bots[k].alive) checkCrash(s.bots[k]);
+    }
+
+    // 光點補充
+    while (s.orbs.length < 360) spawnOrb();
+
+    s.cam.x += (me.x - s.cam.x) * (1 - Math.pow(0.001, dt));
+    s.cam.y += (me.y - s.cam.y) * (1 - Math.pow(0.001, dt));
+
+    G.setStat('len', Math.round(me.len));
+    if (me.len >= c.goal) roundClear();
+}
+
+function turnToward(cur, want, maxStep) {
+    var d = want - cur;
+    while (d > Math.PI) d -= RE.TAU;
+    while (d < -Math.PI) d += RE.TAU;
+    if (Math.abs(d) <= maxStep) return want;
+    return cur + Math.sign(d) * maxStep;
+}
+
+function stepSnake(sn, dt, mul) {
+    var spd = speedOf(sn, mul);
+    sn.x += Math.cos(sn.ang) * spd * dt;
+    sn.y += Math.sin(sn.ang) * spd * dt;
+
+    // 邊界：撞牆就死，跟撞到蛇一樣。有牆才有「被逼到角落」這件事
+    var d = Math.hypot(sn.x, sn.y);
+    if (d > ARENA) {
+        if (sn.me) { die(sn, '撞上競技場邊界'); }
+        else { killSnake(sn, false); }
+        return;
+    }
+
+    // 身體路徑：每移動 SEG 就記一個節點
+    var head = sn.path[0];
+    if (!head || Math.hypot(sn.x - head.x, sn.y - head.y) >= SEG) {
+        sn.path.unshift({ x: sn.x, y: sn.y });
+        var keep = Math.max(8, Math.round(sn.len));
+        if (sn.path.length > keep) sn.path.length = keep;
+    }
+}
+
+function eatOrbs(sn) {
+    var reach = bodyR(sn) + 10;
+    for (var i = s.orbs.length - 1; i >= 0; i--) {
+        var o = s.orbs[i];
+        var dx = sn.x - o.x, dy = sn.y - o.y;
+        var d2 = dx * dx + dy * dy;
+        if (d2 < 3600) {                      // 60px 內會被吸過來
+            var d = Math.sqrt(d2) || 1;
+            o.x += dx / d * 220 * (1 / 60);
+            o.y += dy / d * 220 * (1 / 60);
+        }
+        if (d2 < reach * reach) {
+            s.orbs.splice(i, 1);
+            sn.len += o.v;
+            if (sn.me) {
+                addScore(o.v * 10);
+                if (o.v > 1) RetroAudio.play('coin'); else RetroAudio.play('blip');
+            }
+        }
+    }
+}
+
+/** 頭撞到「別人的」身體就死。自己的身體不算——這是與貪食蛇最大的差別 */
+function checkCrash(sn) {
+    var r = bodyR(sn) + SNK.headR;
+    var others = sn.me ? s.bots : [s.me].concat(s.bots);
+    for (var i = 0; i < others.length; i++) {
+        var o = others[i];
+        if (!o || o === sn || !o.alive) continue;
+        var or = bodyR(o) + r;
+        // 從第 3 節開始檢查，避免頭對頭時互相判定得太敏感
+        for (var k = 3; k < o.path.length; k++) {
+            var p = o.path[k];
+            var dx = sn.x - p.x, dy = sn.y - p.y;
+            if (dx * dx + dy * dy < or * or) {
+                if (sn.me) die(sn, '撞上了' + '對手的身體');
+                else killSnake(sn, o.me);
+                return;
+            }
+        }
+    }
+}
+
+function killSnake(sn, byPlayer) {
+    sn.alive = false;
+    // 死掉的蛇整條變成光點：這是「被撞到會贏」的具體回饋
+    for (var i = 0; i < sn.path.length; i += 2) {
+        var p = sn.path[i];
+        spawnOrb(p.x + RE.rand(-6, 6), p.y + RE.rand(-6, 6), 3);
+    }
+    P.burst(sn.x, sn.y, 22, { colors: [sn.color, '#ffffff'], speedMin: 50, speedMax: 220,
+        gravity: 0, drag: 0.9, lifeMin: 0.2, lifeMax: 0.7, sizeMax: 4, glow: true });
+    RetroAudio.play('explosion');
+    RE.juice.shake(0.35);
+    if (byPlayer) {
+        s.kills++;
+        G.setStat('kills', s.kills);
+        addScore(400);
+        RE.juice.hitstop(0.06);
+        RE.juice.flash('rgba(255,209,102,0.2)', 0.16);
+        FT.add(sn.x - s.cam.x + W / 2, sn.y - s.cam.y + H / 2 - 20, '擊墜！ +400',
+            { color: '#ffd166', size: 16, life: 1.3 });
+    }
+    // 補一條新蛇，場上人數維持不變，才會一直有壓力
+    var c = cfg();
+    setTimeout(function () {}, 0);
+    var a = RE.rand(0, RE.TAU), d = RE.rand(ARENA * 0.5, ARENA * 0.9);
+    var idx = s.bots.indexOf(sn);
+    if (idx >= 0) {
+        s.bots[idx] = makeSnake(Math.cos(a) * d, Math.sin(a) * d, a + Math.PI,
+            Math.round(RE.rand(c.botLen[0], c.botLen[1])), sn.color, false);
+    }
+}
+
+/* 死亡不是整場結束，而是重來這一場。
+   第一版死一次就直接 game over，等於要求五場連續零失誤——
+   連「超長前瞻、純保命」的機器人都只能撐到第 2.8 場、8 場 0 通關。
+   這款的單局本來就短，失敗成本要低，重來才是常態。 */
+function die(sn, reason) {
+    if (s.mode !== 'play') return;
+    s.lives--;
+    G.setLives(Math.max(0, s.lives));
+    s.mode = 'result';
+    s.resultT = 2.0;
+    s.resultText = s.lives > 0 ? '被切掉了' : '出局';
+    s.deathReason = reason;
+    for (var i = 0; i < sn.path.length; i += 2) {
+        spawnOrb(sn.path[i].x, sn.path[i].y, 2);
+    }
+    P.burst(sn.x, sn.y, 30, { colors: ['#ffffff', '#ff6b6b'], speedMin: 60, speedMax: 260,
+        gravity: 0, drag: 0.9, lifeMin: 0.25, lifeMax: 0.8, sizeMax: 5, glow: true });
+    RE.juice.impact(3);
+    RE.juice.slowmo(0.3, 0.9);
+    RetroAudio.play('gameover');
+}
+
+// ======================================================================
+// AI：吃光點、避開身體，lengthCut 越高越常主動繞到玩家前面
+// ======================================================================
+function botThink(b, dt, c) {
+    b.think -= dt;
+    b.wob += dt;
+
+    if (b.think <= 0) {
+        b.think = RE.rand(0.25, 0.6);
+        // 決定這一段時間要做什麼：切人還是吃光點
+        b.lengthCutMode = (Math.random() < c.lengthCut && s.me.alive !== false) ? 1 : 0;
+        if (!b.lengthCutMode) {
+            // 找最近的光點群
+            var best = null, bd = 1e9;
+            for (var i = 0; i < s.orbs.length; i += 3) {
+                var o = s.orbs[i];
+                var d = Math.hypot(o.x - b.x, o.y - b.y);
+                if (d < bd) { bd = d; best = o; }
+            }
+            b.target = best;
+        }
+    }
+
+    var wantAng;
+    if (b.lengthCutMode) {
+        /* 繞前：瞄準玩家「前方」的一個點，而不是玩家本身。
+           這正是這款的核心戰術——切路，不是追咬。 */
+        var lead = 60 + Math.min(140, s.me.len * 1.2);
+        var tx = s.me.x + Math.cos(s.me.ang) * lead;
+        var ty = s.me.y + Math.sin(s.me.ang) * lead;
+        wantAng = Math.atan2(ty - b.y, tx - b.x);
+        b.boost = Math.hypot(tx - b.x, ty - b.y) > 120 && b.len > 20;
+    } else if (b.target) {
+        wantAng = Math.atan2(b.target.y - b.y, b.target.x - b.x);
+        b.boost = false;
+    } else {
+        wantAng = b.ang + Math.sin(b.wob) * 0.6;
+        b.boost = false;
+    }
+    if (b.boost) b.len -= SNK.boostCost * dt * 0.5;
+
+    // 避障：把附近的身體節點與邊界當成排斥力
+    var avoidX = 0, avoidY = 0;
+    var all = [s.me].concat(s.bots);
+    for (var j = 0; j < all.length; j++) {
+        var o2 = all[j];
+        if (!o2 || o2 === b || o2.alive === false) continue;
+        for (var k = 0; k < o2.path.length; k += 2) {
+            var p = o2.path[k];
+            var dx = b.x - p.x, dy = b.y - p.y;
+            var d2 = dx * dx + dy * dy;
+            if (d2 < 9000 && d2 > 1) {
+                var w = 1 - d2 / 9000;
+                avoidX += dx / Math.sqrt(d2) * w * 2.4;
+                avoidY += dy / Math.sqrt(d2) * w * 2.4;
+            }
+        }
+    }
+    var dc = Math.hypot(b.x, b.y);
+    if (dc > ARENA * 0.82) {
+        avoidX += -b.x / dc * 4.5;
+        avoidY += -b.y / dc * 4.5;
+    }
+    if (avoidX || avoidY) {
+        var ax2 = Math.cos(wantAng) + avoidX, ay2 = Math.sin(wantAng) + avoidY;
+        wantAng = Math.atan2(ay2, ax2);
+    }
+    b.ang = turnToward(b.ang, wantAng, turnRate(b) * dt);
+}
+
+// ---------- 場次結算 ----------
+function roundClear() {
+    s.mode = 'result';
+    s.resultT = 1.8;
+    s.resultText = '達標！';
+    addScore(700 + s.round * 350);
+    RetroAudio.play('win');
+    RE.juice.flash('rgba(255,209,102,0.2)', 0.25);
+}
+
+function nextRound() {
+    if (s.resultText === '出局') { finish(false); return; }
+    if (s.resultText === '被切掉了') { loadRound(s.round); return; }   // 同一場重來
+    if (s.round >= ROUNDS.length - 1) { finish(true); return; }
+    loadRound(s.round + 1);
+    G.stageCard(s.round + 1, cfg().name, cfg().hint);
+}
+
+function addScore(n) { s.score += n; G.setStat('score', s.score); }
+
+function finish(win) {
+    s.over = true; s.win = win;
+    if (win) {
+        addScore(2500 + s.kills * 200);
+        G.gameOver({ score: s.score, win: true,
+            body: '五場全過，擊墜 ' + s.kills + ' 條。' +
+                  '有沒有發現越到後面越不敢貼著別人跑？' +
+                  '因為**長度同時是資產與負債**——你變長了，轉彎也變鈍了。' +
+                  '「撞到別人會死、被撞到會贏」這一條規則同時定義了攻擊與防守，' +
+                  '整場遊戲因此只剩一個問題：誰在誰前面。' });
+    } else {
+        G.gameOver({ score: s.score, win: false,
+            body: '在第 ' + (s.round + 1) + ' 場「' + cfg().name + '」' + s.deathReason + '，長度 ' +
+                  Math.round(s.me.len) + '。' +
+                  '記住：**不要追著對手咬，要繞到它前面**——' +
+                  '你的身體就是牆，讓它自己撞上來。' });
+    }
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function sx(x) { return x - s.cam.x + W / 2; }
+function sy(y) { return y - s.cam.y + H / 2; }
+
+function render() {
+    G.clear('#0a0e16');
+    G.beginWorld();
+
+    drawGrid();
+    drawArenaEdge();
+    drawOrbs();
+    for (var i = 0; i < s.bots.length; i++) if (s.bots[i].alive) drawSnake(s.bots[i]);
+    if (s.mode === 'play') drawSnake(s.me);
+    P.draw(ctx);
+    FT.draw(ctx);
+    drawHUD();
+    drawMinimap();
+    if (s.mode === 'result') drawResult();
+
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.05 });
+}
+
+function drawGrid() {
+    ctx.strokeStyle = 'rgba(125,211,252,0.07)';
+    ctx.lineWidth = 1;
+    var step = 60;
+    var ox = -((s.cam.x % step) + step) % step;
+    var oy = -((s.cam.y % step) + step) % step;
+    ctx.beginPath();
+    for (var x = ox; x < W; x += step) { ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+    for (var y = oy; y < H; y += step) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+    ctx.stroke();
+}
+
+function drawArenaEdge() {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,107,107,0.5)';
+    ctx.lineWidth = 5;
+    ctx.setLineDash([14, 10]);
+    ctx.beginPath();
+    ctx.arc(sx(0), sy(0), ARENA, 0, RE.TAU);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawOrbs() {
+    for (var i = 0; i < s.orbs.length; i++) {
+        var o = s.orbs[i];
+        var x = sx(o.x), y = sy(o.y);
+        if (x < -20 || x > W + 20 || y < -20 || y > H + 20) continue;
+        ctx.save();
+        ctx.shadowBlur = 8; ctx.shadowColor = o.color;
+        ctx.fillStyle = o.color;
+        ctx.beginPath();
+        ctx.arc(x, y, o.r + Math.sin(o.t + performance.now() / 400) * 0.6, 0, RE.TAU);
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+function drawSnake(sn) {
+    var r = bodyR(sn);
+    ctx.save();
+    ctx.shadowBlur = 10; ctx.shadowColor = sn.color;
+    ctx.strokeStyle = sn.color;
+    ctx.lineWidth = r * 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    var drawn = 0;
+    for (var i = 0; i < sn.path.length; i++) {
+        var p = sn.path[i];
+        var x = sx(p.x), y = sy(p.y);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        drawn++;
+        if (drawn > 400) break;
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // 頭
+    var hx = sx(sn.x), hy = sy(sn.y);
+    ctx.save();
+    ctx.shadowBlur = 14; ctx.shadowColor = sn.color;
+    ctx.fillStyle = sn.me ? '#ffffff' : sn.color;
+    ctx.beginPath(); ctx.arc(hx, hy, r + 1.5, 0, RE.TAU); ctx.fill();
+    ctx.restore();
+    // 眼睛
+    var ex = Math.cos(sn.ang), ey = Math.sin(sn.ang);
+    var px = -ey, py = ex;
+    ctx.fillStyle = '#0a0e16';
+    ctx.beginPath(); ctx.arc(hx + ex * 2 + px * 3, hy + ey * 2 + py * 3, 1.8, 0, RE.TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(hx + ex * 2 - px * 3, hy + ey * 2 - py * 3, 1.8, 0, RE.TAU); ctx.fill();
+    // 加速時的尾焰
+    if (sn.boost) {
+        P.spawn({ x: sn.x - ex * 10, y: sn.y - ey * 10, vx: -ex * 40, vy: -ey * 40,
+                  color: sn.color, life: 0.25, size: 2.5, glow: true });
+    }
+}
+
+function drawHUD() {
+    var c = cfg();
+    var bw = W - 160, bx = 80;
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    RE.Draw.roundRect(ctx, bx, 10, bw, 8, 4); ctx.fill();
+    ctx.fillStyle = '#7dd3fc';
+    RE.Draw.roundRect(ctx, bx, 10, Math.max(3, bw * RE.clamp(s.me.len / c.goal, 0, 1)), 8, 4); ctx.fill();
+    RE.Draw.text(ctx, c.name + '　長度 ' + Math.round(s.me.len) + ' / ' + c.goal, W / 2, 24,
+        { size: 15, align: 'center', color: '#ffffff' });
+    if (s.me.boost) {
+        RE.Draw.text(ctx, '加速中（消耗長度）', W / 2, 42, { size: 15, align: 'center', color: '#ffd166' });
+    }
+}
+
+/** 小地圖：.io 遊戲的標配，讓玩家知道自己被誰包圍 */
+function drawMinimap() {
+    var mr = 42, mx = W - mr - 12, my = H - mr - 12;
+    ctx.save();
+    ctx.globalAlpha = 0.75;
+    ctx.fillStyle = 'rgba(6,10,18,0.8)';
+    ctx.beginPath(); ctx.arc(mx, my, mr, 0, RE.TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,107,107,0.5)'; ctx.lineWidth = 1.5;
+    ctx.stroke();
+    var k = mr / ARENA;
+    for (var i = 0; i < s.bots.length; i++) {
+        var b = s.bots[i];
+        if (!b.alive) continue;
+        ctx.fillStyle = b.color;
+        ctx.beginPath(); ctx.arc(mx + b.x * k, my + b.y * k, 2, 0, RE.TAU); ctx.fill();
+    }
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(mx + s.me.x * k, my + s.me.y * k, 3, 0, RE.TAU); ctx.fill();
+    ctx.restore();
+}
+
+function drawResult() {
+    ctx.save();
+    ctx.fillStyle = 'rgba(6,10,18,0.75)';
+    ctx.fillRect(0, 0, W, H);
+    var ok = s.resultText === '達標！';
+    RE.Draw.text(ctx, s.resultText, W / 2, H / 2 - 16,
+        { size: 32, align: 'center', color: ok ? '#ffd166' : '#ff6b6b' });
+    RE.Draw.text(ctx, ok ? (s.round >= ROUNDS.length - 1 ? '五場全過' : '下一場：' + ROUNDS[s.round + 1].name)
+                         : s.deathReason,
+        W / 2, H / 2 + 20, { size: 14, align: 'center', color: '#cfe3f0' });
+    ctx.restore();
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '用方向鍵轉向，吃光點變長。頭撞到別人的身體你就死，' +
+          '別人撞到你的身體換它爆掉——所以要繞到對手前面切它的路，不是追著咬。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

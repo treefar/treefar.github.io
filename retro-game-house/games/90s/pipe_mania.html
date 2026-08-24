@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 魔法導管</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   魔法導管 — 致敬 Pipe Mania / Pipe Dream (The Assembly Line, 1989)
+   --------------------------------------------------------------------------
+   這款的設計核心是**「你不能選擇要蓋什麼，只能選擇蓋在哪裡」**。
+
+   一般的解謎遊戲給你工具讓你解題。這款反過來：
+   下一塊管子是什麼已經決定好了（而且你看得到後面五塊），
+   你唯一的自由是「放在哪一格」。於是玩家的思考從
+   「我要怎麼解」變成「我要怎麼把這個不完美的東西塞進計畫裡」。
+
+   再加上第二層壓力：**流體不等你**。
+   倒數結束之後黏液就開始前進，你必須一邊鋪路一邊被追著跑。
+   於是這款遊戲同時考兩件事：
+     · 空間規劃（把不受控的供給排成一條長路）
+     · 時間壓力（規劃的時間本身是有限的資源）
+
+   兩者相乘之後產生一個很特別的心理狀態：
+   **你明知道最佳解是什麼，但你沒有時間去做它。**
+   這正是 1989 年這款遊戲最現代的地方——
+   它考的不是聰明，是「在時間不夠時願不願意接受次佳解」。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'pipe_mania',
+    title: '魔法導管',
+    tagline: '你不能選要蓋什麼，只能選蓋在哪裡',
+    original: 'Pipe Mania (The Assembly Line, 1989)',
+    decade: '90s', year: 1989, platform: 'Amiga / DOS / 多平台', genre: '空間解謎',
+    developer: 'The Assembly Line', bgm: '90s',
+    width: 480, height: 320,
+    hud: [
+        { key: 'stage', label: '關卡', init: '1' },
+        { key: 'need', label: '需求', init: 0 },
+        { key: 'flow', label: '已流過', init: 0 },
+        { key: 'score', label: 'SCORE' }
+    ],
+    touch: 'none',
+    controls: [
+        { keys: ['滑鼠 / 觸控'], desc: '點格子鋪管；點已鋪的管子可以覆蓋（但會扣分）' },
+        { keys: ['←→↑↓'], desc: '移動游標' },
+        { keys: ['A / 空白鍵'], desc: '在游標處鋪管' },
+        { keys: ['B'], desc: '提早放水（剩餘倒數會換成獎金）' },
+        { keys: ['P'], desc: '暫停' }
+    ],
+    howto: '把預覽列的管子放進格子，讓黏液流過足夠節數。' +
+           '<strong>你不能選下一塊，只能決定位置</strong>；倒數後路線開始流動。',
+    lesson: {
+        verb: '把無法指定的下一塊管子放進格網，在流體追上之前維持一條可延伸的連續路線。',
+        innovation: '把隨機供給、下一塊預覽與即時倒數疊在同一個空間謎題上，迫使玩家持續修訂而非等待完美解。',
+        mission: '先用預覽列規劃至少三塊，再故意保留一個 2×2 轉彎空間；流體開始後，完成一次覆蓋錯管並讓路線繼續前進。',
+        evolution: '《Tetris》用下一塊預覽考驗形狀安置；《Pipe Mania》把零件串成路線；《Balatro》再把有限供給改成手牌與鬼牌組合。',
+        reflection: '如果可以自由挑選任何管件，倒數還會考驗應變，還是只剩照著理想路線逐格施工？'
+    },
+    design: '固定答案的格子謎題有一個問題：玩家找到解法後，重玩只剩記憶；完全隨機的零件又可能讓失敗看起來只是運氣不好。' +
+            '《Pipe Mania》的解法，是把零件依序發給玩家並顯示短期預覽，讓供給不可控制但可以提前規劃；玩家能選位置、也能付出分數覆蓋錯管，因此仍須為路線負責。' +
+            '倒數結束後，流體沿已接通的管線持續前進，思考時間本身也成為消耗中的資源。' +
+            '理想接頭沒來時，高手不是等待，而是預留轉彎空間、放置暫存支線，或接受較短但能存活的次佳解。' +
+            '**限制供給並提供有限預告，能把隨機性從裁判改造成規劃素材。**' +
+            '本站《Tetris》先用下一塊預覽建立這種壓力；《Pipe Mania》把單塊安置延續成整條路徑，往後《Balatro》再把同一問題放進抽牌與牌組構築。',
+    history: '英國工作室 The Assembly Line 於 1989 年推出《Pipe Mania》。共同創辦人 John Dale 與 Martin Day 回憶，當時《Tetris》證明簡潔益智遊戲具有市場，他們因此尋找一個能快速完成、又能讓玩家在時間壓力下排列零件的概念。' +
+             'Lucasfilm Games 隨後以《Pipe Dream》之名在北美發行多平台版本。保存下來的原版手冊明確區分「The Assembly Line 的原始遊戲」與 Lucasfilm 的改編團隊，並列出 Akila J. Redmer、Stephan L. Butler、John Dale、Martin Day 等人的平台工作。' +
+             '這也解釋了為何不同資料庫會列出不同「設計者」：有人指原始概念，有人列北美改編製作；本站不再把移植與原作混成單一作者敘述。',
+    sources: [
+        { label: 'Retro Gamer：John Dale、Martin Day 談 Pipe Mania 製作', url: 'https://pocketmags.com/us/retro-gamer-magazine/issue-279/articles/the-making-of-pipe-mania' },
+        { label: 'Lucasfilm Games：Pipe Dream 原版手冊', url: 'https://mirrors.apple2.org.za/ftp.apple.asimov.net/documentation/applications/misc/Lucasfilm_Games_Pipe_Dream_manual.pdf' }
+    ]
+});
+
+var ctx = G.ctx, VW = G.width, VH = G.height;
+var P = new RE.Particles(260);
+var FT = new RE.FloatText();
+
+var COLS = 10, ROWS = 7, T = 34;
+var GX = 30, GY = 54;                        // 棋盤左上角
+var QX = 400, QY = 66;                       // 隊列位置
+
+// ======================================================================
+// 管件。用四個方向的連通性表示：上右下左
+// ======================================================================
+var PIECES = {
+    v:  { open: [1, 0, 1, 0], name: '直管' },
+    h:  { open: [0, 1, 0, 1], name: '直管' },
+    tr: { open: [1, 1, 0, 0], name: '彎管' },   // 上、右
+    rb: { open: [0, 1, 1, 0], name: '彎管' },   // 右、下
+    bl: { open: [0, 0, 1, 1], name: '彎管' },   // 下、左
+    lt: { open: [1, 0, 0, 1], name: '彎管' },   // 左、上
+    x:  { open: [1, 1, 1, 1], name: '十字' }    // 可以走兩次
+};
+var BAG = ['v', 'h', 'tr', 'rb', 'bl', 'lt', 'v', 'h', 'x'];   // 十字比較少見
+
+var DIRS = [{ dx: 0, dy: -1 }, { dx: 1, dy: 0 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }];
+function opposite(d) { return (d + 2) % 4; }
+
+// ======================================================================
+// 關卡：倒數時間、需求節數、障礙格數
+// ======================================================================
+// 需求節數是照機器人實測的可達上限訂的，不是拍腦袋。
+// 蛇行鋪滿這個 10×7 盤面大約可以到四十幾節，但障礙會把蛇行截斷，
+// 所以後段的需求要跟著障礙數往回收——否則就變成「盤面根本不夠長」。
+var STAGES = [
+    { name: '第一關 · 練習', prep: 14, need: 8,  blocks: 0, speed: 0.85,
+      hint: '你不能選下一塊是什麼，只能選放在哪。' },
+    { name: '第二關 · 加壓', prep: 12, need: 12, blocks: 2, speed: 0.72,
+      hint: '需求變長了。彎管要用來繞路，不是用來抄近路。' },
+    { name: '第三關 · 石塊', prep: 11, need: 16, blocks: 4, speed: 0.62,
+      hint: '灰色格子不能鋪。繞過它。' },
+    { name: '第四關 · 提速', prep: 10, need: 20, blocks: 6, speed: 0.52,
+      hint: '黏液變快了。先鋪出一條長路，別想邊走邊想。' },
+    { name: '第五關 · 滿載', prep: 9,  need: 26, blocks: 7, speed: 0.46,
+      hint: '最後一關。用不到的管子丟到角落覆蓋掉——那才是老手的做法。' }
+];
+
+// ======================================================================
+// 狀態
+// ======================================================================
+var s = null;
+
+function reset() {
+    s = { stage: 0, score: 0, over: false };
+    P.clear(); FT.clear();
+    G.setStat('score', 0);
+    loadStage(0);
+}
+
+function loadStage(n) {
+    var def = STAGES[n];
+    s.stage = n; s.def = def;
+    s.grid = [];
+    for (var r = 0; r < ROWS; r++) {
+        s.grid.push([]);
+        for (var c = 0; c < COLS; c++) s.grid[r].push(null);
+    }
+
+    // 障礙。**不能單純亂灑**：兩顆黏在一起、或擋在起點正前方，
+    // 蛇行的路線會被整條腰斬，同一關的難度就變成擲骰子
+    // （實測第四、五關的通過率因此掉到 3/5 與 1/5）。
+    // 規則：離起點三格以上、彼此不相鄰（含對角）、不佔最左兩欄。
+    var placed = 0, guard = 0;
+    while (placed < def.blocks && guard++ < 600) {
+        var bc = RE.randInt(2, COLS - 2), br = RE.randInt(0, ROWS - 1);
+        if (s.grid[br][bc]) continue;
+        var near = false;
+        for (var dy = -1; dy <= 1 && !near; dy++)
+            for (var dx = -1; dx <= 1; dx++) {
+                var g = (s.grid[br + dy] || [])[bc + dx];
+                if (g && g.block) { near = true; break; }
+            }
+        if (near) continue;
+        s.grid[br][bc] = { block: true };
+        placed++;
+    }
+
+    // 起點固定在左上角區域、朝右出水。
+    // 第一版讓起點在左半邊隨機，結果起點落在偏下時蛇行的空間被腰斬，
+    // 同一關有時鋪得到 32 節、有時只有 16 節——難度變成擲骰子。
+    s.startC = 0; s.startR = RE.randInt(0, 1);
+    if (s.grid[s.startR][0]) s.grid[s.startR][0] = null;
+    s.grid[s.startR][s.startC] = { src: true, dir: 1, filled: 1, fillT: 1 };
+
+    s.queue = [];
+    for (var i = 0; i < 6; i++) s.queue.push(RE.pick(BAG));
+
+    s.prep = def.prep;
+    s.flowing = false;
+    s.flowCount = 0;
+    s.cur = { c: s.startC + 1, r: s.startR };
+    s.head = null;
+    s.clearT = 0; s.hintT = 3.2;
+    s.pointerDownSeen = false;
+    s.overwrites = 0; s.over = false;
+    G.setStat('stage', String(n + 1));
+    G.setStat('need', def.need);
+    G.setStat('flow', 0);
+}
+
+function cellAt(c, r) {
+    if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return undefined;
+    return s.grid[r][c];
+}
+
+// ======================================================================
+// 鋪管
+// ======================================================================
+function place(c, r) {
+    if (s.clearT > 0 || s.over) return;
+    var cell = cellAt(c, r);
+    if (cell === undefined) return;
+    if (cell && (cell.block || cell.src)) { RetroAudio.play('error'); return; }
+    // 已經被黏液流過的管子不能覆蓋——這是這款遊戲唯一不可逆的地方
+    if (cell && cell.filled > 0) { RetroAudio.play('error'); RE.juice.shake(0.08); return; }
+
+    var kind = s.queue.shift();
+    s.queue.push(RE.pick(BAG));
+
+    if (cell) {                                  // 覆蓋既有管子要付代價
+        s.overwrites++;
+        addScore(-50);
+        FT.add(GX + c * T + T / 2, GY + r * T, '覆蓋 -50', { color: '#ff8a8a', size: 11 });
+        P.burst(GX + c * T + T / 2, GY + r * T + T / 2, 8, {
+            colors: ['#8a8a9a', '#5a5a6a'], speedMin: 30, speedMax: 110,
+            gravity: 240, lifeMin: 0.2, lifeMax: 0.4 });
+    }
+    s.grid[r][c] = { kind: kind, filled: 0, fillT: 0, uses: 0 };
+    RetroAudio.play('block');
+    P.burst(GX + c * T + T / 2, GY + r * T + T / 2, 5, {
+        colors: ['#8fe8ff', '#ffffff'], speedMin: 20, speedMax: 80,
+        gravity: 0, drag: 0.9, lifeMin: 0.12, lifeMax: 0.26 });
+}
+
+// ======================================================================
+// 黏液推進
+// ======================================================================
+function startFlow() {
+    if (s.flowing) return;
+    s.flowing = true;
+    var bonus = Math.round(Math.max(0, s.prep) * 40);
+    if (bonus > 0) { addScore(bonus); FT.add(240, 40, '提早放水 +' + bonus, { color: '#ffd166', size: 13 }); }
+    s.prep = 0;
+    s.head = { c: s.startC, r: s.startR, from: 3, t: 0 };
+    RetroAudio.play('splash');
+}
+
+function advanceFlow() {
+    var h = s.head;
+    var cell = cellAt(h.c, h.r);
+    var outDir;
+    if (cell.src) outDir = cell.dir;
+    else {
+        var open = PIECES[cell.kind].open;
+        outDir = -1;
+        for (var d = 0; d < 4; d++) {
+            if (!open[d]) continue;
+            if (d === h.from) continue;
+            // 十字：第一次走直線穿過去，第二次走另一軸
+            if (cell.kind === 'x' && d !== opposite(h.from)) continue;
+            outDir = d; break;
+        }
+        if (outDir < 0) { leak(); return; }
+    }
+
+    var nc = h.c + DIRS[outDir].dx, nr = h.r + DIRS[outDir].dy;
+    var next = cellAt(nc, nr);
+    if (next === undefined || !next || next.block || next.src) { leak(); return; }
+    if (next.filled >= (next.kind === 'x' ? 2 : 1)) { leak(); return; }
+    if (!PIECES[next.kind].open[opposite(outDir)]) { leak(); return; }
+
+    next.filled = (next.filled || 0) + 1;
+    next.fillT = 0;
+    s.head = { c: nc, r: nr, from: opposite(outDir), t: 0 };
+    s.flowCount++;
+    G.setStat('flow', s.flowCount);
+    addScore(50);
+    RetroAudio.play('blip');
+    if (s.flowCount === s.def.need) {
+        FT.add(240, 34, '需求達成！繼續延長可以加分', { color: '#8fe8ff', size: 13 });
+        RE.juice.flash('rgba(140,230,255,0.2)', 0.12);
+    }
+}
+
+function leak() {
+    if (s.clearT > 0 || s.over) return;
+    var h = s.head;
+    var x = GX + h.c * T + T / 2, y = GY + h.r * T + T / 2;
+    RetroAudio.play('error');
+    RE.juice.shake(0.4); RE.juice.hitstop(0.06);
+    P.burst(x, y, 22, {
+        colors: ['#7ad86a', '#4aa83a', '#c8f0a8'],
+        speedMin: 50, speedMax: 210, gravity: 420, lifeMin: 0.3, lifeMax: 0.7, glow: true });
+
+    if (s.flowCount >= s.def.need) { clearStage(); return; }
+    s.over = true;
+    G.gameOver({
+        win: false, score: s.score,
+        body: '黏液從第 ' + s.flowCount + ' 節漏出來了，這一關需要 ' + s.def.need + ' 節。' +
+              '回想一下你漏在哪裡——通常不是因為你不知道該怎麼接，' +
+              '而是因為<strong>倒數逼你先動手，而你動手的位置後來擋住了自己</strong>。' +
+              '《Pipe Mania》真正在考的就是這個：' +
+              '<strong>當供給不受你控制、時間又不夠時，你願不願意接受次佳解。</strong>'
+    });
+}
+
+function clearStage() {
+    if (s.clearT > 0) return;
+    s.clearT = 1.4;
+    addScore(1000 + (s.flowCount - s.def.need) * 100);
+    RetroAudio.play('win');
+    RE.juice.flash('rgba(255,255,255,0.3)', 0.14);
+    FT.add(240, 150, '通過！流過 ' + s.flowCount + ' 節', { color: '#ffd166', size: 16 });
+}
+
+function addScore(n) { s.score = Math.max(0, s.score + n); G.setStat('score', s.score); }
+
+// ======================================================================
+// 主迴圈
+// ======================================================================
+/*
+ * 手機 touch 可能在遊戲第一個 frame 前清掉 pressed，但 down 仍維持；
+ * Pipe Mania 的點格放管若只看 pressed，就會出現游標沒有反應、預覽也不消耗的假死。
+ * 只在本款補一次 down 邊緣，放開後清理，不改共用輸入引擎。
+ */
+function pointerPressFresh() {
+    var pt = RE.Input.pointer;
+    if (!pt.down && !pt.pressed) { s.pointerDownSeen = false; return false; }
+    var fresh = pt.pressed || (pt.down && !s.pointerDownSeen);
+    if (fresh) s.pointerDownSeen = true;
+    return fresh;
+}
+
+function update(dt) {
+    if (!s) return;
+    P.update(dt); FT.update(dt);
+    if (s.hintT > 0) s.hintT -= dt;
+
+    if (s.clearT > 0) {
+        s.clearT -= dt;
+        if (s.clearT <= 0) nextStage();
+        return;
+    }
+    if (s.over) return;
+
+    // 游標
+    if (RE.Input.pressed('left')) s.cur.c = Math.max(0, s.cur.c - 1);
+    if (RE.Input.pressed('right')) s.cur.c = Math.min(COLS - 1, s.cur.c + 1);
+    if (RE.Input.pressed('up')) s.cur.r = Math.max(0, s.cur.r - 1);
+    if (RE.Input.pressed('down')) s.cur.r = Math.min(ROWS - 1, s.cur.r + 1);
+    if (RE.Input.buffered('a', 0.1)) { RE.Input.consumeBuffer('a'); place(s.cur.c, s.cur.r); }
+    if (RE.Input.buffered('b', 0.1)) { RE.Input.consumeBuffer('b'); startFlow(); }
+
+    if (pointerPressFresh()) {
+        var pc = Math.floor((RE.Input.pointer.x - GX) / T);
+        var pr = Math.floor((RE.Input.pointer.y - GY) / T);
+        if (pc >= 0 && pc < COLS && pr >= 0 && pr < ROWS) { s.cur.c = pc; s.cur.r = pr; place(pc, pr); }
+    }
+
+    // 倒數 → 放水
+    if (!s.flowing) {
+        s.prep -= dt;
+        if (s.prep <= 0) { s.prep = 0; startFlow(); }
+    } else {
+        s.head.t += dt;
+        var cell = cellAt(s.head.c, s.head.r);
+        if (cell) cell.fillT = Math.min(1, s.head.t / s.def.speed);
+        if (s.head.t >= s.def.speed) { s.head.t = 0; advanceFlow(); }
+    }
+}
+
+function nextStage() {
+    if (s.stage < STAGES.length - 1) {
+        var n = s.stage + 1;
+        G.stageCard(n + 1, STAGES[n].name, STAGES[n].hint, function () { loadStage(n); });
+        return;
+    }
+    finish();
+}
+
+function finish() {
+    G.gameOver({
+        win: true, score: s.score,
+        body: '五關全通。你有沒有發現，最後幾關你根本沒有在「解謎」——' +
+              '你是在<strong>用手上這塊不完美的管子，去補一個還沒想完的計畫</strong>。' +
+              '這就是《Pipe Mania》1989 年就想清楚的事：' +
+              '<strong>把供給從玩家手上拿走，計畫本身就變成了遊戲。</strong>' +
+              '從《俄羅斯方塊》的下一塊預覽到 Roguelike 的隨機掉落，' +
+              '用的都是同一招。'
+    });
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function render() {
+    if (!s) return;
+    G.beginWorld();
+    drawBack();
+    drawGrid();
+    drawQueue();
+    drawCursor();
+    P.draw(ctx);
+    FT.draw(ctx);
+    G.endWorld();
+    drawHUD();
+    G.postFX({ scanAlpha: 0.05, vignetteStrength: 0.42 });
+}
+
+function drawBack() {
+    var g = ctx.createLinearGradient(0, 0, 0, VH);
+    g.addColorStop(0, '#1e2438'); g.addColorStop(1, '#0e1220');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+    ctx.fillStyle = 'rgba(140,180,220,0.03)';
+    for (var i = 0; i < 6; i++) ctx.fillRect(0, 20 + i * 52, VW, 18);
+}
+
+function drawGrid() {
+    for (var r = 0; r < ROWS; r++) {
+        for (var c = 0; c < COLS; c++) {
+            var x = GX + c * T, y = GY + r * T;
+            ctx.fillStyle = (c + r) % 2 ? 'rgba(255,255,255,0.035)' : 'rgba(255,255,255,0.02)';
+            ctx.fillRect(x, y, T, T);
+            ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.lineWidth = 1;
+            ctx.strokeRect(x + 0.5, y + 0.5, T - 1, T - 1);
+            var cell = s.grid[r][c];
+            if (!cell) continue;
+            if (cell.block) { drawBlock(x, y); continue; }
+            if (cell.src) { drawSource(x, y, cell); continue; }
+            drawPipe(x, y, cell);
+        }
+    }
+}
+
+function drawBlock(x, y) {
+    ctx.fillStyle = '#4a4a56';
+    RE.Draw.roundRect(ctx, x + 3, y + 3, T - 6, T - 6, 3); ctx.fill();
+    ctx.fillStyle = '#5f5f6e';
+    ctx.fillRect(x + 5, y + 5, T - 10, 4);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(x + 5, y + T - 10, T - 10, 4);
+}
+
+function drawSource(x, y, cell) {
+    ctx.fillStyle = '#8a6b46';
+    RE.Draw.roundRect(ctx, x + 4, y + 6, T - 8, T - 12, 3); ctx.fill();
+    ctx.fillStyle = '#c8a878';
+    ctx.fillRect(x + 6, y + 8, T - 12, 4);
+    // 出水口
+    ctx.fillStyle = '#7ad86a';
+    ctx.fillRect(x + T - 8, y + T / 2 - 5, 8, 10);
+    RE.Draw.text(ctx, '源', x + T / 2 - 2, y + T / 2 - 6, { size: 12, align: 'center', color: '#ffe066' });
+}
+
+function drawPipe(x, y, cell) {
+    var open = PIECES[cell.kind].open;
+    var cx = x + T / 2, cy = y + T / 2, halfLen = T / 2;
+    // 外殼
+    ctx.strokeStyle = '#7a8496';
+    ctx.lineWidth = 13; ctx.lineCap = 'butt';
+    for (var d = 0; d < 4; d++) {
+        if (!open[d]) continue;
+        ctx.beginPath(); ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + DIRS[d].dx * halfLen, cy + DIRS[d].dy * halfLen);
+        ctx.stroke();
+    }
+    // 內管
+    ctx.strokeStyle = '#2a3040';
+    ctx.lineWidth = 8;
+    for (d = 0; d < 4; d++) {
+        if (!open[d]) continue;
+        ctx.beginPath(); ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + DIRS[d].dx * halfLen, cy + DIRS[d].dy * halfLen);
+        ctx.stroke();
+    }
+    // 黏液：正在流的那一格會逐漸填滿，看得出「還剩多少時間」
+    if (cell.filled > 0) {
+        var fill = cell.fillT === undefined ? 1 : cell.fillT;
+        ctx.strokeStyle = cell.filled > 1 ? '#a8f070' : '#7ad86a';
+        ctx.lineWidth = 8;
+        for (d = 0; d < 4; d++) {
+            if (!open[d]) continue;
+            ctx.beginPath(); ctx.moveTo(cx, cy);
+            ctx.lineTo(cx + DIRS[d].dx * halfLen * fill, cy + DIRS[d].dy * halfLen * fill);
+            ctx.stroke();
+        }
+        ctx.fillStyle = '#a8f070';
+        ctx.beginPath(); ctx.arc(cx, cy, 4.5 * fill, 0, RE.TAU); ctx.fill();
+    }
+    if (cell.kind === 'x') {                     // 十字標記：可以走兩次
+        ctx.fillStyle = 'rgba(255,224,102,0.55)';
+        ctx.beginPath(); ctx.arc(cx, cy, 3, 0, RE.TAU); ctx.fill();
+    }
+}
+
+function drawQueue() {
+    // 手機縮放後預覽列是玩家唯一能提前規劃的資訊，不能讓標籤只剩 6～8px。
+    RE.Draw.text(ctx, '接下來', QX + 26, QY - 22, { size: 14, align: 'center', color: '#f1dfb0', stroke: '#211a2c', strokeWidth: 2 });
+    RE.Draw.text(ctx, '（不能選）', QX + 26, QY - 6, { size: 12, align: 'center', color: 'rgba(255,255,255,0.65)', stroke: '#211a2c', strokeWidth: 2 });
+    for (var i = 0; i < Math.min(6, s.queue.length); i++) {
+        var x = QX + 6, y = QY + 14 + i * 34;
+        var sc = i === 0 ? 1 : 0.72;
+        ctx.save();
+        ctx.translate(x + 20, y + 14);
+        ctx.scale(sc, sc);
+        ctx.translate(-20, -14);
+        if (i === 0) {
+            ctx.fillStyle = 'rgba(255,224,102,0.16)';
+            RE.Draw.roundRect(ctx, -2, -2, 44, 32, 4); ctx.fill();
+            ctx.strokeStyle = '#ffe066'; ctx.lineWidth = 1.5;
+            RE.Draw.roundRect(ctx, -2, -2, 44, 32, 4); ctx.stroke();
+        }
+        drawMiniPipe(0, -2, s.queue[i]);
+        ctx.restore();
+    }
+}
+
+function drawMiniPipe(x, y, kind) {
+    var open = PIECES[kind].open, cx = x + 20, cy = y + 16, L = 15;
+    ctx.strokeStyle = '#7a8496'; ctx.lineWidth = 9;
+    for (var d = 0; d < 4; d++) {
+        if (!open[d]) continue;
+        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + DIRS[d].dx * L, cy + DIRS[d].dy * L); ctx.stroke();
+    }
+    ctx.strokeStyle = '#2a3040'; ctx.lineWidth = 5;
+    for (d = 0; d < 4; d++) {
+        if (!open[d]) continue;
+        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + DIRS[d].dx * L, cy + DIRS[d].dy * L); ctx.stroke();
+    }
+}
+
+function drawCursor() {
+    if (s.over) return;
+    var x = GX + s.cur.c * T, y = GY + s.cur.r * T;
+    var k = 0.5 + Math.sin(Date.now() * 0.008) * 0.3;
+    ctx.strokeStyle = 'rgba(255,224,102,' + (0.5 + k * 0.4) + ')';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x + 1, y + 1, T - 2, T - 2);
+}
+
+function drawHUD() {
+    if (s.hintT > 0) {
+        var a = Math.min(1, s.hintT / 0.7);
+        ctx.globalAlpha = a;
+        RE.Draw.text(ctx, s.def.name, VW / 2, 6, { size: 14, align: 'center', color: '#ffe066' });
+        RE.Draw.text(ctx, s.def.hint, VW / 2, 26, { size: 14, align: 'center', color: '#eaf1ff', stroke: '#141622', strokeWidth: 2 });
+        ctx.globalAlpha = 1;
+    }
+    // 倒數條：這是這款遊戲的第二個資源，必須一直看得見
+    if (!s.flowing && !s.over) {
+        var w = 200, x0 = VW / 2 - w / 2, y0 = VH - 22;
+        ctx.fillStyle = 'rgba(0,0,0,0.45)';
+        ctx.fillRect(x0, y0, w, 8);
+        var k = RE.clamp(s.prep / s.def.prep, 0, 1);
+        ctx.fillStyle = k > 0.35 ? '#7ad86a' : '#ff8060';
+        ctx.fillRect(x0 + 1, y0 + 1, (w - 2) * k, 6);
+        RE.Draw.text(ctx, '放水倒數 ' + s.prep.toFixed(1) + 's　（B 提早放水換獎金）',
+            VW / 2, y0 - 15, { size: 13, align: 'center', color: k > 0.35 ? '#cfe8c8' : '#ffb0a0', stroke: '#141622', strokeWidth: 2 });
+    } else if (s.flowing && !s.over) {
+        RE.Draw.text(ctx, '已流過 ' + s.flowCount + ' / ' + s.def.need + ' 節',
+            VW / 2, VH - 24, { size: 12, align: 'center',
+            color: s.flowCount >= s.def.need ? '#8fe8ff' : '#e8d8b0', stroke: '#141622', strokeWidth: 2 });
+    }
+}
+
+// ======================================================================
+function openPause() {
+    G._state = 'paused';
+    RetroAudio.play('pause');
+    G.showOverlay({
+        title: '暫停中',
+        body: '你不能選下一塊是什麼，只能選放在哪裡。這就是這款遊戲的全部。',
+        buttons: [
+            { label: '▶ 繼續', onClick: function () { G.resume(); } },
+            { label: '↻ 重新開始', cls: 'ghost', onClick: function () { G.restart(); } }
+        ],
+        press: '按 P 或 ESC 繼續'
+    });
+}
+G.pause = openPause;
+
+function showTitleScreen() {
+    G._state = 'title';
+    G.showOverlay({
+        title: '魔法導管',
+        body: G.cfg.howto,
+        buttons: [{ label: '▶ 開始鋪管', onClick: function () { G.hideOverlay(); G._state = 'playing'; reset(); } }],
+        press: '按 空白鍵 或 Enter 開始'
+    });
+    var onKey = function (e) {
+        if (G._state !== 'title') return;
+        if (e.code === 'Space' || e.code === 'Enter') {
+            e.preventDefault();
+            window.removeEventListener('keydown', onKey);
+            RetroAudio.play('confirm');
+            G.hideOverlay(); G._state = 'playing'; reset();
+        }
+    };
+    window.addEventListener('keydown', onKey);
+}
+
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+showTitleScreen();
+</script>
+</body>
+</html>

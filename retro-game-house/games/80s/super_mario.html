@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 像素水管工大冒險</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   像素水管工大冒險 — 致敬 Super Mario Bros. (Nintendo, 1985)
+   --------------------------------------------------------------------------
+   復刻重點（本作把「跳躍手感」當成第一優先）：
+   1. 可變跳躍高度：按越久跳越高。放開按鍵時若還在上升，垂直速度立刻減半。
+   2. 土狼時間（coyote time）0.1 秒：離開平台邊緣後仍可短暫起跳。
+   3. 輸入緩衝（jump buffer）0.15 秒：落地前按下的跳躍會在落地瞬間執行。
+      這三項是現代平台遊戲的手感三本柱，缺一個玩家就會覺得「操作不跟手」。
+   4. 分離的加速度／減速度／空中控制力，讓奔跑有慣性但不失控。
+   5. 五關手繪關卡，第一關刻意複製原作 1-1 的無字教學結構。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'super_mario',
+    title: '像素水管工大冒險',
+    tagline: '奠定跳躍手感標準的那款遊戲',
+    original: 'Super Mario Bros. (Nintendo, 1985)',
+    decade: '80s', year: 1985, platform: 'FC / NES', genre: '橫向捲軸平台',
+    developer: 'Nintendo · 宮本茂', bgm: '80s',
+    width: 480, height: 320,
+    lives: 3,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'coins', label: '金幣', init: 0 },
+        { key: 'level', label: '關卡', init: '1-1' },
+        { key: 'time', label: 'TIME', init: 300 }
+    ],
+    touch: 'dpad+ab', labelA: '跳', labelB: '衝刺',
+    controls: [
+        { keys: ['←', '→'], desc: '移動' },
+        { keys: ['空白', 'Z'], desc: '跳躍（按越久跳越高）' },
+        { keys: ['Shift', 'K'], desc: '衝刺' },
+        { keys: ['↓'], desc: '蹲下（變大後可鑽過縫隙）' }
+    ],
+    howto: '踩敵人的頭可以擊敗它，並且會<strong>連續彈跳加分</strong>。' +
+           '頂問號磚會掉出金幣或蘑菇，吃到蘑菇會變大（被打到時先變小而不是直接死）。' +
+           '跳躍<strong>按越久跳越高</strong>；離開平台邊緣後還有一瞬間可以起跳。' +
+           '抵達每關終點的旗桿即可過關，越高越多分。',
+    lesson: {
+        verb: '先跑出速度，再用按壓時間控制跳躍高度；踩敵、頂磚、取道具與抵達旗桿都由同一個跳躍串起。',
+        innovation: '把橫向捲動畫面、慣性與可變跳高組成一致語言，並讓敵人、問號磚與地形順序在遊玩中教會玩家，不必先讀完整規則。',
+        mission: '在第一關分別輕點與長按跳躍，越過同一個障礙；接著助跑後跳到旗桿較高處，觀察速度、按壓時間與落點如何一起決定結果。',
+        evolution: '《Donkey Kong》把跳躍用於單畫面避障；《Super Mario Bros.》讓它驅動捲軸探索，《Sonic》再以更高速度與坡面放大慣性讀圖。',
+        reflection: '如果每次跳躍都固定高度、跑步也不影響距離，關卡還能只靠磚塊、坑洞與敵人排列教玩家精進手感嗎？'
+    },
+    design: '《Super Mario Bros.》解決的問題是：如何讓新手不用先讀說明，也能在捲動世界裡學會一套可持續精進的動作語言。它把一個跳躍動詞延伸成攻擊、探索、取物與抵達目標的共同語言。' +
+            '角色不是按方向就立即達到最高速度：加速、摩擦與空中慣性讓玩家必須在起跳前讀取距離；按住跳躍較久則能抵達更高位置。' +
+            '敵人從右側接近、問號磚位於頭頂、蘑菇沿地面滑走，這些排列會自然引導新手移動、跳躍與追逐，而不是先顯示一長串教學文字。' +
+            '本站以多關卡、變大／受傷狀態、連續踩踏、隱藏道具與旗桿高度保留這套文法，並加入離開平台邊緣後極短的寬容起跳時間，讓現代瀏覽器操作的失誤回饋更清楚。' +
+            '這項現代補正不改變核心：玩家仍要用速度與跳躍弧線讀懂關卡，而不是靠自動修正越過障礙。',
+    history: 'Nintendo 日本官方資料記錄《Super Mario Bros.》於 1985 年 9 月 13 日在 Family Computer 推出；北美官方歷史頁則列出同年 NES 版本與原始說明書故事。' +
+             '在 Nintendo 的開發者訪談中，宮本茂把本作稱為先前《Donkey Kong》、《Donkey Kong Jr.》與《Mario Bros.》技術與關卡元素的集大成；團隊在 256 kilobit 容量內反覆節省位元組，才塞入更多磚塊、音樂與結尾。' +
+             '這比「單獨拯救整個產業」更精確地說明其位置：它把任天堂累積的角色動作、捲軸與卡帶工程整合成後來平台遊戲持續引用的完整語言。',
+    sources: [
+        { label: 'Nintendo：1985 年《Super Mario Bros.》官方歷史', url: 'https://mario.nintendo.com/history/' },
+        { label: 'Nintendo「社長問」：原版開發者談技術集大成與容量限制', url: 'https://iwataasks.nintendo.com/interviews/wii/mario25th/4/2/' }
+    ]
+});
+
+var ctx = G.ctx, VW = G.width, VH = G.height;
+var P = new RE.Particles(500);
+var FT = new RE.FloatText();
+
+var T = 24;   // 磚塊尺寸
+
+/* 關卡圖例
+   X 地面/磚塊   B 可破壞磚   ? 問號磚   H 硬磚(裝飾)   P 水管
+   G 栗寶寶      K 烏龜       C 金幣     M 蘑菇(隱藏於?)  F 旗桿
+   ^ 尖刺        = 浮空平台   . 空 */
+var LEVELS = [
+    {
+        name: '1-1　綠丘',
+        hint: '往右走。遇到敵人時，跳到它頭上。',
+        time: 300, bg: '#5c94fc', ground: '#c84c0c', deco: '#00a800',
+        rows: [
+            '................................................................................................',
+            '................................................................................................',
+            '................................................................................................',
+            '................................................................................................',
+            '.............?..................................................................................',
+            '................................................................................................',
+            '..........B?B?B.............=====................C.C.C..........................................',
+            '................................................................................................',
+            '.........................C.C.................................B?B........................F.......',
+            '................G............................G..........................G.G.....................',
+            'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX...XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+            'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX...XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+        ]
+    },
+    {
+        name: '1-2　磚牆迷徑',
+        hint: '有些磚可以打破。上面那條路比較快，但比較窄。',
+        time: 300, bg: '#4a6fb5', ground: '#8b4513', deco: '#2d7a2d',
+        rows: [
+            '................................................................................................',
+            '................................................................................................',
+            '..............CCC...........CCCC................................................................',
+            '.............BBBBB.........BB??BB...............................................................',
+                        /* 烏龜從第 6 列 col34 搬到第 4 列 col38，站在第 5 列那座浮空平台上。
+               原本它腳下（第 7 列以下）整片是空的，一放出來就直接墜到地面、
+               然後往左走——正好在玩家踩完 col30 栗寶寶的落點迎面撞上。
+               實測三條命全部死在同一個座標 x=738，撞的是它的側面。
+               這一關的提示是「上面那條路比較快，但比較窄」，
+               把它放到上層路線才對得上：走上面要處理牠，走下面不必。
+               ⚠ 先改過第 9 列的栗寶寶間距，量下來一點差別都沒有——
+               撞人的從頭到尾都是這隻烏龜，那個改動已經回退。 */
+            '......................................K........................C.C.C............................',
+            '.....................................=====....=====...........BBBBB.............................',
+            '..........?.....................................................................................',
+            '................................................................................................',
+            '.......BB?BB..........C.C.C.....................K.......K...........BB?BB..............F........',
+            '................G.............G.........G...............................G.......................',
+            'XXXXXXXXXXXXXXXXXXXXXXXXXX..XXXXXXXXXXXXXXXXXXXXXX..XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+            'XXXXXXXXXXXXXXXXXXXXXXXXXX..XXXXXXXXXXXXXXXXXXXXXX..XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+        ]
+    },
+    {
+        name: '1-3　高空平台',
+        hint: '掉下去就沒了。落地前先看好下一個平台在哪。',
+        time: 280, bg: '#2a4a7a', ground: '#5a3a2a', deco: '#3a6a3a',
+        rows: [
+            '................................................................................................',
+            '..............C.C..................C.C.C........................................................',
+            '.............=====................=======.......................................................',
+            '.....................................................C.C.C......................................',
+            '.......C.C..............C..........................========.....................................',
+            '......=====...........=====.....................................................................',
+            '....................................K..............................C.C.C........................',
+            '..................................=======.........................=======.......................',
+            '...........................................................................G.........F..........',
+            '.........................G.........................G............................................',
+            'XXXXXXXX.....XXXXXXXX....XXXXXXXXXXXX..XXXXXXXXXXXXXXX.....XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+            'XXXXXXXX.....XXXXXXXX....XXXXXXXXXXXX..XXXXXXXXXXXXXXX.....XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+        ]
+    },
+    {
+        name: '1-4　尖刺走廊',
+        hint: '尖刺無法踩踏，只能跳過去。烏龜殼踢出去可以清路。',
+        time: 280, bg: '#3a2a4a', ground: '#4a2a4a', deco: '#6a3a6a',
+        rows: [
+            '.................................................................................................',
+            '.................................................................................................',
+            '...........?........................?............................................................',
+            '.................................................................................................',
+            '.......BB?BB.................BB?BB.................C.C.C.........................................',
+            '..................................................=======........................................',
+            '.................K........K..................K...................................................',
+            '.................................................................................................',
+            '.....C.C..................C.C....................................C.C..............F..............',
+            '.................................................................................................',
+            'XXXXXXX^XXXXXXXXX^XXXXXXXXXX^XXXXXXXXXX^XXXXXXXXXXX^XXXXXXXXXXX^XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+            'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+        ]
+    },
+    {
+        name: '1-5　最終衝刺',
+        hint: '把助跑、短跳與長跳串成不中斷的節奏。時間更緊。',
+        time: 250, bg: '#1a1a2e', ground: '#3a1a1a', deco: '#5a2a2a',
+        rows: [
+            '................................................................................................',
+            '.........C.C....................................C.C.C...........................................',
+            '........=====..................................=======..........................................',
+            '.....................C.C.C......................................................................',
+            '...?................=======..........?...................?......................................',
+            '................................................................................................',
+            '...BB?BB..............................BB?BB..........................BB?BB......................',
+            '................................................................................................',
+            '..............C.C.......................C.C..............C.C.C..................F...............',
+            '................................................................................................',
+            'XXXXXXX^^XXXXXXX..XXXXXXXX^^^XXXXXXX..XXXXXXXXX^^XXXXXXXX..XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+            'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+        ]
+    }
+];
+
+// ---- 跳躍手感常數（這一組數字就是這款遊戲的靈魂）----
+var PHYS = {
+    accel: 900,          // 地面加速度
+    accelAir: 620,       // 空中加速度（略低，讓空中修正有限但存在）
+    friction: 1250,      // 地面摩擦
+    frictionAir: 260,    // 空中阻力
+    maxWalk: 148,
+    maxRun: 232,
+    gravity: 1500,
+    gravityFall: 2100,   // 下墜時重力更大：上升慢、下落快，跳躍才「俐落」
+    jumpVel: -455,
+    jumpCut: 0.45,       // 放開跳躍鍵時保留的上升速度比例
+    coyote: 0.10,
+    buffer: 0.15,
+    maxFall: 560,
+    bounceVel: -300      // 踩敵人後的彈跳
+};
+
+var s = {};
+
+function parseLevel(n) {
+    var L = LEVELS[Math.min(n - 1, LEVELS.length - 1)];
+    var solid = {}, blocks = [], enemies = [], coins = [], spikes = [], flag = null;
+    var w = L.rows[0].length, h = L.rows.length;
+
+    for (var r = 0; r < h; r++) {
+        for (var c = 0; c < L.rows[r].length; c++) {
+            var ch = L.rows[r][c];
+            var x = c * T, y = r * T;
+            if (ch === 'X' || ch === '=' || ch === 'H') {
+                solid[c + ',' + r] = ch;
+            } else if (ch === 'B' || ch === '?') {
+                solid[c + ',' + r] = ch;
+                blocks.push({ cx: c, cy: r, x: x, y: y, type: ch, hit: 0, used: false,
+                              content: ch === '?' ? (Math.random() < 0.28 ? 'mushroom' : 'coin') : null });
+            } else if (ch === 'G') {
+                enemies.push(makeEnemy('goomba', x, y));
+            } else if (ch === 'K') {
+                enemies.push(makeEnemy('koopa', x, y));
+            } else if (ch === 'C') {
+                coins.push({ x: x + T / 2, y: y + T / 2, got: false, t: Math.random() * 6 });
+            } else if (ch === '^') {
+                spikes.push({ x: x, y: y });
+            } else if (ch === 'F') {
+                flag = { x: x, y: y };
+            }
+        }
+    }
+    return { cfg: L, solid: solid, blocks: blocks, enemies: enemies,
+             coins: coins, spikes: spikes, flag: flag, w: w * T, h: h * T };
+}
+
+function makeEnemy(type, x, y) {
+    return {
+        type: type, x: x + 2, y: y, w: 20, h: type === 'koopa' ? 26 : 20,
+        vx: -34, vy: 0, dead: 0, shell: 0, shellMoving: 0, alive: true, anim: 0
+    };
+}
+
+function solidAt(cx2, cy2) {
+    return !!s.lv.solid[cx2 + ',' + cy2];
+}
+
+/**
+ * 位移並解算地形碰撞，回傳是否著地。
+ *
+ * 關鍵在於「先移動 X 並解算 X，再移動 Y 並解算 Y」。
+ * 若把兩軸一起移動再一起解算，落地的那一幀角色已經陷入地板，
+ * 水平解算會誤判成「撞到牆」而把角色從側面推開——
+ * 表現出來就是角色一邊往右跑一邊被彈回左邊。這是 tilemap 碰撞最常見的坑。
+ */
+function moveAndCollide(o, dt) {
+    var grounded = false;
+    o.hitWall = false;
+    o.headBump = null;
+
+    // ---- 先解 X ----
+    o.x += o.vx * dt;
+    var r0 = Math.floor(o.y / T), r1 = Math.floor((o.y + o.h - 1) / T);
+    var c0 = Math.floor(o.x / T), c1 = Math.floor((o.x + o.w - 1) / T);
+    for (var r = r0; r <= r1; r++) {
+        for (var c = c0; c <= c1; c++) {
+            if (!solidAt(c, r)) continue;
+            if (o.vx > 0) { o.x = c * T - o.w; o.vx = 0; o.hitWall = true; }
+            else if (o.vx < 0) { o.x = (c + 1) * T; o.vx = 0; o.hitWall = true; }
+        }
+    }
+
+    // ---- 再解 Y ----
+    o.y += o.vy * dt;
+    c0 = Math.floor(o.x / T); c1 = Math.floor((o.x + o.w - 1) / T);
+    r0 = Math.floor(o.y / T); r1 = Math.floor((o.y + o.h - 1) / T);
+    for (var r = r0; r <= r1; r++) {
+        for (var c = c0; c <= c1; c++) {
+            if (!solidAt(c, r)) continue;
+            if (o.vy > 0) { o.y = r * T - o.h; o.vy = 0; grounded = true; }
+            else if (o.vy < 0) {
+                o.y = (r + 1) * T; o.vy = 0;
+                o.headBump = { c: c, r: r };
+            }
+        }
+    }
+    return grounded;
+}
+
+function reset() {
+    s = { level: 1, lives: 3, score: 0, coins: 0, over: false };
+    loadLevel(1);
+    G.setStat('score', 0); G.setStat('coins', 0); G.setLives(3);
+}
+
+function loadLevel(n) {
+    s.lv = parseLevel(n);
+    s.level = n;
+    s.time = s.lv.cfg.time;
+    s.camX = 0;
+    s.clearTimer = 0;
+    s.stompChain = 0;
+    spawnPlayer(false);
+    G.setStat('level', '1-' + n);
+    G.setStat('time', s.time);
+}
+
+function spawnPlayer(keepBig) {
+    s.p = {
+        x: 48, y: s.lv.h - T * 3, w: 18, h: keepBig ? 34 : 22,
+        vx: 0, vy: 0, grounded: false, coyote: 0, jumping: false,
+        big: keepBig, invuln: 0, face: 1, anim: 0, dead: 0, crouch: false
+    };
+}
+
+// ======================================================================
+function update(dt) {
+    if (s.over) return;
+
+    if (s.clearTimer > 0) {
+        s.clearTimer -= dt;
+        P.update(dt); FT.update(dt);
+        if (s.clearTimer <= 0) nextLevel();
+        return;
+    }
+
+    var p = s.p;
+
+    if (p.dead > 0) {
+        p.dead -= dt;
+        p.vy += PHYS.gravity * dt;
+        p.y += p.vy * dt;
+        P.update(dt); FT.update(dt);
+        if (p.dead <= 0) afterDeath();
+        return;
+    }
+
+    // ---- 計時 ----
+    s.time -= dt;
+    if (Math.ceil(s.time) !== s.lastTimeShown) {
+        s.lastTimeShown = Math.ceil(s.time);
+        G.setStat('time', Math.max(0, s.lastTimeShown));
+        if (s.lastTimeShown === 100) {
+            FT.add(p.x, p.y - 40, '時間剩 100！', { color: '#ff6b6b', size: 16, life: 1.6 });
+            RetroAudio.play('error');
+        }
+    }
+    if (s.time <= 0) { die('時間到'); return; }
+
+    // ================= 移動與跳躍手感 =================
+    var ax = RE.Input.axisX();
+    var running = RE.Input.down('b');
+    var maxSpd = running ? PHYS.maxRun : PHYS.maxWalk;
+
+    p.crouch = p.big && p.grounded && RE.Input.axisY() > 0;
+    if (p.crouch) { p.h = 22; ax = 0; }
+    else if (p.big) p.h = 34;
+
+    if (ax !== 0) {
+        var a = p.grounded ? PHYS.accel : PHYS.accelAir;
+        // 反向輸入時給額外的煞車力，轉向才會俐落
+        if (ax * p.vx < 0) a *= 1.9;
+        p.vx = RE.approach(p.vx, ax * maxSpd, a * dt);
+        p.face = ax;
+    } else {
+        var f = p.grounded ? PHYS.friction : PHYS.frictionAir;
+        p.vx = RE.approach(p.vx, 0, f * dt);
+    }
+    // 從奔跑切回走路時不硬切速度，保留一點慣性
+    if (Math.abs(p.vx) > maxSpd) p.vx = RE.approach(p.vx, RE.sign(p.vx) * maxSpd, 400 * dt);
+
+    // 土狼時間
+    if (p.grounded) p.coyote = PHYS.coyote;
+    else p.coyote -= dt;
+
+    // 跳躍：輸入緩衝 + 土狼時間
+    if (RE.Input.buffered('a', PHYS.buffer) && p.coyote > 0 && !p.jumping) {
+        RE.Input.consumeBuffer('a');
+        p.vy = PHYS.jumpVel;
+        // 跑越快跳越遠也跳越高一點點，獎勵維持速度
+        p.vy -= Math.abs(p.vx) * 0.12;
+        p.jumping = true;
+        p.grounded = false;
+        p.coyote = 0;
+        RetroAudio.play('jump');
+        P.burst(p.x + p.w / 2, p.y + p.h, 6, {
+            angle: Math.PI / 2, spread: 1.1, colors: ['#fff8e7', '#d9c9a8'],
+            speedMin: 30, speedMax: 90, gravity: 300, lifeMin: 0.15, lifeMax: 0.3, sizeMax: 3
+        });
+    }
+    // 可變跳躍高度：放開按鍵時砍掉上升速度
+    if (p.jumping && !RE.Input.down('a') && p.vy < 0) {
+        p.vy *= PHYS.jumpCut;
+        p.jumping = false;
+    }
+    if (p.vy >= 0) p.jumping = false;
+
+    // 重力：下墜時更重，這是「跳起來俐落」的關鍵
+    p.vy += (p.vy < 0 ? PHYS.gravity : PHYS.gravityFall) * dt;
+    if (p.vy > PHYS.maxFall) p.vy = PHYS.maxFall;
+
+    // ---- 位移與碰撞 ----
+    var wasGrounded = p.grounded;
+    p.grounded = moveAndCollide(p, dt);
+    if (p.x < 0) { p.x = 0; p.vx = 0; }
+    if (p.x + p.w > s.lv.w) { p.x = s.lv.w - p.w; p.vx = 0; }
+    if (p.grounded && !wasGrounded && p.vy === 0) {
+        RetroAudio.play('land');
+        s.stompChain = 0;
+        P.burst(p.x + p.w / 2, p.y + p.h, 5, {
+            angle: -Math.PI / 2, spread: 1.4, colors: ['#d9c9a8'],
+            speedMin: 20, speedMax: 70, gravity: 260, lifeMin: 0.12, lifeMax: 0.28, sizeMax: 3
+        });
+    }
+
+    // 頂磚
+    if (p.headBump) hitBlock(p.headBump.c, p.headBump.r);
+
+    // 走路動畫與塵土
+    p.anim += Math.abs(p.vx) * dt * 0.09;
+    if (p.grounded && Math.abs(p.vx) > 180 && Math.random() < 0.25) {
+        P.spawn({ x: p.x + p.w / 2 - p.face * 8, y: p.y + p.h - 2,
+            vx: -p.face * RE.rand(20, 60), vy: RE.rand(-30, -5),
+            size: 2.4, sizeEnd: 0, color: '#d9c9a8', life: 0.28, gravity: 180 });
+    }
+
+    // 掉出畫面
+    if (p.y > s.lv.h + 60) { die('掉下去了'); return; }
+
+    if (p.invuln > 0) p.invuln -= dt;
+
+    // ---- 攝影機：前瞻式跟隨，往前跑時視野會提前展開 ----
+    var targetCam = p.x - VW * 0.38 + p.vx * 0.28;
+    targetCam = RE.clamp(targetCam, 0, Math.max(0, s.lv.w - VW));
+    s.camX = RE.lerp(s.camX, targetCam, 1 - Math.pow(0.002, dt));
+
+    updateEnemies(dt);
+    updateItems(dt);
+    updateCoins(dt);
+
+    // ---- 終點旗桿 ----
+    if (s.lv.flag && p.x + p.w > s.lv.flag.x && p.x < s.lv.flag.x + T) {
+        clearLevel();
+        return;
+    }
+
+    P.update(dt);
+    FT.update(dt);
+}
+
+function hitBlock(c, r) {
+    for (var i = 0; i < s.lv.blocks.length; i++) {
+        var b = s.lv.blocks[i];
+        if (b.cx !== c || b.cy !== r) continue;
+        if (b.used) { RetroAudio.play('block'); return; }
+
+        b.hit = 0.22;
+        RE.juice.shake(0.13);
+        RE.juice.hitstop(0.02);
+
+        if (b.type === '?') {
+            b.used = true;
+            if (b.content === 'coin') {
+                gainCoin(b.x + T / 2, b.y - 10);
+                RetroAudio.play('coin');
+            } else {
+                s.items = s.items || [];
+                s.items.push({ type: 'mushroom', x: b.x + 3, y: b.y - 20, w: 18, h: 18,
+                               vx: 60, vy: -60, emerge: 0.4 });
+                RetroAudio.play('powerup');
+                FT.add(b.x + T / 2, b.y - 20, '蘑菇！', { color: '#ff6b6b', size: 14, life: 1 });
+            }
+        } else if (b.type === 'B') {
+            if (s.p.big) {
+                // 變大後可以打破磚塊——能力改變了關卡的可能性，這是好的成長設計
+                delete s.lv.solid[c + ',' + r];
+                s.lv.blocks.splice(i, 1);
+                addScore(50);
+                RetroAudio.play('explosion');
+                RE.juice.shake(0.24);
+                P.burst(b.x + T / 2, b.y + T / 2, 14, {
+                    colors: ['#c84c0c', '#8b4513', '#d9c9a8'], speedMin: 60, speedMax: 200,
+                    gravity: 420, lifeMin: 0.3, lifeMax: 0.7, sizeMin: 3, sizeMax: 6
+                });
+                return;
+            }
+            RetroAudio.play('block');
+            P.burst(b.x + T / 2, b.y, 4, { colors: ['#d9c9a8'], speedMin: 30, speedMax: 90,
+                gravity: 320, lifeMin: 0.15, lifeMax: 0.3, sizeMax: 3 });
+        }
+        return;
+    }
+}
+
+function gainCoin(x, y) {
+    s.coins++;
+    addScore(200);
+    G.setStat('coins', s.coins);
+    FT.add(x, y, '+200', { color: '#ffd166', size: 13, life: 0.7 });
+    P.burst(x, y, 8, { colors: ['#ffd166', '#fff0aa'], speedMin: 40, speedMax: 130,
+        gravity: 300, lifeMin: 0.2, lifeMax: 0.45, sizeMax: 3 });
+    // 每一百金幣加一條命
+    if (s.coins % 100 === 0) {
+        s.lives++;
+        G.setLives(s.lives);
+        RetroAudio.play('oneup');
+        FT.add(x, y - 24, '★ 額外機會 ★', { color: '#ff9ebb', size: 17, life: 1.6 });
+    }
+}
+
+function updateCoins(dt) {
+    var p = s.p;
+    for (var i = 0; i < s.lv.coins.length; i++) {
+        var c = s.lv.coins[i];
+        if (c.got) continue;
+        c.t += dt * 6;
+        if (Math.abs(c.x - (p.x + p.w / 2)) < 16 && Math.abs(c.y - (p.y + p.h / 2)) < 20) {
+            c.got = true;
+            gainCoin(c.x, c.y);
+            RetroAudio.play('coin');
+        }
+    }
+}
+
+function updateItems(dt) {
+    if (!s.items) return;
+    var p = s.p;
+    for (var i = s.items.length - 1; i >= 0; i--) {
+        var it = s.items[i];
+        if (it.emerge > 0) { it.emerge -= dt; it.y -= 26 * dt; continue; }
+        it.vy += 1400 * dt;
+        if (moveAndCollide(it, dt)) it.vy = 0;
+        if (it.hitWall) it.vx = -it.vx;
+        if (it.y > s.lv.h + 40) { s.items.splice(i, 1); continue; }
+
+        if (RE.aabb({ x: p.x, y: p.y, w: p.w, h: p.h }, it)) {
+            s.items.splice(i, 1);
+            if (!p.big) {
+                p.big = true;
+                p.h = 34;
+                p.y -= 12;
+                RE.juice.flash('rgba(255,209,102,0.35)', 0.15);
+                RE.juice.hitstop(0.08);
+            }
+            addScore(1000);
+            RetroAudio.play('powerup');
+            FT.add(p.x + p.w / 2, p.y - 20, '變大了！+1000', { color: '#ffd166', size: 16, life: 1.3 });
+            P.ring(p.x + p.w / 2, p.y + p.h / 2, '#ffd166', 60);
+        }
+    }
+}
+
+function updateEnemies(dt) {
+    var p = s.p;
+    for (var i = s.lv.enemies.length - 1; i >= 0; i--) {
+        var e = s.lv.enemies[i];
+
+        if (e.dead > 0) {
+            e.dead -= dt;
+            e.y += 200 * dt;
+            if (e.dead <= 0) s.lv.enemies.splice(i, 1);
+            continue;
+        }
+        if (!e.alive) continue;
+
+        // 畫面外的敵人不更新，維持效能也符合原作行為
+        if (e.x < s.camX - 120 || e.x > s.camX + VW + 200) continue;
+
+        e.anim += dt * 6;
+
+        if (e.shell > 0 && e.shellMoving === 0) {
+            // 龜殼靜止一段時間後會復活，玩家不能無限拖延
+            e.shell -= dt;
+            if (e.shell <= 0) { e.h = 26; e.vx = -34; }
+            e.vy += 1400 * dt;
+            moveAndCollide(e, dt);
+            continue;
+        }
+
+        e.vy += 1400 * dt;
+        var g = moveAndCollide(e, dt);
+        if (e.hitWall) e.vx = -e.vx;
+
+        // 走到平台邊緣就轉頭（龜殼滑行時不轉）
+        if (g && e.shellMoving === 0) {
+            var aheadC = Math.floor((e.x + (e.vx > 0 ? e.w + 2 : -2)) / T);
+            var belowR = Math.floor((e.y + e.h + 2) / T);
+            if (!solidAt(aheadC, belowR)) e.vx = -e.vx;
+        }
+        if (e.y > s.lv.h + 40) { s.lv.enemies.splice(i, 1); continue; }
+
+        // 滑行中的龜殼會撞飛其他敵人
+        if (e.shellMoving > 0) {
+            for (var j = s.lv.enemies.length - 1; j >= 0; j--) {
+                if (j === i) continue;
+                var o = s.lv.enemies[j];
+                if (!o.alive || o.dead > 0) continue;
+                if (RE.aabb(e, o)) {
+                    killEnemy(o, 'shell');
+                    s.stompChain++;
+                }
+            }
+        }
+
+        // ---- 與玩家互動 ----
+        if (p.dead > 0) continue;
+        if (!RE.aabb({ x: p.x, y: p.y, w: p.w, h: p.h }, e)) continue;
+
+        /* 固定種子實測曾在 vy=35、腳底比敵人頂部低 18.19px 時被判成側撞，
+           12 場熟練版因此全停在同一處。下降速度門檻降到 20，仍排除
+           上升與平移接觸；垂直容差設 20px，吸收離散幀造成的 0.19px 越界。 */
+        var stomping = p.vy > 20 && (p.y + p.h) - e.y < 20;
+        if (stomping) {
+            stomp(e, i);
+        } else if (e.shell > 0 && e.shellMoving === 0) {
+            // 踢龜殼
+            e.shellMoving = 1;
+            e.vx = (p.x + p.w / 2 < e.x + e.w / 2 ? 300 : -300);
+            RetroAudio.play('heavyHit');
+            RE.juice.impact(2);
+            addScore(100);
+            FT.add(e.x, e.y - 16, '踢出去！', { color: '#70e4b5', size: 13, life: 0.8 });
+        } else if (p.invuln <= 0) {
+            hurt();
+        }
+    }
+
+    // 尖刺
+    for (var i = 0; i < s.lv.spikes.length; i++) {
+        var sp = s.lv.spikes[i];
+        if (p.invuln > 0 || p.dead > 0) break;
+        if (RE.aabb({ x: p.x, y: p.y, w: p.w, h: p.h },
+                    { x: sp.x + 3, y: sp.y + 8, w: T - 6, h: T - 8 })) {
+            hurt();
+            break;
+        }
+    }
+}
+
+function stomp(e, index) {
+    var p = s.p;
+    p.vy = PHYS.bounceVel;
+    // 按住跳躍鍵時彈更高，讓連踩成為可以練習的技巧
+    if (RE.Input.down('a')) p.vy *= 1.35;
+    p.jumping = true;
+
+    if (e.type === 'koopa' && e.shell <= 0) {
+        // 烏龜先變殼，不會直接死
+        e.shell = 5;
+        e.shellMoving = 0;
+        e.vx = 0;
+        e.h = 18;
+        e.y += 8;
+        RetroAudio.play('hit');
+        addScore(100);
+    } else {
+        killEnemy(e, 'stomp');
+        s.stompChain++;
+    }
+
+    RE.juice.hitstop(0.045);
+    RE.juice.shake(0.2);
+    RE.juice.rumble(0.35, 0.08);
+    RetroAudio.play('heavyHit');
+    P.burst(e.x + e.w / 2, e.y + e.h, 12, {
+        angle: -Math.PI / 2, spread: 1.5,
+        colors: ['#8b4513', '#d9c9a8', '#fff8e7'], speedMin: 50, speedMax: 170,
+        gravity: 400, lifeMin: 0.2, lifeMax: 0.5
+    });
+    P.ring(e.x + e.w / 2, e.y + e.h / 2, '#ffd166', 30);
+}
+
+function killEnemy(e, how) {
+    e.alive = false;
+    e.dead = 0.6;
+    // 連續踩踏分數遞增：100→200→400→800…，這是原作最爽的技巧之一
+    var chain = Math.min(s.stompChain, 6);
+    var val = 100 * Math.pow(2, chain);
+    addScore(val);
+    FT.add(e.x + e.w / 2, e.y, '+' + val, {
+        color: chain > 0 ? '#ffd166' : '#a7f3d0', size: 12 + chain * 2, life: 0.8
+    });
+    if (chain >= 2) {
+        FT.add(e.x + e.w / 2, e.y - 18, (chain + 1) + ' 連踩！', { color: '#ff9ebb', size: 14, life: 1 });
+        RetroAudio.play('combo', chain);
+    }
+}
+
+function hurt() {
+    var p = s.p;
+    if (p.big) {
+        // 變大狀態被打到只會縮小，這個「兩段生命」設計大幅降低挫折感
+        p.big = false;
+        p.h = 22;
+        p.invuln = 2;
+        RE.juice.impact(2);
+        RE.juice.flash('rgba(255,107,107,0.3)', 0.12);
+        RetroAudio.play('hurt');
+        FT.add(p.x, p.y - 20, '縮小了', { color: '#ff9ebb', size: 14, life: 1 });
+        P.burst(p.x + p.w / 2, p.y + p.h / 2, 14, { colors: ['#ff9ebb', '#fff8e7'],
+            speedMin: 50, speedMax: 160, gravity: 200, lifeMin: 0.2, lifeMax: 0.5 });
+    } else {
+        die('被敵人擊中');
+    }
+}
+
+function die(reason) {
+    var p = s.p;
+    if (p.dead > 0) return;
+    p.dead = 1.6;
+    p.vy = -380;
+    s.deathReason = reason;
+    s.lives--;
+    G.setLives(s.lives);
+    RE.juice.impact(3);
+    RE.juice.slowmo(0.3, 0.9);
+    RetroAudio.play('gameover');
+    P.burst(p.x + p.w / 2, p.y + p.h / 2, 24, { colors: ['#ff6b6b', '#ffd166', '#fff8e7'],
+        speedMin: 50, speedMax: 200, gravity: 300, lifeMin: 0.3, lifeMax: 0.8 });
+}
+
+function afterDeath() {
+    if (s.lives <= 0) {
+        s.over = true;
+        G.gameOver({
+            score: s.score,
+            body: '停在第 1-' + s.level + ' 關「' + s.lv.cfg.name.split('　')[1] + '」（' + s.deathReason + '）。' +
+                  '記住：跳躍按越久跳越高，離開平台邊緣後還有一瞬間可以起跳。'
+        });
+        return;
+    }
+    // 同一關重來，保留分數但重置關卡狀態
+    loadLevel(s.level);
+    FT.add(VW / 2, 80, '剩餘機會 ' + s.lives, { color: '#ffd166', size: 16, life: 1.6 });
+}
+
+function addScore(n) { s.score += n; G.setStat('score', s.score); }
+
+function clearLevel() {
+    s.clearTimer = 2;
+    var timeBonus = Math.max(0, Math.floor(s.time) * 10);
+    addScore(2000 + timeBonus);
+    RetroAudio.play('win');
+    RE.juice.flash('rgba(255,209,102,0.35)', 0.2);
+    FT.add(s.p.x, s.p.y - 40, '過關！', { color: '#ffd166', size: 26, life: 2 });
+    FT.add(s.p.x, s.p.y - 12, '時間獎勵 +' + timeBonus, { color: '#70e4b5', size: 14, life: 2, vy: -22 });
+    P.burst(s.p.x + 10, s.p.y, 40, { colors: ['#ffd166', '#70e4b5', '#ff9ebb', '#fff8e7'],
+        speedMin: 60, speedMax: 280, gravity: 380, lifeMin: 0.5, lifeMax: 1.3 });
+}
+
+function nextLevel() {
+    var n = s.level + 1;
+    RE.Save.unlockLevel('super_mario', n);
+    if (n > LEVELS.length) {
+        s.over = true;
+        G.gameOver({ score: s.score, win: true,
+            body: '五關全部通關，收集 ' + s.coins + ' 枚金幣。' +
+                  '1985 年，任天堂把角色動作、橫向捲軸與無字教學整合成平台遊戲長期沿用的語言。' });
+        return;
+    }
+    var keepBig = s.p.big;
+    loadLevel(n);
+    s.p.big = keepBig;
+    if (keepBig) { s.p.h = 34; }
+    G.stageCard(n, s.lv.cfg.name, s.lv.cfg.hint);
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function render() {
+    var cfg = s.lv.cfg;
+    G.clear(cfg.bg);
+    G.beginWorld();
+
+    var cam = Math.round(s.camX);
+
+    // 遠景山丘與雲（視差捲動）
+    drawParallax(cam, cfg);
+
+    ctx.save();
+    ctx.translate(-cam, 0);
+
+    var c0 = Math.floor(cam / T) - 1, c1 = Math.ceil((cam + VW) / T) + 1;
+    var rows = cfg.rows;
+
+    // 地形
+    for (var r = 0; r < rows.length; r++) {
+        for (var c = Math.max(0, c0); c <= Math.min(rows[r].length - 1, c1); c++) {
+            var ch = rows[r][c];
+            var x = c * T, y = r * T;
+            if (ch === 'X') drawGround(x, y, cfg, r === 0 || rows[r - 1][c] !== 'X');
+            else if (ch === '=') drawPlatform(x, y, cfg);
+            else if (ch === '^') drawSpike(x, y);
+        }
+    }
+
+    // 磚塊與問號磚
+    for (var i = 0; i < s.lv.blocks.length; i++) {
+        var b = s.lv.blocks[i];
+        if (b.x < cam - T || b.x > cam + VW + T) continue;
+        var bump = b.hit > 0 ? -Math.sin((1 - b.hit / 0.22) * Math.PI) * 7 : 0;
+        if (b.hit > 0) b.hit -= 1 / 60;
+        if (b.type === '?' && !b.used) drawQuestion(b.x, b.y + bump);
+        else if (b.type === '?' && b.used) drawUsed(b.x, b.y + bump);
+        else drawBrick(b.x, b.y + bump, cfg);
+    }
+
+    // 金幣
+    for (var i = 0; i < s.lv.coins.length; i++) {
+        var c = s.lv.coins[i];
+        if (c.got || c.x < cam - 20 || c.x > cam + VW + 20) continue;
+        var sq = Math.abs(Math.cos(c.t));
+        ctx.save();
+        ctx.shadowBlur = 8; ctx.shadowColor = '#ffd166';
+        ctx.fillStyle = '#ffd166';
+        ctx.beginPath();
+        ctx.ellipse(c.x, c.y, Math.max(1.5, 7 * sq), 9, 0, 0, RE.TAU);
+        ctx.fill();
+        ctx.fillStyle = '#c08a1a';
+        ctx.fillRect(c.x - 1, c.y - 4, 2, 8);
+        ctx.restore();
+    }
+
+    // 道具
+    if (s.items) for (var i = 0; i < s.items.length; i++) {
+        var it = s.items[i];
+        ctx.fillStyle = '#ff6b6b';
+        RE.Draw.roundRect(ctx, it.x, it.y, it.w, it.h - 5, 8);
+        ctx.fill();
+        ctx.fillStyle = '#fff8e7';
+        ctx.beginPath(); ctx.arc(it.x + 5, it.y + 6, 3, 0, RE.TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(it.x + 13, it.y + 7, 2.5, 0, RE.TAU); ctx.fill();
+        ctx.fillStyle = '#f2e2c4';
+        ctx.fillRect(it.x + 4, it.y + it.h - 7, 10, 7);
+    }
+
+    // 敵人
+    for (var i = 0; i < s.lv.enemies.length; i++) drawEnemy(s.lv.enemies[i], cam);
+
+    // 旗桿
+    if (s.lv.flag) drawFlag(s.lv.flag);
+
+    // 玩家
+    drawPlayer();
+
+    P.draw(ctx);
+    FT.draw(ctx);
+    ctx.restore();
+
+    // 剩餘時間緊迫時的紅色邊框警示
+    if (s.time < 60 && s.time > 0) {
+        ctx.save();
+        ctx.globalAlpha = 0.25 + Math.sin(performance.now() / 160) * 0.2;
+        ctx.strokeStyle = '#ff6b6b';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(3, 3, VW - 6, VH - 6);
+        ctx.restore();
+    }
+
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.06, vignetteStrength: 0.32 });
+}
+
+function drawParallax(cam, cfg) {
+    ctx.save();
+    // 雲
+    for (var i = 0; i < 8; i++) {
+        var x = ((i * 260) - cam * 0.25) % (s.lv.w * 0.6);
+        if (x < -80) x += s.lv.w * 0.6;
+        var y = 26 + (i % 3) * 24;
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.beginPath();
+        ctx.arc(x, y, 13, 0, RE.TAU);
+        ctx.arc(x + 14, y - 5, 16, 0, RE.TAU);
+        ctx.arc(x + 30, y, 12, 0, RE.TAU);
+        ctx.fill();
+    }
+    // 山丘
+    for (var i = 0; i < 10; i++) {
+        var x = ((i * 200) - cam * 0.45) % (s.lv.w * 0.8);
+        if (x < -140) x += s.lv.w * 0.8;
+        ctx.fillStyle = cfg.deco;
+        ctx.globalAlpha = 0.55;
+        ctx.beginPath();
+        ctx.moveTo(x - 60, VH - 44);
+        ctx.lineTo(x, VH - 44 - (i % 2 ? 54 : 38));
+        ctx.lineTo(x + 60, VH - 44);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawGround(x, y, cfg, top) {
+    ctx.fillStyle = cfg.ground;
+    ctx.fillRect(x, y, T, T);
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fillRect(x, y + T - 4, T, 4);
+    ctx.fillRect(x + T - 4, y, 4, T);
+    if (top) {
+        ctx.fillStyle = cfg.deco;
+        ctx.fillRect(x, y, T, 7);
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.fillRect(x, y, T, 2);
+    }
+    ctx.fillStyle = 'rgba(0,0,0,0.14)';
+    ctx.fillRect(x + 4, y + 10, 4, 4);
+    ctx.fillRect(x + 14, y + 16, 4, 4);
+}
+
+function drawPlatform(x, y, cfg) {
+    ctx.fillStyle = '#8b6914';
+    ctx.fillRect(x, y, T, 12);
+    ctx.fillStyle = '#c9a35b';
+    ctx.fillRect(x, y, T, 5);
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillRect(x, y + 9, T, 3);
+}
+
+function drawBrick(x, y, cfg) {
+    ctx.fillStyle = '#a0522d';
+    ctx.fillRect(x, y, T, T);
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x, y + T / 2); ctx.lineTo(x + T, y + T / 2);
+    ctx.moveTo(x + T / 2, y); ctx.lineTo(x + T / 2, y + T / 2);
+    ctx.moveTo(x, y + T / 2); ctx.lineTo(x, y + T);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.fillRect(x, y, T, 2);
+}
+
+function drawQuestion(x, y) {
+    var pulse = 0.7 + Math.sin(performance.now() / 200) * 0.3;
+    ctx.save();
+    ctx.shadowBlur = 10 * pulse; ctx.shadowColor = '#ffd166';
+    ctx.fillStyle = '#e0a020';
+    ctx.fillRect(x, y, T, T);
+    ctx.fillStyle = '#ffd166';
+    ctx.fillRect(x + 2, y + 2, T - 4, T - 4);
+    ctx.restore();
+    RE.Draw.text(ctx, '?', x + T / 2, y + 4,
+        { size: 16, align: 'center', color: '#7a4a08', stroke: false });
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(x + 3, y + 3, 2, 2);
+    ctx.fillRect(x + T - 5, y + 3, 2, 2);
+    ctx.fillRect(x + 3, y + T - 5, 2, 2);
+    ctx.fillRect(x + T - 5, y + T - 5, 2, 2);
+}
+
+function drawUsed(x, y) {
+    ctx.fillStyle = '#7a5a3a';
+    ctx.fillRect(x, y, T, T);
+    ctx.fillStyle = '#96704a';
+    ctx.fillRect(x + 2, y + 2, T - 4, T - 4);
+}
+
+function drawSpike(x, y) {
+    ctx.fillStyle = '#c9d6d0';
+    for (var i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(x + i * 8, y + T);
+        ctx.lineTo(x + i * 8 + 4, y + 6);
+        ctx.lineTo(x + i * 8 + 8, y + T);
+        ctx.fill();
+    }
+    ctx.fillStyle = '#5c6b66';
+    ctx.fillRect(x, y + T - 4, T, 4);
+}
+
+function drawEnemy(e, cam) {
+    if (e.x < cam - 40 || e.x > cam + VW + 40) return;
+    ctx.save();
+    if (e.dead > 0) {
+        ctx.globalAlpha = e.dead / 0.6;
+        ctx.translate(e.x + e.w / 2, e.y + e.h / 2);
+        ctx.scale(1, -0.5);
+        ctx.translate(-e.x - e.w / 2, -e.y - e.h / 2);
+    }
+    if (e.type === 'goomba') {
+        var squish = Math.abs(Math.sin(e.anim)) * 2;
+        ctx.fillStyle = '#8b4513';
+        ctx.beginPath();
+        ctx.ellipse(e.x + e.w / 2, e.y + e.h / 2, e.w / 2, e.h / 2 - squish * 0.3, 0, 0, RE.TAU);
+        ctx.fill();
+        ctx.fillStyle = '#f2e2c4';
+        ctx.fillRect(e.x + 3, e.y + 6, 5, 6);
+        ctx.fillRect(e.x + e.w - 8, e.y + 6, 5, 6);
+        ctx.fillStyle = '#2a1a0a';
+        ctx.fillRect(e.x + 4 + (e.vx > 0 ? 2 : 0), e.y + 8, 2, 3);
+        ctx.fillRect(e.x + e.w - 7 + (e.vx > 0 ? 2 : 0), e.y + 8, 2, 3);
+        // 腳
+        ctx.fillStyle = '#5a2d0c';
+        ctx.fillRect(e.x + 1, e.y + e.h - 3 + squish, 6, 3);
+        ctx.fillRect(e.x + e.w - 7, e.y + e.h - 3 - squish, 6, 3);
+    } else {
+        var shelled = e.shell > 0;
+        ctx.fillStyle = e.shellMoving > 0 ? '#ffd166' : '#2d7a2d';
+        RE.Draw.roundRect(ctx, e.x, e.y + (shelled ? 0 : 8), e.w, shelled ? e.h : e.h - 8, 7);
+        ctx.fill();
+        ctx.strokeStyle = '#1a4a1a';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        if (!shelled) {
+            ctx.fillStyle = '#f2c94c';
+            ctx.fillRect(e.x + (e.vx > 0 ? e.w - 9 : 2), e.y, 8, 10);
+            ctx.fillStyle = '#2a1a0a';
+            ctx.fillRect(e.x + (e.vx > 0 ? e.w - 5 : 4), e.y + 3, 2, 2);
+        } else if (e.shell < 1.6 && Math.floor(e.shell * 8) % 2 === 0) {
+            // 快復活時閃爍警告
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            RE.Draw.roundRect(ctx, e.x, e.y, e.w, e.h, 7);
+            ctx.fill();
+        }
+    }
+    ctx.restore();
+}
+
+function drawFlag(f) {
+    ctx.fillStyle = '#c9d6d0';
+    ctx.fillRect(f.x + T / 2 - 2, f.y - T * 5, 4, T * 6);
+    ctx.fillStyle = '#70e4b5';
+    var wave = Math.sin(performance.now() / 200) * 3;
+    ctx.beginPath();
+    ctx.moveTo(f.x + T / 2 + 2, f.y - T * 5 + 4);
+    ctx.lineTo(f.x + T / 2 + 26 + wave, f.y - T * 5 + 12);
+    ctx.lineTo(f.x + T / 2 + 2, f.y - T * 5 + 20);
+    ctx.fill();
+    ctx.fillStyle = '#ffd166';
+    ctx.beginPath(); ctx.arc(f.x + T / 2, f.y - T * 5, 5, 0, RE.TAU); ctx.fill();
+}
+
+function drawPlayer() {
+    var p = s.p;
+    if (p.invuln > 0 && Math.floor(p.invuln * 14) % 2 === 0) return;
+
+    ctx.save();
+    var x = Math.round(p.x), y = Math.round(p.y);
+    if (p.dead > 0) {
+        ctx.globalAlpha = 0.85;
+        ctx.translate(x + p.w / 2, y + p.h / 2);
+        ctx.rotate((1.6 - p.dead) * 4);
+        ctx.translate(-x - p.w / 2, -y - p.h / 2);
+    }
+
+    var head = p.big ? 12 : 9;
+    // 帽子
+    ctx.fillStyle = '#e0453e';
+    ctx.fillRect(x + 1, y, p.w - 2, head * 0.42);
+    ctx.fillRect(x + (p.face > 0 ? p.w - 4 : -2), y + 2, 6, 3);
+    // 臉
+    ctx.fillStyle = '#f2c9a0';
+    ctx.fillRect(x + 2, y + head * 0.42, p.w - 4, head * 0.58);
+    ctx.fillStyle = '#2a1a0a';
+    ctx.fillRect(x + (p.face > 0 ? p.w - 7 : 4), y + head * 0.55, 2, 3);
+    // 身體
+    ctx.fillStyle = '#3a6fd8';
+    ctx.fillRect(x, y + head, p.w, p.h - head - 4);
+    ctx.fillStyle = '#e0453e';
+    ctx.fillRect(x + 3, y + head, p.w - 6, 4);
+    // 腳：走路時交替，跳躍時收起
+    ctx.fillStyle = '#6a3a1a';
+    if (!p.grounded) {
+        ctx.fillRect(x + 1, y + p.h - 5, 7, 5);
+        ctx.fillRect(x + p.w - 8, y + p.h - 6, 7, 6);
+    } else if (Math.abs(p.vx) > 12) {
+        var ph = Math.sin(p.anim * 6);
+        ctx.fillRect(x + 1 + ph * 3, y + p.h - 4, 7, 4);
+        ctx.fillRect(x + p.w - 8 - ph * 3, y + p.h - 4, 7, 4);
+    } else {
+        ctx.fillRect(x + 1, y + p.h - 4, 7, 4);
+        ctx.fillRect(x + p.w - 8, y + p.h - 4, 7, 4);
+    }
+    ctx.restore();
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '踩敵人的頭擊敗它，連續踩踏分數會翻倍。跳躍按越久跳越高。抵達旗桿即可過關，共五關。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

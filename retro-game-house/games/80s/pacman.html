@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 幽靈迷宮</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   幽靈迷宮 — 致敬 Pac-Man (Namco, 1980)
+   --------------------------------------------------------------------------
+   復刻重點（本站對「設計」還原度最高的一款）：
+   1. 四隻幽靈的獨立 AI 個性，完整重現原作的目標格演算法：
+        紅：直接鎖定玩家所在格（追擊者）
+        粉：瞄準玩家「前方四格」，負責埋伏包抄（埋伏者）
+        藍：以紅幽靈為支點做點對稱，行為最難預測（難測者）
+        橘：距離遠時追擊、太近時逃回角落（膽小者）
+   2. Scatter／Chase 模式輪替：幽靈會週期性放棄追擊、退回各自角落。
+      這個「呼吸」節奏是原作不會讓玩家窒息的關鍵，本作把它顯示在畫面上。
+   3. 幽靈在路口不能反向——玩家因此能規劃逃脫路線。
+   4. 能量球反擊、連續吃鬼分數倍增（200／400／800／1600）。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'pacman',
+    title: '幽靈迷宮',
+    tagline: '四隻鬼，四種個性——電子遊戲第一次有了「敵人性格」',
+    original: 'Pac-Man (Namco, 1980)',
+    decade: '80s', year: 1980, platform: '大型街機', genre: '迷宮追逐',
+    developer: 'Namco · 岩谷徹', bgm: '80s',
+    width: 448, height: 528,
+    lives: 3,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'best', label: 'BEST' },
+        { key: 'level', label: 'LV', init: 1 }
+    ],
+    touch: 'dpad', maxScale: 2,
+    controls: [
+        { keys: ['↑', '↓', '←', '→'], desc: '移動（可提前輸入轉向）' }
+    ],
+    howto: '吃光所有豆子過關。四個角落的<strong>大能量球</strong>會讓幽靈短暫變藍，' +
+           '此時可以反過來吃掉它們，連續吃分數會翻倍（200→400→800→1600）。' +
+           '注意畫面上方的模式提示：幽靈會週期性放棄追擊、退回角落——那是你的機會。',
+    lesson: {
+        verb: '規劃迷宮路線，利用能量球在逃跑與反追之間切換。',
+        innovation: '用四種追擊傾向與週期性壓力切換，讓同一張迷宮產生可辨識、可誘導的敵人行為。',
+        mission: '先把兩隻以上幽靈引到同一側，再吃能量球反追；比較「看到就吃」與「先聚怪再吃」的得分差。',
+        evolution: '《Blockade》讓移動路徑永久改寫空間；《Pac-Man》則在固定迷宮裡，用敵人個性與能量球改寫每一圈的風險。',
+        reflection: '如果四隻幽靈完全使用同一條最短路徑，玩家還需要辨認對手、設計誘敵路線嗎？'
+    },
+    design: '固定迷宮很容易被背成唯一解；如果四隻敵人只會沿同一條最短路徑追擊，玩家也只需重複一套逃生路線。' +
+            '《Pac-Man》的解法，是讓四隻幽靈呈現不同的追逐傾向，再以追擊與散開週期調節壓力，使玩家能觀察、誘導，而不只是比反應速度。' +
+            '四個角落的能量球又會短暫交換獵人與獵物：立刻吃掉只能保命，先把多隻幽靈引到同一側再吃，則能用連續加倍得分換取更高風險。' +
+            '**同一張地圖因此同時承載逃跑、聚怪、反追與貪分四種路線目的。**' +
+            '本站的《Blockade》用永久軌跡改寫空間；《Pac-Man》則在固定空間中改寫敵我關係，證明關卡變化不一定需要更換地圖。',
+    history: 'Namco 於 1980 年 5 月 22 日進行首次場測，7 月在日本正式推出《Pac-Man》；官方資料列出的核心成員包括企劃岩谷徹、音效甲斐敏夫與程式設計舟木茂雄。' +
+             '岩谷面對當時街機廳偏重太空射擊、客群較單一的情況，選擇「吃」作為主題，並以鮮明色彩與可愛幽靈降低敵意，希望女性與情侶也願意進場。' +
+             '作品在美國推出後一年內售出超過十萬台；2012 年又被紐約現代藝術博物館納入典藏。' +
+             '這些可查證紀錄已足以說明其文化影響，因此本站不再把披薩靈感傳聞或「史上最賺錢」當成核心史實。',
+    sources: [
+        { label: 'PAC-MAN 官方網站：系列歷史', url: 'https://www.pacman.com/en/history/' },
+        { label: 'MoMA：Toru Iwatani, Pac-Man, 1980', url: 'https://www.moma.org/collection/works/164917' },
+        { label: 'Game Developer：岩谷徹談四隻幽靈與客群設計', url: 'https://www.gamedeveloper.com/game-platforms/gdc-2011-i-pac-man-i-creator-iwatani-discusses-female-friendly-design-lessons' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(320);
+var FT = new RE.FloatText();
+
+var TILE = 16;
+var OFFSET_Y = 44;
+
+/* 迷宮：# 牆　. 豆子　o 能量球　空白 通道　- 鬼屋門　P 玩家出生　G 鬼屋內部 */
+var MAZE_SRC = [
+    '############################',
+    '#............##............#',
+    '#.####.#####.##.#####.####.#',
+    '#o####.#####.##.#####.####o#',
+    '#.####.#####.##.#####.####.#',
+    '#..........................#',
+    '#.####.##.########.##.####.#',
+    '#.####.##.########.##.####.#',
+    '#......##....##....##......#',
+    '######.##### ## #####.######',
+    '     #.##### ## #####.#     ',
+    '     #.##          ##.#     ',
+    '     #.## ###--### ##.#     ',
+    '######.## #GGGGGG# ##.######',
+    '      .   #GGGGGG#   .      ',
+    '######.## #GGGGGG# ##.######',
+    '     #.## ######## ##.#     ',
+    '     #.##          ##.#     ',
+    '     #.## ######## ##.#     ',
+    '######.## ######## ##.######',
+    '#............##............#',
+    '#.####.#####.##.#####.####.#',
+    '#o..##................##..o#',
+    '###.##.##.########.##.##.###',
+    '#......##....##....##......#',
+    '#.##########.##.##########.#',
+    '#.............P............#',
+    '############################'
+];
+
+var COLS = MAZE_SRC[0].length, ROWS = MAZE_SRC.length;
+
+var LEVELS = [
+    { speed: 1.00, ghostSpeed: 0.90, fright: 7.0, name: '第一夜' },
+    { speed: 1.04, ghostSpeed: 0.95, fright: 6.0, name: '第二夜' },
+    { speed: 1.07, ghostSpeed: 1.00, fright: 5.0, name: '第三夜' },
+    { speed: 1.10, ghostSpeed: 1.05, fright: 4.0, name: '第四夜' },
+    { speed: 1.13, ghostSpeed: 1.10, fright: 3.0, name: '第五夜' },
+    { speed: 1.16, ghostSpeed: 1.15, fright: 2.0, name: '第六夜' },
+    { speed: 1.18, ghostSpeed: 1.20, fright: 1.0, name: '無眠之夜' }
+];
+
+// Scatter／Chase 交替時間表（秒），結構與原作相同
+var MODE_TABLE = [
+    { mode: 'scatter', t: 7 }, { mode: 'chase', t: 20 },
+    { mode: 'scatter', t: 7 }, { mode: 'chase', t: 20 },
+    { mode: 'scatter', t: 5 }, { mode: 'chase', t: 20 },
+    { mode: 'scatter', t: 5 }, { mode: 'chase', t: 99999 }
+];
+
+var GHOSTS = [
+    { id: 'red',    color: '#ff6b6b', scatter: { x: COLS - 2, y: 0 },        release: 0,  name: '追擊者' },
+    { id: 'pink',   color: '#ff9ebb', scatter: { x: 1, y: 0 },               release: 2,  name: '埋伏者' },
+    { id: 'cyan',   color: '#7dd3fc', scatter: { x: COLS - 1, y: ROWS - 1 }, release: 6,  name: '難測者' },
+    { id: 'orange', color: '#ffb347', scatter: { x: 0, y: ROWS - 1 },        release: 11, name: '膽小者' }
+];
+
+var DIRS = { left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1] };
+var DIRNAMES = ['up', 'left', 'down', 'right'];   // 距離平手時的優先順序，與原作一致
+
+var s = {};
+
+function buildMaze() {
+    var grid = [], dots = 0, spawn = null;
+    for (var y = 0; y < ROWS; y++) {
+        grid[y] = [];
+        for (var x = 0; x < COLS; x++) {
+            var ch = MAZE_SRC[y][x];
+            var cell = { wall: false, dot: 0, door: false, house: false };
+            if (ch === '#') cell.wall = true;
+            else if (ch === '.') { cell.dot = 1; dots++; }
+            else if (ch === 'o') { cell.dot = 2; dots++; }
+            else if (ch === '-') { cell.door = true; }
+            else if (ch === 'P') spawn = { x: x, y: y };
+            else if (ch === 'G') cell.house = true;
+            grid[y][x] = cell;
+        }
+    }
+    return { grid: grid, dots: dots, spawn: spawn };
+}
+
+function reset() {
+    s = { level: 1, lives: 3, score: 0, over: false };
+    loadLevel(1);
+    G.setStat('score', 0); G.setStat('level', 1); G.setLives(3);
+}
+
+function loadLevel(n) {
+    var m = buildMaze();
+    s.grid = m.grid;
+    s.dotsLeft = m.dots;
+    s.totalDots = m.dots;
+    s.spawn = m.spawn;
+    s.cfg = LEVELS[Math.min(n - 1, LEVELS.length - 1)];
+    s.level = n;
+    s.fruit = null;
+    s.fruitTimer = 20;
+    s.dotsEaten = 0;
+    s.clearTimer = 0;
+    resetActors();
+    G.setStat('level', n);
+}
+
+function resetActors() {
+    s.pac = { x: s.spawn.x, y: s.spawn.y, px: 0, py: 0, dir: 'left', want: 'left', mouth: 0, dead: 0 };
+    s.ghosts = GHOSTS.map(function (g, i) {
+        return {
+            def: g, x: 12 + i, y: 14, px: 0, py: 0,
+            dir: 'up', mode: 'house', frightened: 0, eaten: false,
+            releaseAt: g.release, timer: 0, reverse: false
+        };
+    });
+    // 紅幽靈一開始就在外面，讓開局立刻有壓力來源
+    var r = s.ghosts[0];
+    r.x = 13; r.y = 11; r.px = 0; r.py = 0; r.mode = 'scatter'; r.dir = 'left';
+    s.modeIndex = 0;
+    s.modeTimer = MODE_TABLE[0].t;
+    s.mode = MODE_TABLE[0].mode;
+    s.frightCombo = 0;
+    s.readyTimer = 1.8;
+}
+
+/** 牆面判定。allowDoor 為 true 時鬼屋門可通過（幽靈進出用） */
+function isWall(x, y, allowDoor) {
+    if (y < 0 || y >= ROWS) return true;
+    if (x < 0 || x >= COLS) return false;      // 左右隧道
+    var c = s.grid[y][x];
+    if (c.door) return !allowDoor;
+    return c.wall;
+}
+
+function wrapX(x) {
+    if (x < 0) return COLS - 1;
+    if (x >= COLS) return 0;
+    return x;
+}
+
+function cx(gx) { return gx * TILE + TILE / 2; }
+function cy(gy) { return gy * TILE + TILE / 2 + OFFSET_Y; }
+
+// ======================================================================
+function update(dt) {
+    if (s.over) return;
+
+    if (s.clearTimer > 0) {
+        s.clearTimer -= dt;
+        P.update(dt); FT.update(dt);
+        if (s.clearTimer <= 0) nextLevel();
+        return;
+    }
+    if (s.readyTimer > 0) {
+        s.readyTimer -= dt;
+        P.update(dt); FT.update(dt);
+        return;
+    }
+    if (s.pac.dead > 0) {
+        s.pac.dead -= dt;
+        P.update(dt); FT.update(dt);
+        if (s.pac.dead <= 0) afterDeath();
+        return;
+    }
+
+    // ---- Scatter／Chase 輪替（有幽靈處於驚嚇狀態時暫停計時，與原作相同）----
+    var anyFright = s.ghosts.some(function (g) { return g.frightened > 0; });
+    if (!anyFright) {
+        s.modeTimer -= dt;
+        if (s.modeTimer <= 0 && s.modeIndex < MODE_TABLE.length - 1) {
+            s.modeIndex++;
+            s.mode = MODE_TABLE[s.modeIndex].mode;
+            s.modeTimer = MODE_TABLE[s.modeIndex].t;
+            s.ghosts.forEach(function (g) {
+                if (g.mode === 'scatter' || g.mode === 'chase') {
+                    g.mode = s.mode;
+                    g.reverse = true;   // 模式切換時集體反向，是玩家最重要的視覺提示
+                }
+            });
+            RetroAudio.play(s.mode === 'chase' ? 'error' : 'select');
+            FT.add(W / 2, OFFSET_Y + 14, s.mode === 'chase' ? '幽靈開始追擊！' : '幽靈退回角落',
+                { color: s.mode === 'chase' ? '#ff6b6b' : '#7dd3fc', size: 14, life: 1.5 });
+        }
+    }
+
+    // ---- 玩家輸入（提前轉向）----
+    if (RE.Input.down('up')) s.pac.want = 'up';
+    else if (RE.Input.down('down')) s.pac.want = 'down';
+    else if (RE.Input.down('left')) s.pac.want = 'left';
+    else if (RE.Input.down('right')) s.pac.want = 'right';
+
+    movePac(dt);
+    for (var i = 0; i < s.ghosts.length; i++) moveGhost(s.ghosts[i], dt);
+
+    // ---- 碰撞 ----
+    for (var i = 0; i < s.ghosts.length; i++) {
+        var g = s.ghosts[i];
+        if (g.eaten || g.mode === 'house' || g.mode === 'exit') continue;
+        var dx = (g.x + g.px) - (s.pac.x + s.pac.px);
+        var dy = (g.y + g.py) - (s.pac.y + s.pac.py);
+        if (Math.abs(dx) < 0.7 && Math.abs(dy) < 0.7) {
+            if (g.frightened > 0) eatGhost(g);
+            else { die(); return; }
+        }
+    }
+
+    // ---- 水果 ----
+    s.fruitTimer -= dt;
+    if (s.fruitTimer <= 0 && !s.fruit && s.dotsLeft > 20) {
+        s.fruit = { x: 13, y: 17, life: 9 };
+        s.fruitTimer = 28;
+    }
+    if (s.fruit) {
+        s.fruit.life -= dt;
+        if (s.fruit.life <= 0) s.fruit = null;
+        else if (Math.round(s.pac.x + s.pac.px) === s.fruit.x &&
+                 Math.round(s.pac.y + s.pac.py) === s.fruit.y) {
+            var fv = 100 * s.level;
+            addScore(fv);
+            FT.add(cx(s.fruit.x), cy(s.fruit.y), '+' + fv, { color: '#ff6b6b', size: 17 });
+            P.burst(cx(s.fruit.x), cy(s.fruit.y), 16, { colors: ['#ff6b6b', '#70e4b5'],
+                speedMin: 40, speedMax: 150, gravity: 180, lifeMin: 0.3, lifeMax: 0.6 });
+            RetroAudio.play('powerup');
+            s.fruit = null;
+        }
+    }
+
+    // ---- 過關 ----
+    if (s.dotsLeft <= 0) {
+        s.clearTimer = 2;
+        RetroAudio.play('levelUp');
+        addScore(1000 * s.level);
+        FT.add(W / 2, H / 2, 'LEVEL CLEAR', { color: '#ffd166', size: 24, life: 2 });
+        RE.juice.flash('rgba(255,209,102,0.35)', 0.2);
+    }
+
+    P.update(dt);
+    FT.update(dt);
+}
+
+function movePac(dt) {
+    var p = s.pac;
+    var speed = 5.8 * s.cfg.speed;
+    p.mouth += dt * 11;
+
+    // 在格子中心附近才允許轉向：保留格線感，但配合提前輸入不會卡手
+    var atCenter = Math.abs(p.px) < 0.26 && Math.abs(p.py) < 0.26;
+    if (atCenter && p.want !== p.dir) {
+        var wd = DIRS[p.want];
+        if (!isWall(wrapX(p.x + wd[0]), p.y + wd[1], false)) {
+            p.dir = p.want;
+            p.px = 0; p.py = 0;
+        }
+    }
+
+    var d = DIRS[p.dir];
+    var nx = p.px + d[0] * speed * dt;
+    var ny = p.py + d[1] * speed * dt;
+
+    if ((d[0] && Math.abs(nx) >= 0.5) || (d[1] && Math.abs(ny) >= 0.5)) {
+        var tx = wrapX(p.x + d[0]), ty = p.y + d[1];
+        if (isWall(tx, ty, false)) {
+            // 撞牆時必須回到格子中心。若停在 0.48 的偏移量上，
+            // 就會超出下方 atCenter 的轉向門檻，導致貼牆後再也轉不了向。
+            p.px = 0; p.py = 0;
+            return;
+        }
+        p.x = tx; p.y = ty;
+        p.px = nx - d[0] * 1; p.py = ny - d[1] * 1;
+        eatAt(p.x, p.y);
+    } else {
+        p.px = nx; p.py = ny;
+    }
+}
+
+function eatAt(x, y) {
+    var c = s.grid[y] && s.grid[y][x];
+    if (!c || !c.dot) return;
+    var big = c.dot === 2;
+    c.dot = 0;
+    s.dotsLeft--;
+    s.dotsEaten++;
+
+    if (big) {
+        addScore(50);
+        s.frightCombo = 0;
+        var fr = s.cfg.fright;
+        s.ghosts.forEach(function (g) {
+            if (g.mode === 'scatter' || g.mode === 'chase') {
+                g.frightened = fr;
+                g.reverse = true;
+            }
+        });
+        RetroAudio.play('powerup');
+        RE.juice.flash('rgba(125,211,252,0.3)', 0.16);
+        RE.juice.shake(0.3);
+        P.ring(cx(x), cy(y), '#7dd3fc', 90);
+        FT.add(cx(x), cy(y) - 16, '反擊 ' + fr.toFixed(0) + ' 秒', { color: '#7dd3fc', size: 14, life: 1.2 });
+    } else {
+        addScore(10);
+        RetroAudio.play('blip');
+        RE.juice.shake(0.03);
+        P.burst(cx(x), cy(y), 3, { colors: ['#ffd166'], speedMin: 15, speedMax: 55,
+            gravity: 0, drag: 0.88, lifeMin: 0.12, lifeMax: 0.24, sizeMax: 2 });
+    }
+}
+
+/**
+ * 幽靈移動。核心規則與原作相同：
+ * - 只在格子中心做決策，且不能反向（除非收到 reverse 指令）。
+ * - 決策不是尋路演算法，而是「選擇讓自己離目標格直線距離最短的方向」。
+ *   這個貪婪法則產生看似聰明、實則可預測的行為——可預測正是設計上的優點。
+ */
+function moveGhost(g, dt) {
+    var base = 5.5 * s.cfg.ghostSpeed;
+    var speed = base;
+
+    if (g.frightened > 0) {
+        g.frightened -= dt;
+        speed = base * 0.55;                    // 驚嚇時變慢，玩家才追得到
+        if (g.frightened <= 0 && (g.mode === 'scatter' || g.mode === 'chase')) g.mode = s.mode;
+    }
+    if (g.eaten) speed = base * 2.4;            // 眼睛快速回巢
+    if (g.mode === 'house' || g.mode === 'exit') speed = base * 0.8;
+    // 隧道內減速：原作用來平衡玩家逃脫路線的細節
+    if (g.y === 14 && (g.x < 5 || g.x > COLS - 6)) speed *= 0.55;
+
+    // ---- 鬼屋等待 ----
+    if (g.mode === 'house') {
+        g.timer += dt;
+        g.py = Math.sin(g.timer * 3) * 0.3;
+        if (g.timer >= g.releaseAt || s.dotsEaten > 25 + g.def.release * 7) {
+            g.mode = 'exit';
+            g.py = 0;
+        }
+        return;
+    }
+    // ---- 離開鬼屋：先水平對齊門口，再往上穿出 ----
+    if (g.mode === 'exit') {
+        if (g.x !== 13 || Math.abs(g.px) > 0.06) {
+            var dirX = Math.sign(13 - (g.x + g.px));
+            g.px += dirX * speed * dt;
+            while (g.px > 0.5) { g.x++; g.px -= 1; }
+            while (g.px < -0.5) { g.x--; g.px += 1; }
+            if (Math.abs(13 - (g.x + g.px)) < 0.08) { g.x = 13; g.px = 0; }
+        } else {
+            g.py -= speed * dt;
+            while (g.py < -0.5) { g.y--; g.py += 1; }
+            if (g.y <= 11) {
+                g.y = 11; g.py = 0; g.px = 0;
+                g.mode = g.frightened > 0 ? s.mode : s.mode;
+                g.dir = 'left';
+            }
+        }
+        return;
+    }
+
+    // ---- 一般移動 ----
+    var atCenter = Math.abs(g.px) < 0.26 && Math.abs(g.py) < 0.26;
+    if (atCenter) {
+        if (g.reverse) { g.dir = opposite(g.dir); g.reverse = false; }
+
+        var target = ghostTarget(g);
+        var best = null, bestD = Infinity;
+        for (var i = 0; i < DIRNAMES.length; i++) {
+            var dn = DIRNAMES[i];
+            if (dn === opposite(g.dir)) continue;
+            var dd = DIRS[dn];
+            var tx = wrapX(g.x + dd[0]), ty = g.y + dd[1];
+            if (isWall(tx, ty, g.eaten)) continue;
+            if (s.grid[ty] && s.grid[ty][tx] && s.grid[ty][tx].house && !g.eaten) continue;
+            var dist = g.frightened > 0
+                ? Math.random() * 1000                       // 驚嚇時隨機遊走
+                : (tx - target.x) * (tx - target.x) + (ty - target.y) * (ty - target.y);
+            if (dist < bestD) { bestD = dist; best = dn; }
+        }
+        g.dir = best || opposite(g.dir);
+    }
+
+    var d = DIRS[g.dir];
+    var nx = g.px + d[0] * speed * dt;
+    var ny = g.py + d[1] * speed * dt;
+    if ((d[0] && Math.abs(nx) >= 0.5) || (d[1] && Math.abs(ny) >= 0.5)) {
+        var tx2 = wrapX(g.x + d[0]), ty2 = g.y + d[1];
+        if (isWall(tx2, ty2, g.eaten)) { g.px = 0; g.py = 0; return; }
+        g.x = tx2; g.y = ty2;
+        g.px = nx - d[0]; g.py = ny - d[1];
+        // 眼睛回到鬼屋就復活
+        if (g.eaten && s.grid[g.y] && s.grid[g.y][g.x] && s.grid[g.y][g.x].house) {
+            g.eaten = false;
+            g.mode = 'house';
+            g.timer = 0;
+            g.releaseAt = 1.2;
+            g.px = 0; g.py = 0;
+        }
+    } else {
+        g.px = nx; g.py = ny;
+    }
+}
+
+function opposite(d) {
+    return d === 'up' ? 'down' : d === 'down' ? 'up' : d === 'left' ? 'right' : 'left';
+}
+
+/** 四種個性的目標格演算法——Pac-Man 設計的精華所在 */
+function ghostTarget(g) {
+    if (g.eaten) return { x: 13, y: 14 };
+    if (g.mode === 'scatter') return g.def.scatter;
+
+    var p = s.pac;
+    var pd = DIRS[p.dir];
+
+    if (g.def.id === 'red') {
+        return { x: p.x, y: p.y };                                  // 直接追
+    }
+    if (g.def.id === 'pink') {
+        return { x: p.x + pd[0] * 4, y: p.y + pd[1] * 4 };          // 前方四格埋伏
+    }
+    if (g.def.id === 'cyan') {
+        var red = s.ghosts[0];                                      // 以紅鬼為支點點對稱
+        var px2 = p.x + pd[0] * 2, py2 = p.y + pd[1] * 2;
+        return { x: px2 * 2 - red.x, y: py2 * 2 - red.y };
+    }
+    var dist = Math.hypot(g.x - p.x, g.y - p.y);                    // 太近就逃回角落
+    return dist > 8 ? { x: p.x, y: p.y } : g.def.scatter;
+}
+
+function eatGhost(g) {
+    g.eaten = true;
+    g.frightened = 0;
+    s.frightCombo++;
+    var val = 200 * Math.pow(2, Math.min(s.frightCombo - 1, 3));
+    addScore(val);
+
+    var px = cx(g.x) + g.px * TILE, py = cy(g.y) + g.py * TILE;
+    FT.add(px, py, '+' + val, { color: '#7dd3fc', size: 20, life: 1 });
+    RetroAudio.play('heavyHit');
+    RE.juice.impact(2);
+    RE.juice.slowmo(0.25, 0.45);
+    P.burst(px, py, 20, { colors: ['#7dd3fc', '#a7f3d0', '#fff8e7'],
+        speedMin: 50, speedMax: 190, gravity: 0, drag: 0.92, lifeMin: 0.25, lifeMax: 0.6 });
+    P.ring(px, py, '#7dd3fc', 48);
+    if (s.frightCombo >= 4) {
+        FT.add(W / 2, H / 2 - 40, '四連吃！+1600', { color: '#ffd166', size: 20, life: 1.5 });
+        RetroAudio.play('oneup');
+    }
+}
+
+function die() {
+    s.pac.dead = 1.8;
+    s.lives--;
+    G.setLives(s.lives);
+    RE.juice.impact(3);
+    RE.juice.flash('rgba(255,107,107,0.45)', 0.18);
+    RE.juice.slowmo(0.22, 1.1);
+    RetroAudio.play('hurt');
+    P.burst(cx(s.pac.x) + s.pac.px * TILE, cy(s.pac.y) + s.pac.py * TILE, 30, {
+        colors: ['#ffd166', '#ff9ebb', '#fff8e7'], speedMin: 40, speedMax: 200,
+        gravity: 0, drag: 0.93, lifeMin: 0.4, lifeMax: 1
+    });
+}
+
+function afterDeath() {
+    if (s.lives <= 0) {
+        s.over = true;
+        G.gameOver({
+            score: s.score,
+            body: '停在第 ' + s.level + ' 關「' + s.cfg.name + '」，' +
+                  '吃掉 ' + (s.totalDots - s.dotsLeft) + ' / ' + s.totalDots + ' 顆豆子。' +
+                  '下次注意幽靈集體轉身的那一刻——那代表它們要退回角落了。'
+        });
+        return;
+    }
+    resetActors();
+}
+
+function addScore(n) {
+    var before = s.score;
+    s.score += n;
+    G.setStat('score', s.score);
+    // 每一萬分加一條命：街機時代的標準獎勵設計
+    if (Math.floor(before / 10000) < Math.floor(s.score / 10000)) {
+        s.lives++;
+        G.setLives(s.lives);
+        RetroAudio.play('oneup');
+        FT.add(W / 2, H / 2 - 60, '★ 額外機會 ★', { color: '#ff9ebb', size: 20, life: 1.6 });
+    }
+}
+
+function nextLevel() {
+    if (s.over) return;
+    var n = s.level + 1;
+    RE.Save.unlockLevel('pacman', n);
+    if (n > LEVELS.length) {
+        s.over = true;
+        G.gameOver({ score: s.score, win: true,
+            body: '七夜全部通關。你已經完全讀懂四隻幽靈的個性——這正是岩谷徹當年想要的體驗。' });
+        return;
+    }
+    loadLevel(n);
+    G.stageCard(n, s.cfg.name, '幽靈速度提升　✦ 能量球有效時間縮短至 ' + s.cfg.fright.toFixed(0) + ' 秒');
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function render() {
+    G.clear('#05080d');
+    G.beginWorld();
+
+    for (var y = 0; y < ROWS; y++) {
+        for (var x = 0; x < COLS; x++) {
+            var c = s.grid[y][x];
+            if (c.door) {
+                ctx.fillStyle = '#ff9ebb';
+                ctx.fillRect(x * TILE, y * TILE + OFFSET_Y + TILE / 2 - 1.5, TILE, 3);
+            } else if (c.wall) {
+                ctx.fillStyle = '#12224a';
+                ctx.fillRect(x * TILE, y * TILE + OFFSET_Y, TILE, TILE);
+                ctx.fillStyle = '#2f56a8';
+                ctx.fillRect(x * TILE + 2, y * TILE + OFFSET_Y + 2, TILE - 4, TILE - 4);
+                ctx.fillStyle = 'rgba(125,211,252,0.2)';
+                ctx.fillRect(x * TILE + 2, y * TILE + OFFSET_Y + 2, TILE - 4, 2);
+            } else if (c.house) {
+                ctx.fillStyle = 'rgba(47,86,168,0.13)';
+                ctx.fillRect(x * TILE, y * TILE + OFFSET_Y, TILE, TILE);
+            }
+        }
+    }
+
+    var pulse = 0.7 + Math.sin(performance.now() / 240) * 0.3;
+    for (var y = 0; y < ROWS; y++) {
+        for (var x = 0; x < COLS; x++) {
+            var c = s.grid[y][x];
+            if (!c.dot) continue;
+            if (c.dot === 1) {
+                ctx.fillStyle = '#ffd9a0';
+                ctx.fillRect(cx(x) - 1.5, cy(y) - 1.5, 3, 3);
+            } else {
+                ctx.save();
+                ctx.globalAlpha = pulse;
+                ctx.shadowBlur = 10; ctx.shadowColor = '#ffd166';
+                ctx.fillStyle = '#fff0aa';
+                ctx.beginPath(); ctx.arc(cx(x), cy(y), 5.5, 0, RE.TAU); ctx.fill();
+                ctx.restore();
+            }
+        }
+    }
+
+    if (s.fruit) {
+        ctx.save();
+        ctx.shadowBlur = 12; ctx.shadowColor = '#ff6b6b';
+        ctx.fillStyle = '#ff6b6b';
+        ctx.beginPath(); ctx.arc(cx(s.fruit.x), cy(s.fruit.y) + 1, 6, 0, RE.TAU); ctx.fill();
+        ctx.fillStyle = '#70e4b5';
+        ctx.fillRect(cx(s.fruit.x) - 1, cy(s.fruit.y) - 9, 2, 5);
+        ctx.restore();
+    }
+
+    for (var i = 0; i < s.ghosts.length; i++) drawGhost(s.ghosts[i]);
+    drawPac();
+
+    P.draw(ctx);
+    FT.draw(ctx);
+
+    // 頂部狀態：把 Scatter／Chase 模式顯式呈現，讓原作的隱藏設計可被學習
+    var anyFright = s.ghosts.some(function (g) { return g.frightened > 0; });
+    var label = anyFright ? '反擊中' : (s.mode === 'chase' ? '追擊模式' : '分散模式');
+    var color = anyFright ? '#7dd3fc' : (s.mode === 'chase' ? '#ff6b6b' : '#70e4b5');
+    RE.Draw.text(ctx, label, W / 2, 10, { size: 15, align: 'center', color: color });
+    if (!anyFright && MODE_TABLE[s.modeIndex].t < 9000) {
+        var bw = 130, ratio = RE.clamp(s.modeTimer / MODE_TABLE[s.modeIndex].t, 0, 1);
+        ctx.fillStyle = 'rgba(255,255,255,0.14)';
+        ctx.fillRect(W / 2 - bw / 2, 30, bw, 4);
+        ctx.fillStyle = color;
+        ctx.fillRect(W / 2 - bw / 2, 30, bw * ratio, 4);
+    }
+    RE.Draw.text(ctx, '豆子 ' + Math.max(0, s.dotsLeft), 8, 10, { size: 12, color: '#ffd9a0' });
+    // 幽靈個性圖例：教材性質的資訊
+    for (var i = 0; i < GHOSTS.length; i++) {
+        ctx.fillStyle = GHOSTS[i].color;
+        ctx.fillRect(W - 84, 8 + i * 9, 6, 6);
+        RE.Draw.text(ctx, GHOSTS[i].name, W - 74, 7 + i * 9,
+            { size: 9, color: '#9fb3aa', stroke: false });
+    }
+
+    if (s.readyTimer > 0 && s.dotsLeft > 0) {
+        RE.Draw.text(ctx, 'READY!', W / 2, H / 2 + 24, { size: 22, align: 'center', color: '#ffd166' });
+    }
+
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.09, vignetteStrength: 0.45 });
+}
+
+function drawPac() {
+    var p = s.pac;
+    var px = cx(p.x) + p.px * TILE, py = cy(p.y) + p.py * TILE;
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate({ right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 }[p.dir]);
+    if (p.dead > 0) {
+        var t = 1 - p.dead / 1.8;
+        var open = Math.min(t * 2, 1) * Math.PI;
+        ctx.fillStyle = '#ffd166';
+        ctx.beginPath();
+        ctx.arc(0, 0, 7 * (1 - Math.max(0, t - 0.5) * 2), open, RE.TAU - open);
+        ctx.lineTo(0, 0);
+        ctx.fill();
+    } else {
+        var m = Math.abs(Math.sin(p.mouth)) * 0.34;
+        ctx.shadowBlur = 10; ctx.shadowColor = '#ffd166';
+        ctx.fillStyle = '#ffd166';
+        ctx.beginPath();
+        ctx.arc(0, 0, 7, m * Math.PI, RE.TAU - m * Math.PI);
+        ctx.lineTo(0, 0);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawGhost(g) {
+    var px = cx(g.x) + g.px * TILE, py = cy(g.y) + g.py * TILE;
+    var fright = g.frightened > 0;
+    var blinking = fright && g.frightened < 2 && Math.floor(g.frightened * 8) % 2 === 0;
+    var col = fright ? (blinking ? '#ffffff' : '#2f56a8') : g.def.color;
+
+    ctx.save();
+    ctx.translate(px, py);
+
+    if (!g.eaten) {
+        ctx.fillStyle = col;
+        if (!fright) { ctx.shadowBlur = 8; ctx.shadowColor = col; }
+        ctx.beginPath();
+        ctx.arc(0, -1, 7, Math.PI, 0);
+        ctx.lineTo(7, 6);
+        for (var i = 0; i < 3; i++) {
+            var wob = Math.sin(performance.now() / 120 + i) * 1.2;
+            ctx.lineTo(7 - (i * 2 + 1) * 2.33, 6 - 2.4 + wob);
+            ctx.lineTo(7 - (i * 2 + 2) * 2.33, 6 + wob);
+        }
+        ctx.lineTo(-7, 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+
+    if (fright && !g.eaten) {
+        ctx.fillStyle = blinking ? '#ff6b6b' : '#ffffff';
+        ctx.fillRect(-4, -3, 2.5, 2.5);
+        ctx.fillRect(1.5, -3, 2.5, 2.5);
+        ctx.fillRect(-4, 2, 8, 1.2);
+    } else {
+        var d = DIRS[g.dir] || [0, 0];
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(-3, -2, 2.8, 0, RE.TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(3, -2, 2.8, 0, RE.TAU); ctx.fill();
+        ctx.fillStyle = '#12224a';
+        ctx.beginPath(); ctx.arc(-3 + d[0] * 1.2, -2 + d[1] * 1.2, 1.4, 0, RE.TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(3 + d[0] * 1.2, -2 + d[1] * 1.2, 1.4, 0, RE.TAU); ctx.fill();
+    }
+    ctx.restore();
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '吃光所有豆子過關。四隻幽靈各有不同的追擊演算法，並會週期性退回角落——注意畫面上方的模式提示。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

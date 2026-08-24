@@ -1,0 +1,1650 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 泡泡小龍</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   泡泡小龍 — 致敬 Bubble Bobble (Taito, 1986)
+   --------------------------------------------------------------------------
+   復刻的四個重點：
+   1. **把「擊敗敵人」拆成兩個動作**：先吐泡泡困住，再撞破泡泡。
+      拆開之後，玩家多了一個原本不存在的選擇——要一隻一隻穩穩處理，
+      還是先困住一整排再一口氣連鎖戳破。這是本作全部策略的來源。
+   2. **連鎖倍率**：1.5 秒內連續戳破，分數 1000→2000→4000→8000…，
+      掉落的水果也跟著升級。貪心與風險被綁在同一個動作上。
+   3. **單畫面 + 單向平台**：整關在一個畫面內，往上跳會穿過平台、
+      往下落會站上去。移動的自由度就是這類遊戲的主要樂趣。
+   4. **憤怒機制**：關卡計時歸零後全體敵人變色、加速、朝玩家跳躍追擊。
+      原作用這個設計禁止玩家龜縮，本作沿用並加上明確的預告。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'bubble_bobble',
+    title: '泡泡小龍',
+    tagline: '把一個動詞拆成兩個，就長出了策略',
+    original: 'Bubble Bobble (Taito, 1986)',
+    decade: '80s', year: 1986, platform: '大型街機', genre: '單畫面平台',
+    developer: 'Taito · 三辻富貴朗（MTJ）', bgm: '80s',
+    width: 448, height: 400,
+    lives: 3,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'best',  label: 'BEST' },
+        { key: 'stage', label: '關卡', init: 1 },
+        { key: 'chain', label: '連鎖', init: 0 }
+    ],
+    touch: 'dpad+ab', labelA: '跳', labelB: '吐泡泡',
+    maxScale: 2,
+    controls: [
+        { keys: ['←', '→'], desc: '移動' },
+        { keys: ['空白', 'Z', '↑'], desc: '跳躍（按越久跳越高）' },
+        { keys: ['X', 'K', 'Shift'], desc: '吐泡泡' },
+        { keys: ['↓', '空白'], desc: '從單向平台往下穿' }
+    ],
+    howto: '吐泡泡把敵人<strong>困住</strong>，再撞上泡泡把它<strong>戳破</strong>。' +
+           '困住的泡泡放太久，敵人會掙脫而且變得更兇（泡泡會先閃爍警告）。' +
+           '<strong>1.5 秒內連續戳破多個泡泡，分數會翻倍</strong>：' +
+           '1000 → 2000 → 4000 → 8000…，水果也會跟著升級。' +
+           '關卡中會飄出<strong>水、火、電</strong>三種特殊泡泡，戳破可以清場。' +
+           '拖太久所有敵人會暴怒追擊。清空敵人即可過關，共八個房間。',
+    lesson: {
+        verb: '先吐泡泡困住敵人，再用身體撞破泡泡；把一次攻擊拆成控制與處決兩個動作。',
+        innovation: '敵人被命中後不立即消失，而是變成會上飄、會過期的目標；玩家因此能選擇立刻收掉，或冒險聚集多隻後連鎖得分。',
+        mission: '先困住一隻敵人但不要立刻撞破，觀察外圈倒數與閃紅警告；下一次則在 1.5 秒內連續撞破兩顆困敵泡泡，確認倍率是否上升。',
+        evolution: '《Bubble Bobble》把敵人變成可暫存的泡泡目標；《Puzzle Bobble》再把泡泡抽離成顏色配對棋盤，從平台動作演化為瞄準式益智遊戲。',
+        reflection: '如果吐出的泡泡一碰到敵人就直接擊倒，連鎖、風險與單畫面走位還會剩下哪些選擇？'
+    },
+    design: '《Bubble Bobble》把「命中敵人」和「消滅敵人」拆成兩步：泡泡先限制敵人，再由玩家親自撞破。' +
+            '這段短暫的中間狀態讓同一隻敵人同時成為待處理目標、連鎖分數的儲存單位，以及即將掙脫的風險。' +
+            '單向平台讓玩家能快速穿梭上下層，於是問題不只是準不準，而是何時靠近、先處理哪一顆、要不要為倍率多等一秒。' +
+            '本站以外圈倒數環和「困」標記強化狀態辨識，但不延長困敵時間；現代介面只把八秒內原本就存在的取捨說清楚。' +
+            '對照本站《Donkey Kong》的碰觸即避讓，泡泡讓敵人暫時變成可安排順序的資源。',
+    history: 'Taito 官方資料記載，《Bubble Bobble》於 1986 年首先登上大型街機，由 Taito 企劃、開發與販售。' +
+             '玩家操作被詛咒變成泡泡龍的 Bub 與 Bob，把敵人困進泡泡再戳破，朝洞窟第 100 層前進；原作也支援兩人合作。' +
+             '系列其後跨越多種家用平台並衍生續作；1994 年《Puzzle Bobble》則把泡泡元素改造成另一條動作益智支系。',
+    sources: [
+        { label: 'Taito：《Bubble Bobble》系列官方入口與 1986 年沿革', url: 'https://taito.co.jp/bub' },
+        { label: 'Taito：《Bubble Bobble 4 Friends》原作介紹', url: 'https://www.taito.co.jp/en/BB4F/console' },
+        { label: 'Taito：《Final Bubble Bobble》玩法與合作資料', url: 'https://www.taito.co.jp/mob/0000400140' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(650);
+var FT = new RE.FloatText();
+
+// 第九批正式候選美術：載入失敗時保留原本程序圖形，不影響玩法與碰撞。
+var BUBBLE_ART = { image: new Image(), manifest: null };
+BUBBLE_ART.image.src = '../../assets/games/bubble_bobble/arcade-pixel-atlas.png';
+fetch('../../assets/games/bubble_bobble/arcade-pixel-manifest.json')
+    .then(function (r) { return r.json(); })
+    .then(function (m) { BUBBLE_ART.manifest = m; })
+    .catch(function () { BUBBLE_ART.manifest = null; });
+
+function drawBubbleAsset(name, x, y, w, h, flip, rotation, alpha) {
+    var m = BUBBLE_ART.manifest;
+    if (!m || !m.assets || !m.assets[name] || !BUBBLE_ART.image.complete ||
+        !BUBBLE_ART.image.naturalWidth) return false;
+    var a = m.assets[name];
+    ctx.save();
+    ctx.translate(x, y);
+    if (rotation) ctx.rotate(rotation);
+    if (flip) ctx.scale(-1, 1);
+    if (alpha !== undefined) ctx.globalAlpha *= alpha;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(BUBBLE_ART.image, a.x, a.y, a.w, a.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+}
+
+// ======================================================================
+// 場地座標系：整個關卡在一個畫面內，不捲動
+// ======================================================================
+var T = 16;                      // 磚塊尺寸
+var COLS = 28, ROWS = 20;        // 28×20 格
+var FW = COLS * T, FH = ROWS * T;   // 448 × 320
+var OX = 0, OY = 40;             // 上方留 40px 給提示與憤怒倒數條
+
+var CHAIN_WINDOW = 1.5;          // 連鎖判定窗口（秒）
+var TRAP_TIME = 8.0;             // 泡泡困住敵人的持續時間
+var TRAP_WARN = 2.6;             // 剩下多久開始閃爍警告
+
+/* 閃電泡泡的水平射程（單側，像素）。
+   第一版沒有這個限制，閃電只比對 Y 座標，等於橫掃整整 448px 的畫面寬——
+   後段房間敵人多，一顆就能清掉一整排並拉出 ×32 倍率，
+   「先困一排再連鎖」的策略層反而被特殊泡泡蓋過去。
+   限成單側 7 格（112px，畫面寬的一半），玩家得先把敵人趕到同一側才吃得到大倍率。 */
+var BOLT_REACH = 7 * T;
+var BOLT_GROW = 0.12;            // 從破裂點擴張到滿射程所需秒數（判定窗也是這段）
+
+/* ----------------------------------------------------------------------
+   關卡圖例
+     #  實心磚（外框、地板、牆）      =  單向平台（可從下方跳穿）
+     .  空白                          P  玩家出生點
+     1  滾滾怪（慢速巡邏）            2  彈跳鬼（會跳）      3  疾風怪（快）
+   八個房間的造型刻意做出差異：對稱、雙塔、階梯、孤島、倒 U、蜂巢、夾層、頂端。
+   ---------------------------------------------------------------------- */
+var LEVELS = [
+    {
+        name: '第一層', hint: '吐泡泡困住敵人，再撞上去戳破它。', rage: 45, special: 11,
+        rows: [
+            '############################',
+            '#..........................#',
+            '#.....1..............1.....#',
+            '#..=========....=========..#',
+            '#..........................#',
+            '#..........................#',
+            '#.......==============.....#',
+            '#..........................#',
+            '#..........................#',
+            '#..=========....=========..#',
+            '#..........................#',
+            '#..........................#',
+            '#.......==============.....#',
+            '#..........................#',
+            '#..........................#',
+            '#..=========....=========..#',
+            '#..........................#',
+            '#..........................#',
+            '#..P.......................#',
+            '############################'
+        ]
+    },
+    {
+        name: '雙塔', hint: '兩座塔各自獨立。先把一邊清乾淨再過去。', rage: 42, special: 11,
+        rows: [
+            '############################',
+            '#...1..................1...#',
+            '#..======..........======..#',
+            '#..........................#',
+            '#..........................#',
+            '#..======..........======..#',
+            '#..........................#',
+            '#..........................#',
+            '#..======..........======..#',
+            '#..........................#',
+            '#............1.............#',
+            '#.......============.......#',
+            '#..........................#',
+            '#..........................#',
+            '#..........................#',
+            '#..======..........======..#',
+            '#..........................#',
+            '#..........................#',
+            '#.............P............#',
+            '############################'
+        ]
+    },
+    {
+        name: '階梯', hint: '泡泡會往上飄。往高處逃，泡泡會自己追上來。', rage: 40, special: 10,
+        rows: [
+            '############################',
+            '#..........................#',
+            '#.....................2....#',
+            '#....................=====.#',
+            '#..........................#',
+            '#...............1..........#',
+            '#..............=====.......#',
+            '#..........................#',
+            '#.........1................#',
+            '#........=====.............#',
+            '#..........................#',
+            '#...1......................#',
+            '#..=====...................#',
+            '#..........................#',
+            '#..........................#',
+            '#.......==============.....#',
+            '#..........................#',
+            '#..........................#',
+            '#..P.......................#',
+            '############################'
+        ]
+    },
+    {
+        name: '孤島', hint: '中央那塊浮島就是戰場。把敵人逼上去，再一次收乾淨。', rage: 38, special: 10,
+        rows: [
+            '############################',
+            '#..........................#',
+            '#..........................#',
+            '#..2....................2..#',
+            '#.====................====.#',
+            '#..........................#',
+            '#..........................#',
+            '#..........1...1...........#',
+            '#.......==============.....#',
+            '#..........................#',
+            '#..........................#',
+            '#..........1...............#',
+            '#........==========........#',
+            '#..........................#',
+            '#..........................#',
+            '#.====................====.#',
+            '#..........................#',
+            '#..........................#',
+            '#.............P............#',
+            '############################'
+        ]
+    },
+    {
+        name: '倒 U', hint: '頂端那條長廊是連鎖的最佳舞台。', rage: 36, special: 9,
+        rows: [
+            '############################',
+            '#..3....................3..#',
+            '#.========================.#',
+            '#..........................#',
+            '#..1....................1..#',
+            '#.=====..............=====.#',
+            '#..........................#',
+            '#..1....................1..#',
+            '#.=====..............=====.#',
+            '#..........................#',
+            '#..........................#',
+            '#.=====..............=====.#',
+            '#..........................#',
+            '#..........................#',
+            '#..........................#',
+            '#........==========........#',
+            '#..........................#',
+            '#..........................#',
+            '#.............P............#',
+            '############################'
+        ]
+    },
+    {
+        name: '蜂巢', hint: '平台很密，泡泡容易卡在夾縫。善用電泡泡。', rage: 34, special: 8,
+        rows: [
+            '############################',
+            '#..2....2....2....2........#',
+            '#.====..====..====..====...#',
+            '#..........................#',
+            '#...====..====..====..====.#',
+            '#..........................#',
+            '#.====..====..====..====...#',
+            '#..3....................3..#',
+            '#...====..====..====..====.#',
+            '#..........................#',
+            '#.====..====..====..====...#',
+            '#..........................#',
+            '#...====..====..====..====.#',
+            '#..........................#',
+            '#..........................#',
+            '#.====..====..====..====...#',
+            '#..........................#',
+            '#..........................#',
+            '#.............P............#',
+            '############################'
+        ]
+    },
+    {
+        name: '夾層', hint: '上下兩層分開打。火泡泡在窄夾層裡特別有效。', rage: 32, special: 8,
+        rows: [
+            '############################',
+            '#...1.......2.......1......#',
+            '#.========================.#',
+            '#..........................#',
+            '#...3..................3...#',
+            '#.=========......=========.#',
+            '#..........................#',
+            '#.....2..........2.........#',
+            '#..===========..===========#',
+            '#..........................#',
+            '#..........................#',
+            '#.====..====..====..====...#',
+            '#..........................#',
+            '#..........................#',
+            '#..1.......................#',
+            '#.=====..............=====.#',
+            '#..........................#',
+            '#..........................#',
+            '#.............P............#',
+            '############################'
+        ]
+    },
+    {
+        name: '頂端', hint: '最後一關。八隻全是快腳，別想一隻一隻慢慢處理。', rage: 30, special: 7,
+        rows: [
+            '############################',
+            '#..3....3........3....3....#',
+            '#.========================.#',
+            '#..........................#',
+            '#..2..................2....#',
+            '#.=====..........=====.....#',
+            '#..........................#',
+            '#..........2...............#',
+            '#........==========........#',
+            '#..........................#',
+            '#..2.......................#',
+            '#.=====..............=====.#',
+            '#..........................#',
+            '#..........................#',
+            '#..........................#',
+            '#....==============........#',
+            '#..........................#',
+            '#..........................#',
+            '#.............P............#',
+            '############################'
+        ]
+    }
+];
+
+// ---- 敵人設定：一個 speed + 一個 jump 機率就撐起整條難度曲線 ----
+var ENEMY_DEF = {
+    walk: { key: 'walk', name: '滾滾怪', color: '#ff9ebb', dark: '#a83f68', speed: 34, jump: 0.06 },
+    jump: { key: 'jump', name: '彈跳鬼', color: '#7dd3fc', dark: '#2f6f96', speed: 42, jump: 0.55 },
+    fast: { key: 'fast', name: '疾風怪', color: '#c084fc', dark: '#6b34a8', speed: 66, jump: 0.22 }
+};
+var ANGRY_COLOR = '#ff5252', ANGRY_DARK = '#8c1f1f';
+
+// ---- 水果：連鎖越長，掉出來的水果越高級 ----
+var FRUITS = [
+    { name: '櫻桃', color: '#ff6b6b', value: 300 },
+    { name: '香蕉', color: '#ffd166', value: 700 },
+    { name: '葡萄', color: '#c084fc', value: 1500 },
+    { name: '甜瓜', color: '#70e4b5', value: 3000 },
+    { name: '寶石', color: '#7dd3fc', value: 6000 },
+    { name: '皇冠', color: '#ffe066', value: 12000 }
+];
+
+// ---- 平台跳躍手感常數（這一組數字就是手感本身）----
+var PHYS = {
+    accel: 780, accelAir: 560,
+    friction: 1150, frictionAir: 240,
+    maxSpd: 120,
+    gravity: 1350,        // 上升時
+    gravityFall: 1950,    // 下墜時更重：跳起來才「俐落」而不是「飄」
+    // 跳躍最高點 = v²/(2g) = 480²/2700 ≈ 85px（5.3 格）。
+    // 八張圖經程式驗算後最大垂直落差都是 4 格 = 64px，留 21px（33%）餘裕，
+    // 不必「按到滿」也上得去。原本 -455 只有 76.7px、餘裕 12px，
+    // 等於每一次爬升都要按好按滿，新手會一直卡在同一層。
+    jumpVel: -480,
+    jumpCut: 0.45,        // 放開跳躍鍵時保留的上升速度比例
+    coyote: 0.10,         // 土狼時間
+    buffer: 0.15,         // 輸入緩衝
+    maxFall: 430
+};
+var E_GRAVITY = 1600, E_JUMP = -430;
+
+var s = {};
+
+// ======================================================================
+// 關卡載入
+// ======================================================================
+function reset() {
+    s = { level: 1, lives: 3, score: 0, over: false };
+    loadLevel(1);
+    G.setStat('score', 0);
+    G.setStat('chain', 0);
+    G.setLives(3);
+}
+
+function loadLevel(n) {
+    var cfg = LEVELS[Math.min(n - 1, LEVELS.length - 1)];
+    s.cfg = cfg;
+    s.level = n;
+    s.map = [];
+    s.enemies = [];
+    s.bubbles = [];
+    s.fruits = [];
+    s.hazards = [];
+    s.bolts = [];
+    s.chain = 0; s.chainT = 0;
+    s.clearTimer = 0;
+    s.rageT = cfg.rage;
+    s.raged = false; s.rageWarned = false;
+    s.specialT = cfg.special * 0.6;
+    s.time = 0;
+    var spawn = { x: 3 * T, y: 17 * T };
+
+    for (var r = 0; r < ROWS; r++) {
+        s.map[r] = [];
+        for (var c = 0; c < COLS; c++) {
+            var ch = cfg.rows[r].charAt(c);
+            s.map[r][c] = ch === '#' ? 1 : (ch === '=' ? 2 : 0);
+            if (ch === 'P') spawn = { x: c * T, y: r * T };
+            else if (ch === '1') s.enemies.push(makeEnemy('walk', c, r));
+            else if (ch === '2') s.enemies.push(makeEnemy('jump', c, r));
+            else if (ch === '3') s.enemies.push(makeEnemy('fast', c, r));
+        }
+    }
+    s.spawn = spawn;
+    spawnPlayer();
+    G.setStat('stage', n);
+    G.setStat('chain', 0);
+}
+
+function spawnPlayer() {
+    s.p = {
+        x: s.spawn.x + 2, y: s.spawn.y, w: 12, h: 15,
+        vx: 0, vy: 0, face: 1, grounded: false, onOneWay: false,
+        coyote: 0, jumping: false, dropThrough: 0, ignoreOneWay: false,
+        shootCD: 0, invuln: 1.6, dead: 0, anim: 0, puff: 0
+    };
+}
+
+function makeEnemy(type, c, r) {
+    var d = ENEMY_DEF[type];
+    return {
+        def: d, x: c * T + 2, y: r * T + 1, w: 13, h: 14,
+        vx: 0, vy: 0, dir: Math.random() < 0.5 ? -1 : 1,
+        grounded: false, think: RE.rand(0.2, 1.0),
+        angry: false, trapped: null, anim: RE.rand(0, 6)
+    };
+}
+
+// ======================================================================
+// 地形查詢與碰撞
+// ======================================================================
+function tileAt(c, r) {
+    if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return 0;
+    return s.map[r][c];
+}
+
+function blockedAt(px, py) { return tileAt(Math.floor(px / T), Math.floor(py / T)) !== 0; }
+
+/**
+ * 位移並解算地形碰撞，回傳是否著地。
+ *
+ * 兩個重點：
+ * 1. **X、Y 分兩階段解算**。若兩軸一起移動再一起解算，落地那一幀角色
+ *    已經陷進地板，水平解算會誤判成撞牆而把角色從側面推開。
+ * 2. **單向平台**：只有在「正在下落」且「上一幀的腳底還在平台上緣之上」
+ *    時才判定碰撞，所以往上跳會直接穿過去。
+ */
+function moveAndCollide(o, dt) {
+    var grounded = false, r, c, t;
+    o.hitWall = false;
+    o.onOneWay = false;
+
+    // ---- 先解 X（只有實心磚會擋）----
+    o.x += o.vx * dt;
+    var r0 = Math.floor(o.y / T), r1 = Math.floor((o.y + o.h - 1) / T);
+    var c0 = Math.floor(o.x / T), c1 = Math.floor((o.x + o.w - 1) / T);
+    for (r = r0; r <= r1; r++) {
+        for (c = c0; c <= c1; c++) {
+            if (tileAt(c, r) !== 1) continue;
+            if (o.vx > 0) { o.x = c * T - o.w; o.vx = 0; o.hitWall = true; }
+            else if (o.vx < 0) { o.x = (c + 1) * T; o.vx = 0; o.hitWall = true; }
+        }
+    }
+
+    // ---- 再解 Y ----
+    var prevBottom = o.y + o.h;
+    o.y += o.vy * dt;
+    c0 = Math.floor(o.x / T); c1 = Math.floor((o.x + o.w - 1) / T);
+    r0 = Math.floor(o.y / T); r1 = Math.floor((o.y + o.h - 1) / T);
+    for (r = r0; r <= r1; r++) {
+        for (c = c0; c <= c1; c++) {
+            t = tileAt(c, r);
+            if (!t) continue;
+            if (t === 2) {
+                if (o.ignoreOneWay) continue;
+                if (o.vy <= 0) continue;
+                if (prevBottom > r * T + 1) continue;   // 上一幀已在平台內部，不算踩上
+                o.y = r * T - o.h; o.vy = 0; grounded = true; o.onOneWay = true;
+            } else {
+                if (o.vy > 0) { o.y = r * T - o.h; o.vy = 0; grounded = true; }
+                else if (o.vy < 0) { o.y = (r + 1) * T; o.vy = 0; }
+            }
+        }
+    }
+
+    /* 貼地探測。
+       上面的掃描用 (y + h - 1) 取列號，代表「腳底剛好貼齊磚塊上緣」時不算重疊，
+       於是站著不動的角色會每幀往下滲 0.5px、每三幀被推回一次——
+       grounded 在 true/false 之間閃爍，落地音效與粒子會不停重播。
+       這裡補一次「腳底 1px 內有地板就算著地並吸附」，讓靜止狀態真正穩定。 */
+    if (!grounded && o.vy >= 0) {
+        var fr = Math.floor((o.y + o.h + 1) / T);
+        for (c = c0; c <= c1; c++) {
+            t = tileAt(c, fr);
+            if (t === 1 || (t === 2 && !o.ignoreOneWay && o.y + o.h <= fr * T + 1)) {
+                o.y = fr * T - o.h; o.vy = 0; grounded = true;
+                if (t === 2) o.onOneWay = true;
+                break;
+            }
+        }
+    }
+    return grounded;
+}
+
+/** 掉出畫面時上下環繞——單畫面遊戲不該因為掉下去而死 */
+function wrapY(o) {
+    if (o.y > FH + 4) o.y = -o.h;
+    else if (o.y + o.h < -4) o.y = FH;
+}
+
+// ======================================================================
+// 主更新
+// ======================================================================
+function update(dt) {
+    if (s.over) return;
+
+    // 過關慶祝空窗期：凍結玩家與所有危險物，避免「已過關卻莫名少一條命」
+    if (s.clearTimer > 0) {
+        s.clearTimer -= dt;
+        P.update(dt); FT.update(dt);
+        if (s.clearTimer <= 0) nextLevel();
+        return;
+    }
+
+    var p = s.p;
+    if (p.dead > 0) {
+        p.dead -= dt;
+        p.vy += PHYS.gravityFall * dt;
+        p.y += p.vy * dt;
+        P.update(dt); FT.update(dt);
+        if (p.dead <= 0) afterDeath();
+        return;
+    }
+
+    s.time += dt;
+    updateRage(dt);
+    updatePlayer(dt);
+    updateBubbles(dt);
+    if (s.p.dead > 0) { P.update(dt); FT.update(dt); return; }
+    updateEnemies(dt);
+    if (s.p.dead > 0) { P.update(dt); FT.update(dt); return; }
+    updateHazards(dt);
+    updateFruits(dt);
+
+    // 連鎖窗口
+    if (s.chainT > 0) {
+        s.chainT -= dt;
+        if (s.chainT <= 0) { s.chain = 0; G.setStat('chain', 0); }
+    }
+
+    // 特殊泡泡定期飄出
+    s.specialT -= dt;
+    if (s.specialT <= 0) { spawnSpecial(); s.specialT = s.cfg.special; }
+
+    if (s.enemies.length === 0) { clearLevel(); return; }
+
+    P.update(dt);
+    FT.update(dt);
+}
+
+// ======================================================================
+// 玩家
+// ======================================================================
+function updatePlayer(dt) {
+    var p = s.p;
+    var ax = RE.Input.axisX();
+
+    if (ax !== 0) {
+        var a = p.grounded ? PHYS.accel : PHYS.accelAir;
+        if (ax * p.vx < 0) a *= 1.9;          // 反向輸入給額外煞車，轉向才俐落
+        p.vx = RE.approach(p.vx, ax * PHYS.maxSpd, a * dt);
+        p.face = ax;
+    } else {
+        p.vx = RE.approach(p.vx, 0, (p.grounded ? PHYS.friction : PHYS.frictionAir) * dt);
+    }
+
+    // 土狼時間
+    if (p.grounded) p.coyote = PHYS.coyote; else p.coyote -= dt;
+
+    // 跳躍：輸入緩衝 + 土狼時間（↑ 與 A 都算）
+    var wantJump = RE.Input.buffered('a', PHYS.buffer) || RE.Input.buffered('up', PHYS.buffer);
+    if (wantJump && p.coyote > 0 && !p.jumping) {
+        RE.Input.consumeBuffer('a');
+        RE.Input.consumeBuffer('up');
+        if (RE.Input.down('down') && p.onOneWay) {
+            // 按住 ↓ 再跳 = 從單向平台往下穿。
+            // 這個秒數只要「夠脫離腳下這一層」就好：p.y += 3 之後
+            // moveAndCollide 的 prevBottom 判定已經會自動忽略腳下平台。
+            // 原本設 0.22 秒，等於忽略單向平台的時間內可以自由落體 56px，
+            // 玩家會連下面 32～48px 的那一層也一起穿過去，一次掉三到七列。
+            p.dropThrough = 0.10;
+            p.y += 3; p.vy = 40;
+            RetroAudio.play('blip');
+        } else {
+            p.vy = PHYS.jumpVel;
+            p.jumping = true; p.grounded = false; p.coyote = 0;
+            RetroAudio.play('jump');
+            P.burst(p.x + p.w / 2, p.y + p.h, 6, {
+                angle: Math.PI / 2, spread: 1.2, colors: ['#bff7e0', '#7ee7c5'],
+                speedMin: 25, speedMax: 80, gravity: 240, lifeMin: 0.12, lifeMax: 0.3, sizeMax: 3
+            });
+        }
+    }
+    // 可變跳躍高度
+    if (p.jumping && !(RE.Input.down('a') || RE.Input.down('up')) && p.vy < 0) {
+        p.vy *= PHYS.jumpCut;
+        p.jumping = false;
+    }
+    if (p.vy >= 0) p.jumping = false;
+
+    p.vy += (p.vy < 0 ? PHYS.gravity : PHYS.gravityFall) * dt;
+    if (p.vy > PHYS.maxFall) p.vy = PHYS.maxFall;
+
+    if (p.dropThrough > 0) p.dropThrough -= dt;
+    p.ignoreOneWay = p.dropThrough > 0;
+
+    var was = p.grounded;
+    p.grounded = moveAndCollide(p, dt);
+    wrapY(p);
+    p.x = RE.clamp(p.x, 0, FW - p.w);
+
+    if (p.grounded && !was) {
+        RetroAudio.play('land');
+        P.burst(p.x + p.w / 2, p.y + p.h, 5, {
+            angle: -Math.PI / 2, spread: 1.4, colors: ['#8fd6bf'],
+            speedMin: 18, speedMax: 60, gravity: 220, lifeMin: 0.1, lifeMax: 0.24, sizeMax: 2.5
+        });
+    }
+
+    p.anim += Math.abs(p.vx) * dt * 0.1;
+    if (p.invuln > 0) p.invuln -= dt;
+    if (p.puff > 0) p.puff -= dt;
+
+    // 吐泡泡
+    p.shootCD -= dt;
+    if (RE.Input.pressed('b') && p.shootCD <= 0) shootBubble();
+}
+
+function shootBubble() {
+    var p = s.p;
+    p.shootCD = 0.26;
+    p.puff = 0.18;
+    s.bubbles.push({
+        x: p.x + p.w / 2 + p.face * 11, y: p.y + p.h / 2 - 1, r: 7.5,
+        vx: p.face * 210, fly: 0.4, t: RE.rand(0, 6), age: 0,
+        life: 9.5, enemy: null, trapT: 0, pop: 0, special: null, dead: false
+    });
+    RetroAudio.play('shoot');
+    RE.juice.shake(0.055);
+    P.burst(p.x + p.w / 2 + p.face * 8, p.y + p.h / 2, 5, {
+        angle: p.face > 0 ? 0 : Math.PI, spread: 0.5,
+        colors: ['#bff7e0', '#ffffff'], speedMin: 40, speedMax: 120,
+        gravity: 0, drag: 0.86, lifeMin: 0.1, lifeMax: 0.24, sizeMax: 3, glow: true
+    });
+}
+
+// ======================================================================
+// 泡泡：射出 → 上飄 → 困敵 → 戳破
+// ======================================================================
+function spawnSpecial() {
+    var kinds = ['water', 'fire', 'thunder'];
+    var kind = RE.pick(kinds);
+    var fromLeft = Math.random() < 0.5;
+    s.bubbles.push({
+        x: fromLeft ? T + 6 : FW - T - 6,
+        y: FH - T - RE.rand(10, 40), r: 9,
+        vx: (fromLeft ? 1 : -1) * 120, fly: 0.5, t: RE.rand(0, 6), age: 0,
+        life: 16, enemy: null, trapT: 0, pop: 0, special: kind, dead: false
+    });
+    RetroAudio.play('powerup');
+    FT.add(FW / 2, FH - 40, '特殊泡泡出現！', { color: '#7dd3fc', size: 14, life: 1.3 });
+}
+
+function updateBubbles(dt) {
+    var p = s.p;
+    var prect = { x: p.x, y: p.y, w: p.w, h: p.h };
+
+    for (var i = s.bubbles.length - 1; i >= 0; i--) {
+        var b = s.bubbles[i];
+        b.t += dt; b.age += dt;
+        if (b.pop > 0) b.pop -= dt;
+
+        // ---- 水平：射出階段快速前進，之後轉為正弦飄動 ----
+        if (b.fly > 0) {
+            b.fly -= dt;
+            var nx = b.x + b.vx * dt;
+            if (blockedAt(nx + RE.sign(b.vx) * b.r, b.y)) { b.fly = 0; b.vx = 0; }
+            else b.x = nx;
+        } else {
+            var drift = Math.sin(b.t * 2.4) * 26;
+            var dx = drift * dt;
+            if (!blockedAt(b.x + RE.sign(dx) * b.r, b.y)) b.x += dx;
+        }
+
+        // ---- 垂直：緩緩上升，碰到天花板／平台底面就停住 ----
+        if (b.fly <= 0) {
+            var rise = (b.enemy ? 26 : 34) * dt;
+            if (blockedAt(b.x, b.y - b.r - rise)) {
+                var top = Math.floor((b.y - b.r - rise) / T);
+                b.y = (top + 1) * T + b.r + 0.5;
+            } else {
+                b.y -= rise;
+            }
+        }
+        b.x = RE.clamp(b.x, b.r, FW - b.r);
+
+        // ---- 困敵 ----
+        if (!b.enemy && !b.special && b.age > 0.05) {
+            for (var j = 0; j < s.enemies.length; j++) {
+                var e = s.enemies[j];
+                if (e.trapped) continue;
+                if (RE.dist(b.x, b.y, e.x + e.w / 2, e.y + e.h / 2) < b.r + 8) {
+                    trapEnemy(b, e);
+                    break;
+                }
+            }
+        }
+
+        // ---- 困住的計時：時間到敵人掙脫且變兇 ----
+        if (b.enemy) {
+            b.trapT -= dt;
+            b.enemy.x = b.x - b.enemy.w / 2;
+            b.enemy.y = b.y - b.enemy.h / 2;
+            if (b.trapT <= 0) { escapeEnemy(b); s.bubbles.splice(i, 1); continue; }
+        } else {
+            b.life -= dt;
+            if (b.life <= 0) {
+                P.burst(b.x, b.y, 6, { colors: ['#bff7e0', '#ffffff'], speedMin: 20, speedMax: 70,
+                    gravity: -30, drag: 0.9, lifeMin: 0.15, lifeMax: 0.3, sizeMax: 2.5 });
+                s.bubbles.splice(i, 1);
+                continue;
+            }
+        }
+
+        // ---- 玩家撞破 ----
+        if (p.dead <= 0 && b.age > 0.28 &&
+            RE.aabb(prect, { x: b.x - b.r, y: b.y - b.r, w: b.r * 2, h: b.r * 2 })) {
+            s.bubbles.splice(i, 1);
+            if (b.enemy) popTrapped(b);
+            else if (b.special) triggerSpecial(b);
+            else {
+                addScore(10);
+                RetroAudio.play('blip');
+                RE.juice.hitstop(0.02);       // 空泡泡也要有一點手感，回饋才連續
+                RE.juice.shake(0.05);
+                P.burst(b.x, b.y, 8, { colors: ['#bff7e0', '#ffffff'], speedMin: 40, speedMax: 120,
+                    gravity: 40, drag: 0.88, lifeMin: 0.15, lifeMax: 0.35, sizeMax: 3, glow: true });
+            }
+            if (s.p.dead > 0) return;
+        }
+    }
+}
+
+function trapEnemy(b, e) {
+    b.enemy = e;
+    b.trapT = TRAP_TIME;
+    b.fly = 0; b.vx = 0;
+    b.pop = 0.25;
+    b.r = 10;
+    e.trapped = b;
+    e.vx = 0; e.vy = 0;
+    RE.juice.hitstop(0.03);
+    RE.juice.shake(0.09);
+    RetroAudio.play('pickup');
+    P.ring(b.x, b.y, '#bff7e0', 26);
+    P.burst(b.x, b.y, 10, {
+        colors: ['#bff7e0', '#ffffff', e.def.color], speedMin: 40, speedMax: 130,
+        gravity: 0, drag: 0.87, lifeMin: 0.15, lifeMax: 0.35, sizeMax: 3, glow: true
+    });
+}
+
+function escapeEnemy(b) {
+    var e = b.enemy;
+    e.trapped = null;
+    e.x = b.x - e.w / 2;
+    e.y = b.y - e.h / 2;
+    e.vy = 60;
+    e.think = 0;
+    makeAngry(e);
+    RetroAudio.play('error');
+    RE.juice.hitstop(0.05);
+    RE.juice.shake(0.16);
+    RE.juice.rumble(0.4, 0.12);
+    RE.juice.flash('rgba(255,82,82,0.22)', 0.1);
+    FT.add(b.x, b.y - 14, '掙脫了！', { color: ANGRY_COLOR, size: 14, life: 1 });
+    P.burst(b.x, b.y, 16, {
+        colors: [ANGRY_COLOR, '#ffd166', '#ffffff'], speedMin: 60, speedMax: 190,
+        gravity: 60, drag: 0.9, lifeMin: 0.2, lifeMax: 0.45, sizeMax: 4, glow: true
+    });
+}
+
+/** 玩家撞破困著敵人的泡泡：本作最核心的爽點 */
+function popTrapped(b) {
+    var e = b.enemy;
+    e.trapped = null;
+    chainKill(e, b.x, b.y);
+}
+
+// ======================================================================
+// 連鎖擊殺：泡泡戳破與特殊泡泡的清場共用同一套倍率
+// ======================================================================
+function chainKill(e, x, y) {
+    var idx = s.enemies.indexOf(e);
+    if (idx >= 0) s.enemies.splice(idx, 1);
+
+    s.chain = (s.chainT > 0 ? s.chain + 1 : 1);
+    s.chainT = CHAIN_WINDOW;
+    var n = Math.min(s.chain, 6);
+    var val = 1000 * Math.pow(2, n - 1);
+    addScore(val);
+    G.setStat('chain', s.chain);
+
+    // ---- 回饋強度隨連鎖遞增 ----
+    RE.juice.hitstop(0.03 + n * 0.015);
+    RE.juice.shake(0.14 + n * 0.09);
+    RE.juice.punchZoom(0.02 + n * 0.012);
+    RE.juice.rumble(0.3 + n * 0.1, 0.1);
+    RetroAudio.play('combo', s.chain);
+    RetroAudio.play(n >= 3 ? 'heavyHit' : 'hit');
+    if (n >= 3) RE.juice.flash('rgba(255,224,102,' + (0.18 + n * 0.05) + ')', 0.09);
+    if (n >= 4) RE.juice.slowmo(0.35, 0.7);
+
+    P.burst(x, y, 14 + n * 9, {
+        colors: [e.def.color, '#ffffff', '#ffe066', '#bff7e0'],
+        speedMin: 60, speedMax: 130 + n * 45, gravity: 150,
+        drag: 0.9, lifeMin: 0.22, lifeMax: 0.55 + n * 0.06, sizeMin: 2, sizeMax: 4 + n
+    });
+    P.ring(x, y, '#ffe066', 26 + n * 10);
+
+    FT.add(x, y - 8, '+' + val, {
+        color: n >= 3 ? '#ffe066' : '#bff7e0', size: 13 + n * 4, life: 0.9 + n * 0.06
+    });
+    if (s.chain >= 2) {
+        FT.add(x, y - 26, s.chain + ' 連鎖！', {
+            color: '#ff9ebb', size: 13 + n * 3, life: 1.1, vy: -46
+        });
+    }
+
+    spawnFruit(x, y, n);
+}
+
+function spawnFruit(x, y, tier) {
+    var f = FRUITS[Math.min(tier - 1, FRUITS.length - 1)];
+    s.fruits.push({
+        x: x - 5, y: y - 5, w: 10, h: 10,
+        vx: RE.rand(-40, 40), vy: -110,
+        def: f, life: 9, t: RE.rand(0, 6)
+    });
+}
+
+function updateFruits(dt) {
+    var p = s.p;
+    var prect = { x: p.x, y: p.y, w: p.w, h: p.h };
+    for (var i = s.fruits.length - 1; i >= 0; i--) {
+        var f = s.fruits[i];
+        f.t += dt;
+        f.life -= dt;
+        if (f.life <= 0) { s.fruits.splice(i, 1); continue; }
+        f.vy += 1500 * dt;
+        if (f.vy > 380) f.vy = 380;
+        if (moveAndCollide(f, dt)) { f.vy = 0; f.vx = RE.approach(f.vx, 0, 400 * dt); }
+        wrapY(f);
+        f.x = RE.clamp(f.x, 0, FW - f.w);
+
+        if (p.dead <= 0 && RE.aabb(prect, f)) {
+            addScore(f.def.value);
+            RetroAudio.play('coin');
+            RE.juice.shake(0.07);
+            FT.add(f.x + 5, f.y - 6, f.def.name + ' +' + f.def.value,
+                   { color: f.def.color, size: 12, life: 0.85 });
+            P.burst(f.x + 5, f.y + 5, 12, {
+                colors: ['#ffe066', f.def.color, '#ffffff'], speedMin: 40, speedMax: 150,
+                gravity: 200, lifeMin: 0.2, lifeMax: 0.5, sizeMax: 3.5, glow: true
+            });
+            s.fruits.splice(i, 1);
+        }
+    }
+}
+
+// ======================================================================
+// 特殊泡泡的三種範圍效果
+// ======================================================================
+function triggerSpecial(b) {
+    var k = b.special;
+    if (k === 'water') {
+        for (var i = 0; i < 7; i++) {
+            s.hazards.push({
+                kind: 'water', x: b.x - 4 + RE.rand(-3, 3), y: b.y - 4 + i * 5,
+                w: 8, h: 8, vx: RE.rand(-20, 20), vy: 40 + i * 12,
+                dir: Math.random() < 0.5 ? -1 : 1, life: 4.2, t: 0, grounded: false
+            });
+        }
+        RetroAudio.play('splash');
+        RE.juice.flash('rgba(125,211,252,0.28)', 0.12);
+        FT.add(b.x, b.y - 18, '水流！', { color: '#7dd3fc', size: 16, life: 1.1 });
+    } else if (k === 'fire') {
+        for (var i2 = 0; i2 < 5; i2++) {
+            s.hazards.push({
+                kind: 'fire', x: b.x - 5 + (i2 - 2) * 9, y: b.y - 5,
+                w: 11, h: 11, vx: (i2 - 2) * 34, vy: -60,
+                life: 5.0, t: 0, grounded: false
+            });
+        }
+        RetroAudio.play('explosion');
+        RE.juice.flash('rgba(255,147,73,0.3)', 0.14);
+        FT.add(b.x, b.y - 18, '火焰帶！', { color: '#ff9349', size: 16, life: 1.1 });
+    } else {
+        s.bolts.push({ x: b.x, y: b.y, life: 0.42, max: 0.42 });
+        RetroAudio.play('laser');
+        RE.juice.flash('rgba(255,240,170,0.4)', 0.12);
+        FT.add(b.x, b.y - 18, '閃電！', { color: '#ffe066', size: 16, life: 1.1 });
+        P.sparks(b.x, b.y, 0, 14, '#ffe066');
+        P.sparks(b.x, b.y, Math.PI, 14, '#ffe066');
+    }
+    RE.juice.hitstop(0.05);
+    RE.juice.shake(0.3);
+    RE.juice.rumble(0.6, 0.16);
+    P.ring(b.x, b.y, '#ffffff', 60);
+}
+
+// 閃電目前擴張到的單側半徑：0.12 秒內從 0 長到 BOLT_REACH，之後維持不變
+function boltReach(bo) {
+    var t = RE.clamp((bo.max - bo.life) / BOLT_GROW, 0, 1);
+    return BOLT_REACH * t;
+}
+
+function updateHazards(dt) {
+    var i, j, e;
+
+    // ---- 水流與火焰 ----
+    for (i = s.hazards.length - 1; i >= 0; i--) {
+        var hz = s.hazards[i];
+        hz.t += dt;
+        hz.life -= dt;
+        if (hz.life <= 0) { s.hazards.splice(i, 1); continue; }
+
+        if (hz.kind === 'water') {
+            hz.vy += 1300 * dt;
+            if (hz.vy > 340) hz.vy = 340;
+            var wasG = hz.grounded;
+            hz.grounded = moveAndCollide(hz, dt);
+            if (hz.grounded) {
+                // 落到平台上後沿著平台流動，走到邊緣再往下掉
+                if (!wasG) {
+                    P.burst(hz.x + 4, hz.y + 8, 6, { colors: ['#7dd3fc', '#ffffff'],
+                        speedMin: 30, speedMax: 110, gravity: 300, lifeMin: 0.1, lifeMax: 0.3, sizeMax: 2.5 });
+                    RetroAudio.play('splash');
+                }
+                hz.vx = hz.dir * 135;
+            }
+            if (hz.hitWall) { hz.dir = -hz.dir; hz.vx = hz.dir * 135; }
+            wrapY(hz);
+            if (Math.random() < 0.5) {
+                P.spawn({ x: hz.x + 4, y: hz.y + 4, vx: RE.rand(-15, 15), vy: RE.rand(-10, 30),
+                    size: 3, sizeEnd: 0, color: '#7dd3fc', life: 0.3, gravity: 200, glow: true });
+            }
+        } else {
+            if (!hz.grounded) {
+                hz.vy += 1200 * dt;
+                hz.grounded = moveAndCollide(hz, dt);
+                if (hz.grounded) { hz.vx = 0; RetroAudio.play('drop'); }
+                wrapY(hz);
+            }
+            if (Math.random() < 0.7) {
+                P.spawn({ x: hz.x + 5 + RE.rand(-4, 4), y: hz.y + 8, vx: RE.rand(-12, 12), vy: RE.rand(-70, -25),
+                    size: RE.rand(2, 4), sizeEnd: 0, color: RE.pick(['#ff9349', '#ffe066', '#ff6b6b']),
+                    life: 0.35, gravity: -60, glow: true });
+            }
+        }
+
+        // 危險物擊殺敵人（同樣走連鎖倍率，鼓勵累積後一次清場）
+        for (j = s.enemies.length - 1; j >= 0; j--) {
+            e = s.enemies[j];
+            if (e.trapped) continue;
+            if (RE.aabb({ x: hz.x, y: hz.y, w: hz.w, h: hz.h }, { x: e.x, y: e.y, w: e.w, h: e.h })) {
+                chainKill(e, e.x + e.w / 2, e.y + e.h / 2);
+            }
+        }
+    }
+
+    // ---- 水平閃電 ----
+    for (i = s.bolts.length - 1; i >= 0; i--) {
+        var bo = s.bolts[i];
+        bo.life -= dt;
+        // 判定窗跟著擴張半徑走：閃電從破裂點往兩側竄，掃到哪裡才打到哪裡
+        if (bo.life > bo.max - BOLT_GROW) {
+            var reach = boltReach(bo);
+            for (j = s.enemies.length - 1; j >= 0; j--) {
+                e = s.enemies[j];
+                if (e.trapped) continue;
+                if (e.y < bo.y + 9 && e.y + e.h > bo.y - 9 &&
+                    e.x < bo.x + reach && e.x + e.w > bo.x - reach) {
+                    chainKill(e, e.x + e.w / 2, e.y + e.h / 2);
+                }
+            }
+        }
+        if (bo.life <= 0) s.bolts.splice(i, 1);
+    }
+}
+
+// ======================================================================
+// 敵人 AI 與憤怒機制
+// ======================================================================
+function makeAngry(e) {
+    if (e.angry) return;
+    e.angry = true;
+    P.burst(e.x + e.w / 2, e.y + e.h / 2, 10, {
+        colors: [ANGRY_COLOR, '#ffd166'], speedMin: 40, speedMax: 130,
+        gravity: 0, drag: 0.9, lifeMin: 0.15, lifeMax: 0.4, sizeMax: 3, glow: true
+    });
+}
+
+function makeCalm(e) {
+    if (!e.angry) return;
+    e.angry = false;
+    P.burst(e.x + e.w / 2, e.y + e.h / 2, 8, {
+        colors: ['#9fb6c9', '#ffffff'], speedMin: 20, speedMax: 70,
+        gravity: 0, drag: 0.88, lifeMin: 0.15, lifeMax: 0.4, sizeMax: 2.5
+    });
+}
+
+function updateRage(dt) {
+    if (s.raged) return;
+    s.rageT -= dt;
+    if (!s.rageWarned && s.rageT <= 6) {
+        s.rageWarned = true;
+        RetroAudio.play('error');
+        FT.add(FW / 2, 40, '敵人開始躁動…', { color: '#ffd166', size: 17, life: 2 });
+    }
+    if (s.rageT <= 0) {
+        s.raged = true;
+        s.rageT = 0;
+        for (var i = 0; i < s.enemies.length; i++) makeAngry(s.enemies[i]);
+        RetroAudio.play('bigExplosion');
+        RE.juice.flash('rgba(255,60,60,0.5)', 0.28);
+        RE.juice.shake(0.75);
+        RE.juice.slowmo(0.4, 0.9);
+        RE.juice.rumble(0.9, 0.3);
+        FT.add(FW / 2, FH / 2 - 20, '敵人暴怒！', { color: ANGRY_COLOR, size: 30, life: 2 });
+        FT.add(FW / 2, FH / 2 + 12, '它們現在會朝你跳過來', { color: '#ffd166', size: 14, life: 2, vy: -20 });
+    }
+}
+
+function updateEnemies(dt) {
+    var p = s.p;
+    var prect = { x: p.x, y: p.y, w: p.w, h: p.h };
+
+    for (var i = s.enemies.length - 1; i >= 0; i--) {
+        var e = s.enemies[i];
+        e.anim += dt * (e.angry ? 10 : 6);
+        if (e.trapped) continue;             // 被困住時位置由泡泡帶著跑
+
+        // ---- 決策：每次擲一次骰，不是每幀重擲（每幀重擲會讓誤差被平均掉）----
+        e.think -= dt;
+        if (e.think <= 0) {
+            e.think = e.angry ? RE.rand(0.35, 0.8) : RE.rand(0.6, 1.5);
+            if (e.angry) {
+                e.dir = RE.sign(p.x + p.w / 2 - (e.x + e.w / 2)) || e.dir;
+                if (e.grounded && Math.random() < 0.75) {
+                    // 玩家在上方時才使出全力跳，否則只是小跳追擊
+                    e.vy = E_JUMP * (p.y < e.y - 8 ? 1.18 : 0.8);
+                    RetroAudio.play('bounce');
+                }
+            } else {
+                if (e.grounded && Math.random() < e.def.jump) e.vy = E_JUMP * 0.92;
+                if (Math.random() < 0.18) e.dir = -e.dir;
+            }
+        }
+
+        e.vx = e.dir * e.def.speed * (e.angry ? 1.65 : 1);
+        e.vy += E_GRAVITY * dt;
+        if (e.vy > 440) e.vy = 440;
+        e.grounded = moveAndCollide(e, dt);
+        if (e.hitWall) e.dir = -e.dir;
+
+        // 走到平台邊緣就轉頭（憤怒後不轉，會直接追下去）
+        if (e.grounded && !e.angry) {
+            var ac = Math.floor((e.x + (e.dir > 0 ? e.w + 2 : -2)) / T);
+            var br = Math.floor((e.y + e.h + 2) / T);
+            if (tileAt(ac, br) === 0) e.dir = -e.dir;
+        }
+        wrapY(e);
+        e.x = RE.clamp(e.x, 0, FW - e.w);
+
+        // ---- 撞到玩家 ----
+        if (p.invuln <= 0 && p.dead <= 0 &&
+            RE.aabb(prect, { x: e.x + 1, y: e.y + 1, w: e.w - 2, h: e.h - 2 })) {
+            die('被' + e.def.name + '撞上');
+            return;
+        }
+    }
+}
+
+// ======================================================================
+// 生死與關卡流程
+// ======================================================================
+function die(reason) {
+    var p = s.p;
+    if (p.dead > 0) return;
+    p.dead = 1.4;
+    p.vy = -300;
+    s.deathReason = reason;
+    s.lives--;
+    G.setLives(s.lives);
+    s.chain = 0; s.chainT = 0;
+    G.setStat('chain', 0);
+    RE.juice.impact(3);
+    RE.juice.slowmo(0.3, 0.9);
+    // 只放 hurt。原本每掉一條命都補一發 gameover，玩家會誤以為遊戲結束，
+    // 而且真正沒命時外殼的 G.gameOver() 還會再放一次，等於重疊播兩遍。
+    RetroAudio.play('hurt');
+    P.burst(p.x + p.w / 2, p.y + p.h / 2, 26, {
+        colors: ['#ff6b6b', '#ffe066', '#ffffff'], speedMin: 50, speedMax: 210,
+        gravity: 250, lifeMin: 0.3, lifeMax: 0.8
+    });
+}
+
+/**
+ * 把所有「還被困在泡泡裡」的敵人放回場上。
+ *
+ * 這一步絕對不能省：s.bubbles 被整個丟掉時，敵人身上的 e.trapped 仍指向
+ * 那顆已經不存在的泡泡。而 updateEnemies／updateHazards／閃電判定全都寫著
+ * `if (e.trapped) continue;`，於是那隻敵人會永遠靜止、永遠打不到、
+ * 也永遠不會從 s.enemies 移除——s.enemies.length 不可能歸零，
+ * 這一關就再也清不掉了（若當下所有敵人都被困住，玩家甚至連死都死不了）。
+ */
+function releaseAllTrapped() {
+    for (var i = 0; i < s.bubbles.length; i++) {
+        var b = s.bubbles[i];
+        if (!b.enemy) continue;
+        var e = b.enemy;
+        e.trapped = null;
+        e.x = RE.clamp(b.x - e.w / 2, T, FW - T - e.w);
+        e.y = RE.clamp(b.y - e.h / 2, T, FH - T - e.h);
+        e.vx = 0; e.vy = 0;
+        e.think = RE.rand(0.3, 0.9);
+        b.enemy = null;
+    }
+}
+
+function afterDeath() {
+    if (s.lives <= 0) {
+        s.over = true;
+        G.gameOver({
+            score: s.score,
+            body: '停在第 ' + s.level + ' 個房間「' + s.cfg.name + '」（' + s.deathReason + '）。' +
+                  '記住：困住不等於解決——泡泡放太久，敵人會掙脫而且更兇。'
+        });
+        return;
+    }
+    // 同一關重來，但清掉場上的泡泡與危險物，避免復活瞬間又被擊中。
+    // 清泡泡之前務必先放人，理由見 releaseAllTrapped 的註解。
+    releaseAllTrapped();
+    s.bubbles = [];
+    s.hazards = [];
+    s.bolts = [];
+    s.fruits = [];
+    // 死亡已經是懲罰了，重生時再面對一整場暴怒敵人等於連罰兩次。
+    // 解除暴怒並發還四成冷靜倒數：足夠站穩腳步，但不夠當成「送死重置」的戰術，
+    // 因為過關獎金是照剩餘倒數計的（見 stageClear），倒數砍掉六成等於自己扣分。
+    if (s.raged) {
+        s.raged = false;
+        s.rageWarned = false;
+        s.rageT = s.cfg.rage * 0.4;
+        for (var ri = 0; ri < s.enemies.length; ri++) makeCalm(s.enemies[ri]);
+        FT.add(FW / 2, 84, '敵人重新冷靜下來', { color: '#9fb6c9', size: 14, life: 1.8, vy: -18 });
+    }
+    spawnPlayer();
+    FT.add(FW / 2, 60, '剩餘機會 ' + s.lives, { color: '#ffd166', size: 17, life: 1.6 });
+}
+
+function addScore(n) { s.score += n; G.setStat('score', s.score); }
+
+function clearLevel() {
+    s.clearTimer = 2.0;
+    var bonus = 500 + Math.max(0, Math.floor(s.rageT)) * 40;
+    addScore(bonus);
+    RetroAudio.play('win');
+    RE.juice.flash('rgba(255,224,102,0.32)', 0.2);
+    RE.juice.shake(0.3);
+    FT.add(FW / 2, FH / 2 - 24, '房間清空！', { color: '#ffe066', size: 28, life: 2 });
+    FT.add(FW / 2, FH / 2 + 8, '速度獎勵 +' + bonus, { color: '#70e4b5', size: 15, life: 2, vy: -22 });
+    for (var i = 0; i < 4; i++) {
+        P.burst(RE.rand(60, FW - 60), RE.rand(60, FH - 60), 20, {
+            colors: ['#ffe066', '#70e4b5', '#ff9ebb', '#7dd3fc', '#ffffff'],
+            speedMin: 60, speedMax: 260, gravity: 260, lifeMin: 0.4, lifeMax: 1.2, glow: true
+        });
+    }
+}
+
+/** 關卡開場字卡：順便把本關的敵人組成報給玩家，提示才有具體資訊 */
+function showStageCard() {
+    var names = {};
+    for (var i = 0; i < s.enemies.length; i++) {
+        var k = s.enemies[i].def.name;
+        names[k] = (names[k] || 0) + 1;
+    }
+    var list = [];
+    for (var key in names) list.push(key + '×' + names[key]);
+    G.stageCard(s.level, s.cfg.name, s.cfg.hint + '　' + list.join('　'));
+}
+
+function nextLevel() {
+    var n = s.level + 1;
+    if (n > LEVELS.length) {
+        s.over = true;
+        G.gameOver({
+            score: s.score, win: true,
+            body: '八個房間全數清空。你已經學會這款遊戲真正要教的事：' +
+                  '把「困住」和「戳破」分開，中間那段等待就是你的策略空間——' +
+                  '忍住不戳，先困滿一整排，倍率才會長出來。' +
+                  '1986 年的 Taito 用這個拆解，讓一個單畫面平台遊戲撐起了 100 關。'
+        });
+        return;
+    }
+    RE.Save.unlockLevel('bubble_bobble', n);   // 通關才記錄，不要把不存在的第 9 關寫進存檔
+    loadLevel(n);
+    showStageCard();
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+var bgGrad = null;
+
+function render() {
+    if (!bgGrad) {
+        bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+        bgGrad.addColorStop(0, '#0e1533');
+        bgGrad.addColorStop(0.6, '#0a1026');
+        bgGrad.addColorStop(1, '#05070f');
+    }
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    G.beginWorld();
+
+    ctx.save();
+    ctx.translate(OX, OY);
+    ctx.beginPath();
+    ctx.rect(-1, -1, FW + 2, FH + 2);
+    ctx.clip();
+
+    drawField();
+    drawHazards();
+    drawFruits();
+    drawEnemies();
+    drawBubbles();
+    drawPlayer();
+    P.draw(ctx);
+    FT.draw(ctx);
+
+    ctx.restore();
+
+    // 場地外框
+    ctx.strokeStyle = 'rgba(143,214,191,0.35)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(OX + 1, OY + 1, FW - 2, FH - 2);
+
+    // 憤怒後的紅色邊框脈動
+    if (s.raged) {
+        ctx.save();
+        ctx.globalAlpha = 0.2 + Math.sin(performance.now() / 130) * 0.16;
+        ctx.strokeStyle = ANGRY_COLOR;
+        ctx.lineWidth = 5;
+        ctx.strokeRect(OX + 3, OY + 3, FW - 6, FH - 6);
+        ctx.restore();
+    }
+
+    G.endWorld();
+    // 介面不跟著命中震動位移；事件採樣曾抓到整列資訊被震出畫布上緣。
+    drawTopBar();
+    G.postFX({ scanAlpha: 0.07, vignetteStrength: 0.42 });
+}
+
+function drawTopBar() {
+    var left = s.enemies.length;
+    var trapped = s.bubbles.filter(function (b) { return !!b.enemy; }).length;
+    ctx.fillStyle = 'rgba(4,8,24,0.72)';
+    ctx.fillRect(0, 0, W, OY);
+    RE.Draw.text(ctx, left > 0 ? ('剩餘敵人 ' + left) : '清空！', 10, 13,
+        { size: 12, baseline: 'middle', color: left > 0 ? '#ff9ebb' : '#ffe066' });
+
+    if (s.chain > 0 && s.chainT > 0) {
+        RE.Draw.text(ctx, '連鎖 ×' + Math.pow(2, Math.min(s.chain, 6) - 1),
+            W - 10, 13, { size: 12, align: 'right', baseline: 'middle', color: '#ffe066' });
+    } else {
+        RE.Draw.text(ctx, trapped > 0 ? ('已困住 ' + trapped) : '等待連鎖', W - 10, 13,
+            { size: 11, align: 'right', baseline: 'middle', color: trapped > 0 ? '#bff7e0' : '#70849f' });
+    }
+
+    // 憤怒倒數條
+    var bx = 132, bw = W - 264;
+    var pct = s.raged ? 0 : RE.clamp(s.rageT / s.cfg.rage, 0, 1);
+    ctx.fillStyle = 'rgba(255,255,255,0.10)';
+    RE.Draw.roundRect(ctx, bx, 7, bw, 6, 3); ctx.fill();
+    ctx.fillStyle = s.raged ? ANGRY_COLOR : (pct < 0.22 ? '#ff9349' : '#70e4b5');
+    if (s.raged || pct < 0.22) { ctx.save(); ctx.shadowBlur = 10; ctx.shadowColor = ctx.fillStyle; }
+    RE.Draw.roundRect(ctx, bx, 7, Math.max(3, bw * (s.raged ? 1 : pct)), 6, 3); ctx.fill();
+    if (s.raged || pct < 0.22) ctx.restore();
+    RE.Draw.text(ctx, s.raged ? '暴怒中' : '冷靜倒數', W / 2, 20,
+        { size: 10, align: 'center', baseline: 'middle',
+          color: s.raged ? '#ffd7d7' : '#9fb6c9', strokeWidth: 3 });
+    RE.Draw.text(ctx, trapped > 0 ? '敵人已困住 → 現在撞破！' : '吐泡泡 → 困住 → 撞破', W / 2, 34,
+        { size: 9, align: 'center', baseline: 'middle',
+          color: trapped > 0 ? '#ffe066' : 'rgba(191,247,224,0.68)', stroke: false });
+}
+
+function drawField() {
+    for (var r = 0; r < ROWS; r++) {
+        for (var c = 0; c < COLS; c++) {
+            var v = s.map[r][c];
+            if (!v) continue;
+            var x = c * T, y = r * T;
+            if (drawBubbleAsset(v === 1 ? 'tile_solid' : 'tile_oneway',
+                x + T / 2, y + T / 2, T, T, false, 0, 1)) continue;
+            if (v === 1) {
+                ctx.fillStyle = '#233052';
+                ctx.fillRect(x, y, T, T);
+                ctx.fillStyle = '#2f4070';
+                ctx.fillRect(x + 1, y + 1, T - 2, T - 3);
+                ctx.fillStyle = 'rgba(143,190,255,0.16)';
+                ctx.fillRect(x + 1, y + 1, T - 2, 2);
+                ctx.fillStyle = 'rgba(0,0,0,0.25)';
+                ctx.fillRect(x + 4, y + 8, 3, 3);
+            } else {
+                ctx.fillStyle = '#2c6b5a';
+                ctx.fillRect(x, y, T, 6);
+                ctx.fillStyle = '#5fd0a8';
+                ctx.fillRect(x, y, T, 2);
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.fillRect(x, y + 5, T, 2);
+            }
+        }
+    }
+}
+
+function drawHazards() {
+    for (var i = 0; i < s.hazards.length; i++) {
+        var hz = s.hazards[i];
+        ctx.save();
+        if (hz.kind === 'water') {
+            ctx.shadowBlur = 10; ctx.shadowColor = '#7dd3fc';
+            ctx.fillStyle = 'rgba(125,211,252,0.85)';
+            ctx.beginPath();
+            ctx.ellipse(hz.x + 4, hz.y + 4, 5, 6 + Math.sin(hz.t * 12) * 1.5, 0, 0, RE.TAU);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.fillRect(hz.x + 2, hz.y + 1, 2, 3);
+        } else {
+            var fl = 0.7 + Math.sin(hz.t * 18) * 0.3;
+            ctx.shadowBlur = 14; ctx.shadowColor = '#ff9349';
+            ctx.fillStyle = '#ff9349';
+            ctx.beginPath();
+            ctx.ellipse(hz.x + 5, hz.y + 6, 6 * fl, 8 * fl, 0, 0, RE.TAU);
+            ctx.fill();
+            ctx.fillStyle = '#ffe066';
+            ctx.beginPath();
+            ctx.ellipse(hz.x + 5, hz.y + 7, 3 * fl, 4.5 * fl, 0, 0, RE.TAU);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    for (var j = 0; j < s.bolts.length; j++) {
+        var bo = s.bolts[j];
+        var a = RE.clamp(bo.life / bo.max, 0, 1);
+        ctx.save();
+        ctx.globalAlpha = a;
+        ctx.shadowBlur = 20; ctx.shadowColor = '#ffe066';
+        ctx.strokeStyle = '#ffe066';
+        ctx.lineWidth = 3 + a * 4;
+        // 畫的範圍必須跟判定範圍一致，否則玩家會以為打得到卻打不到
+        var reach = boltReach(bo);
+        var x0 = Math.max(0, bo.x - reach), x1 = Math.min(FW, bo.x + reach);
+        ctx.beginPath();
+        ctx.moveTo(x0, bo.y);
+        for (var x = x0; x <= x1; x += 14) {
+            ctx.lineTo(x, bo.y + Math.sin(x * 0.4 + performance.now() / 40) * 5 * a);
+        }
+        ctx.lineTo(x1, bo.y);
+        ctx.stroke();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
+function drawFruits() {
+    for (var i = 0; i < s.fruits.length; i++) {
+        var f = s.fruits[i];
+        if (f.life < 2.4 && Math.floor(f.life * 9) % 2 === 0) continue;   // 快消失時閃爍
+        var bob = Math.sin(f.t * 5) * 1.5;
+        if (drawBubbleAsset('fruit_prize', f.x + 5, f.y + 5 + bob, 19, 19, false, 0, 1)) continue;
+        ctx.save();
+        ctx.shadowBlur = 10; ctx.shadowColor = f.def.color;
+        ctx.fillStyle = f.def.color;
+        ctx.beginPath();
+        ctx.arc(f.x + 5, f.y + 5 + bob, 5.5, 0, RE.TAU);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.75)';
+        ctx.beginPath();
+        ctx.arc(f.x + 3, f.y + 3 + bob, 1.6, 0, RE.TAU);
+        ctx.fill();
+        ctx.fillStyle = '#3a7a3a';
+        ctx.fillRect(f.x + 4, f.y - 2 + bob, 2, 4);
+        ctx.restore();
+    }
+}
+
+function drawEnemyBody(e, cx0, cy0, scale) {
+    var col = e.angry ? ANGRY_COLOR : e.def.color;
+    var dk = e.angry ? ANGRY_DARK : e.def.dark;
+    var bob = Math.sin(e.anim) * 1.4 * scale;
+    ctx.save();
+    ctx.translate(cx0, cy0 + bob);
+    ctx.scale(scale, scale);
+    ctx.shadowBlur = e.angry ? 12 : 6;
+    ctx.shadowColor = col;
+
+    if (e.def.key === 'jump') {
+        // 彈跳鬼：方頭 + 彈簧腳
+        ctx.fillStyle = dk;
+        ctx.fillRect(-3, 4, 2, 4);
+        ctx.fillRect(1, 4, 2, 4);
+        ctx.fillStyle = col;
+        RE.Draw.roundRect(ctx, -7, -7, 14, 12, 4); ctx.fill();
+    } else if (e.def.key === 'fast') {
+        // 疾風怪：尖尖的三角輪廓
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.moveTo(0, -8); ctx.lineTo(8, 6); ctx.lineTo(-8, 6);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = dk;
+        ctx.fillRect(-6, 5, 12, 2);
+    } else {
+        // 滾滾怪：圓球 + 兩隻小腳
+        ctx.fillStyle = dk;
+        ctx.fillRect(-5, 4, 3, 4);
+        ctx.fillRect(2, 4, 3, 4);
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.arc(0, -1, 7, 0, RE.TAU);
+        ctx.fill();
+    }
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-4.5, -3, 3.5, 4);
+    ctx.fillRect(1, -3, 3.5, 4);
+    ctx.fillStyle = '#141a2a';
+    var eo = e.dir > 0 ? 1 : 0;
+    ctx.fillRect(-3.5 + eo, -2, 2, 3);
+    ctx.fillRect(2 + eo, -2, 2, 3);
+    if (e.angry) {
+        // 憤怒眉毛
+        ctx.fillStyle = '#5c0d0d';
+        ctx.fillRect(-5, -5.5, 4, 1.8);
+        ctx.fillRect(1, -5.5, 4, 1.8);
+    }
+    ctx.restore();
+}
+
+function drawEnemies() {
+    for (var i = 0; i < s.enemies.length; i++) {
+        var e = s.enemies[i];
+        if (e.trapped) continue;      // 被困住的畫在泡泡裡
+        var enemyArt = e.angry ? 'enemy_angry' :
+            (e.def.key === 'jump' ? 'enemy_jump' : e.def.key === 'fast' ? 'enemy_fast' : 'enemy_walk');
+        if (drawBubbleAsset(enemyArt, e.x + e.w / 2, e.y + e.h / 2, 22, 22,
+            e.dir < 0, 0, 1)) continue;
+        drawEnemyBody(e, e.x + e.w / 2, e.y + e.h / 2, 1);
+    }
+}
+
+function drawBubbles() {
+    for (var i = 0; i < s.bubbles.length; i++) {
+        var b = s.bubbles[i];
+        var scale = 1;
+        if (b.pop > 0) scale = 0.55 + RE.ease.outBack(1 - b.pop / 0.25) * 0.45;
+
+        var warn = b.enemy && b.trapT < TRAP_WARN;
+        var flick = warn && Math.floor(b.trapT * (b.trapT < 1 ? 16 : 8)) % 2 === 0;
+
+        var col = '#bff7e0';
+        if (b.special === 'water') col = '#7dd3fc';
+        else if (b.special === 'fire') col = '#ff9349';
+        else if (b.special === 'thunder') col = '#ffe066';
+        else if (flick) col = ANGRY_COLOR;
+
+        // 困敵泡泡只放大「畫面輪廓」，碰撞仍使用 b.r；核心狀態更清楚但規則不變。
+        var r = b.r * scale + (b.enemy ? 2 * scale : 0);
+        var trappedArt = b.enemy && b.enemy.def.key === 'walk';
+        var bubbleArt = trappedArt ? 'bubble_trapped' : b.special === 'water' ? 'bubble_water' :
+            b.special === 'fire' ? 'bubble_fire' : b.special === 'thunder' ? 'bubble_thunder' : 'bubble_plain';
+        var bubbleDrawn = drawBubbleAsset(bubbleArt, b.x, b.y, r * 2.75, r * 2.75, false, 0, flick ? 0.72 : 1);
+        if (!bubbleDrawn) {
+            ctx.save();
+            ctx.shadowBlur = b.special ? 16 : 9;
+            ctx.shadowColor = col;
+
+            var g = ctx.createRadialGradient(b.x - r * 0.3, b.y - r * 0.35, 1, b.x, b.y, r);
+            g.addColorStop(0, 'rgba(255,255,255,0.55)');
+            g.addColorStop(0.55, flick ? 'rgba(255,82,82,0.22)' : 'rgba(255,255,255,0.10)');
+            g.addColorStop(1, 'rgba(255,255,255,0.02)');
+            ctx.fillStyle = g;
+            ctx.beginPath(); ctx.arc(b.x, b.y, r, 0, RE.TAU); ctx.fill();
+
+            ctx.strokeStyle = col;
+            ctx.lineWidth = flick ? 2.4 : 1.6;
+            ctx.beginPath(); ctx.arc(b.x, b.y, r, 0, RE.TAU); ctx.stroke();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'rgba(255,255,255,0.85)';
+            ctx.beginPath(); ctx.arc(b.x - r * 0.35, b.y - r * 0.4, r * 0.2, 0, RE.TAU); ctx.fill();
+            ctx.restore();
+        }
+
+        if (b.enemy) {
+            // 八秒困敵時間原本只靠最後閃爍提示；外圈直接呈現剩餘比例，沒有延長時間。
+            var ratio = RE.clamp(b.trapT / TRAP_TIME, 0, 1);
+            ctx.save();
+            ctx.strokeStyle = warn ? ANGRY_COLOR : '#ffe066';
+            ctx.lineWidth = warn ? 2.6 : 2;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, r + 3, -Math.PI / 2, -Math.PI / 2 + RE.TAU * ratio);
+            ctx.stroke();
+            ctx.restore();
+            if (!trappedArt) drawEnemyBody(b.enemy, b.x, b.y + 1, 0.78 * scale);
+            RE.Draw.text(ctx, warn ? '快逃！' : '困', b.x, b.y - r - 5,
+                { size: warn ? 8 : 9, align: 'center', baseline: 'bottom',
+                  color: warn ? '#ffd7d7' : '#ffe066', strokeWidth: 3 });
+        }
+        else if (b.special && !bubbleDrawn) {
+            RE.Draw.text(ctx, b.special === 'water' ? '💧' : b.special === 'fire' ? '🔥' : '⚡',
+                b.x, b.y, { size: 12, align: 'center', baseline: 'middle', stroke: false, color: '#ffffff' });
+        }
+    }
+}
+
+function drawPlayer() {
+    var p = s.p;
+    if (p.invuln > 0 && p.dead <= 0 && Math.floor(p.invuln * 16) % 2 === 0) return;
+
+    var playerArt = p.puff > 0 ? 'hero_puff' : !p.grounded ? 'hero_jump' :
+        Math.abs(p.vx) > 16 ? 'hero_run' : 'hero_idle';
+    var playerRotation = p.dead > 0 ? (1.4 - p.dead) * 5 : 0;
+    if (drawBubbleAsset(playerArt, p.x + p.w / 2, p.y + p.h / 2, 24, 24,
+        p.face < 0, playerRotation, 1)) return;
+
+    var x = p.x, y = p.y;
+    ctx.save();
+    if (p.dead > 0) {
+        ctx.globalAlpha = 0.9;
+        ctx.translate(x + p.w / 2, y + p.h / 2);
+        ctx.rotate((1.4 - p.dead) * 5);
+        ctx.translate(-x - p.w / 2, -y - p.h / 2);
+    }
+    var squash = p.grounded ? Math.abs(Math.sin(p.anim * 5)) * 1.2 : 0;
+
+    // 尾巴
+    ctx.fillStyle = '#3fa87a';
+    ctx.beginPath();
+    ctx.moveTo(x + (p.face > 0 ? 2 : p.w - 2), y + 11);
+    ctx.lineTo(x + (p.face > 0 ? -5 : p.w + 5), y + 6 + Math.sin(p.anim * 4) * 2);
+    ctx.lineTo(x + (p.face > 0 ? 3 : p.w - 3), y + 14);
+    ctx.fill();
+
+    // 身體
+    ctx.fillStyle = '#7ee787';
+    RE.Draw.roundRect(ctx, x, y + 2 - squash * 0.4, p.w, p.h - 2 + squash * 0.4, 5);
+    ctx.fill();
+    // 肚子
+    ctx.fillStyle = '#e9ffe6';
+    RE.Draw.roundRect(ctx, x + 3, y + 7, p.w - 6, p.h - 9, 3);
+    ctx.fill();
+    // 頭上的角
+    ctx.fillStyle = '#ffd166';
+    ctx.beginPath();
+    ctx.moveTo(x + p.w / 2 - 3, y + 2);
+    ctx.lineTo(x + p.w / 2, y - 3);
+    ctx.lineTo(x + p.w / 2 + 3, y + 2);
+    ctx.fill();
+    // 眼睛
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x + (p.face > 0 ? 5 : 2), y + 4, 5, 4);
+    ctx.fillStyle = '#12261c';
+    ctx.fillRect(x + (p.face > 0 ? 7 : 3), y + 5, 2, 3);
+    // 吐泡泡時的鼓腮
+    if (p.puff > 0) {
+        ctx.fillStyle = 'rgba(191,247,224,0.8)';
+        ctx.beginPath();
+        ctx.arc(x + p.w / 2 + p.face * 7, y + 8, 3 + p.puff * 10, 0, RE.TAU);
+        ctx.fill();
+    }
+    // 腳
+    ctx.fillStyle = '#3fa87a';
+    if (p.grounded) {
+        var ph = Math.sin(p.anim * 6) * 2;
+        ctx.fillRect(x + 1 + ph, y + p.h - 2, 5, 2);
+        ctx.fillRect(x + p.w - 6 - ph, y + p.h - 2, 5, 2);
+    } else {
+        ctx.fillRect(x + 1, y + p.h - 3, 4, 3);
+        ctx.fillRect(x + p.w - 5, y + p.h - 3, 4, 3);
+    }
+    ctx.restore();
+}
+
+// ======================================================================
+/**
+ * 開始新的一輪。
+ *
+ * 為什麼一定要走 showStageCard()：外殼的 gameOver／暫停疊層按下「重新開始」時
+ * 只做了 hideOverlay() + emit('restart')，並沒有把 _state 切回 'playing'，
+ * 而 G.run() 的包裝是 `if (state === 'playing') update(dt)`——
+ * 只呼叫 reset() 的話畫面會活著但完全不動，玩家只能重新整理網頁。
+ * G.stageCard() 會接管成 'stagecard' 並在 1.5 秒後把狀態切回 'playing'，
+ * 同時也補上了第一關原本缺少的開場字卡。
+ */
+function startRun() {
+    reset();
+    showStageCard();
+}
+
+G.on('restart', function () { startRun(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '按 X／K 吐泡泡困住敵人，再撞上泡泡戳破它。1.5 秒內連續戳破，分數會翻倍（1000→2000→4000→8000…）。' +
+          '泡泡放太久敵人會掙脫並變兇。拖太久全體敵人會暴怒追擊。清空八個房間即可通關。',
+    onStart: function () { startRun(); }
+});
+</script>
+</body>
+</html>

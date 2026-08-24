@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 深井墜落</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   深井墜落 — 致敬 Downwell (Ojiro Fumoto, 2015)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. **直向畫面**。這款是少數認真為「手機直握」重新設計的動作遊戲：
+      螢幕是直的，那就讓遊戲也是直的，主軸動作只有一個方向——往下。
+   2. **槍就是雙腳**。射擊、剎車、攻擊、閃避全是同一個動作：
+      往下開槍會產生後座力，於是「開槍」同時是「減速」與「攻擊」。
+      **一個按鍵同時解決三件事，操作因此極簡，決策卻很深**——
+      子彈要拿來殺敵人還是拿來煞車？這是每一秒都要重新回答的問題。
+   3. **三色配色**。整款只有黑、白、紅三個顏色。
+      在小螢幕上，辨識度比細節重要得多。
+   4. 彈藥落地才補充，所以「著地」本身變成一種資源管理。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'downwell',
+    title: '深井墜落',
+    tagline: '槍長在腳底，開火就是煞車',
+    original: 'Downwell (Ojiro Fumoto, 2015)',
+    decade: '10s', year: 2015, platform: '手機 / PC', genre: '直向動作 Roguelite',
+    developer: 'Ojiro Fumoto（もっぴん）', bgm: '10s',
+    width: 360, height: 520,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'depth', label: '深度', init: '0m' },
+        { key: 'layer', label: '層', init: '1/5' },
+        { key: 'ammo', label: '彈藥', init: 8 }
+    ],
+    lives: 4,
+    touch: 'dpad+ab',
+    controls: [
+        { keys: ['←', '→'], desc: '左右移動' },
+        { keys: ['Z', 'A'], desc: '跳躍（地面）／開槍（空中）' },
+        { keys: ['踩敵人'], desc: '從上方踩中可彈起並補滿彈藥' }
+    ],
+    howto: '往下掉就對了。' +
+           '<strong>在空中按 Z 會往下開槍</strong>，後座力讓你減速甚至懸停——' +
+           '所以子彈同時是武器也是煞車。彈藥只有著地或踩到敵人才會補滿。' +
+           '從上方踩中敵人可以彈起來，硬殼的踩不得。',
+    lesson: {
+        verb: '在下墜途中左右修正，決定何時用槍靴射擊、煞車或踩敵人補彈，讓同一發子彈同時改變攻擊與速度。',
+        innovation: '把手機直握的狹長畫面當成關卡方向，把「跳躍／開槍」合併成槍靴：地面按下是跳，空中按下是向下射擊與反作用力煞車，操作少卻每秒都要取捨。',
+        mission: '完成五層並在同一局展示三件事：用槍靴停住一次高速下墜、踩敵人補滿彈藥、在商店選一項升級後改變路線；課後說明哪一發子彈是攻擊、哪一發是煞車。',
+        evolution: '《Doodle Jump》把手機的主要決策放在水平落點；《Downwell》反轉方向，讓下墜成為攻擊與移動；後來的《Vampire Survivors》則把瞄準負擔再交給自動攻擊，把空間走位變成主要決策。',
+        reflection: '如果跳躍與射擊各有獨立按鍵，玩家會更自由，還是會失去「每一發子彈都要拿來救自己」的壓力？'
+    },
+    design: '這款是「一個按鍵做三件事」的教科書。' +
+            '往下開槍同時完成了攻擊、減速、以及爭取時間三件事，' +
+            '於是玩家的每一發子彈都是一次取捨：' +
+            '**現在這一發是要殺掉下面那隻，還是要救我自己一命？**' +
+            '把多個功能疊在同一個輸入上，操作變簡單，決策反而變深——' +
+            '這比「增加按鍵來增加深度」高明得多，在小螢幕上更是唯一解。' +
+            '三色配色是同樣的思路：不是為了復古，是因為在手機螢幕上' +
+            '「看得清楚」比「畫得漂亮」重要，紅色只留給會傷害你的東西。',
+    history: '《Downwell》於 2015 年由 Ojiro Fumoto 以 Moppin 名義製作，官方網站列出 Devolver Digital 的支援與手機、PC、主機版本；早期作品以 GIF 分享原型，後來才逐步形成完整的直向 roguelite。它的歷史意義不在於把舊街機塞進手機，而是把直握畫面、隨機關卡、槍靴與三色高對比視覺一起當成設計起點。',
+    sources: [
+        { label: 'Downwell 官方網站', url: 'https://downwellgame.com/' },
+        { label: 'Steam：Downwell 官方商店頁', url: 'https://store.steampowered.com/app/360740/Downwell/' },
+        { label: 'Pocket Gamer：Ojiro 開發者提示與訪談', url: 'https://www.pocketgamer.com/downwell/downwell-hints-tips-and-tricks-direct-from-developer-ojiro/' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(500);
+var FT = new RE.FloatText();
+
+// ======================================================================
+// 三色配色。紅色只留給「會傷害你的東西」，這是可讀性的核心規則
+// ======================================================================
+var C = { bg: '#0d0d0f', wall: '#f2f2f2', dark: '#3a3a42', hot: '#ff2e4d', dim: '#9a9aa6' };
+
+var T = 20;                       // 格子大小
+var COLS = 18;                    // 18 × 20 = 360
+var GRAV = 1500, MAXFALL = 560;
+
+var PL = {
+    w: 14, h: 16, spd: 190, accel: 1700, jump: -430,
+    recoil: -235,                 // 每發子彈的後座力（會被 clamp，不能無限疊）
+    recoilCap: -190,              // 後座力能把你煞到的最快上升速度
+    fireRate: 0.11, bulletSpd: 620,
+    ammoMax: 8, inv: 1.1
+};
+
+/* ----------------------------------------------------------------------
+   五層。難度靠三個數字逐層收緊：深度、敵人密度、敵種。
+   depth 是這一層要往下鑽多少格。
+   ---------------------------------------------------------------------- */
+var LAYERS = [
+    { name: '井口', hint: '在空中按 Z 往下開槍，後座力就是煞車',
+      depth: 90,  density: 0.16, pool: ['slime'], hard: 0.0 },
+    { name: '苔蘚層', hint: '踩中敵人可以彈起來，而且補滿彈藥',
+      depth: 110, density: 0.21, pool: ['slime', 'bat'], hard: 0.1 },
+    { name: '碎石層', hint: '紅色的東西都會傷害你，包含硬殼',
+      depth: 130, density: 0.25, pool: ['slime', 'bat', 'shell'], hard: 0.25 },
+    { name: '砲塔層', hint: '砲台只會朝正上方射，別站在它頭上',
+      depth: 150, density: 0.28, pool: ['bat', 'shell', 'turret'], hard: 0.4 },
+    { name: '井底', hint: '最後一層。井底有東西在等你',
+      depth: 160, density: 0.30, pool: ['slime', 'bat', 'shell', 'turret'], hard: 0.55 }
+];
+
+var ENEMY = {
+    slime:  { w: 16, h: 14, hp: 1, score: 30,  stompable: true,  color: C.wall, name: '滑塊' },
+    bat:    { w: 16, h: 12, hp: 1, score: 45,  stompable: true,  color: C.wall, name: '飛蟲' },
+    shell:  { w: 18, h: 16, hp: 3, score: 80,  stompable: false, color: C.hot,  name: '硬殼' },
+    turret: { w: 18, h: 18, hp: 2, score: 70,  stompable: false, color: C.hot,  name: '砲台' }
+};
+
+// 商店升級。每層底部三選一
+var UPGRADES = {
+    magnum:  { name: '重口徑', desc: '子彈傷害 +1' },
+    autofire:{ name: '連發', desc: '射速加快 35%' },
+    drum:    { name: '彈鼓', desc: '彈藥上限 +4' },
+    boots:   { name: '緩衝靴', desc: '踩敵人的彈跳更高，且不受一次接觸傷害' },
+    lens:    { name: '透視鏡', desc: '子彈可以打穿一格軟磚' },
+    heart:   { name: '補給', desc: '立刻回復 1 顆心，最大生命 +1' }
+};
+
+var s = {};
+
+// ======================================================================
+function reset() {
+    s = {
+        layer: 0, mode: 'play',        // play | shop | over
+        map: [], mapRows: 0,
+        p: null, bullets: [], enemies: [], shots: [], gems: [],
+        camY: 0, depth: 0, maxDepth: 0,
+        score: 0, combo: 0, comboT: 0,
+        lives: 4, maxLives: 4,
+        up: {}, shopChoices: null, shopSel: 0,
+        boss: null,
+        over: false, win: false, deathReason: ''
+    };
+    G.setStat('score', 0);
+    G.setLives(s.lives);
+    loadLayer(0);
+}
+
+function cfg() { return LAYERS[Math.min(s.layer, LAYERS.length - 1)]; }
+function up(k) { return s.up[k] || 0; }
+
+function newPlayer() {
+    s.p = {
+        x: W / 2 - PL.w / 2, y: 30, vx: 0, vy: 0, w: PL.w, h: PL.h,
+        grounded: false, inv: 0, fire: 0, ammo: PL.ammoMax + up('drum') * 4,
+        face: 1, anim: 0, hurtT: 0
+    };
+}
+
+// ======================================================================
+// 地形生成
+// ----------------------------------------------------------------------
+// 直向下墜的遊戲天生保證「往下走得通」（重力會處理），
+// 真正要保證的是另一件事：**每隔一段距離一定要有落腳點**。
+// 彈藥只有著地才補滿，沒有落腳點就等於沒有彈藥，
+// 玩家會在自由落體中無力地撞上所有東西。
+// ======================================================================
+function loadLayer(n) {
+    s.layer = n;
+    var c = cfg();
+    s.mode = 'play';
+    s.bullets = []; s.enemies = []; s.shots = []; s.gems = [];
+    s.boss = null; s.shopChoices = null;
+    s.camY = 0; s.depth = 0;
+    s.mapRows = c.depth + 14;
+    s.map = [];
+
+    var r, k;
+    for (r = 0; r < s.mapRows; r++) {
+        var row = [];
+        for (k = 0; k < COLS; k++) row.push(k === 0 || k === COLS - 1 ? 2 : 0);   // 2 = 硬牆
+        s.map.push(row);
+    }
+
+    // 起始平台
+    for (k = 4; k < COLS - 4; k++) s.map[3][k] = 1;
+
+    // 每 5~8 行放一段平台，保證落腳點的間隔不會超過玩家的「安全墜落距離」
+    var y = 8;
+    while (y < s.mapRows - 6) {
+        var span = 3 + Math.floor(Math.random() * 5);
+        var x0 = 1 + Math.floor(Math.random() * (COLS - 2 - span));
+        for (k = x0; k < x0 + span; k++) s.map[y][k] = 1;      // 1 = 軟磚，可被子彈打掉
+        // 偶爾加一段對側的小平台，讓路線有選擇
+        if (Math.random() < 0.45) {
+            var span2 = 2 + Math.floor(Math.random() * 3);
+            var x1 = (x0 > COLS / 2) ? 1 + Math.floor(Math.random() * 4)
+                                     : COLS - 1 - span2 - Math.floor(Math.random() * 4);
+            for (k = x1; k < x1 + span2 && k < COLS - 1; k++) if (k > 0) s.map[y][k] = 1;
+        }
+        y += 5 + Math.floor(Math.random() * 4);
+    }
+
+    // 底部實心地板
+    for (r = s.mapRows - 4; r < s.mapRows; r++) {
+        for (k = 1; k < COLS - 1; k++) s.map[r][k] = 2;
+    }
+
+    spawnEnemies(c);
+    if (n === LAYERS.length - 1) spawnBoss();
+
+    newPlayer();
+    G.setStat('layer', (n + 1) + '/' + LAYERS.length);
+    G.setStat('ammo', s.p.ammo);
+    G.setStat('depth', '0m');
+}
+
+/* density 是「每一行出現一隻敵人的機率」，不是每一格。
+   第一版寫成逐格擲骰，第二層生出 128 隻、畫面上同時 24 隻，
+   而原作一個畫面大概只有三到五隻——玩家在自由落體中根本無處可躲。
+   直向捲動的遊戲要用「每行密度」來想，因為玩家是一行一行往下經過的。 */
+function spawnEnemies(c) {
+    for (var r = 8; r < s.mapRows - 6; r++) {
+        if (Math.random() > c.density) continue;
+        var spots = [];
+        for (var k = 1; k < COLS - 1; k++) {
+            if (s.map[r][k]) continue;
+            spots.push({ k: k, onGround: !!(s.map[r + 1] && s.map[r + 1][k]) });
+        }
+        if (!spots.length) continue;
+
+        var type = RE.pick(c.pool);
+        var needGround = (type === 'turret' || type === 'slime');
+        var ok = spots.filter(function (sp) { return needGround ? sp.onGround : true; });
+        if (!ok.length) continue;
+        var spot = RE.pick(ok);
+        var d = ENEMY[type];
+        s.enemies.push({
+            type: type, def: d, x: spot.k * T + (T - d.w) / 2, y: r * T + (T - d.h),
+            w: d.w, h: d.h,
+            vx: type === 'bat' ? (Math.random() < 0.5 ? -46 : 46) : (Math.random() < 0.5 ? -32 : 32),
+            vy: 0, hp: d.hp + (Math.random() < c.hard ? 1 : 0), flash: 0, anim: RE.rand(0, 6),
+            fire: RE.rand(0.6, 2.0), grounded: false
+        });
+    }
+}
+
+/* 王要站在最底層的地板上，玩家從上方掉進來。
+   這款的槍只能往下射，所以**王必須永遠在玩家腳下**才打得到——
+   第一版把王擺在半空中、玩家反而落到它下面，整場王戰一發都命中不了。
+   站在地板上的王還有一個好處：玩家得先跳到它頭上才有輸出角度，
+   而跳起來之後又得靠射擊的後座力賴在空中，
+   剛好把「槍就是煞車」這件事變成最後一關的考題。 */
+function spawnBoss() {
+    s.boss = {
+        x: W / 2 - 34, y: (s.mapRows - 4) * T - 44, w: 68, h: 44,
+        hp: 32, maxHp: 32, vx: 70, flash: 0, fire: 1.4, anim: 0, phase: 0
+    };
+}
+
+// ======================================================================
+// 主迴圈
+// ======================================================================
+function update(dt) {
+    P.update(dt); FT.update(dt);
+    if (s.over) return;
+    if (s.mode === 'shop') { updateShop(dt); return; }
+
+    updatePlayer(dt);
+    updateBullets(dt);
+    updateEnemies(dt);
+    updateShots(dt);
+    updateGems(dt);
+    if (s.boss) updateBoss(dt);
+
+    if (s.comboT > 0) { s.comboT -= dt; if (s.comboT <= 0) endCombo(); }
+
+    // 相機：玩家保持在畫面上方三分之一，往下看得遠一點
+    var want = s.p.y - H * 0.34;
+    s.camY = Math.max(0, Math.min(want, s.mapRows * T - H));
+    s.depth = Math.max(s.depth, Math.floor(s.p.y / T));
+    G.setStat('depth', s.depth + 'm');
+}
+
+function updatePlayer(dt) {
+    var p = s.p;
+    p.anim += dt * 10;
+    if (p.inv > 0) p.inv -= dt;
+    if (p.fire > 0) p.fire -= dt;
+    if (p.hurtT > 0) p.hurtT -= dt;
+
+    var ax = RE.Input.axisX();
+    if (ax) { p.face = ax > 0 ? 1 : -1; }
+    p.vx += ax * PL.accel * dt;
+    if (!ax) p.vx *= Math.pow(0.0008, dt);
+    p.vx = RE.clamp(p.vx, -PL.spd, PL.spd);
+
+    p.vy += GRAV * dt;
+    if (p.vy > MAXFALL) p.vy = MAXFALL;
+
+    /* 同一顆按鍵：在地面是跳躍，在空中是往下開槍。
+       這是本作的核心——攻擊、煞車、爭取時間三件事共用一個輸入，
+       於是「這一發要拿來打敵人還是救自己」變成每一秒都要回答的問題。 */
+    if (RE.Input.pressed('a')) {
+        if (p.grounded) {
+            p.vy = PL.jump;
+            p.grounded = false;
+            RetroAudio.play('jump');
+        }
+    }
+    if (RE.Input.down('a') && !p.grounded && p.fire <= 0 && p.ammo > 0) {
+        shoot(p);
+    }
+
+    moveAxis(p, p.vx * dt, 0);
+    var wasGround = p.grounded;
+    p.grounded = false;
+    moveAxis(p, 0, p.vy * dt);
+    if (p.grounded && !wasGround) {
+        // 著地補滿彈藥：所以「找地方站一下」本身就是資源管理
+        if (p.ammo < ammoMax()) { p.ammo = ammoMax(); RetroAudio.play('pickup'); }
+        G.setStat('ammo', p.ammo);
+        P.burst(p.x + p.w / 2, p.y + p.h, 5, { colors: [C.wall], speedMin: 20, speedMax: 70,
+            gravity: 200, lifeMin: 0.1, lifeMax: 0.3, sizeMax: 2 });
+        endCombo();
+    }
+
+    // 掉到底 = 這一層結束
+    if (p.y > (s.mapRows - 5) * T) {
+        if (s.boss) return;               // 最後一層要先打倒王
+        layerClear();
+    }
+}
+
+function ammoMax() { return PL.ammoMax + up('drum') * 4; }
+
+function shoot(p) {
+    p.fire = PL.fireRate * Math.pow(0.65, up('autofire'));
+    p.ammo--;
+    G.setStat('ammo', p.ammo);
+    // 後座力有上限，否則連射就能無限懸停，整款遊戲的張力會消失
+    p.vy = Math.max(PL.recoilCap, p.vy + PL.recoil);
+    s.bullets.push({ x: p.x + p.w / 2 - 2, y: p.y + p.h, w: 4, h: 8,
+                     vy: PL.bulletSpd, dmg: 1 + up('magnum'), pierce: up('lens') });
+    RetroAudio.play('shoot');
+    RE.juice.shake(0.06);
+    P.burst(p.x + p.w / 2, p.y + p.h, 3, { colors: [C.hot, C.wall], speedMin: 30, speedMax: 90,
+        gravity: 0, drag: 0.9, lifeMin: 0.05, lifeMax: 0.16, sizeMax: 2.5 });
+}
+
+// ---------- 地圖碰撞：X、Y 分兩階段解算 ----------
+function moveAxis(o, dx, dy) {
+    o.x += dx; o.y += dy;
+    var x0 = Math.floor(o.x / T), x1 = Math.floor((o.x + o.w - 1) / T);
+    var y0 = Math.floor(o.y / T), y1 = Math.floor((o.y + o.h - 1) / T);
+    for (var r = y0; r <= y1; r++) {
+        if (r < 0 || r >= s.mapRows) continue;
+        for (var k = x0; k <= x1; k++) {
+            if (k < 0 || k >= COLS) continue;
+            if (!s.map[r][k]) continue;
+            if (dx > 0) { o.x = k * T - o.w; o.vx = 0; }
+            else if (dx < 0) { o.x = (k + 1) * T; o.vx = 0; }
+            else if (dy > 0) { o.y = r * T - o.h; o.vy = 0; o.grounded = true; }
+            else if (dy < 0) { o.y = (r + 1) * T; o.vy = 0; }
+            return;
+        }
+    }
+}
+
+function solidAt(px, py) {
+    var k = Math.floor(px / T), r = Math.floor(py / T);
+    if (k < 0 || k >= COLS || r < 0 || r >= s.mapRows) return 0;
+    return s.map[r][k];
+}
+
+// ---------- 子彈 ----------
+function updateBullets(dt) {
+    for (var i = s.bullets.length - 1; i >= 0; i--) {
+        var b = s.bullets[i];
+        b.y += b.vy * dt;
+        if (b.y > s.mapRows * T) { s.bullets.splice(i, 1); continue; }
+
+        // 打到磚塊：軟磚會被打掉（透視鏡可以多穿一格）
+        var tile = solidAt(b.x + b.w / 2, b.y + b.h);
+        if (tile) {
+            if (tile === 1) {
+                var k = Math.floor((b.x + b.w / 2) / T), r = Math.floor((b.y + b.h) / T);
+                s.map[r][k] = 0;
+                P.burst(k * T + T / 2, r * T + T / 2, 6, { colors: [C.wall, C.dim],
+                    speedMin: 30, speedMax: 120, gravity: 300, lifeMin: 0.1, lifeMax: 0.35, sizeMax: 3 });
+                RetroAudio.play('hit');
+                if (b.pierce > 0) { b.pierce--; continue; }
+            }
+            s.bullets.splice(i, 1);
+            continue;
+        }
+
+        var hit = false;
+        for (var j = s.enemies.length - 1; j >= 0; j--) {
+            var e = s.enemies[j];
+            if (overlap(b, e)) { damageEnemy(e, b.dmg); hit = true; break; }
+        }
+        if (!hit && s.boss && overlap(b, s.boss)) { damageBoss(b.dmg); hit = true; }
+        if (hit) { if (b.pierce > 0) b.pierce--; else s.bullets.splice(i, 1); }
+    }
+}
+
+function overlap(a, b) {
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+// ---------- 敵人 ----------
+function updateEnemies(dt) {
+    var p = s.p;
+    for (var i = s.enemies.length - 1; i >= 0; i--) {
+        var e = s.enemies[i];
+        e.anim += dt * 6;
+        if (e.flash > 0) e.flash -= dt;
+
+        if (e.type === 'bat') {
+            e.x += e.vx * dt;
+            if (solidAt(e.x, e.y + e.h / 2) || solidAt(e.x + e.w, e.y + e.h / 2)) e.vx *= -1;
+            e.y += Math.sin(e.anim) * 18 * dt;
+        } else if (e.type === 'turret') {
+            e.fire -= dt;
+            if (e.fire <= 0) {
+                e.fire = RE.rand(1.6, 2.6);
+                // 砲台只朝正上方射，因此「別站在它頭上」是一條可學習的規則
+                s.shots.push({ x: e.x + e.w / 2 - 3, y: e.y - 6, w: 6, h: 10, vy: -240 });
+                RetroAudio.play('laser');
+            }
+        } else {
+            e.vy += GRAV * dt;
+            if (e.vy > MAXFALL) e.vy = MAXFALL;
+            e.grounded = false;
+            moveAxis(e, e.vx * dt, 0);
+            if (e.vx === 0 || solidAt(e.vx > 0 ? e.x + e.w + 1 : e.x - 1, e.y + e.h / 2)) e.vx *= -1;
+            moveAxis(e, 0, e.vy * dt);
+            // 走到平台邊緣就轉頭，不要自己掉下去
+            if (e.grounded && !solidAt(e.vx > 0 ? e.x + e.w + 2 : e.x - 2, e.y + e.h + 2)) e.vx *= -1;
+        }
+
+        if (overlap(p, e)) {
+            var stomping = p.vy > 40 && (p.y + p.h) - e.y < 14;
+            if (stomping && e.def.stompable) {
+                stomp(e, i);
+            } else if (p.inv <= 0) {
+                hurtPlayer(e.def.name);
+            }
+        }
+    }
+}
+
+function stomp(e, idx) {
+    var p = s.p;
+    p.vy = PL.jump * (0.72 + up('boots') * 0.16);
+    p.ammo = ammoMax();
+    G.setStat('ammo', p.ammo);
+    killEnemy(e, idx);
+    RetroAudio.play('bounce');
+    RE.juice.hitstop(0.04);
+    RE.juice.shake(0.2);
+}
+
+function damageEnemy(e, dmg) {
+    e.hp -= dmg;
+    e.flash = 0.1;
+    RetroAudio.play('hit');
+    RE.juice.hitstop(0.02);
+    P.burst(e.x + e.w / 2, e.y + e.h / 2, 4, { colors: [C.wall], speedMin: 30, speedMax: 100,
+        gravity: 0, drag: 0.9, lifeMin: 0.08, lifeMax: 0.24, sizeMax: 2.5 });
+    if (e.hp <= 0) killEnemy(e, s.enemies.indexOf(e));
+}
+
+function killEnemy(e, idx) {
+    if (idx < 0) return;
+    s.enemies.splice(idx, 1);
+    s.combo++;
+    s.comboT = 1.6;
+    var val = e.def.score * (1 + Math.floor(s.combo / 3));
+    addScore(val);
+    FT.add(e.x + e.w / 2, e.y, String(val) + (s.combo > 2 ? ' ×' + s.combo : ''),
+        { color: s.combo > 2 ? C.hot : C.wall, size: 12 });
+    P.burst(e.x + e.w / 2, e.y + e.h / 2, 10, { colors: [C.wall, C.hot], speedMin: 40, speedMax: 170,
+        gravity: 0, drag: 0.88, lifeMin: 0.15, lifeMax: 0.45, sizeMax: 3 });
+    RetroAudio.play('explosion');
+    RE.juice.shake(0.18);
+    for (var g = 0; g < 2; g++) {
+        s.gems.push({ x: e.x + e.w / 2, y: e.y + e.h / 2,
+                      vx: RE.rand(-70, 70), vy: RE.rand(-140, -40), life: 8 });
+    }
+}
+
+function endCombo() {
+    if (s.combo > 2) FT.add(s.p.x + s.p.w / 2, s.p.y - 14, '連段 ×' + s.combo + '！',
+        { color: C.hot, size: 13, life: 1.0 });
+    s.combo = 0; s.comboT = 0;
+}
+
+function hurtPlayer(reason) {
+    var p = s.p;
+    if (p.inv > 0) return;
+    // 緩衝靴：第一次接觸傷害免疫（每層一次）
+    if (up('boots') && !s.bootsUsed) {
+        s.bootsUsed = true;
+        p.inv = PL.inv;
+        FT.add(p.x + p.w / 2, p.y - 12, '緩衝！', { color: C.wall, size: 13 });
+        RetroAudio.play('block');
+        return;
+    }
+    s.lives--;
+    p.inv = PL.inv;
+    p.hurtT = 0.3;
+    p.vy = -220;
+    G.setLives(Math.max(0, s.lives));
+    RE.juice.impact(3);
+    RE.juice.flash('rgba(255,46,77,0.35)', 0.14);
+    RetroAudio.play('hurt');
+    endCombo();
+    if (s.lives <= 0) { s.deathReason = reason || '力竭'; finish(false); }
+}
+
+// ---------- 敵方彈幕 ----------
+function updateShots(dt) {
+    for (var i = s.shots.length - 1; i >= 0; i--) {
+        var b = s.shots[i];
+        b.y += b.vy * dt;
+        if (b.y < s.camY - 40 || b.y > s.camY + H + 40 || solidAt(b.x + b.w / 2, b.y)) {
+            s.shots.splice(i, 1); continue;
+        }
+        if (overlap(b, s.p)) { hurtPlayer('砲台'); s.shots.splice(i, 1); }
+    }
+}
+
+function updateGems(dt) {
+    var p = s.p;
+    for (var i = s.gems.length - 1; i >= 0; i--) {
+        var g = s.gems[i];
+        g.life -= dt;
+        if (g.life <= 0) { s.gems.splice(i, 1); continue; }
+        g.vy += GRAV * 0.35 * dt;
+        g.x += g.vx * dt; g.y += g.vy * dt;
+        if (solidAt(g.x, g.y + 4)) { g.vy = -g.vy * 0.3; g.vx *= 0.6; g.y -= 2; }
+        var dx = p.x + p.w / 2 - g.x, dy = p.y + p.h / 2 - g.y;
+        var d = Math.hypot(dx, dy);
+        if (d < 46) { g.x += dx / d * 320 * dt; g.y += dy / d * 320 * dt; }
+        if (d < 12) { s.gems.splice(i, 1); addScore(12); RetroAudio.play('coin'); }
+    }
+}
+
+// ---------- 王 ----------
+function updateBoss(dt) {
+    var b = s.boss, p = s.p;
+    b.anim += dt * 3;
+    if (b.flash > 0) b.flash -= dt;
+    b.x += b.vx * dt;
+    if (b.x < T || b.x + b.w > W - T) b.vx *= -1;
+
+    var hpPct = b.hp / b.maxHp;
+    b.phase = hpPct > 0.5 ? 0 : 1;
+    b.fire -= dt;
+    if (b.fire <= 0) {
+        b.fire = b.phase ? 1.15 : 1.7;
+        var n = b.phase ? 3 : 2;
+        for (var i = 0; i < n; i++) {
+            s.shots.push({ x: b.x + b.w * (i + 1) / (n + 1) - 3, y: b.y - 8, w: 6, h: 10, vy: -260 });
+        }
+        RetroAudio.play('laser');
+    }
+    /* 踩頭也能造成傷害，並且補滿彈藥。
+       這讓王戰形成一個可以學會的循環：踩下去 → 彈起來 → 在空中靠後座力賴著射 → 再踩。
+       少了這一環，玩家只能站在旁邊等跳躍冷卻，實測二十九秒才削掉四分之一血。 */
+    if (overlap(p, b)) {
+        var stomping = p.vy > 40 && (p.y + p.h) - b.y < 20;
+        if (stomping) {
+            damageBoss(2);
+            p.vy = PL.jump * (0.8 + up('boots') * 0.12);
+            p.ammo = ammoMax();
+            G.setStat('ammo', p.ammo);
+            RetroAudio.play('bounce');
+            RE.juice.hitstop(0.05);
+            RE.juice.shake(0.3);
+        } else if (p.inv <= 0) {
+            hurtPlayer('井底之物');
+        }
+    }
+}
+
+function damageBoss(dmg) {
+    var b = s.boss;
+    b.hp -= dmg;
+    b.flash = 0.1;
+    RetroAudio.play('hit');
+    RE.juice.hitstop(0.03);
+    P.burst(b.x + b.w / 2, b.y + b.h, 6, { colors: [C.hot, C.wall], speedMin: 40, speedMax: 140,
+        gravity: 0, drag: 0.9, lifeMin: 0.1, lifeMax: 0.3, sizeMax: 3 });
+    if (b.hp <= 0) {
+        addScore(3000);
+        P.burst(b.x + b.w / 2, b.y + b.h / 2, 40, { colors: [C.hot, C.wall], speedMin: 60, speedMax: 280,
+            gravity: 0, drag: 0.9, lifeMin: 0.3, lifeMax: 0.9, sizeMax: 5 });
+        RetroAudio.play('bigExplosion');
+        RE.juice.flash('rgba(255,255,255,0.5)', 0.35);
+        RE.juice.slowmo(0.3, 1.0);
+        s.boss = null;
+        finish(true);
+    }
+}
+
+// ---------- 層結算與商店 ----------
+function layerClear() {
+    addScore(500 + s.layer * 250);
+    s.bootsUsed = false;
+    if (s.layer >= LAYERS.length - 1) { finish(true); return; }
+    openShop();
+}
+
+function openShop() {
+    s.mode = 'shop';
+    var pool = [];
+    for (var k in UPGRADES) {
+        if (k === 'heart' || up(k) < 3) pool.push(k);
+    }
+    for (var i = pool.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = pool[i]; pool[i] = pool[j]; pool[j] = t;
+    }
+    s.shopChoices = pool.slice(0, 3);
+    s.shopSel = 0;
+    RetroAudio.play('levelUp');
+}
+
+function updateShop(dt) {
+    if (RE.Input.pressed('left')) { s.shopSel = (s.shopSel + 2) % 3; RetroAudio.play('blip'); }
+    if (RE.Input.pressed('right')) { s.shopSel = (s.shopSel + 1) % 3; RetroAudio.play('blip'); }
+    if (s.shopSel >= s.shopChoices.length) s.shopSel = 0;
+    if (RE.Input.pressed('a') || RE.Input.pressed('b')) {
+        var k = s.shopChoices[s.shopSel];
+        s.up[k] = up(k) + 1;
+        if (k === 'heart') { s.maxLives++; s.lives = Math.min(s.maxLives, s.lives + 1); G.setLives(s.lives); }
+        RetroAudio.play('powerup');
+        FT.add(W / 2, H / 2, UPGRADES[k].name, { color: C.hot, size: 18, life: 1.2 });
+        s.shopChoices = null;
+        loadLayer(s.layer + 1);
+        G.stageCard(s.layer + 1, cfg().name, cfg().hint);
+    }
+}
+
+function addScore(n) { s.score += n; G.setStat('score', s.score); }
+
+function finish(win) {
+    s.over = true; s.win = win;
+    if (win) {
+        addScore(2000 + s.maxDepth * 5);
+        G.gameOver({ score: s.score, win: true,
+            body: '你鑽到底了。整趟下來你只按了一顆鍵——' +
+                  '它同時是跳躍、攻擊與煞車，而每一發子彈都逼你回答同一個問題：' +
+                  '這一發要拿來殺掉下面那隻，還是拿來救自己一命？' +
+                  '**把多個功能疊在同一個輸入上，操作變簡單，決策反而變深。**' });
+    } else {
+        G.gameOver({ score: s.score, win: false,
+            body: '停在第 ' + (s.layer + 1) + ' 層「' + cfg().name + '」，深度 ' + s.depth + 'm（' + s.deathReason + '）。' +
+                  '記住：子彈同時是武器與煞車，落地才會補滿——' +
+                  '**「什麼時候該站一下」跟「什麼時候該開槍」一樣重要**。' });
+    }
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function render() {
+    G.clear(C.bg);
+    G.beginWorld();
+
+    drawMap();
+    drawGems();
+    drawEnemies();
+    if (s.boss) drawBoss();
+    drawShots();
+    drawBullets();
+    drawPlayer();
+    P.draw(ctx);
+    FT.draw(ctx);
+    drawHUD();
+    if (s.mode === 'shop') drawShop();
+
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.05 });
+}
+
+function vy(worldY) { return worldY - s.camY; }
+
+function drawMap() {
+    var r0 = Math.max(0, Math.floor(s.camY / T) - 1);
+    var r1 = Math.min(s.mapRows - 1, Math.floor((s.camY + H) / T) + 1);
+    for (var r = r0; r <= r1; r++) {
+        for (var k = 0; k < COLS; k++) {
+            var t = s.map[r][k];
+            if (!t) continue;
+            var y = vy(r * T);
+            ctx.fillStyle = t === 2 ? C.dark : C.wall;
+            ctx.fillRect(k * T, y, T, T);
+            if (t === 1) {
+                ctx.fillStyle = C.bg;
+                ctx.fillRect(k * T + 2, y + 2, T - 4, 2);
+            }
+        }
+    }
+}
+
+function drawPlayer() {
+    var p = s.p;
+    var y = vy(p.y);
+    ctx.save();
+    if (p.inv > 0 && Math.floor(p.inv * 22) % 2 === 0) ctx.globalAlpha = 0.4;
+
+    // 身體：白色方塊 + 紅色圍巾，三色配色的主角
+    ctx.fillStyle = p.hurtT > 0 ? C.hot : C.wall;
+    ctx.fillRect(p.x, y, p.w, p.h);
+    ctx.fillStyle = C.hot;
+    ctx.fillRect(p.x - 2, y + 4, p.w + 4, 3);
+    // 眼睛（朝向）
+    ctx.fillStyle = C.bg;
+    ctx.fillRect(p.x + (p.face > 0 ? p.w - 6 : 2), y + 9, 4, 3);
+    // 腳底的槍口
+    ctx.fillStyle = C.hot;
+    ctx.fillRect(p.x + 3, y + p.h, p.w - 6, 2);
+    ctx.restore();
+}
+
+function drawEnemies() {
+    for (var i = 0; i < s.enemies.length; i++) {
+        var e = s.enemies[i];
+        var y = vy(e.y);
+        if (y < -40 || y > H + 40) continue;
+        ctx.fillStyle = e.flash > 0 ? C.hot : e.def.color;
+        if (e.type === 'bat') {
+            var f = Math.sin(e.anim * 3) * 4;
+            ctx.fillRect(e.x, y + 2, e.w, e.h - 4);
+            ctx.fillRect(e.x - 5, y + 2 + f, 5, 3);
+            ctx.fillRect(e.x + e.w, y + 2 - f, 5, 3);
+        } else if (e.type === 'turret') {
+            ctx.fillRect(e.x, y + 4, e.w, e.h - 4);
+            ctx.fillRect(e.x + e.w / 2 - 3, y - 4, 6, 8);
+        } else if (e.type === 'shell') {
+            ctx.fillRect(e.x, y, e.w, e.h);
+            ctx.fillStyle = C.bg;
+            ctx.fillRect(e.x + 3, y + 3, e.w - 6, 3);
+        } else {
+            var sq = Math.sin(e.anim) * 2;
+            ctx.fillRect(e.x, y + sq, e.w, e.h - sq);
+        }
+        // 眼睛一律用背景色挖，維持三色
+        if (e.type !== 'turret') {
+            ctx.fillStyle = C.bg;
+            ctx.fillRect(e.x + 3, y + 5, 3, 3);
+            ctx.fillRect(e.x + e.w - 6, y + 5, 3, 3);
+        }
+    }
+}
+
+function drawBoss() {
+    var b = s.boss, y = vy(b.y);
+    ctx.fillStyle = b.flash > 0 ? C.wall : C.hot;
+    ctx.fillRect(b.x, y, b.w, b.h);
+    ctx.fillStyle = C.bg;
+    var blink = Math.sin(b.anim) > 0.6 ? 2 : 6;
+    ctx.fillRect(b.x + 12, y + 12, 10, blink);
+    ctx.fillRect(b.x + b.w - 22, y + 12, 10, blink);
+    ctx.fillRect(b.x + 16, y + 30, b.w - 32, 4);
+    // 血條
+    ctx.fillStyle = C.dark;
+    ctx.fillRect(30, 14, W - 60, 8);
+    ctx.fillStyle = C.hot;
+    ctx.fillRect(30, 14, (W - 60) * (b.hp / b.maxHp), 8);
+}
+
+function drawBullets() {
+    ctx.fillStyle = C.hot;
+    for (var i = 0; i < s.bullets.length; i++) {
+        var b = s.bullets[i];
+        ctx.fillRect(b.x, vy(b.y), b.w, b.h);
+    }
+}
+
+function drawShots() {
+    ctx.fillStyle = C.hot;
+    for (var i = 0; i < s.shots.length; i++) {
+        var b = s.shots[i];
+        ctx.fillRect(b.x, vy(b.y), b.w, b.h);
+    }
+}
+
+function drawGems() {
+    ctx.fillStyle = C.dim;
+    for (var i = 0; i < s.gems.length; i++) {
+        var g = s.gems[i];
+        var y = vy(g.y);
+        if (y < -10 || y > H + 10) continue;
+        if (g.life < 2 && Math.floor(g.life * 8) % 2 === 0) continue;
+        ctx.fillRect(g.x - 2, y - 2, 4, 4);
+    }
+}
+
+function drawHUD() {
+    // 彈藥：直接畫成一排格子，比數字好讀
+    var max = ammoMax();
+    for (var i = 0; i < max; i++) {
+        ctx.fillStyle = i < s.p.ammo ? C.hot : C.dark;
+        ctx.fillRect(8 + i * 8, H - 16, 6, 10);
+    }
+    RE.Draw.text(ctx, s.depth + 'm', W - 10, H - 20, { size: 13, align: 'right', color: C.dim });
+    if (s.combo > 2) {
+        RE.Draw.text(ctx, '×' + s.combo, W / 2, 30, { size: 22, align: 'center', color: C.hot });
+    }
+}
+
+function drawShop() {
+    ctx.save();
+    ctx.fillStyle = 'rgba(13,13,15,0.92)';
+    ctx.fillRect(0, 0, W, H);
+    RE.Draw.text(ctx, '井壁上的凹槽', W / 2, 60, { size: 20, align: 'center', color: C.wall });
+    RE.Draw.text(ctx, '← → 選擇　Z 拿走', W / 2, 88, { size: 12, align: 'center', color: C.dim });
+
+    for (var i = 0; i < s.shopChoices.length; i++) {
+        var k = s.shopChoices[i];
+        var u = UPGRADES[k];
+        var y = 130 + i * 108;
+        var sel = s.shopSel === i;
+        ctx.fillStyle = sel ? C.dark : 'rgba(58,58,66,0.5)';
+        RE.Draw.roundRect(ctx, 26, y, W - 52, 92, 8); ctx.fill();
+        ctx.strokeStyle = sel ? C.hot : C.dim;
+        ctx.lineWidth = sel ? 3 : 1.5;
+        ctx.stroke();
+        RE.Draw.text(ctx, u.name + (up(k) ? ' Lv.' + (up(k) + 1) : ''), W / 2, y + 26,
+            { size: 17, align: 'center', color: sel ? C.hot : C.wall });
+        // 說明自動換行
+        var line = '', ly = y + 54;
+        for (var w = 0; w < u.desc.length; w++) {
+            line += u.desc[w];
+            if (line.length >= 14) {
+                RE.Draw.text(ctx, line, W / 2, ly, { size: 12, align: 'center', color: C.dim, stroke: false });
+                line = ''; ly += 18;
+            }
+        }
+        if (line) RE.Draw.text(ctx, line, W / 2, ly, { size: 12, align: 'center', color: C.dim, stroke: false });
+    }
+    ctx.restore();
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '往下掉就對了。空中按 Z 往下開槍，後座力就是煞車——' +
+          '所以子彈同時是武器也是煞車。落地或踩到敵人才會補滿彈藥。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

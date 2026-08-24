@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 地底鑽掘隊</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   地底鑽掘隊 — 致敬 Dig Dug (Namco, 1982)
+   --------------------------------------------------------------------------
+   復刻的四個重點：
+   1. **關卡是玩家自己挖出來的**。泥土用二維陣列表示，玩家走過就變成通道；
+      敵人只能在已挖出的通道裡移動。你挖得越多，退路越多，但敵人的路也越多。
+   2. **打氣擊殺**：射出管子命中後按住持續打氣，四下撐爆。打氣期間玩家完全不能動——
+      擊殺是一個「必須持續投入並暴露自己」的行為，放開就慢慢洩氣。
+   3. **落石擊殺**：挖掉岩石正下方的泥土，岩石落下砸死路徑上的敵人。
+      一顆岩石砸越多隻分數倍增（1000 / 2500 / 4000 / 6000），
+      高手必須刻意把敵人引到岩石下方——主動製造危險局面才能拿高分。
+   4. **深度計分**：地圖分四層，越深的擊殺倍率越高（×1 / ×1.5 / ×2 / ×3）。
+      安全的淺層拿不到分，這條規則把玩家往危險的地方推。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'dig_dug',
+    title: '地底鑽掘隊',
+    tagline: '關卡不是設計師畫好的，是你自己挖出來的',
+    original: 'Dig Dug (Namco, 1982)',
+    decade: '80s', year: 1982, platform: '大型街機', genre: '挖掘動作',
+    developer: 'Namco', bgm: '80s',
+    width: 480, height: 420,
+    lives: 3,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'best',  label: 'BEST' },
+        { key: 'stage', label: '關卡', init: 1 },
+        { key: 'left',  label: '剩餘', init: 0 }
+    ],
+    touch: 'dpad+ab', labelA: '打氣筒', labelB: '打氣筒', maxScale: 2,
+    controls: [
+        { keys: ['↑', '↓', '←', '→'], desc: '挖掘移動' },
+        { keys: ['空白', 'Z'], desc: '射出打氣管，按住持續打氣' },
+        { keys: ['P'], desc: '暫停' }
+    ],
+    howto: '走過的泥土會變成通道，<strong>通道就是關卡本身</strong>——敵人只能在通道裡追你。' +
+           '面向敵人按打氣鍵射出管子，命中後<strong>按住不放</strong>連打四下就會撐爆它；' +
+           '打氣期間你完全不能移動，放開則慢慢洩氣。' +
+           '另一種殺法是<strong>落石</strong>：挖掉岩石正下方的土，岩石會砸下來——' +
+           '一顆石頭砸越多隻，分數倍增。地層越深擊殺倍率越高（×1 / ×1.5 / ×2 / ×3）。',
+    lesson: {
+        verb: '挖出通道、引導追兵，再決定停下來打氣，或挖空岩石下方讓環境代替你攻擊。',
+        innovation: '迷宮不再只是設計師交付的答案；玩家每走一步都在永久改變當局路網，也同時替敵人開出新的追擊路線。',
+        mission: '不要立刻把第一隻敵人打爆；先挖一條通往岩石下方的窄路，引它跟進後觸發落石，觀察單純射擊與改造地形的風險、分數差異。',
+        evolution: '《Pac-Man》要求玩家讀懂固定迷宮；《Dig Dug》讓玩家親手挖出迷宮，《Minecraft》則把改造地貌擴張成可長期建造與保存的世界。',
+        reflection: '你挖出的捷徑也能被敵人使用；當「自由開路」同時增加逃生與追擊可能時，自由還是不是純粹的獎勵？'
+    },
+    design: '《Dig Dug》把「移動」改寫成對關卡本身的編輯。泥土被走過就成為永久通道，玩家是在逃跑、追擊與布置未來路線之間同時做決策。' +
+            '打氣能直接擊敗敵人，卻要求玩家停在原地並持續輸入；落石需要先讓敵人進入預定路線，再挖掉支撐，準備較慢但能一次處理多個目標。' +
+            '兩種攻擊因而不是同一把武器的強弱版本，而是即時安全與長期布局的交換。' +
+            '本站另以地層深度倍率、落石連殺分數和可見通道保留「越往深處越值得冒險」的讀圖壓力；現代粒子、膨脹動畫與狀態提示只負責讓因果更清楚。' +
+            '真正的核心仍是：每一格挖掘都留下後果，玩家既是迷宮的解題者，也是迷宮的作者。',
+    history: 'Bandai Namco 的官方典藏頁記錄《Dig Dug》於 1982 年 3 月登上大型街機，類型為動作遊戲，並以簡單規則、策略性、角色與音樂獲得玩家支持。' +
+             'The Strong 的館藏資料指出，Namco 在《Pac-Man》的「吃」之後選擇另一個日常動詞「挖」，在日本推出後授權 Atari 於美國發行。' +
+             '玩家除了挖洞，還能用打氣筒讓敵人膨脹，或用岩石砸敵；Pooka 與會噴火的 Fygar 則把殘酷規則包在可愛角色外觀中。' +
+             '本站以這組矛盾說明 1980 年代街機如何從固定迷宮走向玩家可改變的戰場。',
+    sources: [
+        { label: 'Bandai Namco：Namco Museum《Dig Dug》官方典藏', url: 'https://www.bandainamcoent.co.jp/cs/list/namcomuseum/digdug.html' },
+        { label: 'The Strong：《Dig Dug》街機館藏資料', url: 'https://artsandculture.google.com/asset/arcade-game-dig-dug/mgHxQZ5iOwxecQ?hl=en' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(520);
+var FT = new RE.FloatText();
+
+// ======================================================================
+// 地圖尺寸：480 寬剛好 20 格，上方留 36px 當地表與提示帶
+// ======================================================================
+var T = 24;
+var COLS = 20, ROWS = 16;
+var OX = 0, OY = 36;
+
+var DIRS = { left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1] };
+var OPP  = { left: 'right', right: 'left', up: 'down', down: 'up' };
+
+/* 地層：每 4 列一層，顏色不同，擊殺倍率遞增。
+   顏色本身就是「這裡分數比較高」的視覺提示。 */
+var LAYERS = [
+    { name: '表土', mult: 1,   mid: '#a86d34', top: '#c98a4b', dark: '#7a4a1e',
+      tunnel: '#17110c', bits: ['#e0b072', '#c98a4b', '#7a4a1e'] },
+    { name: '赤土', mult: 1.5, mid: '#a04e2c', top: '#c1633c', dark: '#72351b',
+      tunnel: '#170d0a', bits: ['#e08a5c', '#c1633c', '#72351b'] },
+    { name: '紫岩', mult: 2,   mid: '#5b4088', top: '#7a56ad', dark: '#3d2a60',
+      tunnel: '#120c1c', bits: ['#a288d8', '#7a56ad', '#3d2a60'] },
+    { name: '深淵', mult: 3,   mid: '#236053', top: '#2f7a68', dark: '#153f36',
+      tunnel: '#08150f', bits: ['#5cc0a6', '#2f7a68', '#153f36'] }
+];
+
+/* 關卡圖例
+   #  泥土        .  已挖通道
+   O  岩石（埋在土裡，挖掉正下方的土才會掉）
+   P  玩家起點    p  圓形敵人（滾滾球）   f  噴火敵人（火蜥） */
+var STAGES = [
+    {
+        name: '初層', speed: 0.78, chase: 0.34, phase: 16,
+        hint: '面向敵人按打氣鍵，命中後按住不放連打四下。',
+        map: [
+            '####################',
+            '#########P##########',
+            '#########.##########',
+            '#########.##########',
+            '###...........p#####',
+            '#########.##########',
+            '#####O###.###O######',
+            '#########.##########',
+            '####p.........p#####',
+            '#########.##########',
+            '####################',
+            '####################',
+            '####################',
+            '####################',
+            '####################',
+            '####################'
+        ]
+    },
+    {
+        name: '岩層', speed: 0.86, chase: 0.44, phase: 14,
+        hint: '挖掉岩石正下方的泥土，它會晃兩下然後砸下來。',
+        map: [
+            '####################',
+            '######P#############',
+            '######.#############',
+            '##.........#########',
+            '###O##.##O##########',
+            '######.#############',
+            '####.......p########',
+            '######.#####O#######',
+            '####p......f########',
+            '######.#############',
+            '###......p##########',
+            '####O###############',
+            '####################',
+            '####################',
+            '####################',
+            '####################'
+        ]
+    },
+    {
+        name: '火焰巢', speed: 0.92, chase: 0.52, phase: 12,
+        hint: '火蜥噴火前會閃爍警告，那零點六秒就是你的逃命時間。',
+        map: [
+            '####################',
+            '##########P#########',
+            '##########.#########',
+            '#####f.........f####',
+            '##########.#########',
+            '#######O##.##O######',
+            '##########.#########',
+            '####...........#####',
+            '####p#####.###p#####',
+            '##########.#########',
+            '######.........f####',
+            '##########.#########',
+            '########O###########',
+            '####################',
+            '####################',
+            '####################'
+        ]
+    },
+    {
+        name: '深層', speed: 0.99, chase: 0.60, phase: 10,
+        hint: '第三層兩倍分、第四層三倍分。要拿分就得往下鑽。',
+        map: [
+            '####################',
+            '#####P##############',
+            '#####.##############',
+            '#####.##############',
+            '#####.##############',
+            '##.........p########',
+            '#####.####O#########',
+            '#####.##############',
+            '###p.......f########',
+            '#####.##############',
+            '####O.######O#######',
+            '#####.....p#########',
+            '#####.##############',
+            '##p......f##########',
+            '#####O##############',
+            '####################'
+        ]
+    },
+    {
+        name: '岩崩帶', speed: 1.06, chase: 0.68, phase: 9,
+        hint: '把兩隻以上引到同一顆石頭下方，分數會翻好幾倍。',
+        map: [
+            '####################',
+            '##########P#########',
+            '##########.#########',
+            '###.............####',
+            '###O##O###.##O##O###',
+            '##########.#########',
+            '###p...........p####',
+            '#####O####.###O#####',
+            '##########.#########',
+            '####f.........f#####',
+            '##########.#########',
+            '###p...........p####',
+            '#######O###O########',
+            '####################',
+            '####################',
+            '####################'
+        ]
+    },
+    {
+        name: '最深處', speed: 1.16, chase: 0.78, phase: 7,
+        hint: '牠們會直接鑽穿泥土追過來。沒有安全的角落。',
+        map: [
+            '####################',
+            '##########P#########',
+            '####O#####.####O####',
+            '##########.#########',
+            '###p...........p####',
+            '#######O##.##O######',
+            '##########.#########',
+            '####f.........f#####',
+            '####O#####.####O####',
+            '##########.#########',
+            '###p...........p####',
+            '#######O##.##O######',
+            '##########.#########',
+            '#####f.......f######',
+            '##########.#########',
+            '####################'
+        ]
+    }
+];
+
+var ENEMY_DEF = {
+    pooka: { name: '滾滾球', color: '#ff7a7a', eye: '#fff8e7', base: 200 },
+    fygar: { name: '火蜥',   color: '#6fd67a', eye: '#fff8e7', base: 400 }
+};
+
+// 打氣參數：這一組數字決定「擊殺要付出多少暴露時間」
+var PUMP = {
+    maxCells: 3,        // 管子最長三格
+    extend: 0.045,      // 每格延伸秒數
+    retract: 0.10,      // 沒命中時的收回時間
+    first: 0.15,        // 命中後第一下打氣的等待
+    interval: 0.34,     // 之後每下打氣的間隔
+    need: 4,            // 打滿四下爆掉
+    deflate: 0.85       // 洩氣：每 0.85 秒少一格
+};
+
+var ROCK_SCORE = [0, 1000, 2500, 4000, 6000];
+var PLAYER_SPEED = 4.7;     // 每秒幾格
+var ENEMY_SPEED  = 3.05;
+
+var s = {};
+var NOISE = [];
+for (var _i = 0; _i < COLS * ROWS; _i++) NOISE.push(Math.random());
+
+// ======================================================================
+// 座標與地形查詢
+// ======================================================================
+function inBounds(c, r) { return c >= 0 && c < COLS && r >= 0 && r < ROWS; }
+function cellCX(c) { return OX + (c + 0.5) * T; }
+function cellCY(r) { return OY + (r + 0.5) * T; }
+function entX(o) { return OX + (o.c + 0.5 + o.ox) * T; }
+function entY(o) { return OY + (o.r + 0.5 + o.oy) * T; }
+function layerOf(r) { return RE.clamp(Math.floor(r / 4), 0, 3); }
+function isDug(c, r) { return inBounds(c, r) && s.dirt[r][c] === 0; }
+
+function rockAt(c, r) {
+    for (var i = 0; i < s.rocks.length; i++) {
+        var k = s.rocks[i];
+        if (k.state !== 'idle' && k.state !== 'shake') continue;
+        if (k.c === c && k.r === r) return k;
+    }
+    return null;
+}
+
+function playerCanEnter(c, r) { return inBounds(c, r) && !rockAt(c, r); }
+function enemyCanEnter(c, r) { return isDug(c, r) && !rockAt(c, r); }
+
+/** 挖開一格泥土。岩石格不能挖——必須從下方掏空它。 */
+function digCell(c, r) {
+    if (!inBounds(c, r) || s.dirt[r][c] === 0) return;
+    if (rockAt(c, r)) return;
+    s.dirt[r][c] = 0;
+    var L = LAYERS[layerOf(r)];
+    P.burst(cellCX(c), cellCY(r), 5, {
+        colors: L.bits, speedMin: 20, speedMax: 90, gravity: 260,
+        lifeMin: 0.14, lifeMax: 0.36, sizeMin: 2, sizeMax: 4
+    });
+    // 每一格都放音效太吵，用機率讓挖掘聲變成節奏而不是噪音
+    if (Math.random() < 0.32) RetroAudio.play('step');
+}
+
+/**
+ * 格狀移動 + 平滑插值。
+ * ox / oy 是離格心的偏移量（單位為「格」，範圍 -0.5 ~ 0.5）。
+ * 撞牆時偏移量必須歸零，否則會停在 0.48 格的位置、超出可轉向的門檻，
+ * 貼牆之後就再也轉不了向了（README 記錄過的坑）。
+ */
+function moveGrid(o, speed, dt, canEnter) {
+    var d = DIRS[o.dir];
+    o.blocked = false;
+    var nox = o.ox + d[0] * speed * dt;
+    var noy = o.oy + d[1] * speed * dt;
+    if ((d[0] !== 0 && Math.abs(nox) >= 0.5) || (d[1] !== 0 && Math.abs(noy) >= 0.5)) {
+        var tc = o.c + d[0], tr = o.r + d[1];
+        if (!canEnter(tc, tr)) { o.ox = 0; o.oy = 0; o.blocked = true; return false; }
+        o.c = tc; o.r = tr;
+        o.ox = nox - d[0]; o.oy = noy - d[1];
+        return true;
+    }
+    o.ox = nox; o.oy = noy;
+    return false;
+}
+
+function atCenter(o) { return Math.abs(o.ox) < 0.28 && Math.abs(o.oy) < 0.28; }
+
+// ======================================================================
+// 關卡載入
+// ======================================================================
+function reset() {
+    s = { stage: 1, lives: 3, score: 0, over: false };
+    RE.juice.reset();          // 死亡時的慢動作／閃色不要留到下一場
+    RE.Input.reset();
+    P.clear(); FT.clear();
+    loadStage(1);
+    G.setStat('score', 0);
+    G.setLives(3);
+}
+
+function loadStage(n) {
+    var cfg = STAGES[Math.min(n - 1, STAGES.length - 1)];
+    s.cfg = cfg;
+    s.stage = n;
+    s.dirt = [];
+    s.rocks = [];
+    s.enemies = [];
+    s.clearTimer = 0;
+    s.deepest = 0;
+
+    var start = { c: 10, r: 1 };
+    for (var r = 0; r < ROWS; r++) {
+        s.dirt[r] = [];
+        var row = cfg.map[r];
+        for (var c = 0; c < COLS; c++) {
+            var ch = row.charAt(c);
+            s.dirt[r][c] = (ch === '#' || ch === 'O') ? 1 : 0;
+            if (ch === 'O') {
+                s.rocks.push({ c: c, r: r, state: 'idle', t: 0,
+                               y: OY + r * T, vy: 0, kills: 0, wob: 0 });
+            } else if (ch === 'P') {
+                start = { c: c, r: r };
+            } else if (ch === 'p') {
+                s.enemies.push(makeEnemy('pooka', c, r));
+            } else if (ch === 'f') {
+                s.enemies.push(makeEnemy('fygar', c, r));
+            }
+        }
+    }
+
+    s.p = {
+        c: start.c, r: start.r, ox: 0, oy: 0, dir: 'down', want: 'down',
+        x: cellCX(start.c), y: cellCY(start.r),
+        moving: false, anim: 0, dead: 0, invuln: 1.2, blocked: false
+    };
+    s.harp = { state: 'off', dir: 'down', cells: 0, len: 0, t: 0, target: null, pumpT: 0 };
+
+    G.setStat('stage', n);
+    G.setStat('left', s.enemies.length);
+}
+
+function makeEnemy(kind, c, r) {
+    // 穿地計時一定要給初值，而且要錯開。
+    // 若初值是 0，第一幀就會 phaseT <= 0，全場敵人在開場瞬間集體鑽土直撲玩家。
+    var base = s.cfg ? s.cfg.phase : 12;
+    return {
+        kind: kind, def: ENEMY_DEF[kind],
+        c: c, r: r, ox: 0, oy: 0, dir: RE.pick(['left', 'right', 'up', 'down']),
+        x: cellCX(c), y: cellCY(r),
+        alive: true, dying: 0, anim: RE.rand(0, 6),
+        pump: 0, deflateT: 0,
+        phasing: false, phaseT: RE.rand(base * 0.9, base * 1.35), phaseElapsed: 0, startCell: 0,
+        stuck: 0, blocked: false, decided: false,
+        fireState: 'idle', fireT: RE.rand(2.2, 4.2), fireDir: 1, fireCells: []
+    };
+}
+
+function addScore(n) { s.score += n; G.setStat('score', s.score); }
+function rockFalling() {
+    for (var i = 0; i < s.rocks.length; i++) if (s.rocks[i].state === 'fall') return true;
+    return false;
+}
+function aliveCount() {
+    var n = 0;
+    for (var i = 0; i < s.enemies.length; i++) if (s.enemies[i].alive) n++;
+    return n;
+}
+
+// ======================================================================
+// 主更新
+// ======================================================================
+function update(dt) {
+    if (s.over) return;
+
+    // 過關慶祝的空窗期：玩家與所有危險物全部凍結，
+    // 否則會發生「已經過關了卻莫名其妙少一條命」
+    if (s.clearTimer > 0) {
+        s.clearTimer -= dt;
+        P.update(dt); FT.update(dt);
+        if (s.clearTimer <= 0) nextStage();
+        return;
+    }
+
+    var p = s.p;
+    if (p.dead > 0) {
+        p.dead -= dt;
+        P.update(dt); FT.update(dt);
+        if (p.dead <= 0) afterDeath();
+        return;
+    }
+    if (p.invuln > 0) p.invuln -= dt;
+
+    updatePlayer(dt);
+    if (p.dead > 0) return;
+
+    updateHarpoon(dt);
+
+    for (var i = s.enemies.length - 1; i >= 0; i--) {
+        var e = s.enemies[i];
+        if (e.dying > 0) {
+            e.dying -= dt;
+            if (e.dying <= 0) s.enemies.splice(i, 1);
+            continue;
+        }
+        if (!e.alive) continue;
+        updateEnemy(e, dt);
+        if (s.p.dead > 0) return;   // 回呼可能已經觸發死亡，立刻中止本幀
+    }
+
+    updateRocks(dt);
+    if (s.p.dead > 0) return;
+
+    // 過關：清空所有敵人。
+    // 但若還有岩石在半空中，必須等它落地才結算——連砸倍率是在 landRock() 裡給的，
+    // 直接過關會讓「用石頭砸死最後幾隻」這條路線一分都拿不到，石頭也會定格在半空。
+    // 這段等待期間給玩家無敵，避免「已經打完了卻被自己弄下來的石頭壓死」。
+    if (aliveCount() === 0) {
+        if (rockFalling()) {
+            s.p.invuln = Math.max(s.p.invuln, 0.4);
+        } else {
+            clearStage();
+            return;
+        }
+    }
+
+    P.update(dt);
+    FT.update(dt);
+}
+
+// ======================================================================
+// 玩家
+// ======================================================================
+function updatePlayer(dt) {
+    var p = s.p;
+    var pumping = (s.harp.state === 'extend' || s.harp.state === 'stuck');
+
+    var ax = RE.Input.axisX(), ay = RE.Input.axisY();
+    p.moving = false;
+
+    if (!pumping) {
+        var want = p.dir;
+        if (ax !== 0 && ay !== 0) {
+            // 兩軸同時按下時優先轉向「與現在不同」的軸，轉彎才靈敏
+            want = (p.dir === 'left' || p.dir === 'right')
+                 ? (ay < 0 ? 'up' : 'down') : (ax < 0 ? 'left' : 'right');
+        } else if (ax !== 0) { want = ax < 0 ? 'left' : 'right'; }
+        else if (ay !== 0) { want = ay < 0 ? 'up' : 'down'; }
+        p.moving = (ax !== 0 || ay !== 0);
+        p.want = want;
+
+        if (p.moving && want !== p.dir && atCenter(p)) {
+            var wd = DIRS[want];
+            if (playerCanEnter(p.c + wd[0], p.r + wd[1])) {
+                p.dir = want; p.ox = 0; p.oy = 0;
+            }
+        }
+    }
+
+    if (p.moving) {
+        p.anim += dt * 9;
+        // 挖掘：走過本格中線之後才把前方那一格挖開，
+        // 通道恰好在鑽頭抵達交界前一瞬間打通，看起來像真的在鑽。
+        // 注意要用「沿行進方向」的有號偏移量，不能用 |ox|+|oy|——
+        // 剛跨進新格時偏移量是 -0.47，取絕對值會讓前方整整一格提早打通，
+        // 看起來像通道本來就存在。
+        var d = DIRS[p.dir];
+        if (p.ox * d[0] + p.oy * d[1] > 0.1) digCell(p.c + d[0], p.r + d[1]);
+        moveGrid(p, PLAYER_SPEED, dt, playerCanEnter);
+        digCell(p.c, p.r);
+        if (p.r > s.deepest) s.deepest = p.r;
+    } else {
+        // 沒有輸入時滑回格心，避免停在半格導致轉不了向
+        var back = PLAYER_SPEED * dt;
+        p.ox = RE.approach(p.ox, 0, back);
+        p.oy = RE.approach(p.oy, 0, back);
+    }
+
+    p.x = entX(p); p.y = entY(p);
+
+    // 射出打氣管
+    var fire = RE.Input.pressed('a') || RE.Input.pressed('b');
+    if (fire && s.harp.state === 'off') {
+        s.harp.state = 'extend';
+        s.harp.dir = p.dir;
+        s.harp.cells = 0;
+        s.harp.len = 0;
+        s.harp.t = 0;
+        s.harp.target = null;
+        s.harp.pumpT = 0;
+        RetroAudio.play('shoot');
+    }
+}
+
+// ======================================================================
+// 打氣管
+// ======================================================================
+function updateHarpoon(dt) {
+    var h = s.harp, p = s.p;
+    if (h.state === 'off') return;
+    var held = RE.Input.down('a') || RE.Input.down('b');
+    var d = DIRS[h.dir];
+
+    if (h.state === 'extend') {
+        h.t += dt;
+        while (h.t >= PUMP.extend && h.cells < PUMP.maxCells) {
+            h.t -= PUMP.extend;
+            var c = p.c + d[0] * (h.cells + 1), r = p.r + d[1] * (h.cells + 1);
+            if (!isDug(c, r) || rockAt(c, r)) { h.state = 'retract'; h.t = PUMP.retract; return; }
+            h.cells++;
+            var hit = enemyAtCell(c, r);
+            if (hit) {
+                h.state = 'stuck';
+                h.target = hit;
+                h.pumpT = PUMP.interval - PUMP.first;
+                hit.pump = Math.max(hit.pump, 0);
+                hit.deflateT = 0;
+                RetroAudio.play('block');
+                RE.juice.shake(0.1);
+                P.sparks(hit.x, hit.y, Math.atan2(-d[1], -d[0]), 8, '#fff0aa');
+                return;
+            }
+        }
+        h.len = h.cells;
+        if (h.cells >= PUMP.maxCells) { h.state = 'retract'; h.t = PUMP.retract; }
+        return;
+    }
+
+    if (h.state === 'retract') {
+        h.t -= dt;
+        if (h.t <= 0) { h.state = 'off'; h.cells = 0; }
+        return;
+    }
+
+    // stuck：玩家被釘在原地，這就是打氣擊殺的代價
+    var e = h.target;
+    if (!e || !e.alive || e.dying > 0 || e.phasing) { detachHarpoon(); return; }
+    if (!held) { detachHarpoon(); return; }
+
+    h.pumpT += dt;
+    if (h.pumpT >= PUMP.interval) {
+        h.pumpT = 0;
+        puff(e);
+    }
+}
+
+function detachHarpoon() {
+    var h = s.harp;
+    if (h.target) h.target.deflateT = 0;
+    h.state = 'off';
+    h.target = null;
+    h.cells = 0;
+}
+
+function enemyAtCell(c, r) {
+    var x = cellCX(c), y = cellCY(r);
+    for (var i = 0; i < s.enemies.length; i++) {
+        var e = s.enemies[i];
+        if (!e.alive || e.dying > 0 || e.phasing) continue;
+        if (Math.abs(e.x - x) < T * 0.62 && Math.abs(e.y - y) < T * 0.62) return e;
+    }
+    return null;
+}
+
+/** 打一下氣。回饋強度隨打氣次數遞增，音高也跟著往上爬。 */
+function puff(e) {
+    e.pump++;
+    e.deflateT = 0;
+    RE.juice.hitstop(0.02 + e.pump * 0.006);
+    RE.juice.shake(0.08 + e.pump * 0.04);
+    RetroAudio.play('hit');
+    RetroAudio.play('combo', e.pump + 2);
+    P.burst(e.x, e.y, 5 + e.pump * 3, {
+        colors: ['#fff8e7', e.def.color, '#ffd166'],
+        speedMin: 30, speedMax: 60 + e.pump * 40, gravity: 60, drag: 0.88,
+        lifeMin: 0.14, lifeMax: 0.34, sizeMin: 2, sizeMax: 4, glow: true
+    });
+    FT.add(e.x, e.y - 16 - e.pump * 2, '×' + e.pump,
+        { color: e.pump >= 3 ? '#ff6b6b' : '#fff0aa', size: 12 + e.pump * 2, life: 0.5 });
+    if (e.pump >= PUMP.need) popEnemy(e);
+}
+
+function popEnemy(e) {
+    e.alive = false;
+    e.dying = 0.4;
+    var mult = LAYERS[layerOf(e.r)].mult;
+    var val = Math.round(e.def.base * mult);
+    addScore(val);
+
+    RE.juice.hitstop(0.05);
+    RE.juice.shake(0.25);
+    RE.juice.punchZoom(0.05);
+    RE.juice.rumble(0.55, 0.14);
+    if (mult >= 2) RE.juice.flash('rgba(255,209,102,0.3)', 0.09);
+    RetroAudio.play('bigExplosion');
+
+    P.burst(e.x, e.y, 30, {
+        colors: [e.def.color, '#fff8e7', '#ffd166'],
+        speedMin: 60, speedMax: 250, gravity: 240,
+        lifeMin: 0.28, lifeMax: 0.75, sizeMin: 2, sizeMax: 6, glow: true
+    });
+    P.ring(e.x, e.y, e.def.color, 52);
+    FT.add(e.x, e.y - 20, '+' + val + (mult > 1 ? '　×' + mult : ''),
+        { color: '#ffd166', size: 17, life: 1.1 });
+    if (mult > 1) {
+        FT.add(e.x, e.y - 40, LAYERS[layerOf(e.r)].name + ' 加成',
+            { color: '#70e4b5', size: 12, life: 1.1, vy: -34 });
+    }
+    detachHarpoon();
+    G.setStat('left', aliveCount());
+}
+
+// ======================================================================
+// 敵人
+// ======================================================================
+function updateEnemy(e, dt) {
+    e.anim += dt * 5;
+
+    // ---- 洩氣：放開打氣鍵後慢慢恢復 ----
+    if (e.pump > 0 && s.harp.target !== e) {
+        e.deflateT += dt;
+        if (e.deflateT >= PUMP.deflate) { e.deflateT = 0; e.pump--; }
+    }
+    // 管子一釘上就定住：被釘住的敵人不會再移動，也不會撞死玩家。
+    // （若只在 pump > 0 才凍結，命中到第一下打氣之間的空檔敵人會走過來撞死你）
+    if (e.pump > 0 || (s.harp.state === 'stuck' && s.harp.target === e)) {
+        if (!e.phasing) { e.x = entX(e); e.y = entY(e); }
+        return;
+    }
+
+    // ---- 穿地狀態：變成半透明的眼睛直線朝玩家移動 ----
+    if (e.phasing) {
+        e.phaseElapsed += dt;
+        var ang = Math.atan2(s.p.y - e.y, s.p.x - e.x);
+        var sp = ENEMY_SPEED * s.cfg.speed * T * 0.58;
+        e.x += Math.cos(ang) * sp * dt;
+        e.y += Math.sin(ang) * sp * dt;
+        e.x = RE.clamp(e.x, OX + T * 0.5, OX + COLS * T - T * 0.5);
+        e.y = RE.clamp(e.y, OY + T * 0.5, OY + ROWS * T - T * 0.5);
+        var cc = Math.floor((e.x - OX) / T), cr = Math.floor((e.y - OY) / T);
+        var key = cr * COLS + cc;
+        if (e.phaseElapsed > 0.4 && key !== e.startCell && isDug(cc, cr) && !rockAt(cc, cr)) {
+            e.phasing = false;
+            e.c = cc; e.r = cr; e.ox = 0; e.oy = 0; e.decided = false;
+            e.phaseT = s.cfg.phase;
+            e.x = entX(e); e.y = entY(e);
+            RetroAudio.play('bounce');
+            P.ring(e.x, e.y, e.def.color, 30);
+        }
+        touchPlayer(e);
+        return;
+    }
+
+    // ---- 噴火（只有火蜥）----
+    if (e.kind === 'fygar') {
+        updateFygarFire(e, dt);
+        if (e.fireState !== 'idle') { e.x = entX(e); e.y = entY(e); touchPlayer(e); return; }
+    }
+
+    // ---- 穿地觸發計時 ----
+    e.phaseT -= dt;
+    if (e.phaseT <= 0) { startPhase(e); return; }
+
+    // ---- 一般格狀追擊 ----
+    // 轉向決策一定要在「格心」做，一格只擲一次骰。
+    // 若在「剛跨進新格」（沿路偏移量約 -0.5）就轉向，垂直軸的偏移量永遠不會被清掉，
+    // 敵人會沿著格線走、看起來半埋在土裡，碰撞判定也整整偏半格。
+    var dd = DIRS[e.dir];
+    var along = e.ox * dd[0] + e.oy * dd[1];
+    if (!e.decided && along >= 0) {
+        e.decided = true;
+        var before = RE.dist(cellCX(e.c), cellCY(e.r), s.p.x, s.p.y);
+        var nd = chooseDir(e);
+        if (nd) {
+            // 此刻偏移量本來就趨近 0，歸零不會造成位移跳動
+            if (nd !== e.dir) { e.dir = nd; e.ox = 0; e.oy = 0; }
+            e.stuck = 0;
+            var d2 = DIRS[e.dir];
+            var after = RE.dist(cellCX(e.c + d2[0]), cellCY(e.r + d2[1]), s.p.x, s.p.y);
+            if (after < before) e.phaseT = s.cfg.phase;   // 有在逼近就重置穿地計時
+        } else {
+            // 完全被困住（例如四周都是土或被落石封死）→ 直接進入穿地
+            e.stuck += 0.6;
+            if (e.stuck > 1) { startPhase(e); return; }
+        }
+    }
+    if (moveGrid(e, ENEMY_SPEED * s.cfg.speed, dt, enemyCanEnter) || e.blocked) e.decided = false;
+    e.x = entX(e); e.y = entY(e);
+    touchPlayer(e);
+}
+
+/**
+ * 每次抵達格心才決策一次，並且只在這一刻擲一次骰。
+ * 若每幀重擲，隨機誤差會被平均掉，AI 反而變成永不失誤的完美機器。
+ */
+function chooseDir(e) {
+    var opts = [];
+    for (var k in DIRS) {
+        var d = DIRS[k];
+        if (enemyCanEnter(e.c + d[0], e.r + d[1])) opts.push(k);
+    }
+    if (!opts.length) return null;
+    var back = OPP[e.dir];
+    var fwd = [];
+    for (var i = 0; i < opts.length; i++) if (opts[i] !== back) fwd.push(opts[i]);
+    var list = fwd.length ? fwd : opts;
+
+    if (Math.random() < s.cfg.chase) {
+        var px = s.p.x, py = s.p.y;
+        list.sort(function (a, b) {
+            var da = RE.dist(cellCX(e.c + DIRS[a][0]), cellCY(e.r + DIRS[a][1]), px, py);
+            var db = RE.dist(cellCX(e.c + DIRS[b][0]), cellCY(e.r + DIRS[b][1]), px, py);
+            return da - db;
+        });
+        return list[0];
+    }
+    return RE.pick(list);
+}
+
+function startPhase(e) {
+    e.phasing = true;
+    e.phaseElapsed = 0;
+    e.startCell = e.r * COLS + e.c;
+    e.stuck = 0;
+    e.x = entX(e); e.y = entY(e);
+    P.burst(e.x, e.y, 10, { colors: [e.def.color, '#ffffff'], speedMin: 20, speedMax: 80,
+        gravity: 0, drag: 0.86, lifeMin: 0.2, lifeMax: 0.5, sizeMax: 3, glow: true });
+}
+
+function updateFygarFire(e, dt) {
+    if (e.fireState === 'idle') {
+        e.fireT -= dt;
+        if (e.fireT > 0) return;
+        // 只在與玩家同一列、且中間通道暢通時才噴，玩家因此可以用「錯開一列」躲避
+        if (s.p.r !== e.r) { e.fireT = 0.35; return; }
+        var dir = s.p.x < e.x ? -1 : 1;
+        var cells = [];
+        for (var k = 1; k <= 3; k++) {
+            var c = e.c + dir * k;
+            if (!isDug(c, e.r) || rockAt(c, e.r)) break;
+            cells.push(c);
+        }
+        if (cells.length < 2 || Math.abs(s.p.c - e.c) > 4) { e.fireT = 0.4; return; }
+        e.fireState = 'warn';
+        e.fireT = 0.6;
+        e.fireDir = dir;
+        e.fireCells = cells;
+        RetroAudio.play('error');
+        return;
+    }
+
+    if (e.fireState === 'warn') {
+        e.fireT -= dt;
+        if (e.fireT <= 0) {
+            e.fireState = 'fire';
+            e.fireT = 0.45;
+            RetroAudio.play('laser');
+            RE.juice.shake(0.12);
+            var fx = cellCX(e.c + e.fireDir), fy = cellCY(e.r);
+            P.burst(fx, fy, 16, { colors: ['#ffd166', '#ff9349', '#ff6b6b'],
+                angle: e.fireDir > 0 ? 0 : Math.PI, spread: 0.5,
+                speedMin: 80, speedMax: 240, gravity: 0, drag: 0.9,
+                lifeMin: 0.15, lifeMax: 0.4, sizeMax: 5, glow: true });
+        }
+        return;
+    }
+
+    // fire：火焰持續傷害
+    e.fireT -= dt;
+    if (e.fireT <= 0) {
+        e.fireState = 'idle';
+        e.fireT = RE.rand(2.4, 4.2);
+        e.fireCells = [];
+        return;
+    }
+    if (s.p.invuln > 0 || s.p.dead > 0) return;
+    for (var i = 0; i < e.fireCells.length; i++) {
+        if (Math.abs(s.p.x - cellCX(e.fireCells[i])) < T * 0.5 &&
+            Math.abs(s.p.y - cellCY(e.r)) < T * 0.5) {
+            RE.juice.flash('rgba(255,80,60,0.45)', 0.16);
+            RE.juice.slowmo(0.25, 0.9);
+            die('被火蜥的火焰燒到');
+            return;
+        }
+    }
+}
+
+function touchPlayer(e) {
+    var p = s.p;
+    if (p.dead > 0 || p.invuln > 0) return;
+    if (Math.abs(e.x - p.x) < T * 0.6 && Math.abs(e.y - p.y) < T * 0.6) {
+        die('撞上 ' + e.def.name);
+    }
+}
+
+// ======================================================================
+// 岩石：低風險高報酬的另一條擊殺路線
+// ======================================================================
+function updateRocks(dt) {
+    for (var i = s.rocks.length - 1; i >= 0; i--) {
+        var k = s.rocks[i];
+
+        if (k.state === 'idle') {
+            if (k.r + 1 < ROWS && isDug(k.c, k.r + 1) && !rockAt(k.c, k.r + 1)) {
+                k.state = 'shake';
+                k.t = 0.5;
+                RetroAudio.play('rotate');
+            }
+            continue;
+        }
+
+        if (k.state === 'shake') {
+            k.t -= dt;
+            k.wob += dt * 40;
+            if (k.t <= 0) {
+                k.state = 'fall';
+                k.vy = 0;
+                k.kills = 0;
+                s.dirt[k.r][k.c] = 0;   // 岩石離開後留下通道
+                RetroAudio.play('drop');
+                RE.juice.shake(0.14);
+            }
+            continue;
+        }
+
+        if (k.state === 'fall') {
+            k.vy = Math.min(k.vy + 1500 * dt, 460);
+            k.y += k.vy * dt;
+            var cxp = cellCX(k.c), cyp = k.y + T / 2;
+
+            // 砸中敵人
+            for (var j = 0; j < s.enemies.length; j++) {
+                var e = s.enemies[j];
+                if (!e.alive || e.dying > 0 || e.phasing) continue;
+                if (Math.abs(e.x - cxp) < T * 0.62 && Math.abs(e.y - cyp) < T * 0.7) {
+                    crushEnemy(e, k);
+                }
+            }
+            // 砸中玩家
+            if (s.p.dead <= 0 && s.p.invuln <= 0 &&
+                Math.abs(s.p.x - cxp) < T * 0.55 && Math.abs(s.p.y - cyp) < T * 0.6) {
+                RE.juice.flash('rgba(255,255,255,0.5)', 0.12);
+                die('被自己弄下來的岩石壓中');
+                return;
+            }
+
+            var topRow = Math.floor((k.y - OY) / T);
+            var nextR = topRow + 1;
+            if (nextR >= ROWS || s.dirt[nextR][k.c] !== 0 || rockAt(k.c, nextR)) {
+                k.y = OY + topRow * T;
+                k.r = topRow;
+                landRock(k);
+            }
+            continue;
+        }
+
+        // crack：碎裂消失
+        k.t -= dt;
+        if (k.t <= 0) s.rocks.splice(i, 1);
+    }
+}
+
+function crushEnemy(e, rock) {
+    e.alive = false;
+    e.dying = 0.35;
+    rock.kills++;
+    if (s.harp.target === e) detachHarpoon();
+
+    RE.juice.hitstop(0.05);
+    RE.juice.shake(0.3);
+    RetroAudio.play('explosion');
+    P.burst(e.x, e.y, 24, {
+        colors: [e.def.color, '#fff8e7', '#c9d6d0'],
+        speedMin: 60, speedMax: 230, gravity: 320,
+        lifeMin: 0.25, lifeMax: 0.7, sizeMin: 2, sizeMax: 6
+    });
+    P.ring(e.x, e.y, '#c9d6d0', 44);
+    G.setStat('left', aliveCount());
+}
+
+function landRock(k) {
+    k.state = 'crack';
+    k.t = 0.35;
+    RetroAudio.play('heavyHit');
+    RE.juice.shake(0.24);
+    RE.juice.hitstop(0.03);
+    var x = cellCX(k.c), y = k.y + T / 2;
+    P.burst(x, y + 6, 20, {
+        colors: ['#c9d6d0', '#8a9a94', '#5c6b66'],
+        angle: -Math.PI / 2, spread: 1.5,
+        speedMin: 50, speedMax: 200, gravity: 460,
+        lifeMin: 0.2, lifeMax: 0.6, sizeMin: 2, sizeMax: 6
+    });
+
+    if (k.kills > 0) {
+        var n = Math.min(k.kills, 4);
+        var mult = LAYERS[layerOf(k.r)].mult;
+        var val = Math.round(ROCK_SCORE[n] * mult);
+        addScore(val);
+        if (k.kills >= 2) {
+            RE.juice.flash('rgba(255,209,102,0.42)', 0.2);
+            RE.juice.slowmo(0.3, 0.9);
+            RetroAudio.play('powerup');
+            FT.add(W / 2, OY + 40, k.kills + ' 連砸！　×' + (ROCK_SCORE[n] / ROCK_SCORE[1]).toFixed(1) + ' 倍',
+                { color: '#ff9ebb', size: 24, life: 1.8, vy: -20 });
+            FT.add(W / 2, OY + 70, '+' + val, { color: '#ffd166', size: 20, life: 1.8, vy: -16 });
+        } else {
+            RetroAudio.play('coin');
+            FT.add(x, y - 22, '+' + val, { color: '#ffd166', size: 17, life: 1 });
+        }
+    }
+}
+
+// ======================================================================
+// 死亡、過關、結算
+// ======================================================================
+function die(reason) {
+    var p = s.p;
+    if (p.dead > 0) return;
+    p.dead = 1.4;
+    s.deathReason = reason;
+    s.lives--;
+    G.setLives(s.lives);
+    detachHarpoon();
+    RE.juice.impact(3);
+    RE.juice.slowmo(0.3, 0.9);
+    RetroAudio.play('hurt');
+    RetroAudio.play('explosion');   // 不要在這裡放 gameover，那是外殼結算時才該響的音
+    P.burst(p.x, p.y, 28, {
+        colors: ['#ff6b6b', '#ffd166', '#fff8e7'],
+        speedMin: 50, speedMax: 220, gravity: 260, lifeMin: 0.3, lifeMax: 0.85
+    });
+    P.ring(p.x, p.y, '#ff6b6b', 60);
+}
+
+function afterDeath() {
+    if (s.lives <= 0) {
+        s.over = true;
+        G.gameOver({
+            score: s.score,
+            body: '停在第 ' + s.stage + ' 關「' + s.cfg.name + '」（' + s.deathReason + '）。' +
+                  '記住：你挖的每一條路，敵人也走得到。挖之前先想好這條路是誰的退路。'
+        });
+        return;
+    }
+    // 整關重來：泥土恢復原狀。這是刻意的——通道是你的資產，死掉就得重挖
+    loadStage(s.stage);
+    FT.add(W / 2, OY + 50, '剩餘機會 ' + s.lives + '　通道全部回填',
+        { color: '#ffd166', size: 16, life: 1.8 });
+}
+
+function clearStage() {
+    s.clearTimer = 2;
+    var bonus = 500 * s.stage + s.deepest * 40;
+    addScore(bonus);
+    RetroAudio.play('win');
+    RE.juice.flash('rgba(255,209,102,0.32)', 0.2);
+    FT.add(W / 2, OY + 110, '清空！', { color: '#ffd166', size: 28, life: 2 });
+    FT.add(W / 2, OY + 146, '最深抵達第 ' + (layerOf(s.deepest) + 1) + ' 層　+' + bonus,
+        { color: '#70e4b5', size: 15, life: 2, vy: -18 });
+    P.burst(s.p.x, s.p.y, 40, {
+        colors: ['#ffd166', '#70e4b5', '#ff9ebb', '#fff8e7'],
+        speedMin: 60, speedMax: 280, gravity: 300, lifeMin: 0.4, lifeMax: 1.2
+    });
+}
+
+function nextStage() {
+    var n = s.stage + 1;
+    RE.Save.unlockLevel('dig_dug', n);
+    if (n > STAGES.length) {
+        s.over = true;
+        G.gameOver({
+            score: s.score, win: true,
+            body: '六層全部清空。回頭看看你挖出來的路——那些通道沒有一條是設計師畫的，' +
+                  '全是你自己在「要安全還是要分數」之間做出的選擇留下的痕跡。'
+        });
+        return;
+    }
+    loadStage(n);
+    G.stageCard(n, s.cfg.name, s.cfg.hint);
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function render() {
+    G.clear('#0a1014');
+    G.beginWorld();
+
+    drawSky();
+    drawGround();
+    drawRocks();
+    drawFire();
+    drawEnemies();
+    drawPlayer();
+    drawHarpoon();
+
+    P.draw(ctx);
+    FT.draw(ctx);
+
+    drawTopBar();
+
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.08, vignetteStrength: 0.42 });
+}
+
+function drawSky() {
+    var g = ctx.createLinearGradient(0, 0, 0, OY);
+    g.addColorStop(0, '#1b2f4a');
+    g.addColorStop(1, '#2e4a3a');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, OY);
+    // 地表草皮
+    ctx.fillStyle = '#3f7a4a';
+    ctx.fillRect(0, OY - 6, W, 6);
+    ctx.fillStyle = '#5aa05e';
+    ctx.fillRect(0, OY - 6, W, 2);
+}
+
+function drawGround() {
+    for (var r = 0; r < ROWS; r++) {
+        var L = LAYERS[layerOf(r)];
+        for (var c = 0; c < COLS; c++) {
+            var x = OX + c * T, y = OY + r * T;
+            if (s.dirt[r][c] === 0) {
+                ctx.fillStyle = L.tunnel;
+                ctx.fillRect(x, y, T, T);
+                continue;
+            }
+            ctx.fillStyle = L.mid;
+            ctx.fillRect(x, y, T, T);
+            // 上方若是通道就畫出被鏟開的亮邊，讓「挖過的痕跡」看得出來
+            if (r > 0 && s.dirt[r - 1][c] === 0) {
+                ctx.fillStyle = L.top;
+                ctx.fillRect(x, y, T, 4);
+            }
+            if (c > 0 && s.dirt[r][c - 1] === 0) {
+                ctx.fillStyle = L.top;
+                ctx.fillRect(x, y, 3, T);
+            }
+            if (c < COLS - 1 && s.dirt[r][c + 1] === 0) {
+                ctx.fillStyle = L.dark;
+                ctx.fillRect(x + T - 3, y, 3, T);
+            }
+            // 顆粒紋理（固定亂數，不會每幀閃爍）
+            var nv = NOISE[r * COLS + c];
+            ctx.fillStyle = L.dark;
+            ctx.fillRect(x + 4 + Math.floor(nv * 12), y + 5 + Math.floor(nv * 13), 3, 3);
+            ctx.fillStyle = L.top;
+            ctx.fillRect(x + 15 - Math.floor(nv * 10), y + 16 - Math.floor(nv * 11), 2, 2);
+        }
+    }
+
+    // 地層分隔與倍率標示
+    ctx.save();
+    for (var i = 1; i < 4; i++) {
+        var yy = OY + i * 4 * T;
+        ctx.globalAlpha = 0.28;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([6, 6]);
+        ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(W, yy); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 0.42;
+    for (var i = 0; i < 4; i++) {
+        RE.Draw.text(ctx, LAYERS[i].name + ' ×' + LAYERS[i].mult, W - 5, OY + i * 4 * T + 4,
+            { size: 11, align: 'right', color: '#fff8e7', strokeWidth: 3 });
+    }
+    ctx.restore();
+}
+
+function drawRocks() {
+    for (var i = 0; i < s.rocks.length; i++) {
+        var k = s.rocks[i];
+        var x = OX + k.c * T;
+        var y = (k.state === 'fall' || k.state === 'crack') ? k.y : OY + k.r * T;
+        var wob = k.state === 'shake' ? Math.sin(k.wob) * 2.5 : 0;
+        ctx.save();
+        ctx.translate(x + T / 2 + wob, y + T / 2);
+        if (k.state === 'crack') {
+            var t = 1 - k.t / 0.35;
+            ctx.globalAlpha = 1 - t;
+            ctx.scale(1 + t * 0.3, 1 - t * 0.35);
+        }
+        ctx.fillStyle = '#5c6b66';
+        RE.Draw.roundRect(ctx, -T / 2 + 1, -T / 2 + 1, T - 2, T - 2, 5);
+        ctx.fill();
+        ctx.fillStyle = '#8a9a94';
+        RE.Draw.roundRect(ctx, -T / 2 + 3, -T / 2 + 3, T - 8, T - 9, 4);
+        ctx.fill();
+        ctx.fillStyle = '#c9d6d0';
+        ctx.fillRect(-T / 2 + 5, -T / 2 + 5, 6, 3);
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.fillRect(-2, -3, 3, 8);
+        ctx.fillRect(2, 2, 6, 3);
+        if (k.state === 'shake') {
+            ctx.strokeStyle = 'rgba(255,107,107,' + (0.4 + Math.sin(k.wob * 1.5) * 0.35) + ')';
+            ctx.lineWidth = 2;
+            RE.Draw.roundRect(ctx, -T / 2 + 1, -T / 2 + 1, T - 2, T - 2, 5);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+}
+
+function drawFire() {
+    for (var i = 0; i < s.enemies.length; i++) {
+        var e = s.enemies[i];
+        if (e.kind !== 'fygar' || !e.alive) continue;
+        if (e.fireState === 'warn') {
+            var a = 0.25 + Math.abs(Math.sin(e.anim * 9)) * 0.4;
+            ctx.save();
+            ctx.globalAlpha = a;
+            ctx.fillStyle = '#ff6b6b';
+            for (var j = 0; j < e.fireCells.length; j++) {
+                ctx.fillRect(OX + e.fireCells[j] * T + 3, OY + e.r * T + 6, T - 6, T - 12);
+            }
+            ctx.restore();
+        } else if (e.fireState === 'fire') {
+            ctx.save();
+            ctx.globalAlpha = RE.clamp(e.fireT / 0.45 + 0.35, 0, 1);
+            ctx.shadowBlur = 16; ctx.shadowColor = '#ff9349';
+            for (var j = 0; j < e.fireCells.length; j++) {
+                var fx = cellCX(e.fireCells[j]), fy = cellCY(e.r);
+                var g = ctx.createRadialGradient(fx, fy, 2, fx, fy, T * 0.62);
+                g.addColorStop(0, '#fff8e7');
+                g.addColorStop(0.4, '#ffd166');
+                g.addColorStop(1, 'rgba(255,80,40,0)');
+                ctx.fillStyle = g;
+                ctx.fillRect(fx - T * 0.7, fy - T * 0.6, T * 1.4, T * 1.2);
+            }
+            ctx.restore();
+        }
+    }
+}
+
+function drawEnemies() {
+    for (var i = 0; i < s.enemies.length; i++) {
+        var e = s.enemies[i];
+        var sc = 1 + e.pump * 0.24;
+        ctx.save();
+        ctx.translate(e.x, e.y);
+
+        if (e.dying > 0) {
+            var t = 1 - e.dying / 0.4;
+            ctx.globalAlpha = 1 - t;
+            ctx.scale(sc * (1 + t * 1.1), sc * (1 + t * 1.1));
+        } else if (e.phasing) {
+            ctx.globalAlpha = 0.42;
+        } else {
+            ctx.scale(sc, sc);
+        }
+
+        var bob = e.phasing ? Math.sin(e.anim * 2) * 2 : Math.sin(e.anim) * 2;
+
+        if (e.phasing) {
+            // 穿地時只剩一雙眼睛
+            ctx.fillStyle = e.def.color;
+            ctx.beginPath(); ctx.arc(0, bob, 11, 0, RE.TAU); ctx.fill();
+            ctx.fillStyle = '#fff8e7';
+            ctx.beginPath(); ctx.arc(-4, bob - 1, 4.2, 0, RE.TAU); ctx.fill();
+            ctx.beginPath(); ctx.arc(4, bob - 1, 4.2, 0, RE.TAU); ctx.fill();
+            ctx.fillStyle = '#0a1014';
+            ctx.beginPath(); ctx.arc(-3.4, bob - 1, 2, 0, RE.TAU); ctx.fill();
+            ctx.beginPath(); ctx.arc(4.6, bob - 1, 2, 0, RE.TAU); ctx.fill();
+        } else if (e.kind === 'pooka') {
+            ctx.shadowBlur = 8; ctx.shadowColor = e.def.color;
+            ctx.fillStyle = e.def.color;
+            ctx.beginPath(); ctx.arc(0, bob, 10.5, 0, RE.TAU); ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#ffe0c0';
+            RE.Draw.roundRect(ctx, -10, bob - 4, 20, 8, 4); ctx.fill();
+            ctx.fillStyle = '#fff8e7';
+            ctx.beginPath(); ctx.arc(-4, bob, 3.4, 0, RE.TAU); ctx.fill();
+            ctx.beginPath(); ctx.arc(4, bob, 3.4, 0, RE.TAU); ctx.fill();
+            ctx.fillStyle = '#1a1a2a';
+            ctx.beginPath(); ctx.arc(-3.6, bob, 1.8, 0, RE.TAU); ctx.fill();
+            ctx.beginPath(); ctx.arc(4.4, bob, 1.8, 0, RE.TAU); ctx.fill();
+            ctx.fillStyle = '#c94a4a';
+            ctx.fillRect(-7, bob + 6, 5, 3);
+            ctx.fillRect(2, bob + 6, 5, 3);
+        } else {
+            var faceR = (e.fireState === 'idle') ? (e.dir === 'left' ? -1 : 1) : e.fireDir;
+            ctx.shadowBlur = e.fireState === 'warn' ? 14 : 8;
+            ctx.shadowColor = e.fireState === 'warn' ? '#ff6b6b' : e.def.color;
+            ctx.fillStyle = e.fireState === 'warn' && Math.floor(e.anim * 12) % 2 === 0
+                          ? '#ffd166' : e.def.color;
+            RE.Draw.roundRect(ctx, -11, bob - 9, 22, 18, 7); ctx.fill();
+            ctx.shadowBlur = 0;
+            // 背鰭
+            ctx.fillStyle = '#3f9a4c';
+            ctx.beginPath();
+            ctx.moveTo(-6, bob - 9); ctx.lineTo(-2, bob - 15); ctx.lineTo(2, bob - 9);
+            ctx.fill();
+            // 口鼻
+            ctx.fillStyle = '#ffd166';
+            ctx.fillRect(faceR > 0 ? 8 : -14, bob - 2, 6, 6);
+            ctx.fillStyle = '#fff8e7';
+            ctx.beginPath(); ctx.arc(faceR * 4, bob - 3, 3.2, 0, RE.TAU); ctx.fill();
+            ctx.fillStyle = '#1a2a1a';
+            ctx.beginPath(); ctx.arc(faceR * 4.6, bob - 3, 1.7, 0, RE.TAU); ctx.fill();
+        }
+
+        // 打氣中的膨脹提示
+        if (e.pump > 0 && e.dying <= 0) {
+            ctx.strokeStyle = 'rgba(255,248,231,' + (0.35 + e.pump * 0.15) + ')';
+            ctx.lineWidth = 1.5 / sc;
+            ctx.beginPath(); ctx.arc(0, bob, 13, 0, RE.TAU); ctx.stroke();
+        }
+        ctx.restore();
+    }
+}
+
+function drawPlayer() {
+    var p = s.p;
+    if (p.dead > 0) return;
+    if (p.invuln > 0 && Math.floor(p.invuln * 14) % 2 === 0) return;
+
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    var wob = p.moving ? Math.sin(p.anim) * 1.6 : 0;
+    var fx = (p.dir === 'left') ? -1 : 1;
+
+    // 背包（打氣筒本體）
+    ctx.fillStyle = '#3d6ea8';
+    RE.Draw.roundRect(ctx, -fx * 11 - (fx > 0 ? 0 : 0), -4 + wob, 7, 12, 3);
+    ctx.fill();
+
+    // 身體
+    ctx.fillStyle = '#f2f6ff';
+    RE.Draw.roundRect(ctx, -8, -3 + wob, 16, 13, 4); ctx.fill();
+    ctx.fillStyle = '#3a6fd8';
+    RE.Draw.roundRect(ctx, -8, 3 + wob, 16, 7, 3); ctx.fill();
+
+    // 頭盔
+    ctx.fillStyle = '#ffd166';
+    RE.Draw.roundRect(ctx, -8, -12 + wob, 16, 10, 5); ctx.fill();
+    ctx.fillStyle = '#f2c9a0';
+    RE.Draw.roundRect(ctx, -6, -6 + wob, 12, 6, 3); ctx.fill();
+    ctx.fillStyle = '#1a2a3a';
+    ctx.fillRect(-4 + fx * 2, -5 + wob, 2, 3);
+    ctx.fillRect(2 + fx * 2, -5 + wob, 2, 3);
+    // 頭燈
+    ctx.fillStyle = '#fff8e7';
+    ctx.beginPath(); ctx.arc(0, -9 + wob, 2.6, 0, RE.TAU); ctx.fill();
+
+    // 腳
+    ctx.fillStyle = '#2a3a4a';
+    var st = p.moving ? Math.sin(p.anim * 1.4) * 3 : 0;
+    ctx.fillRect(-7 + st, 9 + wob, 6, 3);
+    ctx.fillRect(1 - st, 9 + wob, 6, 3);
+    ctx.restore();
+}
+
+function drawHarpoon() {
+    var h = s.harp, p = s.p;
+    if (h.state === 'off' || p.dead > 0) return;
+    var d = DIRS[h.dir];
+    var len = h.cells * T;
+    if (h.state === 'extend') len = (h.cells - 1 + RE.clamp(h.t / PUMP.extend, 0, 1)) * T;
+    if (h.state === 'retract') len = h.cells * T * RE.clamp(h.t / PUMP.retract, 0, 1);
+    if (len <= 0) return;
+
+    var x0 = p.x + d[0] * 8, y0 = p.y + d[1] * 8;
+    var x1 = x0 + d[0] * len, y1 = y0 + d[1] * len;
+
+    ctx.save();
+    ctx.strokeStyle = '#e8eef5';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    // 打氣時管子會抖動並泛黃，讓「正在灌氣」看得出來
+    if (h.state === 'stuck') {
+        ctx.strokeStyle = 'rgba(255,209,102,' + (0.4 + Math.sin(performance.now() / 55) * 0.35) + ')';
+        ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    }
+    ctx.fillStyle = '#ffd166';
+    ctx.save();
+    ctx.translate(x1, y1);
+    ctx.rotate(Math.atan2(d[1], d[0]));
+    ctx.beginPath();
+    ctx.moveTo(5, 0); ctx.lineTo(-4, -5); ctx.lineTo(-4, 5);
+    ctx.fill();
+    ctx.restore();
+    ctx.restore();
+}
+
+function drawTopBar() {
+    var left = aliveCount();
+    RE.Draw.text(ctx, left > 0 ? ('剩餘敵人 ' + left) : '全數清空！', 8, 9,
+        { size: 14, align: 'left', color: left > 0 ? '#ff9ebb' : '#ffd166' });
+
+    var h = s.harp;
+    var msg, col;
+    if (h.state === 'stuck' && h.target) {
+        msg = '打氣中 ' + h.target.pump + ' / ' + PUMP.need + '　按住不要放！';
+        col = '#ffd166';
+    } else if (h.state === 'extend' || h.state === 'retract') {
+        msg = '管子射出中';
+        col = '#7dd3fc';
+    } else {
+        msg = '深度 第 ' + (layerOf(s.p ? s.p.r : 0) + 1) + ' 層　×' + LAYERS[layerOf(s.p ? s.p.r : 0)].mult;
+        col = '#a7f3d0';
+    }
+    RE.Draw.text(ctx, msg, W - 8, 9, { size: 13, align: 'right', color: col });
+}
+
+/**
+ * 開一場新遊戲。第一關也要有開場字卡，理由有兩個：
+ * 1. 六關都用同一套節奏，玩家每關都先讀到關卡名與提示。
+ * 2. 外殼在 gameOver／暫停面板按下「重新開始」時，只會 hideOverlay + 觸發 restart，
+ *    並不會把內部狀態切回 playing；stageCard 結束時會設成 playing，
+ *    因此這張字卡同時把遊戲從 over／paused 推回可更新狀態，重玩才不會整個定格。
+ */
+function startNewGame() {
+    reset();
+    G.stageCard(1, s.cfg.name, s.cfg.hint);
+}
+
+// ======================================================================
+G.on('restart', function () { startNewGame(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '走過的泥土會變成通道——通道就是關卡本身。面向敵人按空白鍵射出打氣管，' +
+          '命中後按住不放連打四下撐爆它（打氣時你不能移動）。' +
+          '挖掉岩石正下方的土可以砸死一整排敵人，砸越多分數倍增。地層越深分數越高。共六關。',
+    onStart: startNewGame
+});
+</script>
+</body>
+</html>

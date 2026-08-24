@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 暖丘滑翔</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   暖丘滑翔 — 致敬 Tiny Wings (Andreas Illiger, 2011)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. **一根手指，只有一個動作**：按住＝俯衝。放開＝維持滑翔。
+      沒有跳躍、沒有加速、沒有煞車。
+   2. **樂趣來自「順著地形的節奏」**。正確玩法是：
+      下坡按住讓自己貼著坡面加速，坡底鬆手，靠著累積的速度從上坡飛出去。
+      **玩家真正在學的不是操作，是韻律**——手指要跟地形的起伏同拍。
+   3. 地形是連續平滑的正弦丘陵，沒有任何障礙物。
+      這款遊戲的難度完全來自「你有沒有踩準節奏」，不是來自陷阱。
+   4. 追著日落跑：時間到就結束，所以速度本身就是資源。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'tiny_wings',
+    title: '暖丘滑翔',
+    tagline: '下坡按住，坡頂放手，剩下的交給拋物線',
+    original: 'Tiny Wings (Andreas Illiger, 2011)',
+    decade: '10s', year: 2011, platform: 'iOS', genre: '一鍵滑翔',
+    developer: 'Andreas Illiger', bgm: '10s',
+    width: 560, height: 400,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'dist', label: '距離', init: '0m' },
+        { key: 'island', label: '島', init: '1/5' },
+        { key: 'sun', label: '日落', init: '100%' }
+    ],
+    touch: 'dpad+ab',
+    controls: [
+        { keys: ['Z', 'A', '按住'], desc: '俯衝（下坡按住加速，坡頂放開飛出去）' }
+    ],
+    howto: '<strong>只有一個動作：按住 Z 俯衝。</strong>' +
+           '下坡的時候按住，你會貼著坡面加速；' +
+           '快到坡底時繼續按住，衝上斜坡的瞬間放開，就會被拋得又高又遠。' +
+           '節奏抓對可以連續彈飛好幾次。太陽下山前要飛過目標距離。',
+    lesson: {
+        verb: '按住俯衝、放開滑翔，把山坡的高度換成前進速度。',
+        innovation: '用單一輸入配合連續地形，讓操作難度來自節奏與預測，而不是按鍵數量。',
+        mission: '完成一次「下坡按住、坡底續壓、上坡放開」的完整循環，觀察完美起飛與過早放開的距離差。',
+        evolution: '《Canabalt》把移動簡化成單鍵跳躍；《Tiny Wings》讓同一按鍵依坡度改變意義，《Flappy Bird》則把節奏壓縮成離散點按。',
+        reflection: '如果每座山的坡度完全相同、角色也不保留速度，玩家還需要閱讀地形嗎？'
+    },
+    design: '《Tiny Wings》要解決的問題是：觸控螢幕只給玩家一個按住／放開動作時，如何避免遊戲只剩機械式點擊。' +
+            '答案是讓同一輸入隨地形階段改變意義：下坡按住會把高度換成速度，上坡仍按住則會錯過起飛，放開的那一刻才決定滑翔弧線。' +
+            '玩家因此不是背固定拍點，而是閱讀下一座山的坡度、保留前一段速度，再把連續地形演奏成節奏。' +
+            '失敗也不靠突然出現的障礙，而是讓「早半拍或晚半拍」直接反映在距離上，形成容易理解、又願意立刻重試的回饋。' +
+            '這條簡化輸入的演化線可從《Canabalt》的單鍵跳躍看到起點，往後的《Flappy Bird》再把節奏壓縮成更短、更離散的點按。',
+    history: '2011 年，德國設計者 Andreas Illiger 以約七個月、幾乎單人完成《Tiny Wings》；當時訪談把他的角色列為企劃、程式、插畫與作曲。' +
+             'Illiger 說程序生成不是追逐流行，而是為重複流程增加變化並刺激探索，連島嶼外觀都會按日改變。' +
+             'Apple 現行商店頁仍把它標為「one tap」街機遊戲，並記載它在 App Store Rewind 2011 於歐洲與多個國家獲選 iPhone 年度遊戲。' +
+             '這些資料足以支持它是一人整合多項專業的代表案例，但不支持「作者一生只發行這一款」的絕對說法，本站已移除。',
+    sources: [
+        { label: 'Apple App Store：Tiny Wings', url: 'https://apps.apple.com/ca/app/tiny-wings/id417817520' },
+        { label: 'Making Games／GameStar：Andreas Illiger 訪談', url: 'https://www.gamestar.de/artikel/making-games-report-im-gespraech-mit-tiny-wings-erfinder-andreas-illiger%2C2324301.html' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(400);
+var FT = new RE.FloatText();
+var TINY_ART = { image: new Image(), manifest: null };
+TINY_ART.image.src = '../../assets/games/tiny_wings/pastel-atlas.png';
+fetch('../../assets/games/tiny_wings/pastel-manifest.json')
+    .then(function (r) { if (!r.ok) throw new Error('tiny wings art manifest ' + r.status); return r.json(); })
+    .then(function (m) { TINY_ART.manifest = m; })
+    .catch(function () { TINY_ART.manifest = null; });
+
+// ======================================================================
+// 地形：多個正弦波疊加，保證連續平滑且處處可滑行。
+// 這款沒有障礙物，所以「可通過性」天生成立——
+// 真正要驗的是「速度夠不夠在日落前跑完」，那是節奏問題不是幾何問題。
+// ======================================================================
+var GROUND_Y = 300;               // 丘陵的基準線
+
+/* minSpd 與摩擦這兩個數字決定「什麼都不做會有多慢」。
+   第一版保底速度 130、摩擦 0.06，結果「從不按版」的平均速度有 304，
+   跟熟練版的 391 差不多，四隻機器人全部通關——**核心動詞等於裝飾**。
+   保底降到 80、摩擦拉到 0.10、起飛門檻提高之後，
+   不俯衝就累積不出起飛所需的速度，起飛機會也跟著大幅減少。 */
+var PHY = {
+    gravity: 1500,
+    diveGravity: 3400,            // 按住時的重力：這就是「俯衝」
+    minSpd: 80, maxSpd: 760,
+    slideFriction: 0.10,          // 貼地滑行的阻力
+    airDrag: 0.012,
+    /* 起飛條件與拋射加成一起決定「飛得起來嗎」。
+       第一版門檻是 slope < -0.12（幾乎平地就算上坡），
+       算出來的垂直速度只有 68px/s，滯空 0.045 秒——**整款遊戲都在貼地滑，沒有在飛**。
+       改成只有夠陡的上坡才彈射，並把垂直分量放大，
+       坡度 0.5 時可得到 -446px/s、滯空約 0.6 秒、飛高 66px，這才是原作的手感。 */
+    launchBoost: 1.5,
+    takeOffSlope: -0.28,          // 夠陡的上坡才彈得出去
+    takeOffSpd: 265               // 起飛所需的速度：不俯衝就攢不到
+};
+
+/* ----------------------------------------------------------------------
+   五座島。難度靠三個數字收緊：目標距離、日照秒數、丘陵起伏。
+   起伏越大，節奏越難抓——但抓對了也飛得越遠。
+   ---------------------------------------------------------------------- */
+/* 目標距離是照機器人實測的速度訂的，不是拍腦袋：
+   熟練版（下坡按住、坡頂放開）平均 628px/s，
+   一直按、從不按、亂按三種都只有 187~216px/s。
+   每座島要求的平均速度從 237 遞增到 455——
+   **落在兩者中間**，所以懂節奏的過得去、不懂的過不去，
+   而且熟練玩家還會剩三成左右的時間當餘裕。
+   第一版目標只有 1600px（五秒就跑完）配 42 秒時限，
+   四隻機器人全部通關，連掛機都能全破。 */
+var ISLANDS = [
+    { name: '暖丘', hint: '下坡按住、坡頂放開，就這一件事',
+      goal: 9000,  sun: 38, amp: 46, freq: 0.0072, rough: 0.35 },
+    { name: '長浪灣', hint: '坡變長了，按住的時間也要跟著拉長',
+      goal: 12000, sun: 40, amp: 58, freq: 0.0061, rough: 0.45 },
+    { name: '碎石岬', hint: '起伏變碎，節奏要更快',
+      goal: 15000, sun: 42, amp: 52, freq: 0.0098, rough: 0.6 },
+    { name: '風稜線', hint: '大坡套小坡，先抓大的那一拍',
+      goal: 15500, sun: 44, amp: 74, freq: 0.0068, rough: 0.75 },
+    { name: '日落崖', hint: '最後一座島。太陽不等人',
+      goal: 17000, sun: 46, amp: 86, freq: 0.0076, rough: 0.9 }
+];
+
+var s = {};
+
+// ======================================================================
+function reset() {
+    s = {
+        island: 0, mode: 'fly',       // fly | result
+        p: null, seed: 1,
+        camX: 0, dist: 0, best: 0,
+        sunLeft: 0, sunMax: 1,
+        score: 0, over: false, win: false,
+        combo: 0, comboT: 0, airT: 0, maxAir: 0,
+        resultT: 0, resultText: '',
+        hills: null
+    };
+    G.setStat('score', 0);
+    loadIsland(0);
+}
+
+function cfg() { return ISLANDS[Math.min(s.island, ISLANDS.length - 1)]; }
+
+function loadIsland(n) {
+    s.island = n;
+    var c = ISLANDS[n];
+    s.mode = 'fly';
+    s.dist = 0; s.camX = 0;
+    s.sunLeft = c.sun; s.sunMax = c.sun;
+    s.combo = 0; s.comboT = 0; s.airT = 0; s.maxAir = 0;
+    s.resultT = 0;
+    // 每座島用不同的相位組合，地形才不會每次都一樣
+    s.seed = 1 + n * 7 + Math.floor(Math.random() * 1000);
+    s.hills = makeHills(c, s.seed);
+    s.p = { x: 60, y: groundAt(60) - 40, vx: 240, vy: 0, r: 11,
+            onGround: false, dive: false, anim: 0, spin: 0, lastSlope: 0,
+            takeoffFx: 0, landFx: 0, landGood: false };
+    G.setStat('island', (n + 1) + '/' + ISLANDS.length);
+    G.setStat('dist', '0m');
+    G.setStat('sun', '100%');
+}
+
+/** 三層正弦波疊加：大浪定調、中浪製造節奏、小浪加細節 */
+function makeHills(c, seed) {
+    var rnd = function (i) {
+        var x = Math.sin(seed * 12.9898 + i * 78.233) * 43758.5453;
+        return x - Math.floor(x);
+    };
+    return [
+        { amp: c.amp,               freq: c.freq,        phase: rnd(1) * RE.TAU },
+        { amp: c.amp * 0.45 * c.rough, freq: c.freq * 2.3,  phase: rnd(2) * RE.TAU },
+        { amp: c.amp * 0.18 * c.rough, freq: c.freq * 5.1,  phase: rnd(3) * RE.TAU }
+    ];
+}
+
+/** 地形高度。整款遊戲的所有物理都建立在這個函式上 */
+function groundAt(x) {
+    var y = GROUND_Y;
+    for (var i = 0; i < s.hills.length; i++) {
+        var h = s.hills[i];
+        y += Math.sin(x * h.freq + h.phase) * h.amp;
+    }
+    return y;
+}
+
+/** 地形斜率（往右下為正）。用解析導數而不是差分，貼地滑行才不會抖 */
+function slopeAt(x) {
+    var d = 0;
+    for (var i = 0; i < s.hills.length; i++) {
+        var h = s.hills[i];
+        d += Math.cos(x * h.freq + h.phase) * h.amp * h.freq;
+    }
+    return d;
+}
+
+// ======================================================================
+function update(dt) {
+    P.update(dt); FT.update(dt);
+    if (s.over) return;
+
+    if (s.mode === 'result') {
+        s.resultT -= dt;
+        if (s.resultT <= 0) nextIsland();
+        return;
+    }
+
+    var p = s.p;
+    var c = cfg();
+    p.anim += dt * 6;
+    if (p.takeoffFx > 0) p.takeoffFx -= dt;
+    if (p.landFx > 0) p.landFx -= dt;
+
+    s.sunLeft -= dt;
+    G.setStat('sun', Math.max(0, Math.round(s.sunLeft / s.sunMax * 100)) + '%');
+
+    p.dive = RE.Input.down('a') || RE.Input.down('b');
+
+    var gy = groundAt(p.x);
+    var slope = slopeAt(p.x);
+
+    if (p.y >= gy - p.r) {
+        // ---- 貼地滑行 ----
+        // 沿著坡面走：斜率決定加速或減速，按住俯衝會放大這個效果。
+        // 所以同一個按鍵在下坡是加速、在上坡是煞車——這就是本作的全部深度。
+        p.y = gy - p.r;
+        if (!p.onGround) landOn(p, slope);
+        p.onGround = true;
+
+        var g = p.dive ? PHY.diveGravity : PHY.gravity;
+        var along = -slope / Math.sqrt(1 + slope * slope);   // 沿坡的重力分量
+        p.vx += (-along) * g * dt * 0.5;
+        p.vx -= p.vx * PHY.slideFriction * dt * (p.dive ? 0.5 : 1);
+        p.vx = RE.clamp(p.vx, PHY.minSpd, PHY.maxSpd);
+        p.vy = p.vx * slope;                                  // 貼著坡面，垂直速度由斜率決定
+
+        // 上坡且速度夠 → 起飛。放開俯衝鍵才會飛，這是「時機」的所在
+        if (slope < PHY.takeOffSlope && !p.dive && p.vx > PHY.takeOffSpd) {
+            takeOff(p, slope);
+        }
+        p.spin = 0;
+        s.airT = 0;
+    } else {
+        // ---- 空中 ----
+        p.onGround = false;
+        var ga = p.dive ? PHY.diveGravity : PHY.gravity;
+        p.vy += ga * dt;
+        p.vx -= p.vx * PHY.airDrag * dt;
+        s.airT += dt;
+        if (s.airT > s.maxAir) s.maxAir = s.airT;
+        p.spin = Math.atan2(p.vy, p.vx);
+    }
+
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+
+    // 上方不出界
+    if (p.y < 20) { p.y = 20; p.vy = Math.max(0, p.vy); }
+
+    s.dist = Math.floor(p.x / 10);
+    G.setStat('dist', s.dist + 'm');
+    s.camX = p.x - 150;
+
+    if (s.comboT > 0) { s.comboT -= dt; if (s.comboT <= 0) endCombo(); }
+
+    if (s.dist >= Math.floor(c.goal / 10)) { islandClear(); return; }
+    if (s.sunLeft <= 0) { sunset(); return; }
+}
+
+/** 起飛：把沿坡速度轉成拋射速度 */
+function takeOff(p, slope) {
+    var ang = Math.atan(slope);
+    var spd = p.vx / Math.cos(ang);
+    p.vx = Math.cos(ang) * spd;
+    p.vy = Math.sin(ang) * spd * PHY.launchBoost;
+    p.y -= 2;
+    p.onGround = false;
+    p.takeoffFx = 0.28;
+    RetroAudio.play('jump');
+    P.burst(p.x, p.y + p.r, 6, { colors: ['#ffffff', '#ffe9a8'], speedMin: 30, speedMax: 110,
+        gravity: 300, lifeMin: 0.15, lifeMax: 0.4, sizeMax: 3 });
+}
+
+/** 落地：落點越接近下坡、速度越快，回饋越大。這是「節奏抓對了」的獎勵 */
+function landOn(p, slope) {
+    var wasAir = s.airT;
+    if (wasAir < 0.25) return;
+    var good = slope > 0.15;          // 落在下坡＝完美銜接
+    if (good) {
+        p.landFx = 0.32; p.landGood = true;
+        s.combo++;
+        s.comboT = 2.2;
+        var bonus = Math.round(60 * s.combo * (1 + wasAir));
+        addScore(bonus);
+        FT.add(p.x - s.camX, p.y - 30, '完美！ +' + bonus,
+            { color: '#ffd166', size: 15, life: 1.1 });
+        RE.juice.hitstop(0.03);
+        RE.juice.shake(0.18);
+        RetroAudio.play('coin');
+        P.burst(p.x, p.y + p.r, 12, { colors: ['#ffd166', '#ffffff'], speedMin: 50, speedMax: 190,
+            gravity: 260, lifeMin: 0.2, lifeMax: 0.5, sizeMax: 3.5, glow: true });
+        p.vx *= 1.06;                 // 節奏對了就再快一點，形成正回饋
+    } else {
+        p.landFx = 0.24; p.landGood = false;
+        endCombo();
+        RetroAudio.play('land');
+        P.burst(p.x, p.y + p.r, 5, { colors: ['#cfe3f0'], speedMin: 20, speedMax: 80,
+            gravity: 260, lifeMin: 0.1, lifeMax: 0.3, sizeMax: 2.5 });
+    }
+}
+
+function endCombo() {
+    if (s.combo >= 3) {
+        FT.add(s.p.x - s.camX, s.p.y - 46, '連續 ' + s.combo + ' 次銜接！',
+            { color: '#ff9ec4', size: 14, life: 1.3 });
+    }
+    s.combo = 0; s.comboT = 0;
+}
+
+function addScore(n) { s.score += n; G.setStat('score', s.score); }
+
+// ---------- 島結算 ----------
+function islandClear() {
+    s.mode = 'result';
+    s.resultT = 2.0;
+    var timeBonus = Math.round(s.sunLeft * 40);
+    addScore(800 + s.island * 300 + timeBonus);
+    s.resultText = '抵達！';
+    RetroAudio.play('win');
+    RE.juice.flash('rgba(255,209,102,0.25)', 0.3);
+}
+
+function sunset() {
+    s.mode = 'result';
+    s.resultT = 2.0;
+    s.resultText = '天黑了…';
+    RetroAudio.play('gameover');
+}
+
+function nextIsland() {
+    if (s.resultText === '天黑了…') { finish(false); return; }
+    if (s.island >= ISLANDS.length - 1) { finish(true); return; }
+    loadIsland(s.island + 1);
+    G.stageCard(s.island + 1, cfg().name, cfg().hint);
+}
+
+function finish(win) {
+    s.over = true; s.win = win;
+    if (win) {
+        addScore(2500);
+        G.gameOver({ score: s.score, win: true,
+            body: '五座島全部飛完了。整趟你只用了一個動作——按住與放開，' +
+                  '難的從來不是操作，是**跟地形同拍**。' +
+                  '當核心動詞只有一個，就讓環境去製造變化，不要靠加按鍵。' });
+    } else {
+        G.gameOver({ score: s.score, win: false,
+            body: '太陽在第 ' + (s.island + 1) + ' 座島「' + cfg().name + '」下山了，飛了 ' + s.dist + 'm。' +
+                  '訣竅是**下坡按住、坡頂放開**——' +
+                  '連續銜接在下坡上，速度會一次比一次快，那才是追上太陽的方法。' });
+    }
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function drawTinyAsset(name, cx, cy, w, h, alpha, flip, rotation) {
+    var m = TINY_ART.manifest;
+    if (!m || !m.assets || !m.assets[name] || !TINY_ART.image.complete ||
+        !TINY_ART.image.naturalWidth) return false;
+    var a = m.assets[name];
+    ctx.save();
+    ctx.globalAlpha = alpha === undefined ? 1 : alpha;
+    ctx.translate(cx, cy);
+    if (rotation) ctx.rotate(rotation);
+    if (flip) ctx.scale(-1, 1);
+    ctx.drawImage(TINY_ART.image, a.x, a.y, a.w, a.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+}
+
+function render() {
+    var c = cfg();
+    // 天空隨日落漸變，時間壓力因此是「看得見」的
+    var t = 1 - RE.clamp(s.sunLeft / s.sunMax, 0, 1);
+    var sky = ctx.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, mix('#7ec8f0', '#2a2d5e', t));
+    sky.addColorStop(0.6, mix('#bfe6f7', '#7a4a7a', t));
+    sky.addColorStop(1, mix('#ffe9c8', '#ff9349', t));
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H);
+
+    G.beginWorld();
+    drawSkyDecor(t);
+    drawSun(t);
+    drawHills();
+    drawPlayer();
+    P.draw(ctx);
+    FT.draw(ctx);
+    drawHUD(c);
+    if (s.mode === 'result') drawResult();
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.04 });
+}
+
+function mix(a, b, t) {
+    var pa = [parseInt(a.substr(1, 2), 16), parseInt(a.substr(3, 2), 16), parseInt(a.substr(5, 2), 16)];
+    var pb = [parseInt(b.substr(1, 2), 16), parseInt(b.substr(3, 2), 16), parseInt(b.substr(5, 2), 16)];
+    return 'rgb(' + Math.round(pa[0] + (pb[0] - pa[0]) * t) + ',' +
+                    Math.round(pa[1] + (pb[1] - pa[1]) * t) + ',' +
+                    Math.round(pa[2] + (pb[2] - pa[2]) * t) + ')';
+}
+
+function drawSkyDecor(t) {
+    var cloudX = 105 - ((s.camX * 0.075) % 760);
+    if (cloudX < -150) cloudX += 760;
+    drawTinyAsset('cloud_large', cloudX, 112 + t * 24, 190, 82, 0.42);
+    var smallX = 410 - ((s.camX * 0.12) % 680);
+    if (smallX < -90) smallX += 680;
+    drawTinyAsset('cloud_small', smallX, 78 + t * 32, 105, 46, 0.5, true);
+    var islandX = 360 - ((s.camX * 0.045) % 920);
+    if (islandX < -150) islandX += 920;
+    drawTinyAsset('distant_island', islandX, 205 + t * 18, 190, 68, 0.27);
+    if (s.p.vx > 360) {
+        drawTinyAsset('wind_ribbon', W - 92, 155, 132, 64,
+                      RE.clamp((s.p.vx - 360) / 300, 0.16, 0.42), false, -0.08);
+    }
+}
+
+function drawSun(t) {
+    var sx = W - 80, sy = 60 + t * 240;
+    if (!drawTinyAsset('painted_sun', sx, sy, 76, 76, 0.92)) {
+        ctx.save(); ctx.shadowBlur = 30; ctx.shadowColor = '#ffd166';
+        ctx.fillStyle = mix('#fff3c4', '#ff6b4a', t);
+        ctx.beginPath(); ctx.arc(sx, sy, 26, 0, RE.TAU); ctx.fill(); ctx.restore();
+    }
+}
+
+function drawHills() {
+    // 遠景（視差）
+    ctx.fillStyle = 'rgba(255,255,255,0.16)';
+    ctx.beginPath();
+    ctx.moveTo(0, H);
+    for (var x = 0; x <= W; x += 8) {
+        var wx = (s.camX * 0.4) + x;
+        ctx.lineTo(x, GROUND_Y + 40 + Math.sin(wx * 0.004 + 1.7) * 30);
+    }
+    ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+
+    // 主地形
+    var grad = ctx.createLinearGradient(0, GROUND_Y - 100, 0, H);
+    grad.addColorStop(0, '#7ee7c7');
+    grad.addColorStop(1, '#2f7d63');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(0, H);
+    for (var x2 = 0; x2 <= W; x2 += 4) {
+        ctx.lineTo(x2, groundAt(s.camX + x2));
+    }
+    ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+
+    // 坡面上的條紋，讓「現在是上坡還是下坡」一眼看得出來
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (var x3 = 0; x3 <= W; x3 += 4) {
+        var wy = groundAt(s.camX + x3);
+        if (x3 === 0) ctx.moveTo(x3, wy); else ctx.lineTo(x3, wy);
+    }
+    ctx.stroke();
+
+    // 植被只沿真實 groundAt 曲線落地，純裝飾、不新增障礙。
+    var firstDecor = Math.floor(s.camX / 280) * 280;
+    for (var wx = firstDecor; wx <= s.camX + W + 280; wx += 280) {
+        var dx = wx - s.camX;
+        if (dx < -80 || dx > W + 80) continue;
+        var decorIndex = Math.abs(Math.floor(wx / 280));
+        var decorName = decorIndex % 2 ? 'wildflowers' : 'wind_grass';
+        drawTinyAsset(decorName, dx, groundAt(wx) - 24,
+                      decorName === 'wildflowers' ? 76 : 70, 54, 0.72, decorIndex % 3 === 0);
+    }
+
+    // 目標線
+    var goalX = cfg().goal - s.camX;
+    if (goalX > -20 && goalX < W + 20) {
+        ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 3;
+        ctx.setLineDash([8, 6]);
+        ctx.beginPath(); ctx.moveTo(goalX, 0); ctx.lineTo(goalX, H); ctx.stroke();
+        ctx.setLineDash([]);
+        RE.Draw.text(ctx, '目標', goalX, 16, { size: 15, align: 'center', color: '#ffd166' });
+    }
+}
+
+function drawPlayer() {
+    var p = s.p;
+    var x = p.x - s.camX, y = p.y;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(p.onGround ? Math.atan(slopeAt(p.x)) : p.spin);
+
+    var birdState = p.dive ? 'bird_dive' :
+        (p.landFx > 0 && p.onGround ? 'bird_land' : (!p.onGround && p.vy < -80 ? 'bird_takeoff' : 'bird_glide'));
+    if (!drawTinyAsset(birdState, 0, -3, 48, 44, 1)) {
+        // 載入失敗時保留原有可玩輪廓。
+        ctx.fillStyle = p.dive ? '#ff9349' : '#ffd166';
+        ctx.strokeStyle = 'rgba(30,40,50,0.85)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(0, 0, p.r + 2, p.r, 0, 0, RE.TAU); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#ff9ec4';
+        var wf = p.dive ? 2 : Math.sin(p.anim * 2) * 4;
+        ctx.beginPath(); ctx.ellipse(-2, wf * 0.4, 7, p.dive ? 3 : 5, wf * 0.05, 0, RE.TAU); ctx.fill();
+        ctx.fillStyle = '#ff8f6b'; ctx.beginPath();
+        ctx.moveTo(p.r + 1, -1); ctx.lineTo(p.r + 8, 1); ctx.lineTo(p.r + 1, 3); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#2b3440'; ctx.beginPath(); ctx.arc(4, -3, 2, 0, RE.TAU); ctx.fill();
+    }
+    ctx.restore();
+
+    // 俯衝時的速度線，讓「我正在加速」有回饋
+    if (p.dive) {
+        if (!drawTinyAsset('speed_streaks', x - 38, y, 72, 34, 0.68)) {
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 2;
+            for (var i = 0; i < 3; i++) {
+                ctx.beginPath(); ctx.moveTo(x - 14 - i * 9, y - 6 + i * 6);
+                ctx.lineTo(x - 26 - i * 9, y - 6 + i * 6); ctx.stroke();
+            }
+        }
+    }
+    if (p.takeoffFx > 0) {
+        drawTinyAsset('takeoff_feathers', x - 6, y + 11, 58, 50,
+                      RE.clamp(p.takeoffFx / 0.28, 0, 1));
+    }
+    if (p.landFx > 0) {
+        drawTinyAsset(p.landGood ? 'perfect_star' : 'dust_puff', x, y + 8,
+                      p.landGood ? 54 : 60, p.landGood ? 54 : 46,
+                      RE.clamp(p.landFx / (p.landGood ? 0.32 : 0.24), 0, 0.82));
+    }
+}
+
+function drawHUD(c) {
+    // 進度條：距離／目標
+    var bw = W - 120, bx = 60;
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    RE.Draw.roundRect(ctx, bx, 10, bw, 8, 4); ctx.fill();
+    ctx.fillStyle = '#7ee7c7';
+    RE.Draw.roundRect(ctx, bx, 10, Math.max(3, bw * RE.clamp(s.p.x / c.goal, 0, 1)), 8, 4); ctx.fill();
+    // 日落條
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    RE.Draw.roundRect(ctx, bx, 22, bw, 6, 3); ctx.fill();
+    var sp = RE.clamp(s.sunLeft / s.sunMax, 0, 1);
+    ctx.fillStyle = sp < 0.25 ? '#ff6b6b' : '#ffd166';
+    RE.Draw.roundRect(ctx, bx, 22, Math.max(3, bw * sp), 6, 3); ctx.fill();
+
+    RE.Draw.text(ctx, cfg().name, W / 2, 36, { size: 15, align: 'center', color: '#ffffff' });
+    if (s.combo >= 2) {
+        RE.Draw.text(ctx, '×' + s.combo, W / 2, 60, { size: 24, align: 'center', color: '#ffd166' });
+    }
+    // 速度計：這款的速度就是資源，要看得見
+    var spd = Math.round(s.p.vx);
+    RE.Draw.text(ctx, spd + ' km/h', 12, H - 20, { size: 15, color: spd > 420 ? '#ffd166' : '#ffffff' });
+}
+
+function drawResult() {
+    ctx.save();
+    ctx.fillStyle = 'rgba(10,20,30,0.7)';
+    ctx.fillRect(0, 0, W, H);
+    var ok = s.resultText === '抵達！';
+    RE.Draw.text(ctx, s.resultText, W / 2, H / 2 - 20,
+        { size: 34, align: 'center', color: ok ? '#ffd166' : '#ff9ec4' });
+    RE.Draw.text(ctx, ok ? (s.island >= ISLANDS.length - 1 ? '全部飛完了' : '下一座島：' + ISLANDS[s.island + 1].name)
+                         : '飛了 ' + s.dist + 'm',
+        W / 2, H / 2 + 18, { size: 14, align: 'center', color: '#cfe3f0' });
+    if (s.maxAir > 1.2) {
+        RE.Draw.text(ctx, '最長滯空 ' + s.maxAir.toFixed(1) + ' 秒', W / 2, H / 2 + 44,
+            { size: 15, align: 'center', color: '#9fb3aa', stroke: false });
+    }
+    ctx.restore();
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '只有一個動作：按住 Z 俯衝。下坡按住加速，衝上斜坡的瞬間放開就會飛出去。' +
+          '節奏抓對可以連續彈飛。太陽下山前要飛過目標距離。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

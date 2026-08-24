@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "kind": "runtime-integrated-art-candidate",
+  "status": "final-gate-pending",
+  "countedInLedger": false,
+  "game": "crossy_road",
+  "set": "set-09-indie-pixel",
+  "tool": "Codex built-in ImageGen",
+  "model": "ImageGen（服務端版本未揭露）",
+  "generatedAt": "2026-08-24",
+  "prompt": "art-production/final-sweep/set-09-indie-pixel/prompt-v001.md",
+  "source": "art-production/final-sweep/set-09-indie-pixel/source/atlas-v001-imagegen.png",
+  "sourceSha256": "cc77be4816ae5da9d17834ffa417a3cc6cd770ee5023bbd4488ac4ccbfbc3e80",
+  "postprocess": "模型 alpha 保留、連通物件裁切、等比例縮放、透明留白與圖集排版；未補畫內容。Set 05 依固定格裁切保留模型背景，實際呈現以圓角裁切避免方形貼紙感。",
+  "atlas": "final-sweep-atlas.png",
+  "atlasSha256": "f798c2b93b8efd9f050c020705c8d074837d56461de08e4d2b553978ec8fc095",
+  "cellWidth": 128,
+  "cellHeight": 128,
+  "assets": {
+    "cube_alpaca": {
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "方塊角色"
+    },
+    "delivery_van": {
+      "index": 1,
+      "x": 128,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "車種"
+    },
+    "road_tile": {
+      "index": 2,
+      "x": 256,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "道路模組"
+    },
+    "grass_river": {
+      "index": 3,
+      "x": 384,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "區域景深"
+    },
+    "crossing_signal": {
+      "index": 4,
+      "x": 0,
+      "y": 128,
+      "w": 128,
+      "h": 128,
+      "label": "穿越訊號"
+    },
+    "zone_arch": {
+      "index": 5,
+      "x": 128,
+      "y": 128,
+      "w": 128,
+      "h": 128,
+      "label": "轉場插圖"
+    }
+  },
+  "runtimePresentation": "RetroShell 開場的美術圖譜層；正常流程可見，不介入遊戲亂數、碰撞或更新。",
+  "qa": {
+    "assetCount": 6,
+    "edgePixels": 0,
+    "emptyCells": 0,
+    "humanFinalGate": false
+  }
+}

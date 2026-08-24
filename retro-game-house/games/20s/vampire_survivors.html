@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 月夜倖存者</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   月夜倖存者 — 致敬 Vampire Survivors (poncle, 2022)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. 這款遊戲最大膽的決定是**拿掉攻擊鍵**。武器自動攻擊，玩家只負責走位
+      與升級選擇。設計者辨識出「操作」不是這款遊戲的樂趣來源，於是果斷自動化。
+   2. 升級抉擇是核心：每次升級三選一，六種武器與四種被動能力互相搭配，
+      玩家真正在玩的是「這一局要走哪條組合路線」。
+   3. 打擊感靠數量堆疊：同時數百個傷害數字、擊退、頓幀與螢幕震動，
+      製造「我很強」的壓倒性回饋。
+   4. 十五分鐘的完整局，每分鐘敵人強度提升，最後出現 Boss 潮。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'vampire_survivors',
+    title: '月夜倖存者',
+    tagline: '拿掉攻擊鍵之後，才發現樂趣其實在別的地方',
+    original: 'Vampire Survivors (poncle, 2022)',
+    decade: '20s', year: 2022, platform: 'PC / 多平台', genre: '自動戰鬥 Roguelite',
+    developer: 'poncle · Luca Galante', bgm: '20s',
+    width: 520, height: 400,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'time', label: '存活', init: '0:00' },
+        { key: 'lv', label: 'LV', init: 1 },
+        { key: 'kills', label: '擊殺', init: 0 }
+    ],
+    touch: 'dpad',
+    controls: [
+        { keys: ['↑', '↓', '←', '→'], desc: '移動（武器自動攻擊）' },
+        { keys: ['1', '2', '3'], desc: '升級時選擇能力' }
+    ],
+    howto: '<strong>沒有攻擊鍵</strong>——你的武器會自動攻擊，你只要負責走位。' +
+           '擊敗敵人會掉落經驗寶石，撿到足夠經驗就升級，' +
+           '升級時<strong>三選一</strong>：新武器、武器強化或被動能力。' +
+           '目標是撐過 15 分鐘。每一分鐘敵人都會變強。',
+    lesson: {
+        verb: '在自動攻擊的節奏中走位、收集經驗，並組合會互相放大的升級。',
+        innovation: '拿掉瞄準與攻擊鍵，把注意力集中在敵潮空間、風險路線與長期配裝決策。',
+        mission: '升級時不要只選單張數值最大的牌；先選一個主武器方向，再挑能補範圍、冷卻或生存缺口的組合。',
+        evolution: '《Hades》要求玩家手動攻擊並閃避；《Vampire Survivors》把攻擊自動化，讓同樣的敵潮壓力轉成走位與配裝題。',
+        reflection: '如果再加回精準瞄準與連續攻擊鍵，玩家還有多少注意力能留給敵潮形狀與升級組合？'
+    },
+    design: '《Vampire Survivors》要解決的問題是：當畫面同時出現數百個敵人與大量攻擊時，玩家的注意力應該花在哪裡。' +
+            '它拿掉瞄準與連打，把武器改成依冷卻自動發動，讓手上的即時工作縮成走位、穿越敵潮缺口與收集經驗；' +
+            '空出的認知容量則交給長期配裝，玩家必須判斷範圍、冷卻、傷害與生存能力能否互相放大。' +
+            '這不是把動作遊戲變得「不用操作」，而是重新分配操作：每一步都在決定下一波敵潮會從哪個角度包圍自己。' +
+            '本站的《Hades》把攻擊、閃避與配裝同時交給玩家，《Vampire Survivors》則抽走攻擊輸入，將「成為彈幕本身」推成清楚的 survivor-like 參照點；' +
+            '較嚴謹的說法是它普及並定型了這套設計，不必誇大成憑空發明整個類型。',
+    history: 'Luca Galante 先以 JavaScript 網頁技術與 Phaser 製作《Vampire Survivors》，Phaser 官方資料指出這套引擎沿用到 1.6 更新前。' +
+             '作品在 2022 年推出正式版後快速擴張成團隊專案；其低解析度現成素材與高密度回饋形成強烈反差，也讓設計核心比資產規模更容易被看見。' +
+             '2023 年 BAFTA Games Awards 將 Best Game 與 Game Design 兩項獎頒給本作，顯示評價不只來自銷量，也直接肯定它對操作刪減、敵潮節奏與成長系統的整合。',
+    sources: [
+        { label: 'Phaser：原始引擎與 Luca Galante 回顧', url: 'https://www.phaser.io/news/2024/02/vampire-survivors-space-54' },
+        { label: 'BAFTA：2023 Games Awards 得獎名單', url: 'https://www.bafta.org/media-centre/press-releases/bafta-announces-the-winners-of-the-2023-bafta-games-awards/' },
+        { label: '任天堂：Vampire Survivors 開發者訪談', url: 'https://www.nintendo.com/jp/topics/article/3f3d9c44-6cc5-4197-a31b-1397f229c03b' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(700);
+var FT = new RE.FloatText();
+var VAMPIRE_ART = { image: new Image(), manifest: null };
+VAMPIRE_ART.image.src = '../../assets/games/vampire_survivors/gothic-pixel-atlas.png';
+fetch('../../assets/games/vampire_survivors/gothic-pixel-manifest.json')
+    .then(function (r) { if (!r.ok) throw new Error('vampire art manifest ' + r.status); return r.json(); })
+    .then(function (m) { VAMPIRE_ART.manifest = m; })
+    .catch(function () { VAMPIRE_ART.manifest = null; });
+
+// ---------- 武器與被動能力 ----------
+var WEAPONS = {
+    whip:   { name: '光鞭',   desc: '朝面向方向揮出扇形攻擊', color: '#fff0aa', maxLv: 5 },
+    orbit:  { name: '守護星', desc: '環繞身邊旋轉的光球',     color: '#7dd3fc', maxLv: 5 },
+    bolt:   { name: '追蹤矢', desc: '自動射向最近的敵人',     color: '#ff9ebb', maxLv: 5 },
+    aura:   { name: '聖光環', desc: '持續傷害周圍的敵人',     color: '#c084fc', maxLv: 5 },
+    spike:  { name: '地刺',   desc: '在腳下週期性生成尖刺',   color: '#70e4b5', maxLv: 5 }
+};
+var PASSIVES = {
+    power:  { name: '力量',   desc: '所有武器傷害 +15%', maxLv: 5 },
+    haste:  { name: '急速',   desc: '攻擊間隔 -12%',     maxLv: 5 },
+    area:   { name: '範圍',   desc: '攻擊範圍 +18%',     maxLv: 5 },
+    speed:  { name: '疾行',   desc: '移動速度 +12%',     maxLv: 5 },
+    magnet: { name: '磁力',   desc: '拾取範圍 +40%',     maxLv: 3 },
+    health: { name: '體質',   desc: '最大生命 +20 並回復', maxLv: 5 }
+};
+
+// 每分鐘的敵潮設定
+var MINUTES = [
+    { hp: 8,   spd: 42, rate: 0.55, types: ['bat'],                   name: '第 1 分鐘' },
+    { hp: 12,  spd: 46, rate: 0.42, types: ['bat', 'zombie'],         name: '第 2 分鐘' },
+    { hp: 18,  spd: 50, rate: 0.34, types: ['bat', 'zombie'],         name: '第 3 分鐘' },
+    { hp: 26,  spd: 54, rate: 0.28, types: ['zombie', 'ghost'],       name: '第 4 分鐘' },
+    { hp: 36,  spd: 58, rate: 0.24, types: ['zombie', 'ghost'],       name: '第 5 分鐘' },
+    { hp: 50,  spd: 62, rate: 0.20, types: ['bat', 'ghost', 'brute'], name: '第 6 分鐘' },
+    { hp: 68,  spd: 64, rate: 0.18, types: ['ghost', 'brute'],        name: '第 7 分鐘' },
+    { hp: 92,  spd: 68, rate: 0.16, types: ['ghost', 'brute'],        name: '第 8 分鐘' },
+    { hp: 120, spd: 70, rate: 0.14, types: ['bat', 'brute'],          name: '第 9 分鐘' },
+    { hp: 155, spd: 72, rate: 0.13, types: ['ghost', 'brute'],        name: '第 10 分鐘' },
+    { hp: 200, spd: 74, rate: 0.12, types: ['brute'],                 name: '第 11 分鐘' },
+    { hp: 255, spd: 76, rate: 0.11, types: ['ghost', 'brute'],        name: '第 12 分鐘' },
+    { hp: 320, spd: 78, rate: 0.10, types: ['brute'],                 name: '第 13 分鐘' },
+    { hp: 400, spd: 80, rate: 0.09, types: ['ghost', 'brute'],        name: '第 14 分鐘' },
+    { hp: 500, spd: 84, rate: 0.08, types: ['brute'],                 name: '最後一分鐘' }
+];
+
+var ENEMY_DEF = {
+    bat:    { r: 8,  color: '#9b6bff', dmg: 4,  score: 10,  knock: 1.0 },
+    zombie: { r: 10, color: '#6b8f5a', dmg: 7,  score: 16,  knock: 0.7 },
+    ghost:  { r: 9,  color: '#a7d3f3', dmg: 9,  score: 24,  knock: 1.3 },
+    brute:  { r: 14, color: '#c94a4a', dmg: 16, score: 60,  knock: 0.35 }
+};
+
+var s = {};
+
+function reset() {
+    s = {
+        p: { x: 0, y: 0, hp: 100, maxHp: 100, r: 9, inv: 0, face: 1, anim: 0 },
+        cam: { x: 0, y: 0 },
+        enemies: [], gems: [], hits: [],
+        weapons: { whip: 1 }, passives: {},
+        wTimers: {}, orbitAngle: 0,
+        time: 0, kills: 0, score: 0,
+        level: 1, exp: 0, expNeed: 8,
+        spawnTimer: 0,
+        levelUpChoices: null,
+        levelPointerDownSeen: false,
+        over: false, win: false,
+        flashMinute: 0
+    };
+    G.setStat('score', 0); G.setStat('lv', 1); G.setStat('kills', 0); G.setStat('time', '0:00');
+}
+
+function minuteCfg() { return MINUTES[Math.min(Math.floor(s.time / 60), MINUTES.length - 1)]; }
+function passiveLv(k) { return s.passives[k] || 0; }
+function dmgMul() { return 1 + passiveLv('power') * 0.15; }
+function rateMul() { return Math.pow(0.88, passiveLv('haste')); }
+function areaMul() { return 1 + passiveLv('area') * 0.18; }
+
+// ======================================================================
+function update(dt) {
+    if (s.over) return;
+
+    // 升級選單暫停世界
+    if (s.levelUpChoices) {
+        handleLevelUpInput();
+        FT.update(dt); P.update(dt);
+        return;
+    }
+
+    s.time += dt;
+    var mm = Math.floor(s.time / 60), ss2 = Math.floor(s.time % 60);
+    G.setStat('time', mm + ':' + (ss2 < 10 ? '0' : '') + ss2);
+
+    if (Math.floor(s.time / 60) > s.flashMinute) {
+        s.flashMinute = Math.floor(s.time / 60);
+        RetroAudio.play('error');
+        RE.juice.flash('rgba(255,107,107,0.22)', 0.2);
+        FT.add(s.p.x, s.p.y - 60, minuteCfg().name + '：敵人變強了', { color: '#ff6b6b', size: 15, life: 2 });
+    }
+    if (s.time >= 15 * 60) { finish(true); return; }
+
+    var p = s.p;
+
+    // ---- 移動 ----
+    var ax = RE.Input.axisX(), ay = RE.Input.axisY();
+    var len = Math.hypot(ax, ay) || 1;
+    var spd = 116 * (1 + passiveLv('speed') * 0.12);
+    p.x += (ax / len) * spd * dt;
+    p.y += (ay / len) * spd * dt;
+    if (ax !== 0) p.face = ax > 0 ? 1 : -1;
+    p.moving = !!(ax || ay);
+    if (ax || ay) p.anim += dt * 9;
+    if (p.inv > 0) p.inv -= dt;
+
+    // 攝影機平滑跟隨
+    s.cam.x = RE.lerp(s.cam.x, p.x, 1 - Math.pow(0.002, dt));
+    s.cam.y = RE.lerp(s.cam.y, p.y, 1 - Math.pow(0.002, dt));
+
+    // ---- 生成敵人：在畫面外的圓周上 ----
+    var cfg = minuteCfg();
+    s.spawnTimer -= dt;
+    if (s.spawnTimer <= 0) {
+        s.spawnTimer = cfg.rate;
+        var n = 1 + Math.floor(s.time / 180);
+        for (var i = 0; i < n; i++) {
+            var a = RE.rand(0, RE.TAU);
+            var d = 340;
+            var t = RE.pick(cfg.types);
+            s.enemies.push({
+                type: t, def: ENEMY_DEF[t],
+                x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d,
+                hp: cfg.hp, maxHp: cfg.hp, kx: 0, ky: 0, flash: 0, anim: RE.rand(0, 6)
+            });
+        }
+    }
+
+    // ---- 敵人 ----
+    for (var i = s.enemies.length - 1; i >= 0; i--) {
+        var e = s.enemies[i];
+        e.anim += dt * 6;
+        if (e.flash > 0) e.flash -= dt;
+
+        var dx = p.x - e.x, dy = p.y - e.y;
+        var dist = Math.hypot(dx, dy) || 1;
+        e.x += (dx / dist) * cfg.spd * dt + e.kx * dt;
+        e.y += (dy / dist) * cfg.spd * dt + e.ky * dt;
+        e.kx *= Math.pow(0.02, dt);
+        e.ky *= Math.pow(0.02, dt);
+
+        // 太遠就回收，避免無限累積
+        if (dist > 700) { s.enemies.splice(i, 1); continue; }
+
+        if (dist < e.def.r + p.r && p.inv <= 0) {
+            p.hp -= e.def.dmg;
+            // 敵潮作品若受傷後有半秒以上完全無敵，站樁反而能靠自動武器撐到中盤；
+            // 固定種子對照曾站著活到 7:06，而走位版只到 3:56。縮短為 0.16 秒，
+            // 仍保留清楚的受擊節奏，但被包圍會持續付出代價。
+            p.inv = 0.16;
+            RE.juice.impact(2);
+            RE.juice.flash('rgba(255,107,107,0.3)', 0.1);
+            RetroAudio.play('hurt');
+            FT.add(p.x, p.y - 18, '-' + e.def.dmg, { color: '#ff6b6b', size: 14 });
+            if (p.hp <= 0) { finish(false); return; }
+        }
+    }
+
+    updateWeapons(dt);
+
+    // ---- 經驗寶石：磁力範圍內會被吸過來 ----
+    var pickR = 34 * (1 + passiveLv('magnet') * 0.4);
+    for (var i = s.gems.length - 1; i >= 0; i--) {
+        var g = s.gems[i];
+        var dx2 = p.x - g.x, dy2 = p.y - g.y;
+        var d2 = Math.hypot(dx2, dy2) || 1;
+        if (d2 < pickR) {
+            var pull = RE.clamp((pickR - d2) / pickR, 0, 1) * 460;
+            g.x += (dx2 / d2) * pull * dt;
+            g.y += (dy2 / d2) * pull * dt;
+        }
+        if (d2 < 12) {
+            s.gems.splice(i, 1);
+            gainExp(g.v);
+        }
+    }
+
+    P.update(dt);
+    FT.update(dt);
+}
+
+function gainExp(v) {
+    s.exp += v;
+    RetroAudio.play('blip');
+    while (s.exp >= s.expNeed) {
+        s.exp -= s.expNeed;
+        s.level++;
+        s.expNeed = Math.round(s.expNeed * 1.32 + 4);
+        G.setStat('lv', s.level);
+        openLevelUp();
+        RetroAudio.play('levelUp');
+        RE.juice.flash('rgba(255,209,102,0.3)', 0.2);
+        break;   // 一次只處理一個升級，選完再繼續
+    }
+}
+
+/** 產生三個升級選項：優先給新武器，其次強化既有能力 */
+function openLevelUp() {
+    var pool = [];
+    for (var k in WEAPONS) {
+        var lv = s.weapons[k] || 0;
+        if (lv === 0 && Object.keys(s.weapons).length < 5) {
+            pool.push({ kind: 'weapon', key: k, lv: 0, label: '新武器：' + WEAPONS[k].name, desc: WEAPONS[k].desc });
+        } else if (lv > 0 && lv < WEAPONS[k].maxLv) {
+            pool.push({ kind: 'weapon', key: k, lv: lv, label: WEAPONS[k].name + ' Lv.' + (lv + 1), desc: '威力與數量提升' });
+        }
+    }
+    for (var k2 in PASSIVES) {
+        var lv2 = passiveLv(k2);
+        if (lv2 < PASSIVES[k2].maxLv) {
+            pool.push({ kind: 'passive', key: k2, lv: lv2, label: PASSIVES[k2].name + ' Lv.' + (lv2 + 1), desc: PASSIVES[k2].desc });
+        }
+    }
+    // 洗牌取三
+    for (var i = pool.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = pool[i]; pool[i] = pool[j]; pool[j] = t;
+    }
+    s.levelUpChoices = pool.slice(0, 3);
+    if (!s.levelUpChoices.length) s.levelUpChoices = null;
+}
+
+function handleLevelUpInput() {
+    var pick = -1;
+    if (RE.Input.pressed('left')) pick = 0;
+    else if (RE.Input.pressed('up') || RE.Input.pressed('a')) pick = 1;
+    else if (RE.Input.pressed('right')) pick = 2;
+    var pt = RE.Input.pointer;
+    if (!pt.down && !pt.pressed) s.levelPointerDownSeen = false;
+    var freshPointer = pt.pressed || (pt.down && !s.levelPointerDownSeen);
+    if (freshPointer) {
+        s.levelPointerDownSeen = true;
+        var cardPick = levelUpCardAt(pt.x, pt.y);
+        if (cardPick >= 0) pick = cardPick;
+    }
+    if (s.keyPick !== undefined && s.keyPick >= 0) { pick = s.keyPick; s.keyPick = -1; }
+    if (pick < 0 || pick >= s.levelUpChoices.length) return;
+
+    var c = s.levelUpChoices[pick];
+    if (c.kind === 'weapon') s.weapons[c.key] = (s.weapons[c.key] || 0) + 1;
+    else {
+        s.passives[c.key] = passiveLv(c.key) + 1;
+        if (c.key === 'health') { s.p.maxHp += 20; s.p.hp = Math.min(s.p.maxHp, s.p.hp + 20); }
+    }
+    s.levelUpChoices = null;
+    RetroAudio.play('powerup');
+    FT.add(s.p.x, s.p.y - 40, c.label, { color: '#ffd166', size: 16, life: 1.6 });
+    P.ring(s.p.x, s.p.y, '#ffd166', 70);
+}
+
+function levelUpCardAt(px, py) {
+    var cw = 148, gap = 12;
+    var total = s.levelUpChoices.length * cw + (s.levelUpChoices.length - 1) * gap;
+    var sx = (W - total) / 2;
+    if (py < 110 || py > 282) return -1;
+    var i = Math.floor((px - sx) / (cw + gap));
+    if (i < 0 || i >= s.levelUpChoices.length) return -1;
+    var x = sx + i * (cw + gap);
+    return px <= x + cw ? i : -1;
+}
+
+// ======================================================================
+// 武器：全部自動攻擊
+// ======================================================================
+function updateWeapons(dt) {
+    var p = s.p;
+
+    // 光鞭：面向方向的扇形
+    if (s.weapons.whip) {
+        var lv = s.weapons.whip;
+        s.wTimers.whip = (s.wTimers.whip || 0) - dt;
+        if (s.wTimers.whip <= 0) {
+            s.wTimers.whip = 1.15 * rateMul();
+            var reach = (58 + lv * 9) * areaMul();
+            var dmg = (7 + lv * 4) * dmgMul();
+            s.hits.push({ type: 'whip', x: p.x, y: p.y, face: p.face, reach: reach, t: 0.22, max: 0.22 });
+            RetroAudio.play('slash');
+            hitArea(p.x + p.face * reach * 0.5, p.y, reach * 0.55, dmg, 240);
+            if (lv >= 3) {   // 三級後雙向揮擊
+                s.hits.push({ type: 'whip', x: p.x, y: p.y, face: -p.face, reach: reach, t: 0.22, max: 0.22 });
+                hitArea(p.x - p.face * reach * 0.5, p.y, reach * 0.55, dmg, 240);
+            }
+        }
+    }
+
+    // 守護星：環繞旋轉
+    if (s.weapons.orbit) {
+        var lv2 = s.weapons.orbit;
+        s.orbitAngle += dt * 2.4;
+        var count = 1 + Math.floor(lv2 / 2);
+        var rad = 46 * areaMul();
+        var dmg2 = (5 + lv2 * 3) * dmgMul() * dt * 6;
+        for (var i = 0; i < count; i++) {
+            var a = s.orbitAngle + i / count * RE.TAU;
+            var ox = p.x + Math.cos(a) * rad, oy = p.y + Math.sin(a) * rad;
+            // 守護星每幀接觸判定，傷害已用 dt*6 換算成每秒六次；
+            // 擊退也必須同尺度，否則 120 會被每秒疊 60 次而形成永久排斥場。
+            hitArea(ox, oy, 13, dmg2, 120 * dt * 6, true);
+        }
+    }
+
+    // 追蹤矢：自動射向最近敵人
+    if (s.weapons.bolt) {
+        var lv3 = s.weapons.bolt;
+        s.wTimers.bolt = (s.wTimers.bolt || 0) - dt;
+        if (s.wTimers.bolt <= 0) {
+            s.wTimers.bolt = 0.8 * rateMul();
+            var targets = nearestEnemies(1 + Math.floor(lv3 / 2));
+            targets.forEach(function (e) {
+                var a = Math.atan2(e.y - p.y, e.x - p.x);
+                s.hits.push({ type: 'bolt', x: p.x, y: p.y, vx: Math.cos(a) * 340, vy: Math.sin(a) * 340,
+                              dmg: (9 + lv3 * 5) * dmgMul(), t: 1.4, max: 1.4, hitSet: {} });
+            });
+            if (targets.length) RetroAudio.play('shoot');
+        }
+    }
+
+    // 聖光環：持續範圍傷害
+    if (s.weapons.aura) {
+        var lv4 = s.weapons.aura;
+        var rad2 = (44 + lv4 * 9) * areaMul();
+        // 聖光環同樣是持續判定。舊版每幀直接加 60、衰減卻乘 dt，
+        // 穩態擊退約 950 px/s，遠高於最快敵人的 84 px/s；站著不動也能活。
+        // 與傷害一致換算成每秒六次後，走位才重新成為必要的即時動詞。
+        hitArea(p.x, p.y, rad2, (3 + lv4 * 2) * dmgMul() * dt * 6, 60 * dt * 6, true);
+        s.auraR = rad2;
+    }
+
+    // 地刺：週期性在腳下生成
+    if (s.weapons.spike) {
+        var lv5 = s.weapons.spike;
+        s.wTimers.spike = (s.wTimers.spike || 0) - dt;
+        if (s.wTimers.spike <= 0) {
+            s.wTimers.spike = 1.6 * rateMul();
+            var cnt = 2 + lv5;
+            for (var i = 0; i < cnt; i++) {
+                var a2 = RE.rand(0, RE.TAU), d = RE.rand(30, 110 * areaMul());
+                s.hits.push({ type: 'spike', x: p.x + Math.cos(a2) * d, y: p.y + Math.sin(a2) * d,
+                              t: 0.5, max: 0.5, dmg: (12 + lv5 * 6) * dmgMul(), done: false });
+            }
+            RetroAudio.play('drop');
+        }
+    }
+
+    // ---- 更新特效物件 ----
+    for (var i = s.hits.length - 1; i >= 0; i--) {
+        var h = s.hits[i];
+        h.t -= dt;
+        if (h.type === 'bolt') {
+            h.x += h.vx * dt; h.y += h.vy * dt;
+            for (var j = 0; j < s.enemies.length; j++) {
+                var e = s.enemies[j];
+                if (h.hitSet[j]) continue;
+                if (RE.dist(h.x, h.y, e.x, e.y) < e.def.r + 6) {
+                    h.hitSet[j] = 1;
+                    damage(e, h.dmg, h.vx, h.vy, 260);
+                    h.t = Math.min(h.t, 0.02);
+                    break;
+                }
+            }
+        } else if (h.type === 'spike' && !h.done && h.t < 0.32) {
+            h.done = true;
+            hitArea(h.x, h.y, 22 * areaMul(), h.dmg, 200);
+            P.burst(h.x, h.y, 6, { colors: ['#70e4b5', '#a7f3d0'], speedMin: 40, speedMax: 130,
+                gravity: 0, drag: 0.9, lifeMin: 0.15, lifeMax: 0.35, sizeMax: 3 });
+        }
+        if (h.t <= 0) s.hits.splice(i, 1);
+    }
+}
+
+function nearestEnemies(n) {
+    var list = s.enemies.slice();
+    list.sort(function (a, b) {
+        return RE.dist(a.x, a.y, s.p.x, s.p.y) - RE.dist(b.x, b.y, s.p.x, s.p.y);
+    });
+    return list.slice(0, n);
+}
+
+function hitArea(x, y, r, dmg, knock, silent) {
+    for (var i = 0; i < s.enemies.length; i++) {
+        var e = s.enemies[i];
+        if (RE.dist(x, y, e.x, e.y) < r + e.def.r) {
+            damage(e, dmg, e.x - x, e.y - y, knock, silent);
+        }
+    }
+}
+
+function damage(e, dmg, dx, dy, knock, silent) {
+    e.hp -= dmg;
+    e.flash = 0.12;
+    var d = Math.hypot(dx, dy) || 1;
+    var k = (knock || 150) * e.def.knock;
+    e.kx += dx / d * k;
+    e.ky += dy / d * k;
+
+    if (!silent && dmg >= 3) {
+        FT.add(e.x, e.y - e.def.r - 4, String(Math.round(dmg)),
+            { color: '#fff8e7', size: 14, life: 0.45, vy: -46 });
+    }
+
+    if (e.hp <= 0) {
+        var idx = s.enemies.indexOf(e);
+        if (idx >= 0) s.enemies.splice(idx, 1);
+        s.kills++;
+        s.score += e.def.score;
+        G.setStat('kills', s.kills);
+        G.setStat('score', s.score);
+        s.gems.push({ x: e.x, y: e.y, v: e.type === 'brute' ? 5 : 1, t: 0 });
+        // 打擊感：小怪只給粒子，大怪才給頓幀與震動，避免感官疲勞
+        RE.juice.shake(e.type === 'brute' ? 0.22 : 0.05);
+        if (e.type === 'brute') { RE.juice.hitstop(0.035); RetroAudio.play('heavyHit'); }
+        else if (Math.random() < 0.3) RetroAudio.play('hit');
+        P.burst(e.x, e.y, e.type === 'brute' ? 18 : 7, {
+            colors: [e.def.color, '#fff8e7'], speedMin: 40, speedMax: e.type === 'brute' ? 200 : 130,
+            gravity: 0, drag: 0.9, lifeMin: 0.15, lifeMax: 0.45, sizeMax: e.type === 'brute' ? 5 : 3
+        });
+    }
+}
+
+function finish(win) {
+    s.over = true;
+    s.win = win;
+    var wl = Object.keys(s.weapons).map(function (k) { return WEAPONS[k].name + ' Lv.' + s.weapons[k]; }).join('、');
+    G.gameOver({
+        score: s.score, win: win,
+        body: win
+            ? '撐過 15 分鐘，擊殺 ' + s.kills + ' 隻。最終配置：' + wl + '。'
+            : '存活 ' + Math.floor(s.time / 60) + ' 分 ' + Math.floor(s.time % 60) + ' 秒，擊殺 ' + s.kills + ' 隻。' +
+              '配置：' + wl + '。下一局試試不同的武器組合。'
+    });
+}
+
+// ======================================================================
+function drawVampireAsset(name, cx, cy, w, h, alpha, flip, rotation) {
+    var m = VAMPIRE_ART.manifest;
+    if (!m || !m.assets || !m.assets[name] || !VAMPIRE_ART.image.complete ||
+        !VAMPIRE_ART.image.naturalWidth) return false;
+    var a = m.assets[name];
+    ctx.save();
+    ctx.globalAlpha = alpha === undefined ? 1 : alpha;
+    ctx.translate(cx, cy);
+    if (rotation) ctx.rotate(rotation);
+    if (flip) ctx.scale(-1, 1);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(VAMPIRE_ART.image, a.x, a.y, a.w, a.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+}
+
+function render() {
+    G.clear('#0a0d14');
+    G.beginWorld();
+
+    var camX = s.cam.x - W / 2, camY = s.cam.y - H / 2;
+    ctx.save();
+    ctx.translate(-camX, -camY);
+    var p = s.p;
+    drawWorldFloor(camX, camY, p);
+
+    // 地面網格（無限延伸的視覺參考，讓移動有速度感）
+    ctx.strokeStyle = 'rgba(255,255,255,0.035)';
+    ctx.lineWidth = 1;
+    var gs = 48;
+    var x0 = Math.floor(camX / gs) * gs, y0 = Math.floor(camY / gs) * gs;
+    for (var x = x0; x < camX + W + gs; x += gs) {
+        ctx.beginPath(); ctx.moveTo(x, camY); ctx.lineTo(x, camY + H); ctx.stroke();
+    }
+    for (var y = y0; y < camY + H + gs; y += gs) {
+        ctx.beginPath(); ctx.moveTo(camX, y); ctx.lineTo(camX + W, y); ctx.stroke();
+    }
+
+    // 聖光環
+    if (s.weapons.aura && s.auraR) {
+        if (!drawVampireAsset('holy_aura', p.x, p.y, s.auraR * 2.15, s.auraR * 2.15, 0.48,
+                              false, s.orbitAngle * 0.18)) {
+            ctx.save();
+            var g2 = ctx.createRadialGradient(p.x, p.y, s.auraR * 0.3, p.x, p.y, s.auraR);
+            g2.addColorStop(0, 'rgba(192,132,252,0.05)');
+            g2.addColorStop(0.8, 'rgba(192,132,252,0.16)');
+            g2.addColorStop(1, 'rgba(192,132,252,0)');
+            ctx.fillStyle = g2;
+            ctx.beginPath(); ctx.arc(p.x, p.y, s.auraR, 0, RE.TAU); ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    // 經驗寶石
+    for (var i = 0; i < s.gems.length; i++) {
+        var g = s.gems[i];
+        g.t += 0.06;
+        var gy = g.y + Math.sin(g.t) * 1.5;
+        var gemSize = g.v > 1 ? 22 : 15;
+        if (!drawVampireAsset('exp_gem', g.x, gy, gemSize, gemSize, 1, false, g.t * 0.22)) {
+            ctx.save();
+            ctx.shadowBlur = 8; ctx.shadowColor = g.v > 1 ? '#ffd166' : '#7dd3fc';
+            ctx.fillStyle = g.v > 1 ? '#ffd166' : '#7dd3fc';
+            ctx.translate(g.x, gy); ctx.rotate(g.t * 0.5);
+            ctx.fillRect(-3.5, -3.5, 7, 7);
+            ctx.restore();
+        }
+    }
+
+    // 地刺
+    for (var i = 0; i < s.hits.length; i++) {
+        var h = s.hits[i];
+        if (h.type !== 'spike') continue;
+        var t = 1 - h.t / h.max;
+        var spikeAlpha = h.t / h.max;
+        var spikeH = Math.min(t * 3, 1) * 36;
+        if (!drawVampireAsset('ground_spikes', h.x, h.y - spikeH * 0.35, 38, spikeH,
+                              spikeAlpha)) {
+            ctx.save();
+            ctx.fillStyle = '#70e4b5'; ctx.globalAlpha = spikeAlpha;
+            var hgt = Math.min(t * 3, 1) * 20;
+            ctx.beginPath(); ctx.moveTo(h.x - 7, h.y + 4);
+            ctx.lineTo(h.x, h.y + 4 - hgt); ctx.lineTo(h.x + 7, h.y + 4); ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    // 敵人
+    for (var i = 0; i < s.enemies.length; i++) {
+        var e = s.enemies[i];
+        var bob = Math.sin(e.anim) * 2;
+        ctx.save();
+        ctx.fillStyle = 'rgba(0,0,0,0.42)';
+        ctx.beginPath(); ctx.ellipse(e.x, e.y + e.def.r * 0.72, e.def.r * 0.9, e.def.r * 0.38, 0, 0, RE.TAU); ctx.fill();
+        var enemyName = 'enemy_' + e.type;
+        var ew = e.type === 'brute' ? 48 : (e.type === 'bat' ? 34 : 34);
+        var eh = e.type === 'brute' ? 52 : (e.type === 'bat' ? 28 : 40);
+        var enemyDrawn = drawVampireAsset(enemyName, e.x, e.y - e.def.r * 0.25 + bob,
+                                          ew, eh, e.flash > 0 ? 0.62 : 1, e.x > p.x);
+        if (!enemyDrawn) {
+            ctx.fillStyle = e.flash > 0 ? '#ffffff' : e.def.color;
+            ctx.shadowBlur = 6; ctx.shadowColor = e.def.color;
+            ctx.beginPath(); ctx.arc(e.x, e.y + bob, e.def.r, 0, RE.TAU); ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.beginPath(); ctx.arc(e.x - e.def.r * 0.35, e.y - 2 + bob, e.def.r * 0.2, 0, RE.TAU); ctx.fill();
+            ctx.beginPath(); ctx.arc(e.x + e.def.r * 0.35, e.y - 2 + bob, e.def.r * 0.2, 0, RE.TAU); ctx.fill();
+        }
+        // 大怪顯示血條
+        if (e.type === 'brute' && e.hp < e.maxHp) {
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(e.x - 14, e.y - e.def.r - 9, 28, 4);
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fillRect(e.x - 14, e.y - e.def.r - 9, 28 * (e.hp / e.maxHp), 4);
+        }
+        ctx.restore();
+    }
+
+    // 追蹤矢
+    for (var i = 0; i < s.hits.length; i++) {
+        var h2 = s.hits[i];
+        if (h2.type !== 'bolt') continue;
+        var a = Math.atan2(h2.vy, h2.vx);
+        if (!drawVampireAsset('homing_bolt', h2.x, h2.y, 30, 18, 1, false, a)) {
+            ctx.save();
+            ctx.shadowBlur = 10; ctx.shadowColor = '#ff9ebb';
+            ctx.strokeStyle = '#ffc4d6'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(h2.x, h2.y);
+            ctx.lineTo(h2.x - Math.cos(a) * 14, h2.y - Math.sin(a) * 14); ctx.stroke();
+            ctx.restore();
+        }
+    }
+
+    // 光鞭
+    for (var i = 0; i < s.hits.length; i++) {
+        var h3 = s.hits[i];
+        if (h3.type !== 'whip') continue;
+        var t2 = 1 - h3.t / h3.max;
+        var whipAlpha = (1 - t2) * 0.9;
+        if (!drawVampireAsset('whip_arc', h3.x + h3.face * h3.reach * 0.48, h3.y,
+                              h3.reach * 1.12, 56, whipAlpha, h3.face < 0)) {
+            ctx.save(); ctx.globalAlpha = whipAlpha;
+            ctx.fillStyle = '#fff0aa'; ctx.shadowBlur = 14; ctx.shadowColor = '#ffd166';
+            ctx.beginPath();
+            ctx.ellipse(h3.x + h3.face * h3.reach * 0.5, h3.y,
+                        h3.reach * 0.55 * (0.6 + t2 * 0.6), 16, 0, 0, RE.TAU);
+            ctx.fill(); ctx.restore();
+        }
+    }
+
+    // 守護星
+    if (s.weapons.orbit) {
+        var count = 1 + Math.floor(s.weapons.orbit / 2);
+        var rad = 46 * areaMul();
+        for (var i = 0; i < count; i++) {
+            var a3 = s.orbitAngle + i / count * RE.TAU;
+            var starX = p.x + Math.cos(a3) * rad, starY = p.y + Math.sin(a3) * rad;
+            if (!drawVampireAsset('guardian_star', starX, starY, 23, 23, 1, false, a3)) {
+                ctx.save(); ctx.shadowBlur = 12; ctx.shadowColor = '#7dd3fc';
+                ctx.fillStyle = '#a7d3f3'; ctx.beginPath(); ctx.arc(starX, starY, 8, 0, RE.TAU); ctx.fill();
+                ctx.restore();
+            }
+        }
+    }
+
+    // 玩家
+    if (p.inv <= 0 || Math.floor(p.inv * 16) % 2 === 0) {
+        var bob2 = Math.sin(p.anim) * 1.5;
+        var hunterState = p.inv > 0 ? 'hunter_hurt' : (p.moving ? 'hunter_walk' : 'hunter_idle');
+        if (!drawVampireAsset(hunterState, p.x, p.y - 7 + bob2, 40, 48, 1, p.face < 0)) {
+            ctx.save(); ctx.translate(p.x, p.y); ctx.scale(p.face, 1);
+            ctx.fillStyle = 'rgba(0,0,0,0.48)';
+            ctx.beginPath(); ctx.ellipse(0, 10, 11, 4, 0, 0, RE.TAU); ctx.fill();
+            ctx.fillStyle = '#2a3a5e'; RE.Draw.roundRect(ctx, -8, -2 + bob2, 16, 14, 4); ctx.fill();
+            ctx.fillStyle = '#f2c9a0'; ctx.beginPath(); ctx.arc(0, -8 + bob2, 7, 0, RE.TAU); ctx.fill();
+            ctx.fillStyle = '#8b4513'; ctx.beginPath(); ctx.arc(0, -10 + bob2, 7, Math.PI, 0); ctx.fill();
+            ctx.fillStyle = '#1a1a2a'; ctx.fillRect(2, -9 + bob2, 2, 2.5); ctx.restore();
+        }
+    }
+
+    P.draw(ctx);
+    FT.draw(ctx);
+    ctx.restore();
+
+    // ---- HUD ----
+    // 生命條
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(10, 10, 150, 14);
+    ctx.fillStyle = p.hp / p.maxHp > 0.35 ? '#70e4b5' : '#ff6b6b';
+    ctx.fillRect(11, 11, 148 * RE.clamp(p.hp / p.maxHp, 0, 1), 12);
+    RE.Draw.text(ctx, Math.max(0, Math.ceil(p.hp)) + ' / ' + p.maxHp, 85, 10,
+        { size: 14, align: 'center', color: '#fff8e7' });
+
+    // 經驗條
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(10, 28, 150, 7);
+    ctx.fillStyle = '#7dd3fc';
+    ctx.fillRect(11, 29, 148 * RE.clamp(s.exp / s.expNeed, 0, 1), 5);
+
+    // 武器清單
+    var wy = 44;
+    for (var k in s.weapons) {
+        RE.Draw.text(ctx, WEAPONS[k].name + ' Lv.' + s.weapons[k], 10, wy,
+            { size: 14, color: WEAPONS[k].color });
+        wy += 14;
+    }
+    var py2 = 44;
+    for (var k2 in s.passives) {
+        RE.Draw.text(ctx, PASSIVES[k2].name + ' Lv.' + s.passives[k2], W - 10, py2,
+            { size: 14, color: '#9fb3aa', align: 'right' });
+        py2 += 14;
+    }
+
+    RE.Draw.text(ctx, '敵人 ' + s.enemies.length, W / 2, 10,
+        { size: 14, align: 'center', color: '#ff9ebb' });
+
+    // ---- 升級選單 ----
+    if (s.levelUpChoices) drawLevelUp();
+
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.06, vignetteStrength: 0.55 });
+}
+
+/* 原本只有 3.5% 透明度網格，開場近乎全黑，玩家很難感覺攝影機正在移動。
+   這裡用世界座標生成可無限延伸的石板、裂紋與符文；圖樣只取決於座標，
+   不進入狀態、不碰生成器，因此不會改亂數序列或敵人碰撞。 */
+function drawWorldFloor(camX, camY, p) {
+    ctx.fillStyle = '#0c111b';
+    ctx.fillRect(camX, camY, W, H);
+
+    var tile = 96;
+    var sx = Math.floor(camX / tile) * tile;
+    var sy = Math.floor(camY / tile) * tile;
+    for (var y = sy; y <= camY + H + tile; y += tile) {
+        for (var x = sx; x <= camX + W + tile; x += tile) {
+            var seed = Math.abs(((x / tile) * 92821 + (y / tile) * 68917) | 0);
+            ctx.fillStyle = seed % 3 === 0 ? 'rgba(63,79,105,0.10)' : 'rgba(33,45,64,0.12)';
+            ctx.fillRect(x + 3, y + 3, tile - 6, tile - 6);
+
+            // 破損石縫：每格固定，不會隨幀閃動。
+            ctx.strokeStyle = 'rgba(116,139,170,0.09)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x + 12 + seed % 22, y + 18);
+            ctx.lineTo(x + 38, y + 38 + seed % 18);
+            ctx.lineTo(x + 28 + seed % 31, y + 70);
+            ctx.stroke();
+
+            // 少量封印符文提供地標，讓移動方向可被記住。
+            if (seed % 7 === 0) {
+                var pulse = RE.Motion.reduced ? 0.07 : 0.07 + Math.sin(performance.now() * 0.0015 + seed) * 0.025;
+                ctx.save();
+                ctx.translate(x + tile / 2, y + tile / 2);
+                ctx.strokeStyle = 'rgba(192,132,252,' + pulse + ')';
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(0, 0, 20, 0, RE.TAU); ctx.stroke();
+                ctx.rotate(Math.PI / 4);
+                ctx.strokeRect(-10, -10, 20, 20);
+                ctx.restore();
+            }
+
+            // 正式候選只作低密度地標，不進碰撞，也不呼叫亂數。
+            if (seed % 11 === 0) {
+                drawVampireAsset('cemetery_floor', x + tile / 2, y + tile / 2,
+                                 104, 84, 0.22, seed % 2 === 0, (seed % 4) * Math.PI / 2);
+            } else if (seed % 13 === 0) {
+                drawVampireAsset('gravestone_cluster', x + tile / 2, y + tile / 2 + 8,
+                                 62, 68, 0.38, seed % 2 === 0);
+            }
+        }
+    }
+
+    // 玩家周圍的局部照明把角色與敵人從暗地面上分離。
+    var light = ctx.createRadialGradient(p.x, p.y, 18, p.x, p.y, 150);
+    light.addColorStop(0, 'rgba(125,211,252,0.13)');
+    light.addColorStop(0.55, 'rgba(86,105,145,0.055)');
+    light.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = light;
+    ctx.fillRect(camX, camY, W, H);
+}
+
+function drawLevelUp() {
+    ctx.save();
+    ctx.fillStyle = 'rgba(8,12,18,0.88)';
+    ctx.fillRect(0, 0, W, H);
+    // 手機沒有 Digit1/2/3；卡片本身就是升級選擇的觸控替代路徑。
+    RE.Draw.text(ctx, '手機可直接點擊卡片', W / 2, 92,
+        { size: 14, align: 'center', color: '#70e4b5' });
+    RE.Draw.text(ctx, 'LEVEL ' + s.level + '　選擇一項強化', W / 2, 46,
+        { size: 19, align: 'center', color: '#ffd166' });
+    RE.Draw.text(ctx, '按 ← ↑ → 或 1 / 2 / 3 選擇', W / 2, 74,
+        { size: 14, align: 'center', color: '#9fb3aa' });
+
+    var cw = 148, gap = 12;
+    var total = s.levelUpChoices.length * cw + (s.levelUpChoices.length - 1) * gap;
+    var sx = (W - total) / 2;
+    for (var i = 0; i < s.levelUpChoices.length; i++) {
+        var c = s.levelUpChoices[i];
+        var x = sx + i * (cw + gap), y = 110;
+        var col = c.kind === 'weapon' ? WEAPONS[c.key].color : '#a7f3d0';
+        ctx.fillStyle = '#16241d';
+        RE.Draw.roundRect(ctx, x, y, cw, 172, 10); ctx.fill();
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        RE.Draw.text(ctx, String(i + 1), x + cw / 2, y + 14,
+            { size: 20, align: 'center', color: col });
+        RE.Draw.text(ctx, c.label, x + cw / 2, y + 52,
+            { size: 14, align: 'center', color: '#fff8e7' });
+        // 說明文字自動換行
+        var words = c.desc.split('');
+        var line = '', ly = y + 82;
+        for (var w = 0; w < words.length; w++) {
+            line += words[w];
+            if (line.length >= 9) {
+                RE.Draw.text(ctx, line, x + cw / 2, ly, { size: 14, align: 'center', color: '#bccbc4', stroke: false });
+                line = ''; ly += 16;
+            }
+        }
+        if (line) RE.Draw.text(ctx, line, x + cw / 2, ly, { size: 14, align: 'center', color: '#bccbc4', stroke: false });
+        RE.Draw.text(ctx, c.kind === 'weapon' ? '武器' : '被動', x + cw / 2, y + 148,
+            { size: 14, align: 'center', color: col });
+    }
+    drawVampireAsset('hunter_levelup', W / 2, H - 45, 64, 72, 0.72);
+    ctx.restore();
+}
+
+// ======================================================================
+window.addEventListener('keydown', function (e) {
+    if (!s.levelUpChoices) return;
+    if (e.code === 'Digit1') s.keyPick = 0;
+    else if (e.code === 'Digit2') s.keyPick = 1;
+    else if (e.code === 'Digit3') s.keyPick = 2;
+});
+
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '沒有攻擊鍵——武器自動攻擊，你只負責走位。撿經驗升級，三選一決定這一局的組合。目標：撐過 15 分鐘。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

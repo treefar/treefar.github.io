@@ -1,0 +1,61 @@
+{
+  "version": 2,
+  "kind": "runtime-integrated-art-candidate",
+  "status": "final-gate-pending",
+  "countedInLedger": false,
+  "game": "pipe_mania",
+  "set": "fidelity-rebuild-2026-08-25",
+  "tool": "Codex built-in ImageGen",
+  "model": "ImageGen（服務端版本未揭露）",
+  "generatedAt": "2026-08-25",
+  "prompt": "art-production/fidelity-rebuild-2026-08-25/pipe_mania/prompt-v001.md",
+  "source": "art-production/fidelity-rebuild-2026-08-25/pipe_mania/source/pipe_mania-media-faithful-v001-imagegen.png",
+  "sourceSha256": "078de0a4187cb3c9a393e0d1c62ea2f0cd30f9f334c0b14987a69e44099b57d7",
+  "supersedes": "art-production/fidelity-rebuild-2026-08-25/pipe_mania/rejected/pipe_mania-final-sweep-manifest-2026-08-24.json",
+  "supersededReason": "媒材年代不符；原候選保留於 rejected，不計正式帳。",
+  "postprocess": "固定格裁切、等比例縮放、透明留白與 4x4 圖集排版；未去背、未補畫、未修改模型內容。點陣媒材採 nearest-neighbor，向量／網頁媒材採 Lanczos 縮放。",
+  "atlas": "final-sweep-atlas.png",
+  "atlasSha256": "e00231363761169181a1029e5b85eae682511bacdcbb30cf5ac4be41e73f2146",
+  "cellWidth": 128,
+  "cellHeight": 128,
+  "assets": {
+    "pipe_elbow": {
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "1989 點陣彎管"
+    },
+    "pipe_flow": {
+      "index": 1,
+      "x": 128,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "點陣流體管件"
+    },
+    "pressure_badge": {
+      "index": 2,
+      "x": 256,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "壓力完成徽章"
+    }
+  },
+  "runtimePresentation": "RetroShell 開場的美術候選圖譜；正常流程可見，不介入遊戲亂數、碰撞或更新。",
+  "qa": {
+    "assetCount": 3,
+    "sourceSize": [
+      2172,
+      724
+    ],
+    "sourceAlphaMin": 0,
+    "sourceAlphaMax": 255,
+    "edgePixels": 0,
+    "emptyCells": 0,
+    "mediumFidelityPreScreen": true,
+    "humanFinalGate": false
+  }
+}

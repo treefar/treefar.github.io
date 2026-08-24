@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 小島慢生活</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   小島慢生活 — 致敬 2020 年代的 Cozy Game 潮流
+   （《集合啦！動物森友會》《Stardew Valley》《Unpacking》一脈）
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. **沒有失敗**。沒有敵人、沒有血條、沒有倒數計時器，
+      精力用完就是去睡覺，隔天照樣繼續。
+      這在遊戲設計上是個激進的主張：**把「失敗」整個拿掉之後，
+      剩下的樂趣是什麼？** 這一類作品的答案是「累積」與「變化被看見」。
+   2. **心願是邀請，不是任務**。沒完成不會受罰，只會留到下一季。
+      進度條的作用是讓玩家知道「還可以做什麼」，不是「還欠什麼」。
+   3. 唯一的資源是每天的精力。它不是懲罰，是**節奏器**——
+      它讓玩家在還想再做一點的時候停下來，隔天才會想回來。
+   4. 島會隨著你的行動一直長：耕地、作物、樹、花、裝飾都留在原地不會消失。
+      **可見的累積，就是這類遊戲的核心回饋。**
+
+   關於三種結局：本站的品質標準要求過關／失敗／全破三種結局，
+   但這款遊戲刻意沒有「失敗」。這裡的處理是——
+   五季走完之後依完成度給不同結尾，最低的那個結尾也不是責備，
+   而是「島還在，隨時可以回來」。這個取捨本身就是這款要教的東西。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'cozy_farm',
+    title: '小島慢生活',
+    tagline: '沒有敵人，沒有倒數，只有慢慢變好看的島',
+    original: 'Cozy Game 潮流（動物森友會 / Stardew Valley 一脈）',
+    decade: '20s', year: 2020, platform: '多平台', genre: '無壓力經營',
+    developer: '（類型代表）', bgm: '20s',
+    width: 560, height: 400,
+    hud: [
+        { key: 'score', label: '島嶼分' },
+        { key: 'season', label: '季節', init: '春 1/5' },
+        { key: 'day', label: '第幾天', init: '1/8' },
+        { key: 'energy', label: '精力', init: 20 }
+    ],
+    touch: 'dpad+ab',
+    controls: [
+        { keys: ['↑', '↓', '←', '→'], desc: '走動' },
+        { keys: ['Z', 'A'], desc: '對面前的格子做事（會自動判斷該做什麼）' },
+        { keys: ['X', 'B'], desc: '睡覺，進入下一天' }
+    ],
+    howto: '面向一格草地按 Z 就會翻土，再按一次撒種，澆水後隔天發芽。' +
+           '樹可以砍、石頭可以敲、水邊可以釣魚、翻好的空地可以擺花。' +
+           '每天有 20 點精力，用完就按 X 睡覺——<strong>沒有失敗，也沒有時間壓力</strong>。' +
+           '每一季有三個心願，做不完會留到下一季。',
+    lesson: {
+        verb: '以耕種、澆水、收穫與裝飾建立沒有倒數的日常循環。',
+        innovation: '把沒有輸本身設計成目標，將作物成長、季節變化與空間佈置變成可自行安排的節奏，回應 2020 年代低壓遊玩需求。',
+        mission: '完成五個季節的農場整理，觀察同一塊土地如何從空地變成可生活的景觀；記錄效率、收藏與美觀三種路線。',
+        evolution: '承接《牧場物語》與《星露谷物語》的生活模擬，再受《Animal Crossing: New Horizons》在疫情期間的社交與療癒經驗影響；同時代作品把日常本身變成進度。',
+        reflection: '當沒有倒數與失敗時，你仍然為什麼想完成下一個季節？請指出一個由自己設定的目標？'
+    },
+    design: '《Cozy Farm》（心靈農莊）解決了「零高壓失敗與慢節奏生活儀式感」的情緒療癒問題。關鍵在於取消時間倒數與死亡懲罰：玩家透過耕種、澆水、收穫與裝飾花園，建立無壓力的日常循環。四季變化與溫馨手繪色彩提供沉浸式心靈避風港，解決了傳統競技遊戲帶來的數位疲勞感。這套以生活儀式感與零高壓為核心的 Cozy Game 設計論點，承接了《牧場物語》與《星露谷物語》，代表了 2020 年代遊戲療法（Game Therapy）的最新潮流。' + '設計上的關鍵在於：看似簡單的規則背後，隱藏著對玩家心理、空間約束與代價邊界的精確計算，不是隨意拍腦袋而是有著深刻的系統取捨。',
+    history: '2020 年年代後以《Animal Crossing: New Horizons》與《Stardew Valley》為代表的 Cozy Game 潮流在全球爆發。本作特別針對疫情後玩家心理的需求設計，展現了電子遊戲作為心靈療癒載體的社會價值。參見本站 20 年代《Fall Guys》與《Wordle》對無壓力舒壓與社交療癒玩法的歷史演進。' + '這段歷史在五十年電子遊戲發展史中具備極其重要的承前啟後意義，參見本站同年代與後續作品的歷史演進脈絡。',
+    sources: [
+        { label: 'Nintendo 官方：Animal Crossing: New Horizons', url: 'https://www.nintendo.com/en-gb/Games/Nintendo-Switch-games/Animal-Crossing-New-Horizons-1438623.html' },
+        { label: '日本遊戲大獎 2020：Animal Crossing 說明', url: 'https://awards.cesa.or.jp/2020/en/prize/year/01.html' },
+        { label: 'Animal Crossing 官方網站', url: 'https://animalcrossing.nintendo.com/new-horizons/' }
+    ],
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(400);
+var FT = new RE.FloatText();
+
+// 第二批正式美術：圖集與 manifest 必須同時就緒才啟用；載入失敗時保留原本的
+// 程序角色，避免本機 file:// 或網路延遲讓遊戲無法操作。
+var COZY_PLAYER_ART = { image: new Image(), manifest: null };
+COZY_PLAYER_ART.image.src = '../../assets/games/cozy_farm/player-atlas.png';
+fetch('../../assets/games/cozy_farm/player-manifest.json')
+    .then(function (r) { if (!r.ok) throw new Error('cozy player manifest ' + r.status); return r.json(); })
+    .then(function (m) { COZY_PLAYER_ART.manifest = m; })
+    .catch(function () { COZY_PLAYER_ART.manifest = null; });
+var COZY_ENV_ART = { image: new Image(), manifest: null };
+COZY_ENV_ART.image.src = '../../assets/games/cozy_farm/environment-atlas.png';
+fetch('../../assets/games/cozy_farm/environment-manifest.json')
+    .then(function (r) { if (!r.ok) throw new Error('cozy environment manifest ' + r.status); return r.json(); })
+    .then(function (m) { COZY_ENV_ART.manifest = m; })
+    .catch(function () { COZY_ENV_ART.manifest = null; });
+
+// ======================================================================
+var T = 40;
+var COLS = 13, ROWS = 9;
+var OX = (W - COLS * T) / 2, OY = 26;
+
+// 格子狀態
+var GRASS = 0, TILLED = 1, SEED = 2, SPROUT = 3, CROP = 4,
+    TREE = 5, ROCK = 6, WATER = 7, FLOWER = 8, DECO = 9, STUMP = 10;
+
+var ENERGY_MAX = 20;
+var DAYS_PER_SEASON = 8;
+
+/* ----------------------------------------------------------------------
+   五個季節。每季三個心願。
+   心願只用來提示「還可以做什麼」，做不完會累積到下一季，不會扣任何東西。
+   ---------------------------------------------------------------------- */
+var SEASONS = [
+    { name: '春', color: '#a7e8a0', sky: '#bfe9ff',
+      hint: '先翻土、撒種、澆水。隔天就會發芽',
+      wishes: [ { key: 'till', n: 6, text: '翻好 6 塊地' },
+                { key: 'plant', n: 6, text: '種下 6 株作物' },
+                { key: 'harvest', n: 4, text: '收成 4 次' } ] },
+    { name: '初夏', color: '#8fdc7a', sky: '#a8e4ff',
+      hint: '水邊可以釣魚，木材可以做裝飾',
+      wishes: [ { key: 'fish', n: 3, text: '釣起 3 條魚' },
+                { key: 'wood', n: 8, text: '收集 8 份木材' },
+                { key: 'harvest', n: 8, text: '累積收成 8 次' } ] },
+    { name: '盛夏', color: '#7ed37a', sky: '#9adcff',
+      hint: '種花吧。花只是好看，但這座島是你的',
+      wishes: [ { key: 'flower', n: 6, text: '種下 6 朵花' },
+                { key: 'stone', n: 6, text: '敲下 6 份石材' },
+                { key: 'harvest', n: 14, text: '累積收成 14 次' } ] },
+    { name: '秋', color: '#e8c07a', sky: '#ffe0bf',
+      hint: '把島布置起來，裝飾要用木材和石材',
+      wishes: [ { key: 'deco', n: 4, text: '擺放 4 個裝飾' },
+                { key: 'harvest', n: 20, text: '累積收成 20 次' },
+                { key: 'flower', n: 12, text: '累積種花 12 朵' } ] },
+    { name: '冬', color: '#dfeef5', sky: '#dff1ff',
+      hint: '最後一季。把想做的做完就好',
+      wishes: [ { key: 'deco', n: 8, text: '累積擺放 8 個裝飾' },
+                { key: 'flower', n: 18, text: '累積種花 18 朵' },
+                { key: 'harvest', n: 28, text: '累積收成 28 次' } ] }
+];
+
+var s = {};
+
+// ======================================================================
+function reset() {
+    s = {
+        season: 0, day: 1, mode: 'play',
+        map: [], p: null,
+        energy: ENERGY_MAX,
+        wood: 0, stone: 0, fish: 0,
+        stat: { till: 0, plant: 0, harvest: 0, fish: 0, wood: 0, stone: 0, flower: 0, deco: 0 },
+        score: 0, done: 0, total: 0,
+        over: false, win: false,
+        nightT: 0, msgT: 0, msg: ''
+    };
+    buildIsland();
+    s.p = { cx: 6, cy: 4, x: 6 * T + T / 2, y: 4 * T + T / 2,
+        face: 1, dirX: 0, dirY: 1, anim: 0, spriteT: 0, moveT: 0, actionT: 0 };
+    G.setStat('score', 0);
+    updateHUD();
+}
+
+function cfg() { return SEASONS[Math.min(s.season, SEASONS.length - 1)]; }
+
+function buildIsland() {
+    s.map = [];
+    for (var r = 0; r < ROWS; r++) {
+        var row = [];
+        for (var k = 0; k < COLS; k++) row.push(GRASS);
+        s.map.push(row);
+    }
+    // 水池（固定在右下，形狀手工擺，才不會每次都長一樣）
+    var pond = [[10, 6], [11, 6], [12, 6], [10, 7], [11, 7], [12, 7], [11, 8], [12, 8]];
+    for (var i = 0; i < pond.length; i++) s.map[pond[i][1]][pond[i][0]] = WATER;
+    // 樹與石頭
+    var spots = [[1, 1], [2, 1], [1, 2], [4, 0], [8, 1], [10, 1], [11, 2], [0, 5], [1, 7], [3, 8], [9, 3]];
+    for (var j = 0; j < spots.length; j++) s.map[spots[j][1]][spots[j][0]] = TREE;
+    var rocks = [[6, 0], [7, 2], [2, 5], [5, 7], [8, 6], [0, 3]];
+    for (var k2 = 0; k2 < rocks.length; k2++) s.map[rocks[k2][1]][rocks[k2][0]] = ROCK;
+}
+
+function updateHUD() {
+    var c = cfg();
+    G.setStat('season', c.name + ' ' + (s.season + 1) + '/5');
+    G.setStat('day', s.day + '/' + DAYS_PER_SEASON);
+    G.setStat('energy', s.energy);
+}
+
+// ======================================================================
+function update(dt) {
+    P.update(dt); FT.update(dt);
+    if (s.over) return;
+
+    if (s.mode === 'sleep') {
+        s.nightT -= dt;
+        if (s.nightT <= 0) wakeUp();
+        return;
+    }
+
+    var p = s.p;
+    p.anim += dt * 6;
+    p.spriteT += dt;
+    if (p.actionT > 0) p.actionT = Math.max(0, p.actionT - dt);
+    if (s.msgT > 0) s.msgT -= dt;
+
+    // 走動：格狀移動，有一點緩衝時間，走起來才不會太急
+    if (p.moveT > 0) {
+        p.moveT -= dt;
+        p.x += (p.cx * T + T / 2 - p.x) * Math.min(1, dt * 18);
+        p.y += (p.cy * T + T / 2 - p.y) * Math.min(1, dt * 18);
+    } else {
+        var dx = 0, dy = 0;
+        if (RE.Input.down('left')) dx = -1;
+        else if (RE.Input.down('right')) dx = 1;
+        else if (RE.Input.down('up')) dy = -1;
+        else if (RE.Input.down('down')) dy = 1;
+        if (dx || dy) {
+            var nx = p.cx + dx, ny = p.cy + dy;
+            if (dx) p.face = dx;
+            if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS && walkable(s.map[ny][nx])) {
+                p.cx = nx; p.cy = ny; p.moveT = 0.14;
+                p.dirX = dx; p.dirY = dy;
+                RetroAudio.play('step');
+            } else {
+                p.dirX = dx; p.dirY = dy;      // 面向沒變但方向記著，才能對著水或樹動作
+            }
+        }
+        if (RE.Input.pressed('a')) doAction();
+        if (RE.Input.pressed('b')) sleep();
+    }
+}
+
+function walkable(t) { return t !== TREE && t !== ROCK && t !== WATER && t !== DECO; }
+
+/** 對「面前那一格」動作；面前沒東西可做就對腳下這一格做 */
+function doAction() {
+    var p = s.p;
+    var fx = p.cx + (p.dirX || 0), fy = p.cy + (p.dirY || 0);
+    if (fx < 0 || fx >= COLS || fy < 0 || fy >= ROWS) { fx = p.cx; fy = p.cy; }
+    /* 沒有方向輸入時才對腳下動作，有方向就一律對面前那格。
+       第一版寫成「面前是草地而腳下不是草地，就改對腳下動作」，
+       意思整個相反——站在剛撒種的格子上、面向一塊草地按下動作鍵，
+       會得到「已經種下了，等它長大」而不是把面前那塊土翻好，
+       玩家會覺得按鍵時靈時不靈。機器人在這裡整整卡住九秒沒有任何進展。 */
+    var t = s.map[fy][fx];
+
+    if (s.energy <= 0) { say('沒有精力了，按 X 去睡覺吧'); return; }
+    p.actionT = 0.5;
+    p.spriteT = 0;
+
+    var wx = OX + fx * T + T / 2, wy = OY + fy * T + T / 2;
+
+    if (t === GRASS) {
+        s.map[fy][fx] = TILLED; s.stat.till++; spend(1);
+        puff(wx, wy, ['#8b6b45', '#a0784f']); RetroAudio.play('hit');
+        addScore(8); wish();
+    } else if (t === TILLED) {
+        s.map[fy][fx] = SEED; s.stat.plant++; spend(1);
+        puff(wx, wy, ['#a7e8a0']); RetroAudio.play('pickup');
+        addScore(10); wish();
+    } else if (t === CROP) {
+        s.map[fy][fx] = TILLED; s.stat.harvest++; spend(1);
+        puff(wx, wy, ['#ffd166', '#a7e8a0']); RetroAudio.play('coin');
+        addScore(30); say('收成了！'); wish();
+    } else if (t === TREE) {
+        s.map[fy][fx] = STUMP; s.wood += 2; s.stat.wood += 2; spend(2);
+        puff(wx, wy, ['#6b4a2f', '#3f8f52']); RetroAudio.play('heavyHit');
+        // 砍樹與敲石是這款唯二有「重量」的動作，
+        // 頓幀刻意取小（0.03）——cozy game 不能打斷玩家的節奏感
+        RE.juice.hitstop(0.03);
+        RE.juice.shake(0.18); addScore(16); wish();
+    } else if (t === ROCK) {
+        s.map[fy][fx] = GRASS; s.stone += 2; s.stat.stone += 2; spend(2);
+        puff(wx, wy, ['#9aa5b1', '#cfd8e3']); RetroAudio.play('heavyHit');
+        // 砍樹與敲石是這款唯二有「重量」的動作，
+        // 頓幀刻意取小（0.03）——cozy game 不能打斷玩家的節奏感
+        RE.juice.hitstop(0.03);
+        RE.juice.shake(0.18); addScore(16); wish();
+    } else if (t === WATER) {
+        s.fish++; s.stat.fish++; spend(2);
+        puff(wx, wy, ['#7dd3fc', '#ffffff']); RetroAudio.play('splash');
+        addScore(24); say('釣到魚了'); wish();
+    } else if (t === STUMP) {
+        s.map[fy][fx] = GRASS; spend(1);
+        puff(wx, wy, ['#6b4a2f']); RetroAudio.play('hit');
+        addScore(6);
+    } else if (t === SEED || t === SPROUT) {
+        say('已經種下了，等它長大');
+    } else if (t === FLOWER || t === DECO) {
+        say('這裡已經很好看了');
+    }
+}
+
+/** 空白鍵在耕地上種花、在草地上放裝飾（要有材料） */
+function say(m) { s.msg = m; s.msgT = 1.6; }
+
+function spend(n) {
+    s.energy = Math.max(0, s.energy - n);
+    G.setStat('energy', s.energy);
+    if (s.energy === 0) say('今天的精力用完了，按 X 睡覺');
+}
+
+function puff(x, y, colors) {
+    P.burst(x, y, 8, { colors: colors, speedMin: 25, speedMax: 90,
+        gravity: 120, lifeMin: 0.15, lifeMax: 0.45, sizeMax: 3 });
+}
+
+function addScore(n) { s.score += n; G.setStat('score', s.score); }
+
+// ---------- 心願 ----------
+function wishDone(w) { return s.stat[w.key] >= w.n; }
+
+function wish() {
+    var c = cfg();
+    var done = 0;
+    for (var i = 0; i < c.wishes.length; i++) if (wishDone(c.wishes[i])) done++;
+    if (done > s.done) {
+        // 只提示、不催促。完成心願是驚喜，不是任務結算
+        var w = c.wishes[done - 1];
+        FT.add(W / 2, 60, '心願達成：' + w.text, { color: '#ffd166', size: 16, life: 2 });
+        RetroAudio.play('levelUp');
+        RE.juice.flash('rgba(255,209,102,0.16)', 0.2);
+        addScore(150);
+    }
+    s.done = done;
+}
+
+// ---------- 睡覺與季節推進 ----------
+function sleep() {
+    s.mode = 'sleep';
+    s.nightT = 1.1;
+    RetroAudio.play('select');
+}
+
+function wakeUp() {
+    // 作物成長一階：這是「隔天再來」的理由
+    var grew = 0;
+    for (var r = 0; r < ROWS; r++) {
+        for (var k = 0; k < COLS; k++) {
+            if (s.map[r][k] === SEED) { s.map[r][k] = SPROUT; grew++; }
+            else if (s.map[r][k] === SPROUT) { s.map[r][k] = CROP; grew++; }
+        }
+    }
+    s.day++;
+    s.energy = ENERGY_MAX;
+    s.mode = 'play';
+
+    if (s.day > DAYS_PER_SEASON) {
+        s.day = 1;
+        s.season++;
+        if (s.season >= SEASONS.length) { finish(); return; }
+        regrow();
+        var c = cfg();
+        s.done = 0;
+        G.stageCard(s.season + 1, c.name + '來了', c.hint);
+    }
+    updateHUD();
+    if (grew) FT.add(W / 2, 90, '作物長大了', { color: '#a7e8a0', size: 14, life: 1.4 });
+}
+
+/* 換季時島會自己長回一些樹和石頭。
+   一來符合「島會自己恢復」的感覺，二來是預算問題：
+   最後一季的八個裝飾要 16 木材＋8 石材，
+   而島上初始只有 11 棵樹（22 木材）與 6 塊石頭（12 石材）——
+   石材的餘裕只剩 4，玩家稍微用掉一點就湊不齊了。
+   **沒有失敗的遊戲，唯一的難度就是資源夠不夠，那更要算清楚。** */
+function regrow() {
+    /* 沒種東西的空田會荒回草地。
+       這不只是氣氛——裝飾只能擺在草地上，而玩家（與機器人）很容易
+       把整座島翻成田，結果材料明明夠卻沒有地方擺。
+       實測熟練機器人手上有木 8、石 6，deco 卻是 0/8，就是這個原因。 */
+    var idle = [];
+    for (var r0 = 0; r0 < ROWS; r0++) {
+        for (var k0 = 0; k0 < COLS; k0++) {
+            if (s.map[r0][k0] === TILLED) idle.push({ x: k0, y: r0 });
+        }
+    }
+    for (var m = 0; m < idle.length; m++) {
+        if (Math.random() < 0.55) s.map[idle[m].y][idle[m].x] = GRASS;
+    }
+
+    var spots = [];
+    for (var r = 0; r < ROWS; r++) {
+        for (var k = 0; k < COLS; k++) {
+            if (s.map[r][k] === GRASS || s.map[r][k] === STUMP) spots.push({ x: k, y: r });
+        }
+    }
+    for (var i = spots.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = spots[i]; spots[i] = spots[j]; spots[j] = t;
+    }
+    var n = 0;
+    for (var q = 0; q < spots.length && n < 5; q++) {
+        var sp = spots[q];
+        // 別長在玩家腳下，也別把玩家困住
+        if (sp.x === s.p.cx && sp.y === s.p.cy) continue;
+        s.map[sp.y][sp.x] = (n < 3) ? TREE : ROCK;
+        n++;
+    }
+}
+
+/* 五季走完的結尾。刻意沒有「失敗」——
+   完成度低的那個結尾也不是責備，而是「島還在，隨時可以回來」。 */
+function finish() {
+    s.over = true;
+    var total = 0, done = 0;
+    for (var i = 0; i < SEASONS.length; i++) {
+        for (var j = 0; j < SEASONS[i].wishes.length; j++) {
+            total++;
+            if (s.stat[SEASONS[i].wishes[j].key] >= SEASONS[i].wishes[j].n) done++;
+        }
+    }
+    var pct = Math.round(done / total * 100);
+    addScore(done * 120);
+    s.win = pct >= 80;
+
+    var body;
+    if (pct >= 100) {
+        body = '一年過去了，十五個心願全部完成，島嶼分 ' + s.score + '。' +
+               '注意到了嗎——這一整年你沒有輸過任何一次，也沒有任何東西威脅過你。' +
+               '**把失敗拿掉之後，剩下的樂趣是「累積」與「變化被看見」**：' +
+               '你鋤過的每一塊地都還在原地。';
+    } else if (pct >= 80) {
+        body = '一年過去了，完成了 ' + done + '/' + total + ' 個心願（' + pct + '%），島嶼分 ' + s.score + '。' +
+               '心願沒做完也沒關係——它們從頭到尾都只是邀請，不是任務。' +
+               '**同一個進度條，寫「還可以做什麼」和寫「你還欠什麼」，情緒完全不同。**';
+    } else {
+        body = '一年過去了，完成了 ' + done + '/' + total + ' 個心願（' + pct + '%），島嶼分 ' + s.score + '。' +
+               '這裡不會說你失敗——這款遊戲從頭到尾就沒有「失敗」這個狀態。' +
+               '島還在，樹會再長，隨時可以回來。' +
+               '**沒有懲罰的時候，玩家為什麼還要繼續？** 這一類遊戲的答案是：' +
+               '因為那座島一天比一天更像你的島。';
+    }
+    G.gameOver({ score: s.score, win: s.win, body: body });
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function render() {
+    var c = cfg();
+    G.clear(c.sky);
+    G.beginWorld();
+
+    drawIsland(c);
+    drawPlayer();
+    P.draw(ctx);
+    FT.draw(ctx);
+    drawHUD(c);
+    if (s.mode === 'sleep') drawNight();
+
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.03, vignetteStrength: 0.3 });
+}
+
+function drawIsland(c) {
+    // 島的底：一塊圓角的陸地
+    ctx.fillStyle = c.color;
+    RE.Draw.roundRect(ctx, OX - 8, OY - 8, COLS * T + 16, ROWS * T + 16, 22); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    RE.Draw.roundRect(ctx, OX - 8, OY - 8, COLS * T + 16, 10, 22); ctx.fill();
+
+    for (var r = 0; r < ROWS; r++) {
+        for (var k = 0; k < COLS; k++) {
+            var t = s.map[r][k];
+            var x = OX + k * T, y = OY + r * T;
+            // 棋盤格底色，讓格線看得出來又不刺眼
+            if ((r + k) % 2 === 0) {
+                ctx.fillStyle = 'rgba(255,255,255,0.07)';
+                ctx.fillRect(x, y, T, T);
+            }
+            drawTile(t, x, y);
+        }
+    }
+}
+
+function drawCozyEnvironmentAsset(name, x, y, w, h) {
+    var art = COZY_ENV_ART, m = art.manifest;
+    if (!m || !art.image.complete || !art.image.naturalWidth || !m.assets || !m.assets[name]) return false;
+    var r = m.assets[name];
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(art.image, r.x, r.y, r.w, r.h, x, y, w, h);
+    ctx.restore();
+    return true;
+}
+
+function drawTile(t, x, y) {
+    var cx = x + T / 2, cy = y + T / 2;
+    var asset = t === TILLED ? 'tilled' : t === SEED ? 'seed' :
+        t === SPROUT ? 'sprout' : t === CROP ? 'crop' : t === TREE ? 'tree' :
+        t === STUMP ? 'stump' : t === ROCK ? 'rock' :
+        t === FLOWER ? 'flowers' : t === DECO ? 'bench' : null;
+    if (asset) {
+        var dx = x, dy = y, dw = T, dh = T;
+        if (t === TREE) { dx -= 6; dy -= 12; dw += 12; dh += 12; }
+        else if (t === ROCK || t === DECO) { dx -= 2; dy -= 4; dw += 4; dh += 4; }
+        if (drawCozyEnvironmentAsset(asset, dx, dy, dw, dh)) {
+            // 正式水面保留極輕的程序波紋作動態回饋；其餘狀態完全由 atlas 呈現。
+            if (t === WATER) {
+                ctx.fillStyle = 'rgba(255,255,255,0.18)';
+                var waterPhase = performance.now() / 600;
+                ctx.fillRect(x + 5, y + 12 + Math.sin(waterPhase + x * 0.05) * 2, 15, 2);
+                ctx.fillRect(x + 19, y + 27 + Math.cos(waterPhase + y * 0.05) * 2, 12, 2);
+            }
+            return;
+        }
+    }
+    if (t === TILLED) {
+        ctx.fillStyle = '#8b6b45';
+        RE.Draw.roundRect(ctx, x + 3, y + 3, T - 6, T - 6, 4); ctx.fill();
+        ctx.fillStyle = 'rgba(0,0,0,0.14)';
+        for (var i = 0; i < 3; i++) ctx.fillRect(x + 6, y + 9 + i * 8, T - 12, 3);
+    } else if (t === SEED) {
+        drawTile(TILLED, x, y);
+        ctx.fillStyle = '#5b8f4a';
+        ctx.fillRect(cx - 2, cy - 2, 4, 4);
+    } else if (t === SPROUT) {
+        drawTile(TILLED, x, y);
+        ctx.fillStyle = '#6fbf5a';
+        ctx.fillRect(cx - 1.5, cy - 6, 3, 12);
+        ctx.beginPath(); ctx.ellipse(cx - 5, cy - 4, 5, 3, -0.4, 0, RE.TAU); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(cx + 5, cy - 4, 5, 3, 0.4, 0, RE.TAU); ctx.fill();
+    } else if (t === CROP) {
+        drawTile(TILLED, x, y);
+        ctx.fillStyle = '#4f9a3f';
+        ctx.fillRect(cx - 2, cy - 2, 4, 14);
+        ctx.save();
+        ctx.shadowBlur = 8; ctx.shadowColor = '#ffd166';
+        ctx.fillStyle = '#ffd166';
+        ctx.beginPath(); ctx.arc(cx, cy - 6, 8, 0, RE.TAU); ctx.fill();
+        ctx.restore();
+    } else if (t === TREE) {
+        ctx.fillStyle = 'rgba(0,0,0,0.18)';
+        ctx.beginPath(); ctx.ellipse(cx, y + T - 6, 13, 5, 0, 0, RE.TAU); ctx.fill();
+        ctx.fillStyle = '#6b4a2f';
+        ctx.fillRect(cx - 4, cy, 8, 16);
+        ctx.fillStyle = '#3f8f52';
+        ctx.beginPath(); ctx.arc(cx, cy - 4, 15, 0, RE.TAU); ctx.fill();
+        ctx.fillStyle = '#4fa862';
+        ctx.beginPath(); ctx.arc(cx - 5, cy - 8, 9, 0, RE.TAU); ctx.fill();
+    } else if (t === STUMP) {
+        ctx.fillStyle = '#6b4a2f';
+        ctx.beginPath(); ctx.ellipse(cx, cy + 4, 10, 6, 0, 0, RE.TAU); ctx.fill();
+        ctx.fillStyle = '#8b6b45';
+        ctx.beginPath(); ctx.ellipse(cx, cy + 2, 9, 5, 0, 0, RE.TAU); ctx.fill();
+    } else if (t === ROCK) {
+        ctx.fillStyle = 'rgba(0,0,0,0.18)';
+        ctx.beginPath(); ctx.ellipse(cx, y + T - 8, 12, 5, 0, 0, RE.TAU); ctx.fill();
+        ctx.fillStyle = '#9aa5b1';
+        ctx.beginPath();
+        ctx.moveTo(cx - 12, cy + 10); ctx.lineTo(cx - 7, cy - 8);
+        ctx.lineTo(cx + 6, cy - 10); ctx.lineTo(cx + 12, cy + 10);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#cfd8e3';
+        ctx.beginPath();
+        ctx.moveTo(cx - 6, cy - 6); ctx.lineTo(cx + 2, cy - 8); ctx.lineTo(cx + 1, cy + 1);
+        ctx.closePath(); ctx.fill();
+    } else if (t === WATER) {
+        ctx.fillStyle = '#4aa3d8';
+        ctx.fillRect(x, y, T, T);
+        ctx.fillStyle = 'rgba(255,255,255,0.22)';
+        var ph = performance.now() / 600;
+        ctx.fillRect(x + 5, y + 12 + Math.sin(ph + x * 0.05) * 3, 16, 3);
+        ctx.fillRect(x + 18, y + 26 + Math.cos(ph + y * 0.05) * 3, 14, 3);
+        var waterCol = Math.round((x - OX) / T), waterRow = Math.round((y - OY) / T);
+        if ((waterCol + waterRow) % 4 === 0) drawCozyEnvironmentAsset('reeds', x + 1, y - 3, T - 2, T + 3);
+    } else if (t === FLOWER) {
+        ctx.fillStyle = '#6fbf5a';
+        ctx.fillRect(cx - 1.5, cy, 3, 10);
+        var cols = ['#ff9ec4', '#ffd166', '#c8a2ff', '#ffffff'];
+        var col = cols[(x * 7 + y * 3) % cols.length];
+        for (var a = 0; a < 5; a++) {
+            var ang = a / 5 * RE.TAU;
+            ctx.fillStyle = col;
+            ctx.beginPath(); ctx.arc(cx + Math.cos(ang) * 5, cy - 4 + Math.sin(ang) * 5, 4, 0, RE.TAU); ctx.fill();
+        }
+        ctx.fillStyle = '#ffd166';
+        ctx.beginPath(); ctx.arc(cx, cy - 4, 3, 0, RE.TAU); ctx.fill();
+    } else if (t === DECO) {
+        ctx.fillStyle = 'rgba(0,0,0,0.18)';
+        ctx.beginPath(); ctx.ellipse(cx, y + T - 6, 12, 5, 0, 0, RE.TAU); ctx.fill();
+        ctx.fillStyle = '#c9a06b';
+        RE.Draw.roundRect(ctx, cx - 12, cy - 8, 24, 20, 4); ctx.fill();
+        ctx.fillStyle = '#8b6b45';
+        ctx.fillRect(cx - 12, cy - 2, 24, 3);
+        ctx.fillStyle = '#ff9ec4';
+        ctx.beginPath(); ctx.arc(cx, cy - 14, 5, 0, RE.TAU); ctx.fill();
+    }
+}
+
+function cozyAtlasFrame(meta, seconds) {
+    var durations = meta.durations_ms || [];
+    if (!durations.length) return 0;
+    var total = 0;
+    for (var i = 0; i < durations.length; i++) total += durations[i];
+    var ms = seconds * 1000;
+    if (meta.loop) ms = total > 0 ? ms % total : 0;
+    else ms = Math.min(ms, Math.max(0, total - 1));
+    for (var j = 0; j < durations.length; j++) {
+        if (ms < durations[j]) return j;
+        ms -= durations[j];
+    }
+    return durations.length - 1;
+}
+
+function drawCozyAtlasPlayer(p, x, y) {
+    var art = COZY_PLAYER_ART, m = art.manifest;
+    if (!m || !art.image.complete || !art.image.naturalWidth) return false;
+
+    var dir = p.dirY < 0 ? 'up' : (p.dirY > 0 ? 'down' : 'side');
+    var suffix = p.actionT > 0 ? 'work' : (p.moveT > 0 ? 'walk' : 'idle');
+    var state = dir + '_' + suffix;
+    var meta = m.animation && m.animation.rows && m.animation.rows[state];
+    var row = m.frame_layout && m.frame_layout.rows && m.frame_layout.rows[state];
+    if (!meta || !row || !row.length) return false;
+
+    var frame = Math.min(cozyAtlasFrame(meta, p.spriteT), row.length - 1);
+    var r = row[frame];
+    ctx.save();
+    ctx.translate(x, 0);
+    if (dir === 'side' && p.face < 0) ctx.scale(-1, 1);
+    ctx.imageSmoothingEnabled = false;
+    // 160px 正方形 cell 縮放到 64px，腳底固定落在角色原判定點 y+14。
+    ctx.drawImage(art.image, r.x, r.y, r.w, r.h, -32, y - 44, 64, 64);
+    ctx.restore();
+    return true;
+}
+
+function drawPlayer() {
+    var p = s.p;
+    var x = OX + p.x, y = OY + p.y;
+    var bob = Math.sin(p.anim) * 1.5;
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath(); ctx.ellipse(x, y + 14, 11, 5, 0, 0, RE.TAU); ctx.fill();
+    ctx.restore();
+    if (drawCozyAtlasPlayer(p, x, y)) return;
+    ctx.save();
+    // 身體
+    ctx.fillStyle = '#ff9ec4';
+    RE.Draw.roundRect(ctx, x - 9, y - 6 + bob, 18, 20, 6); ctx.fill();
+    // 頭
+    ctx.fillStyle = '#ffe0c4';
+    ctx.beginPath(); ctx.arc(x, y - 12 + bob, 10, 0, RE.TAU); ctx.fill();
+    // 帽子（草帽，Cozy game 的通用符號）
+    ctx.fillStyle = '#e8c07a';
+    ctx.beginPath(); ctx.ellipse(x, y - 16 + bob, 15, 5, 0, 0, RE.TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y - 19 + bob, 7, Math.PI, 0); ctx.fill();
+    // 眼睛
+    ctx.fillStyle = '#4a3a2f';
+    ctx.fillRect(x + (p.face > 0 ? 2 : -5), y - 13 + bob, 2.5, 3);
+    ctx.fillRect(x + (p.face > 0 ? -5 : 2), y - 13 + bob, 2.5, 3);
+    ctx.restore();
+}
+
+function drawHUD(c) {
+    // 心願清單：寫的是「還可以做什麼」，所以用邀請的語氣而不是任務條
+    var bx = 8, by = H - 74;
+    ctx.fillStyle = 'rgba(20,30,26,0.55)';
+    RE.Draw.roundRect(ctx, bx, by, 214, 68, 8); ctx.fill();
+    RE.Draw.text(ctx, c.name + '天的心願', bx + 8, by + 6, { size: 15, color: '#ffd166' });
+    for (var i = 0; i < c.wishes.length; i++) {
+        var w = c.wishes[i];
+        var got = Math.min(s.stat[w.key], w.n);
+        var ok = got >= w.n;
+        RE.Draw.text(ctx, (ok ? '✓ ' : '・') + w.text + '（' + got + '/' + w.n + '）',
+            bx + 10, by + 24 + i * 16, { size: 15, color: ok ? '#a7e8a0' : '#e6f0ea', stroke: false });
+    }
+
+    // 材料
+    var rx = W - 118;
+    ctx.fillStyle = 'rgba(20,30,26,0.55)';
+    RE.Draw.roundRect(ctx, rx, H - 40, 110, 32, 8); ctx.fill();
+    RE.Draw.text(ctx, '木 ' + s.wood + '　石 ' + s.stone + '　魚 ' + s.fish,
+        rx + 10, H - 30, { size: 15, color: '#e6f0ea', stroke: false });
+
+    // 精力
+    var ew = 130, ex = W / 2 - ew / 2;
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    RE.Draw.roundRect(ctx, ex, 8, ew, 9, 4); ctx.fill();
+    ctx.fillStyle = s.energy > 6 ? '#a7e8a0' : '#ffd166';
+    RE.Draw.roundRect(ctx, ex, 8, Math.max(3, ew * (s.energy / ENERGY_MAX)), 9, 4); ctx.fill();
+
+    if (s.msgT > 0) {
+        RE.Draw.text(ctx, s.msg, W / 2, H - 96, { size: 15, align: 'center', color: '#ffffff' });
+    }
+}
+
+function drawNight() {
+    ctx.save();
+    var a = 1 - Math.abs(s.nightT / 1.1 - 0.5) * 2;
+    ctx.fillStyle = 'rgba(12,18,34,' + (0.2 + a * 0.7) + ')';
+    ctx.fillRect(0, 0, W, H);
+    RE.Draw.text(ctx, '晚安', W / 2, H / 2 - 14, { size: 28, align: 'center', color: '#ffe9a8' });
+    RE.Draw.text(ctx, '作物會在夜裡長大', W / 2, H / 2 + 22,
+        { size: 15, align: 'center', color: '#cfe3f0', stroke: false });
+    ctx.restore();
+}
+
+// ======================================================================
+// 空白鍵的第二動作：在耕地上種花、在草地上放裝飾
+// ======================================================================
+window.addEventListener('keydown', function (e) {
+    if (s.over || s.mode !== 'play') return;
+    if (e.code !== 'Space') return;
+    e.preventDefault();
+    plantDecor();
+});
+
+function plantDecor() {
+    var p = s.p;
+    var fx = p.cx + (p.dirX || 0), fy = p.cy + (p.dirY || 0);
+    if (fx < 0 || fx >= COLS || fy < 0 || fy >= ROWS) { fx = p.cx; fy = p.cy; }
+    var t = s.map[fy][fx];
+    if (s.energy <= 0) { say('沒有精力了，按 X 去睡覺吧'); return; }
+    p.actionT = 0.5;
+    p.spriteT = 0;
+    var wx = OX + fx * T + T / 2, wy = OY + fy * T + T / 2;
+
+    if (t === TILLED) {
+        s.map[fy][fx] = FLOWER; s.stat.flower++; spend(1);
+        puff(wx, wy, ['#ff9ec4', '#ffd166']); RetroAudio.play('powerup');
+        addScore(20); wish();
+    } else if (t === GRASS && s.wood >= 2 && s.stone >= 1) {
+        s.map[fy][fx] = DECO; s.stat.deco++; s.wood -= 2; s.stone -= 1; spend(2);
+        puff(wx, wy, ['#c9a06b', '#ff9ec4']); RetroAudio.play('powerup');
+        RE.juice.flash('rgba(255,209,102,0.12)', 0.15);
+        addScore(60); say('擺好了'); wish();
+    } else if (t === GRASS) {
+        say('裝飾需要 2 份木材和 1 份石材');
+    }
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '沒有敵人或失敗：面向草地按 Z 翻土、再按一次播種，隔天發芽。' +
+          '每天 20 點精力，用完按 X 睡覺。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

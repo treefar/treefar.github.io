@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 鋼鐵突擊隊</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   鋼鐵突擊隊 — 致敬 Metal Slug (SNK, 1996)
+   --------------------------------------------------------------------------
+   《越南大戰》在 1996 年之所以讓人下巴掉下來，不是因為玩法新——
+   橫向捲軸射擊當時已經做了十年——而是因為**它的動畫捨得花格數**。
+
+   同時期的遊戲：敵人中彈 → 換成「死亡圖」→ 消失。三格。
+   這款：敵人中彈 → 身體僵一下 → 往後踉蹌 → 被打飛旋轉 → 落地 → 揚起塵土 → 躺平。
+   每一個階段都是**獨立的、看得出來的、有時間長度的**。
+
+   這件事的設計意義比「比較好看」大得多：
+   **當回饋被拆成多個階段，玩家就能從畫面讀出「我打得有多重」。**
+   小兵被手槍打是踉蹌，被散彈打是整個人飛出去——
+   同樣是死，但你的手感完全不同。傷害數字沒有出現在畫面上，
+   卻透過動畫階段的長度與強度被完整傳達了。
+
+   所以這一版把所有東西都做成分階段的：
+   命中閃白 → 僵直 → 擊退 → 拋飛旋轉 → 落地 → 塵土 → 屍體。
+   爆炸也是：白閃 → 火球擴張 → 黑煙翻滾 → 碎片雨。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'metal_slug',
+    title: '鋼鐵突擊隊',
+    tagline: '把「被打中」拆成七個階段，玩家就讀得出你打得有多重',
+    original: 'Metal Slug (SNK, 1996)',
+    decade: '90s', year: 1996, platform: 'Neo Geo / 街機', genre: '橫向捲軸射擊',
+    developer: 'Nazca / SNK', bgm: '90s',
+    width: 480, height: 320,
+    hud: [
+        { key: 'stage', label: '關卡', init: '1' },
+        { key: 'weapon', label: '武器', init: '手槍' },
+        { key: 'bomb', label: '手榴彈', init: 10 },
+        { key: 'score', label: 'SCORE' }
+    ],
+    lives: 3,
+    touch: 'dpad+ab', labelA: '跳', labelB: '射',
+    controls: [
+        { keys: ['←', '→'], desc: '移動' },
+        { keys: ['↑'], desc: '朝上射擊（跟移動可以合用，變成斜上）' },
+        { keys: ['A'], desc: '跳' },
+        { keys: ['B'], desc: '射擊（按住連射）；貼近敵人時自動變成刀' },
+        { keys: ['↓ + B'], desc: '丟手榴彈' }
+    ],
+    howto: '往右推進清敵到旗子；<strong>B 射擊</strong>，近身自動短刀，<strong>↓ + B</strong> 丟手榴彈。' +
+           '救戰俘取得特殊武器；五關，最後有<strong>裝甲車</strong>。',
+    lesson: {
+        verb: '一邊向右推進、一邊以射擊、近身刀與手榴彈回應不同距離與敵群。',
+        innovation: '用高密度逐格動畫把命中拆成閃白、僵直、踉蹌、拋飛、落地與煙塵，讓武器重量能被玩家直接看見。',
+        mission: '先用手槍擊倒一名敵人，再救出戰俘取得特殊武器；觀察兩種武器造成的僵直與拋飛差異，並至少用一顆手榴彈處理敵群。',
+        evolution: '《Contra》把奔跑、跳躍與多方向射擊壓進高速橫向關卡；《Metal Slug》再把命中延長成有姿勢、有時間層次的表演，讓回饋本身成為玩法魅力。',
+        reflection: '如果所有武器傷害不同，但敵人的中彈動畫完全一樣，你還能只靠畫面感覺出武器重量嗎？'
+    },
+    design: '橫向射擊的設計問題在於：玩家不只要知道「有沒有打中」，還要在滿版子彈、敵人與爆炸中讀出自己造成了什麼。' +
+            '《Metal Slug》以極細緻又誇張的逐格像素動畫回答：敵人不會在生命歸零時立刻消失，而會依武器力道經過閃白、僵直、踉蹌、拋飛、落地、煙塵與倒地。' +
+            '戰俘與武器掉落則把推進節奏切成「基礎火力 → 冒險救援 → 短時間火力高峰」；載具在原作中進一步把角色的移動、耐久與火力全部換成另一套節奏。' +
+            '本站版本集中復刻前兩項：同樣的敵人被手槍、重機槍與散彈槍擊中時，反應時間、擊退與拋飛幅度都不同。' +
+            '**回饋不是結果後面的裝飾；當回饋具有可比較的時間與形變，它本身就是玩家判斷武器的介面。**',
+    history: 'SNK 的官方資料記載，初代《Metal Slug》由 Nazca 開發，1996 年 4 月 19 日先在 NEOGEO MVS 大型街機推出。' +
+             'SNK 在系列 30 週年回顧中，把初代特色歸納為簡單操作、快速混亂的 run-and-gun 戰鬥，以及細密且動態的鮮明像素美術。' +
+             '原作讓 Marco 與 Tarma 使用多種武器和載具，任務是奪回被 Morden 將軍搶走的 METAL SLUG。' +
+             '這種把喜劇式誇張動作、軍事機械與高可讀打擊回饋疊在同一畫面的做法，成為系列長期辨識度。',
+    sources: [
+        { label: 'SNK NEOGEO Museum：初代《Metal Slug》發行資料', url: 'https://neogeomuseum.snk-corp.co.jp/english/catalogue/index.php' },
+        { label: 'SNK：《Metal Slug》30 週年系列回顧', url: 'https://www.snk-corp.co.jp/us/press/2026/metal-slug-30th-anniversary-project-special-website-socials-and-video-deployed/' },
+        { label: 'SNK ACA NEOGEO：《Metal Slug》作品介紹', url: 'https://www.snk-corp.co.jp/us/games/acaneogeo/metalslug/' }
+    ]
+});
+
+var ctx = G.ctx, VW = G.width, VH = G.height;
+var P = new RE.Particles(520);
+var FT = new RE.FloatText();
+
+// 第二批正式美術。圖集和 manifest 採成對載入；任何一項失敗就回退原程序角色，
+// 不讓美術資源影響玩法、碰撞或離線測試。
+var METAL_PLAYER_ART = { image: new Image(), manifest: null };
+METAL_PLAYER_ART.image.src = '../../assets/games/metal_slug/player-atlas.png';
+fetch('../../assets/games/metal_slug/player-manifest.json')
+    .then(function (r) { if (!r.ok) throw new Error('metal player manifest ' + r.status); return r.json(); })
+    .then(function (m) { METAL_PLAYER_ART.manifest = m; })
+    .catch(function () { METAL_PLAYER_ART.manifest = null; });
+var METAL_BATTLE_ART = { image: new Image(), manifest: null };
+METAL_BATTLE_ART.image.src = '../../assets/games/metal_slug/battlefield-atlas.png';
+fetch('../../assets/games/metal_slug/battlefield-manifest.json')
+    .then(function (r) { if (!r.ok) throw new Error('metal battlefield manifest ' + r.status); return r.json(); })
+    .then(function (m) { METAL_BATTLE_ART.manifest = m; })
+    .catch(function () { METAL_BATTLE_ART.manifest = null; });
+
+var GROUND = 258;                  // 地面高度
+var GRAV = 1500;
+
+// ======================================================================
+// 武器表。差別不只在傷害，更在「打中之後對方會演多久」——
+// 這正是本作要復刻的東西。
+// ======================================================================
+var WEAPONS = {
+    pistol: { name: '手槍', rate: 0.19, dmg: 1, speed: 520, spread: 0, count: 1,
+              knock: 46, stagger: 0.16, launch: 0, ammo: Infinity, col: '#ffe066', sz: 3 },
+    hmg:    { name: '重機槍', rate: 0.065, dmg: 1, speed: 640, spread: 0.05, count: 1,
+              knock: 62, stagger: 0.13, launch: 0, ammo: 220, col: '#ffb03a', sz: 3.5 },
+    shot:   { name: '散彈槍', rate: 0.44, dmg: 3, speed: 430, spread: 0.30, count: 5,
+              knock: 210, stagger: 0.30, launch: 320, ammo: 34, col: '#ff7a4a', sz: 4 }
+};
+
+// ======================================================================
+// 關卡：每一關是一段長度、一組地形起伏、一批敵人與戰俘
+// ======================================================================
+var STAGES = [
+    { name: '第一關 · 灘頭', len: 1500, hint: 'B 射擊。貼近敵人會自動改成刀。',
+      sky: ['#5a7fa8', '#c8dae8'], ground: '#7a6a4a', far: '#3f5a72',
+      spawns: [ [500,'sol'], [760,'sol'], [900,'pow'], [1060,'sol'], [1240,'sol'] ] },
+    { name: '第二關 · 沙丘', len: 1800, hint: '救戰俘會掉武器。↓＋B 是手榴彈。',
+      sky: ['#c88a4a', '#f0d8a8'], ground: '#a8864a', far: '#8a6a3a',
+      spawns: [ [420,'sol'], [560,'gun'], [780,'sol'], [880,'pow'], [1040,'sol'], [1180,'gun'], [1380,'sol'], [1520,'sol'] ] },
+    { name: '第三關 · 廢墟', len: 2000, hint: '會丟手榴彈的敵人站得比較後面。',
+      sky: ['#4a4a6a', '#8a8aa8'], ground: '#5a5a5a', far: '#3a3a4a',
+      spawns: [ [400,'sol'], [560,'lob'], [720,'sol'], [860,'gun'], [980,'pow'],
+                [1140,'lob'], [1300,'sol'], [1440,'sol'], [1620,'gun'], [1760,'lob'] ] },
+    { name: '第四關 · 補給線', len: 2200, hint: '密度上來了。手榴彈留給成群的敵人。',
+      sky: ['#3a5a4a', '#8ab08a'], ground: '#4a6a3a', far: '#2a4a3a',
+      spawns: [ [380,'sol'], [500,'sol'], [660,'gun'], [800,'lob'], [940,'pow'],
+                [1080,'sol'], [1200,'sol'], [1340,'gun'], [1500,'lob'], [1640,'sol'],
+                [1780,'gun'], [1920,'sol'] ] },
+    { name: '第五關 · 裝甲車', len: 1700, hint: '最後是裝甲車。它的砲有前搖，看到就跳開。',
+      sky: ['#6a3a3a', '#c88a6a'], ground: '#6a4a3a', far: '#4a2a2a',
+      spawns: [ [380,'sol'], [520,'gun'], [700,'lob'], [860,'pow'], [1000,'sol'],
+                [1140,'gun'], [1450,'boss'] ] }
+];
+
+// ======================================================================
+// 狀態
+// ======================================================================
+var s = null;
+
+function reset() {
+    s = {
+        stage: 0, score: 0, lives: 3,
+        camX: 0, over: false
+    };
+    P.clear(); FT.clear();
+    G.setStat('score', 0);
+    G.setLives && G.setLives(3);
+    loadStage(0);
+}
+
+function loadStage(n) {
+    var def = STAGES[n];
+    s.stage = n; s.def = def;
+    s.enemies = []; s.bullets = []; s.ebullets = []; s.nades = []; s.pickups = [];
+    s.pows = []; s.explosions = []; s.corpses = [];
+    s.camX = 0; s.clearT = 0; s.hintT = 3.0; s.bossDeadT = 0; s.over = false;
+
+    /* 地形起伏：用兩條正弦疊出來，讓地面不是一條直線。
+       **振幅必須小於敵人的身高，否則會出現「怎麼打都打不到」的位置。**
+       第一版是 14+8，全域峰谷差 33.9px，而敵人只有 26px 高——
+       站在山丘上對山谷裡的敵人開槍，子彈是水平飛的，直接從它頭上過去。
+       第三關實測：機甲兵站在 x=860（地面 270），機器人在 x=612（地面 239），
+       高低差 31px；連續射出 56 發，那隻 4 點血的機槍兵一滴血都沒掉。
+       畫面上看起來完全是瞄準的，這比「明擺著的障礙」更難理解。
+       容許的落差不是「敵人身高 26」而是 **11px**，要照兩邊的實際高度算：
+         槍口在自己腳下地面往上 15px（玩家 h=30，槍口在身體中段）
+         敵人頭頂在它腳下地面往上 26px（h=26）
+       所以只要落差超過 26-15 = 11px，子彈就從頭頂掠過。
+       中途試過 6+4（峰谷差 15.6px），差距從 17px 縮到 3px——**還是打不到**，
+       56 發照樣一滴血都沒掉。這種「差一點」最花時間，要一次算對。
+       4+2 的峰谷差 9.2px 實測仍然卡在臨界：彈 y=235 而敵人頂端也是 235，
+       而命中條件是嚴格大於（`b.y > e.y`），等於還是打不到，四血只掉一滴。
+       2+2 的峰谷差 6.4px，換算下來子彈落在敵人頂端下方 4.6px，才真的有餘裕。
+       起伏縮到這個程度看起來仍不是一條直線，但已經不會製造「怎麼瞄都打不到」。 */
+    s.terrain = [];
+    for (var i = 0; i <= Math.ceil((def.len + VW) / 32); i++) {
+        var x = i * 32;
+        s.terrain.push(GROUND - Math.sin(x * 0.004) * 2 - Math.sin(x * 0.011 + 1.3) * 2);
+    }
+
+    for (i = 0; i < def.spawns.length; i++) {
+        var sp = def.spawns[i];
+        if (sp[1] === 'pow') s.pows.push(makePow(sp[0]));
+        else s.enemies.push(makeEnemy(sp[1], sp[0]));
+    }
+
+    s.p = {
+        x: 60, y: groundAt(60) - 30, w: 18, h: 30,
+        vx: 0, vy: 0, face: 1, grounded: false,
+        wpn: 'pistol', ammo: Infinity, cool: 0, nades: 10,
+        inv: 0, dead: 0, anim: 0, spriteT: 0, aimUp: false, knifeT: 0,
+        knifeArtT: 0, shotArtT: 0, throwArtT: 0
+    };
+    G.setStat('stage', String(n + 1));
+    G.setStat('weapon', WEAPONS.pistol.name);
+    G.setStat('bomb', s.p.nades);
+    RE.Input.consumeBuffer('a'); RE.Input.consumeBuffer('b');
+}
+
+function groundAt(x) {
+    var i = RE.clamp(Math.floor(x / 32), 0, s.terrain.length - 2);
+    var t = (x - i * 32) / 32;
+    return RE.lerp(s.terrain[i], s.terrain[i + 1], t);
+}
+
+// ======================================================================
+// 敵人
+// ----------------------------------------------------------------------
+// state 是這款遊戲的重點：死亡不是一個瞬間，是一串有長度的階段。
+//   hit（僵直）→ knock（踉蹌後退）→ fly（被打飛旋轉）→ land（落地揚塵）→ 屍體
+// 用什麼武器打，決定它會走完哪幾個階段——這就是「手感」的來源。
+// ======================================================================
+function makeEnemy(kind, x) {
+    var base = { kind: kind, x: x, y: 0, vx: 0, vy: 0, face: -1,
+                 st: 'idle', t: 0, hitT: 0, dead: false, anim: 0, rot: 0 };
+    if (kind === 'sol') { base.hp = 2; base.w = 16; base.h = 28; base.range = 150; base.tell = 0.45; base.speed = 42; }
+    else if (kind === 'gun') { base.hp = 4; base.w = 20; base.h = 26; base.range = 260; base.tell = 0.55; base.speed = 0; }
+    else if (kind === 'lob') { base.hp = 3; base.w = 16; base.h = 28; base.range = 300; base.tell = 0.7; base.speed = 18; }
+    else { base.hp = 60; base.w = 92; base.h = 54; base.range = 340; base.tell = 0.9; base.speed = 26; base.boss = true; }
+    base.maxHp = base.hp;
+    base.y = groundAt(x) - base.h;
+    return base;
+}
+
+function makePow(x) {
+    return { x: x, y: groundAt(x) - 28, w: 14, h: 28, freed: false, t: 0, anim: 0 };
+}
+
+// ======================================================================
+// 打擊：把一次命中拆成多個階段
+// ======================================================================
+function damage(e, dmg, dir, w) {
+    if (e.dead) return;
+    e.hp -= dmg;
+    e.hitT = 0.10;                        // 階段一：閃白（很短，但少了它就沒有「中了」的感覺）
+    e.face = -dir;
+    RetroAudio.play('hit');
+
+    P.burst(e.x + e.w / 2 + dir * 6, e.y + e.h * 0.4, 5, {
+        angle: dir > 0 ? -0.4 : Math.PI + 0.4, spread: 0.8,
+        speedMin: 60, speedMax: 190, gravity: 260,
+        colors: ['#ffd166', '#ff8a3d'], lifeMin: 0.12, lifeMax: 0.3, shape: 'spark', glow: true });
+
+    if (e.hp > 0) {
+        // 階段二：僵直＋踉蹌後退。時間長度由武器決定，玩家因此讀得出輕重
+        e.st = 'stagger'; e.t = w.stagger;
+        e.vx = dir * w.knock;
+        RE.juice.hitstop(0.02);
+        return;
+    }
+
+    // 死亡：走完整套階段
+    e.dead = true;
+    e.st = 'fly'; e.t = 0;
+    e.vx = dir * (w.knock * 1.6 + (w.launch ? 90 : 0));
+    e.vy = -(140 + w.launch * 0.5);        // 散彈槍會把人整個掀起來
+    e.rot = 0;
+    e.spin = dir * (3 + w.launch * 0.02);
+    addScore(e.boss ? 5000 : (e.kind === 'gun' ? 300 : 200));
+    RetroAudio.play(e.boss ? 'bigExplosion' : 'explosion');
+    RE.juice.hitstop(e.boss ? 0.14 : 0.05);
+    RE.juice.shake(e.boss ? 0.7 : 0.2);
+    if (e.boss) {
+        RE.juice.flash('rgba(255,220,150,0.4)', 0.2);
+        for (var i = 0; i < 8; i++) {
+            (function (k) {
+                setTimeout(function () {
+                    if (!s) return;
+                    boom(e.x + RE.rand(0, e.w), e.y + RE.rand(0, e.h), 1.1);
+                }, k * 90);
+            })(i);
+        }
+    }
+}
+
+/** 爆炸也是分階段的：白閃 → 火球擴張 → 黑煙翻滾 → 碎片雨 */
+function boom(x, y, scale) {
+    scale = scale || 1;
+    s.explosions.push({ x: x, y: y, t: 0, s: scale });
+    RetroAudio.play('explosion');
+    RE.juice.shake(0.3 * scale);
+    P.burst(x, y, Math.round(14 * scale), {
+        colors: ['#fff3c4', '#ffd166', '#ff7a3d'],
+        speedMin: 60, speedMax: 260 * scale, gravity: 0, drag: 0.9,
+        lifeMin: 0.15, lifeMax: 0.4, glow: true });
+    P.burst(x, y, Math.round(10 * scale), {
+        colors: ['#5a5a5a', '#3a3a3a', '#7a7a7a'],
+        speedMin: 20, speedMax: 110 * scale, gravity: -30, drag: 0.93,
+        sizeMin: 4, sizeMax: 9, lifeMin: 0.4, lifeMax: 0.9, shape: 'circle' });
+    P.burst(x, y, Math.round(8 * scale), {
+        colors: ['#8a6b46', '#c8a878'],
+        speedMin: 80, speedMax: 300 * scale, gravity: 700,
+        sizeMin: 1.5, sizeMax: 3.5, lifeMin: 0.4, lifeMax: 0.8 });
+    P.ring(x, y, '#ffd166', 40 * scale);
+}
+
+function explodeAt(x, y, r, dmg) {
+    boom(x, y, r / 40);
+    for (var i = 0; i < s.enemies.length; i++) {
+        var e = s.enemies[i];
+        if (e.dead) continue;
+        var cx = e.x + e.w / 2, cy = e.y + e.h / 2;
+        if (RE.dist(x, y, cx, cy) < r + e.w * 0.3) {
+            damage(e, dmg, cx > x ? 1 : -1, WEAPONS.shot);
+        }
+    }
+}
+
+// ======================================================================
+// 玩家
+// ======================================================================
+function updatePlayer(dt) {
+    var p = s.p;
+    p.anim += dt;
+    p.spriteT += dt;
+    if (p.inv > 0) p.inv -= dt;
+    if (p.cool > 0) p.cool -= dt;
+    if (p.knifeT > 0) p.knifeT -= dt;
+    if (p.knifeArtT > 0) p.knifeArtT = Math.max(0, p.knifeArtT - dt);
+    if (p.shotArtT > 0) p.shotArtT = Math.max(0, p.shotArtT - dt);
+    if (p.throwArtT > 0) p.throwArtT = Math.max(0, p.throwArtT - dt);
+
+    if (p.dead > 0) {
+        p.dead -= dt;
+        p.vy += GRAV * dt; p.y += p.vy * dt; p.x += p.vx * dt;
+        if (p.dead <= 0) respawn();
+        return;
+    }
+
+    var ax = RE.Input.axisX(), ay = RE.Input.axisY();
+    p.aimUp = ay < 0;
+
+    p.vx = ax * 152;
+    if (ax !== 0) p.face = ax > 0 ? 1 : -1;
+
+    if (RE.Input.buffered('a', 0.12) && p.grounded) {
+        RE.Input.consumeBuffer('a');
+        p.vy = -430; p.grounded = false;
+        RetroAudio.play('jump');
+    }
+    p.vy += GRAV * dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+
+    var g = groundAt(p.x + p.w / 2) - p.h;
+    if (p.y >= g) { p.y = g; p.vy = 0; p.grounded = true; } else p.grounded = false;
+    p.x = RE.clamp(p.x, s.camX + 4, Math.min(s.def.len + 120, s.camX + VW - p.w - 4));
+
+    // ---------- 射擊 / 刀 / 手榴彈 ----------
+    var firing = RE.Input.down('b') || RE.Input.buffered('b', 0.1);
+    if (firing && ay > 0 && p.cool <= 0) {          // ↓＋B：手榴彈
+        RE.Input.consumeBuffer('b');
+        if (p.nades > 0) {
+            p.nades--; G.setStat('bomb', p.nades);
+            s.nades.push({ x: p.x + p.w / 2, y: p.y + 8, vx: p.face * 230, vy: -260, t: 0 });
+            RetroAudio.play('shoot');
+            p.cool = 0.32;
+            p.throwArtT = 0.40; p.spriteT = 0;
+        }
+    } else if (firing && p.cool <= 0) {
+        var near = nearestEnemyInFront(38);
+        if (near) {                                  // 貼太近自動改成刀
+            p.knifeT = 0.18; p.knifeArtT = 0.34; p.spriteT = 0; p.cool = 0.30;
+            RetroAudio.play('slash');
+            damage(near, 99, p.face, WEAPONS.shot);
+        } else {
+            shoot();
+        }
+    }
+}
+
+function nearestEnemyInFront(range) {
+    var p = s.p, best = null, bd = 1e9;
+    for (var i = 0; i < s.enemies.length; i++) {
+        var e = s.enemies[i];
+        if (e.dead || e.boss) continue;
+        var dx = (e.x + e.w / 2) - (p.x + p.w / 2);
+        if (dx * p.face < 0) continue;
+        var dy = Math.abs((e.y + e.h / 2) - (p.y + p.h / 2));
+        if (Math.abs(dx) < range && dy < 30 && Math.abs(dx) < bd) { bd = Math.abs(dx); best = e; }
+    }
+    return best;
+}
+
+function shoot() {
+    var p = s.p, w = WEAPONS[p.wpn];
+    if (p.ammo <= 0) { setWeapon('pistol'); w = WEAPONS.pistol; }
+    p.cool = w.rate;
+    p.shotArtT = 0.34; p.spriteT = 0;
+    var baseAng = p.aimUp ? (p.face > 0 ? -Math.PI / 4 : -Math.PI * 3 / 4) : (p.face > 0 ? 0 : Math.PI);
+    if (p.aimUp && RE.Input.axisX() === 0) baseAng = -Math.PI / 2;
+    for (var i = 0; i < w.count; i++) {
+        var a = baseAng + RE.rand(-w.spread, w.spread);
+        s.bullets.push({
+            x: p.x + p.w / 2 + Math.cos(a) * 14, y: p.y + 11 + Math.sin(a) * 8,
+            vx: Math.cos(a) * w.speed, vy: Math.sin(a) * w.speed,
+            dmg: w.dmg, w: w, life: 1.1
+        });
+    }
+    if (p.ammo !== Infinity) { p.ammo--; if (p.ammo <= 0) setWeapon('pistol'); }
+    RetroAudio.play(p.wpn === 'shot' ? 'laser' : 'shoot');
+    RE.juice.shake(p.wpn === 'shot' ? 0.16 : 0.05);
+    P.burst(p.x + p.w / 2 + Math.cos(baseAng) * 16, p.y + 11 + Math.sin(baseAng) * 8, 3, {
+        angle: baseAng, spread: 0.4, speedMin: 60, speedMax: 160, gravity: 60,
+        colors: ['#fff3c4', w.col], lifeMin: 0.06, lifeMax: 0.14, glow: true });
+}
+
+function setWeapon(k) {
+    var p = s.p;
+    p.wpn = k; p.ammo = WEAPONS[k].ammo;
+    G.setStat('weapon', WEAPONS[k].name + (WEAPONS[k].ammo === Infinity ? '' : ' ' + p.ammo));
+}
+
+function playerHit() {
+    var p = s.p;
+    if (p.inv > 0 || p.dead > 0) return;
+    s.lives--;
+    G.setLives && G.setLives(Math.max(0, s.lives));
+    p.dead = 0.9; p.vy = -240; p.vx = -p.face * 90;
+    RetroAudio.play('hurt');
+    RE.juice.hitstop(0.09); RE.juice.shake(0.45);
+    RE.juice.flash('rgba(255,80,60,0.3)', 0.14);
+    P.burst(p.x + p.w / 2, p.y + p.h / 2, 16, {
+        colors: ['#ff5c5c', '#ffd166'], speedMin: 60, speedMax: 220,
+        gravity: 400, lifeMin: 0.3, lifeMax: 0.6 });
+}
+
+function respawn() {
+    var p = s.p;
+    if (s.lives <= 0) { gameOver(); return; }
+    p.x = RE.clamp(p.x, s.camX + 30, s.camX + VW - 60);
+    p.y = groundAt(p.x) - p.h;
+    p.vx = 0; p.vy = 0; p.inv = 2.0; p.dead = 0;
+    setWeapon('pistol');
+}
+
+// ======================================================================
+// 敵人更新
+// ======================================================================
+function updateEnemies(dt) {
+    var p = s.p;
+    for (var i = s.enemies.length - 1; i >= 0; i--) {
+        var e = s.enemies[i];
+        e.t -= dt; e.anim += dt;
+        if (e.hitT > 0) e.hitT -= dt;
+
+        if (e.dead) {
+            // 死亡的分階段演出：飛 → 落地 → 揚塵 → 躺平
+            if (e.st === 'fly') {
+                e.vy += GRAV * 0.8 * dt;
+                e.x += e.vx * dt; e.y += e.vy * dt;
+                e.rot += e.spin * dt;
+                e.vx *= Math.pow(0.985, dt * 60);
+                var gy = groundAt(e.x + e.w / 2) - e.h;
+                if (e.y >= gy) {
+                    e.y = gy; e.st = 'land'; e.t = 0.32;
+                    P.burst(e.x + e.w / 2, e.y + e.h, 9, {
+                        angle: -Math.PI / 2, spread: 1.4, speedMin: 30, speedMax: 130,
+                        gravity: 340, colors: ['#c8a878', '#8a6b46'], lifeMin: 0.25, lifeMax: 0.55 });
+                    RetroAudio.play('drop');
+                    RE.juice.shake(0.08);
+                }
+            } else if (e.st === 'land') {
+                if (e.t <= 0) { e.st = 'corpse'; e.t = 3.0; }
+            } else if (e.st === 'corpse') {
+                if (e.t <= 0) s.enemies.splice(i, 1);
+            }
+            continue;
+        }
+
+        var dx = (p.x + p.w / 2) - (e.x + e.w / 2);
+        var adx = Math.abs(dx);
+        if (e.st !== 'stagger') e.face = dx > 0 ? 1 : -1;
+
+        if (e.st === 'stagger') {
+            e.x += e.vx * dt;
+            e.vx *= Math.pow(0.86, dt * 60);
+            if (e.t <= 0) { e.st = 'idle'; e.t = 0; }
+        } else if (e.st === 'idle') {
+            if (adx < e.range && adx > 26) {
+                if (e.speed > 0 && adx > e.range * 0.6) e.x += e.face * e.speed * dt;
+                else { e.st = 'aim'; e.t = e.tell; }
+            } else if (e.speed > 0 && adx <= 26) {
+                e.x -= e.face * e.speed * 0.5 * dt;      // 太近會後退，不會貼臉
+            }
+        } else if (e.st === 'aim') {
+            if (e.t <= 0) { fireEnemy(e); e.st = 'cool'; e.t = e.boss ? 0.9 : 1.05; }
+        } else if (e.st === 'cool') {
+            if (e.t <= 0) e.st = 'idle';
+        }
+
+        // 貼地
+        e.y = groundAt(e.x + e.w / 2) - e.h;
+    }
+}
+
+function fireEnemy(e) {
+    var p = s.p;
+    var sx = e.x + e.w / 2 + e.face * (e.w / 2), sy = e.y + e.h * 0.35;
+    if (e.kind === 'lob') {
+        s.ebullets.push({ x: sx, y: sy, vx: e.face * 165, vy: -220, lob: true, life: 3, r: 4 });
+    } else if (e.boss) {
+        for (var i = -1; i <= 1; i++) {
+            var a = Math.atan2((p.y + p.h / 2) - sy, (p.x + p.w / 2) - sx) + i * 0.16;
+            s.ebullets.push({ x: sx, y: sy, vx: Math.cos(a) * 260, vy: Math.sin(a) * 260, life: 2.4, r: 4 });
+        }
+    } else {
+        var ang = Math.atan2((p.y + p.h / 2) - sy, (p.x + p.w / 2) - sx);
+        var n = e.kind === 'gun' ? 3 : 1;
+        for (i = 0; i < n; i++) {
+            s.ebullets.push({ x: sx, y: sy, vx: Math.cos(ang) * 240, vy: Math.sin(ang) * 240,
+                life: 2.2, r: 3, delay: i * 0.11 });
+        }
+    }
+    RetroAudio.play('shoot');
+}
+
+// ======================================================================
+// 投射物與拾取
+// ======================================================================
+function updateProjectiles(dt) {
+    var i, j, b, e, p = s.p;
+
+    for (i = s.bullets.length - 1; i >= 0; i--) {
+        b = s.bullets[i];
+        b.life -= dt;
+        b.x += b.vx * dt; b.y += b.vy * dt;
+        var hit = false;
+        for (j = 0; j < s.enemies.length; j++) {
+            e = s.enemies[j];
+            if (e.dead) continue;
+            if (b.x > e.x && b.x < e.x + e.w && b.y > e.y && b.y < e.y + e.h) {
+                damage(e, b.dmg, b.vx > 0 ? 1 : -1, b.w);
+                hit = true; break;
+            }
+        }
+        if (hit || b.life <= 0 || b.y > groundAt(b.x) || b.x < s.camX - 20 || b.x > s.camX + VW + 20) {
+            if (!hit && b.y > groundAt(b.x)) {
+                P.burst(b.x, groundAt(b.x), 4, { angle: -Math.PI / 2, spread: 1.0,
+                    speedMin: 30, speedMax: 110, gravity: 320,
+                    colors: ['#c8a878'], lifeMin: 0.15, lifeMax: 0.35, sizeMin: 1, sizeMax: 2.5 });
+            }
+            s.bullets.splice(i, 1);
+        }
+    }
+
+    for (i = s.ebullets.length - 1; i >= 0; i--) {
+        b = s.ebullets[i];
+        if (b.delay > 0) { b.delay -= dt; continue; }
+        b.life -= dt;
+        if (b.lob) b.vy += GRAV * 0.55 * dt;
+        b.x += b.vx * dt; b.y += b.vy * dt;
+        if (b.lob && b.y > groundAt(b.x)) { explodeAt(b.x, groundAt(b.x) - 6, 46, 2); s.ebullets.splice(i, 1); continue; }
+        if (p.dead <= 0 && p.inv <= 0 &&
+            b.x > p.x && b.x < p.x + p.w && b.y > p.y && b.y < p.y + p.h) {
+            s.ebullets.splice(i, 1); playerHit(); continue;
+        }
+        if (b.life <= 0 || b.x < s.camX - 30 || b.x > s.camX + VW + 30 || b.y > VH + 20) s.ebullets.splice(i, 1);
+    }
+
+    for (i = s.nades.length - 1; i >= 0; i--) {
+        var g = s.nades[i];
+        g.t += dt;
+        g.vy += GRAV * 0.62 * dt;
+        g.x += g.vx * dt; g.y += g.vy * dt;
+        if (g.y > groundAt(g.x) - 4 || g.t > 2.2) {
+            explodeAt(g.x, Math.min(g.y, groundAt(g.x) - 6), 62, 4);
+            s.nades.splice(i, 1);
+        }
+    }
+
+    for (i = s.explosions.length - 1; i >= 0; i--) {
+        s.explosions[i].t += dt;
+        if (s.explosions[i].t > 0.75) s.explosions.splice(i, 1);
+    }
+
+    // 戰俘
+    for (i = 0; i < s.pows.length; i++) {
+        var w = s.pows[i];
+        w.anim += dt;
+        if (w.freed) { w.t += dt; w.x += 46 * dt; continue; }
+        if (Math.abs((p.x + p.w / 2) - (w.x + w.w / 2)) < 22 && Math.abs(p.y - w.y) < 34 && p.dead <= 0) {
+            w.freed = true; w.t = 0;
+            addScore(1000);
+            s.p.nades = Math.min(20, s.p.nades + 4); G.setStat('bomb', s.p.nades);
+            var kind = Math.random() < 0.5 ? 'hmg' : 'shot';
+            s.pickups.push({ x: w.x, y: w.y + 6, kind: kind, t: 0 });
+            RetroAudio.play('oneup');
+            FT.add(w.x - s.camX + 8, w.y - 14, '戰俘獲救 +1000', { color: '#8fe8ff', size: 12 });
+            RE.juice.punchZoom(0.05);
+        }
+    }
+
+    for (i = s.pickups.length - 1; i >= 0; i--) {
+        var pk = s.pickups[i];
+        pk.t += dt;
+        pk.y = Math.min(pk.y + 60 * dt, groundAt(pk.x) - 12);
+        if (Math.abs((p.x + p.w / 2) - pk.x) < 22 && Math.abs((p.y + p.h / 2) - pk.y) < 28) {
+            setWeapon(pk.kind);
+            s.pickups.splice(i, 1);
+            RetroAudio.play('powerup');
+            RE.juice.flash('rgba(255,220,120,0.2)', 0.1);
+            FT.add(pk.x - s.camX, pk.y - 16, WEAPONS[pk.kind].name + '！', { color: '#ffd166', size: 13 });
+        }
+    }
+}
+
+function addScore(n) { s.score += n; G.setStat('score', s.score); }
+
+// ======================================================================
+// 主迴圈
+// ======================================================================
+function update(dt) {
+    if (!s || !s.p) return;
+    P.update(dt); FT.update(dt);
+    if (s.hintT > 0) s.hintT -= dt;
+
+    if (s.clearT > 0) {
+        s.clearT -= dt;
+        if (s.clearT <= 0) nextStage();
+        return;
+    }
+
+    updatePlayer(dt);
+    updateEnemies(dt);
+    updateProjectiles(dt);
+
+    // Boss 戰鎖畫面。原作就是這樣——不鎖的話玩家直接從旁邊跑過去，
+    // Boss 留在身後，過關條件卻要求打掉它，遊戲就卡死了。
+    var bossAlive = false, camLimit = s.def.len;
+    for (var i = 0; i < s.enemies.length; i++) {
+        var e = s.enemies[i];
+        if (e.boss && !e.dead) { bossAlive = true; camLimit = Math.min(camLimit, e.x - 300); }
+    }
+
+    // 鏡頭：玩家推進到畫面三分之一處就跟著走，不會回頭
+    var want = s.p.x - VW * 0.34;
+    if (want > s.camX) s.camX = Math.min(want, camLimit);
+    s.camX = RE.clamp(s.camX, 0, Math.max(0, camLimit));
+    if (bossAlive) s.p.x = Math.min(s.p.x, s.camX + VW - s.p.w - 4);
+
+    // 過關：走到旗子（且 Boss 關要先打掉 Boss）
+    if (!bossAlive && s.p.x > s.def.len + 60 && s.clearT <= 0) {
+        s.clearT = 1.2;
+        addScore(2000 + s.lives * 500);
+        RetroAudio.play('win');
+        RE.juice.flash('rgba(255,255,255,0.3)', 0.15);
+    }
+}
+
+function nextStage() {
+    if (s.stage < STAGES.length - 1) {
+        var n = s.stage + 1;
+        G.stageCard(n + 1, STAGES[n].name, STAGES[n].hint, function () { loadStage(n); });
+        return;
+    }
+    finish();
+}
+
+function finish() {
+    G.gameOver({
+        win: true, score: s.score,
+        body: '任務完成。回想一下你是怎麼分辨手槍和散彈槍的——' +
+              '<strong>遊戲從頭到尾沒有給過你任何傷害數字</strong>，' +
+              '但你就是知道散彈槍比較重，因為被散彈打中的敵人會整個掀起來、' +
+              '在空中轉一圈、落地揚起塵土。' +
+              '《Metal Slug》在 1996 年證明了：' +
+              '<strong>回饋不是一個瞬間，而是一段有結構的時間</strong>，' +
+              '而那段時間的長度與層次，就是玩家讀到的「手感」。'
+    });
+}
+
+function gameOver() {
+    if (s.over) return;
+    s.over = true;
+    G.gameOver({
+        win: false, score: s.score,
+        body: '你在' + s.def.name + '倒下了。' +
+              '注意到敵人死掉時的那一串動作沒有——僵直、踉蹌、被打飛、' +
+              '落地揚塵、然後躺平？那不是裝飾，' +
+              '<strong>那是這款遊戲用來告訴你「你打得有多重」的語言。</strong>'
+    });
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function render() {
+    if (!s || !s.p) return;
+    G.beginWorld();
+    drawSky();
+    ctx.save();
+    ctx.translate(-s.camX, 0);
+    drawTerrain();
+    drawGoal();
+    drawPows();
+    drawPickups();
+    for (var i = 0; i < s.enemies.length; i++) drawEnemy(s.enemies[i]);
+    drawPlayer();
+    drawBullets();
+    drawExplosions();
+    ctx.restore();
+    P.draw(ctx);
+    FT.draw(ctx);
+    G.endWorld();
+    drawHUD();
+    G.postFX({ scanAlpha: 0.05, vignetteStrength: 0.42 });
+}
+
+function drawSky() {
+    var d = s.def;
+    var g = ctx.createLinearGradient(0, 0, 0, VH);
+    g.addColorStop(0, d.sky[0]); g.addColorStop(1, d.sky[1]);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+    // 遠景山脊：用比場景慢的速度捲動
+    ctx.fillStyle = d.far;
+    ctx.beginPath();
+    ctx.moveTo(0, VH);
+    for (var x = 0; x <= VW; x += 24) {
+        var wx = x + s.camX * 0.25;
+        ctx.lineTo(x, 190 - Math.sin(wx * 0.006) * 30 - Math.sin(wx * 0.017) * 14);
+    }
+    ctx.lineTo(VW, VH); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.beginPath();
+    ctx.moveTo(0, VH);
+    for (x = 0; x <= VW; x += 24) {
+        wx = x + s.camX * 0.45;
+        ctx.lineTo(x, 224 - Math.sin(wx * 0.009 + 2) * 18);
+    }
+    ctx.lineTo(VW, VH); ctx.closePath(); ctx.fill();
+    drawSetDressing();
+}
+
+function drawMetalBattleAsset(name, cx, cy, w, h, flip, filter, alpha) {
+    var art = METAL_BATTLE_ART, m = art.manifest;
+    if (!m || !art.image.complete || !art.image.naturalWidth || !m.assets || !m.assets[name]) return false;
+    var r = m.assets[name];
+    ctx.save();
+    ctx.translate(cx, cy);
+    if (flip) ctx.scale(-1, 1);
+    if (filter) ctx.filter = filter;
+    if (alpha !== undefined) ctx.globalAlpha *= alpha;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(art.image, r.x, r.y, r.w, r.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+}
+
+// 每關用同一套低成本幾何語彙做出不同戰區剪影；它們只跟著遠景慢速移動，
+// 不參與碰撞。實戰採樣裡原本只有兩層山色，角色和敵人像站在未完成的舞台上。
+function drawSetDressing() {
+    var offset = -((s.camX * 0.16) % 180);
+    ctx.save();
+    ctx.globalAlpha = 0.34;
+    if (s.stage === 0) {
+        // 灘頭：木樁、登陸艇殘骸與遠方海鳥
+        ctx.fillStyle = '#243a4b';
+        for (var x = offset; x < VW + 180; x += 180) {
+            ctx.fillRect(x + 38, 170, 6, 56);
+            ctx.fillRect(x + 62, 188, 5, 38);
+            ctx.beginPath(); ctx.moveTo(x + 10, 224); ctx.lineTo(x + 94, 224);
+            ctx.lineTo(x + 72, 205); ctx.lineTo(x + 28, 205); ctx.closePath(); ctx.fill();
+        }
+        ctx.strokeStyle = 'rgba(235,245,255,0.45)'; ctx.lineWidth = 1;
+        for (var b = 0; b < 3; b++) {
+            var bx = 90 + b * 145 - (s.camX * 0.08 % 145), by = 74 + b * 17;
+            ctx.beginPath(); ctx.arc(bx, by, 7, 3.55, 5.85); ctx.arc(bx + 13, by, 7, 3.55, 5.85); ctx.stroke();
+        }
+    } else if (s.stage === 1) {
+        // 沙丘：瞭望塔與風旗
+        ctx.fillStyle = '#665236'; ctx.strokeStyle = '#665236'; ctx.lineWidth = 4;
+        for (x = offset; x < VW + 180; x += 180) {
+            ctx.fillRect(x + 58, 158, 44, 16);
+            ctx.beginPath(); ctx.moveTo(x + 66, 174); ctx.lineTo(x + 52, 228);
+            ctx.moveTo(x + 94, 174); ctx.lineTo(x + 110, 228); ctx.stroke();
+            ctx.fillRect(x + 79, 126, 3, 32);
+            ctx.beginPath(); ctx.moveTo(x + 82, 126); ctx.lineTo(x + 104, 134); ctx.lineTo(x + 82, 141); ctx.closePath(); ctx.fill();
+        }
+    } else if (s.stage === 2) {
+        // 廢墟：破牆與窗洞
+        ctx.fillStyle = '#292b39';
+        for (x = offset - 40; x < VW + 180; x += 150) {
+            ctx.fillRect(x, 125, 112, 108);
+            ctx.fillStyle = '#171923';
+            ctx.fillRect(x + 20, 145, 17, 24); ctx.fillRect(x + 59, 145, 18, 24);
+            ctx.fillRect(x + 22, 188, 17, 28); ctx.fillRect(x + 71, 182, 18, 34);
+            ctx.fillStyle = '#292b39';
+            ctx.beginPath(); ctx.moveTo(x, 125); ctx.lineTo(x + 26, 108); ctx.lineTo(x + 47, 128);
+            ctx.lineTo(x + 72, 101); ctx.lineTo(x + 112, 125); ctx.closePath(); ctx.fill();
+        }
+    } else if (s.stage === 3) {
+        // 補給線：樹冠與吊橋柱
+        ctx.fillStyle = '#173c2d';
+        for (x = offset - 60; x < VW + 180; x += 90) {
+            ctx.beginPath(); ctx.arc(x + 20, 180, 34, 0, RE.TAU); ctx.arc(x + 54, 168, 42, 0, RE.TAU);
+            ctx.arc(x + 82, 187, 32, 0, RE.TAU); ctx.fill();
+            ctx.fillRect(x + 48, 178, 9, 58);
+        }
+    } else {
+        // 裝甲車關：堡壘、探照燈與煙柱
+        ctx.fillStyle = '#372a29';
+        for (x = offset - 20; x < VW + 200; x += 220) {
+            ctx.fillRect(x + 26, 166, 126, 70);
+            ctx.fillRect(x + 48, 142, 26, 24); ctx.fillRect(x + 108, 137, 24, 29);
+            ctx.fillStyle = 'rgba(255,190,120,0.18)';
+            ctx.beginPath(); ctx.moveTo(x + 120, 145); ctx.lineTo(x + 208, 86); ctx.lineTo(x + 210, 196); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#372a29';
+        }
+    }
+    // 同一套可拆戰場物件依年代關卡重組；只作景深，不參與碰撞。
+    for (var d = offset - 30; d < VW + 200; d += 260) {
+        if (s.stage === 0) {
+            drawMetalBattleAsset('sandbags', d + 76, 215, 72, 54, false);
+            drawMetalBattleAsset('barbed_wire', d + 176, 218, 76, 50, false);
+        } else if (s.stage === 2) {
+            drawMetalBattleAsset('girder', d + 96, 210, 72, 62, false);
+            drawMetalBattleAsset('crate', d + 178, 216, 48, 48, false);
+        } else if (s.stage === 4) {
+            drawMetalBattleAsset('supply_crate', d + 92, 208, 54, 54, false);
+            drawMetalBattleAsset('barbed_wire', d + 174, 220, 74, 48, false);
+        }
+    }
+    ctx.restore();
+}
+
+function drawTerrain() {
+    var d = s.def;
+    var x0 = Math.floor(s.camX / 32) * 32 - 32, x1 = s.camX + VW + 64;
+    ctx.fillStyle = d.ground;
+    ctx.beginPath();
+    ctx.moveTo(x0, VH);
+    for (var x = x0; x <= x1; x += 8) ctx.lineTo(x, groundAt(x));
+    ctx.lineTo(x1, VH); ctx.closePath(); ctx.fill();
+    // 地表亮線與碎石
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (x = x0; x <= x1; x += 8) { if (x === x0) ctx.moveTo(x, groundAt(x)); else ctx.lineTo(x, groundAt(x)); }
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(0,0,0,0.16)';
+    for (x = x0; x <= x1; x += 26) {
+        var n = ((x * 2654435761) % 100) / 100;
+        ctx.fillRect(x + n * 12, groundAt(x) + 10 + n * 26, 4 + n * 5, 3);
+    }
+}
+
+function drawGoal() {
+    var gx = s.def.len + 90, gy = groundAt(gx);
+    ctx.strokeStyle = '#cfd6e6'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx, gy - 60); ctx.stroke();
+    var w = 22 + Math.sin(Date.now() * 0.006) * 4;
+    ctx.fillStyle = '#e8455f';
+    ctx.beginPath();
+    ctx.moveTo(gx, gy - 60); ctx.lineTo(gx + w, gy - 52); ctx.lineTo(gx, gy - 42);
+    ctx.closePath(); ctx.fill();
+    RE.Draw.text(ctx, '終點', gx + 4, gy - 82, { size: 11, align: 'center', color: '#ffe066' });
+}
+
+function drawPows() {
+    for (var i = 0; i < s.pows.length; i++) {
+        var w = s.pows[i];
+        var atlasBob = w.freed ? Math.abs(Math.sin(w.anim * 12)) * 3 : Math.sin(w.anim * 3) * 1.5;
+        if (drawMetalBattleAsset('pow', w.x + w.w / 2, w.y + w.h / 2 - atlasBob, 42, 42, false)) {
+            if (!w.freed) {
+                ctx.strokeStyle = '#8a6b46'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(w.x - 1, w.y + 12); ctx.lineTo(w.x + 15, w.y + 12);
+                ctx.moveTo(w.x - 1, w.y + 17); ctx.lineTo(w.x + 15, w.y + 17); ctx.stroke();
+                RE.Draw.text(ctx, '!', w.x + 7, w.y - 20, { size: 13, align: 'center', color: '#ffe066' });
+            }
+            continue;
+        }
+        ctx.save();
+        ctx.translate(w.x + w.w / 2, w.y);
+        var bob = w.freed ? Math.abs(Math.sin(w.anim * 12)) * 3 : Math.sin(w.anim * 3) * 1.5;
+        ctx.translate(0, -bob);
+        ctx.fillStyle = '#c8b088';                       // 身體
+        ctx.fillRect(-6, 6, 12, 18);
+        ctx.fillStyle = '#e2b48a';                       // 頭
+        ctx.beginPath(); ctx.arc(0, 2, 6, 0, RE.TAU); ctx.fill();
+        ctx.fillStyle = '#4a3a2a';
+        ctx.fillRect(-6, -2, 12, 4);                     // 頭髮
+        if (!w.freed) {                                   // 繩子
+            ctx.strokeStyle = '#8a6b46'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(-7, 12); ctx.lineTo(7, 12); ctx.moveTo(-7, 17); ctx.lineTo(7, 17); ctx.stroke();
+        } else {
+            ctx.fillStyle = '#e2b48a';                    // 舉手歡呼
+            ctx.fillRect(-9, -4, 3, 10); ctx.fillRect(6, -4, 3, 10);
+        }
+        ctx.fillStyle = '#1a1208';
+        ctx.fillRect(-3, 1, 2, 2); ctx.fillRect(1, 1, 2, 2);
+        ctx.restore();
+        if (!w.freed) RE.Draw.text(ctx, '!', w.x + 7, w.y - 20, { size: 13, align: 'center', color: '#ffe066' });
+    }
+}
+
+function drawPickups() {
+    for (var i = 0; i < s.pickups.length; i++) {
+        var p = s.pickups[i];
+        var w = WEAPONS[p.kind];
+        var pickupAsset = p.kind === 'hmg' ? 'hmg_pickup' : 'shotgun_pickup';
+        if (drawMetalBattleAsset(pickupAsset, p.x, p.y + Math.sin(p.t * 5) * 2, 44, 32, false)) continue;
+        ctx.save();
+        ctx.translate(p.x, p.y + Math.sin(p.t * 5) * 2);
+        ctx.fillStyle = '#2a2a3a';
+        RE.Draw.roundRect(ctx, -13, -8, 26, 16, 3); ctx.fill();
+        ctx.fillStyle = w.col;
+        ctx.fillRect(-10, -4, 20, 5);
+        RE.Draw.text(ctx, p.kind === 'hmg' ? 'H' : 'S', 0, -7, { size: 11, align: 'center', color: '#1a1a24', stroke: false });
+        ctx.restore();
+    }
+}
+
+function drawMetalEnemyArt(e) {
+    var name = e.boss ? 'boss' : (e.kind === 'gun' ? 'gunner' : (e.kind === 'lob' ? 'lobber' : 'soldier'));
+    var w = e.boss ? 122 : (e.kind === 'gun' ? 52 : 46);
+    var h = e.boss ? 88 : (e.kind === 'gun' ? 50 : 46);
+    var art = METAL_BATTLE_ART, m = art.manifest;
+    if (!m || !art.image.complete || !art.image.naturalWidth || !m.assets || !m.assets[name]) return false;
+    var r = m.assets[name];
+    ctx.save();
+    ctx.translate(e.x + e.w / 2, e.y + e.h);
+    if (e.st === 'fly') ctx.rotate(e.rot);
+    else if (e.st === 'land' || e.st === 'corpse') { ctx.rotate(-1.35); ctx.translate(-4, -8); }
+    else if (e.st === 'stagger') ctx.rotate(-0.32);
+    else if (e.st === 'aim') ctx.rotate(0.08);
+    // 角色母圖面向右；裝甲車母圖砲口面向左，故鏡像基準相反。
+    ctx.scale(e.boss ? -e.face : e.face, 1);
+    ctx.filter = e.hitT > 0 ? 'brightness(3) saturate(0)' : 'none';
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(art.image, r.x, r.y, r.w, r.h, -w / 2, -h, w, h);
+    ctx.restore();
+    if (e.hitT > 0) {
+        drawMetalBattleAsset('impact', e.x + e.w / 2 + e.face * e.w * 0.25,
+            e.y + e.h * 0.42, e.boss ? 40 : 26, e.boss ? 40 : 26, e.face < 0);
+    }
+    return true;
+}
+
+function drawMetalEnemyOverlay(e) {
+    if (e.boss && !e.dead) {
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(e.x, e.y - 16, e.w, 7);
+        ctx.fillStyle = '#e8455f';
+        ctx.fillRect(e.x + 1, e.y - 15, (e.w - 2) * (e.hp / e.maxHp), 5);
+    }
+    if (e.st === 'aim' && !e.dead) {
+        RE.Draw.text(ctx, '!', e.x + e.w / 2, e.y - (e.boss ? 34 : 26),
+            { size: 14, align: 'center', color: '#ff9060' });
+    }
+}
+
+/** 敵人：受擊與死亡的每個階段都畫成不同的姿勢，這是本作的核心 */
+function drawEnemy(e) {
+    if (e.st !== 'fly') {
+        ctx.save();
+        ctx.fillStyle = 'rgba(20,16,12,0.24)';
+        ctx.beginPath(); ctx.ellipse(e.x + e.w / 2, e.y + e.h + 2, e.boss ? 45 : 12, e.boss ? 7 : 3.5, 0, 0, RE.TAU); ctx.fill();
+        ctx.restore();
+    }
+    if (drawMetalEnemyArt(e)) {
+        drawMetalEnemyOverlay(e);
+        return;
+    }
+    ctx.save();
+    ctx.translate(e.x + e.w / 2, e.y + e.h);
+    if (e.st === 'fly') ctx.rotate(e.rot);
+    ctx.scale(e.face, 1);
+
+    var flash = e.hitT > 0;
+    var body = e.boss ? '#74513c' : (e.kind === 'gun' ? '#526b86' : (e.kind === 'lob' ? '#806443' : '#64794a'));
+    var accent = e.kind === 'gun' ? '#9ac6e8' : (e.kind === 'lob' ? '#f0b75f' : '#d85a4f');
+    var skin = '#e2b48a';
+    if (flash) { body = '#ffffff'; skin = '#ffffff'; }
+
+    if (e.boss) {
+        // 裝甲車
+        ctx.fillStyle = body;
+        RE.Draw.roundRect(ctx, -46, -50, 92, 42, 5); ctx.fill();
+        ctx.fillStyle = flash ? '#ffffff' : '#8a6a4a';
+        RE.Draw.roundRect(ctx, -30, -66, 44, 20, 4); ctx.fill();
+        ctx.fillStyle = flash ? '#ffffff' : '#3a2a22';
+        ctx.fillRect(-52, -60, 22, 6);                 // 砲管
+        for (var k = -1; k <= 1; k++) {
+            ctx.beginPath(); ctx.arc(k * 26, -6, 10, 0, RE.TAU); ctx.fill();
+            ctx.fillStyle = flash ? '#ffffff' : '#5a5a5a';
+            ctx.beginPath(); ctx.arc(k * 26, -6, 4, 0, RE.TAU); ctx.fill();
+            ctx.fillStyle = flash ? '#ffffff' : '#3a2a22';
+        }
+        if (e.st === 'aim') {                           // 前搖：砲口發光
+            ctx.fillStyle = 'rgba(255,180,80,' + (0.4 + Math.sin(Date.now() * 0.04) * 0.4) + ')';
+            ctx.beginPath(); ctx.arc(-54, -57, 7, 0, RE.TAU); ctx.fill();
+        }
+    } else {
+        var lean = e.st === 'stagger' ? -0.35 : (e.st === 'aim' ? 0.12 : 0);
+        var slump = (e.st === 'land' || e.st === 'corpse') ? 1 : 0;
+        if (slump) { ctx.rotate(-1.35); ctx.translate(-4, -10); }
+        ctx.rotate(lean);
+        // 腿
+        ctx.fillStyle = flash ? '#ffffff' : '#3a4a2a';
+        var sw = e.st === 'idle' && e.speed > 0 ? Math.sin(e.anim * 9) * 4 : 0;
+        ctx.fillRect(-6 + sw, -12, 5, 12);
+        ctx.fillRect(2 - sw, -12, 5, 12);
+        // 身體
+        ctx.fillStyle = body;
+        ctx.strokeStyle = flash ? '#ffffff' : 'rgba(24,28,24,0.9)'; ctx.lineWidth = 1.5;
+        RE.Draw.roundRect(ctx, -8, -26, 16, 15, 3); ctx.fill(); ctx.stroke();
+        // 紅臂章與兵種色條把敵軍從綠背心主角身上分離，遠距離也能判斷威脅類型。
+        ctx.fillStyle = flash ? '#ffffff' : '#c84843';
+        ctx.fillRect(-8, -22, 4, 3);
+        ctx.fillStyle = flash ? '#ffffff' : accent;
+        ctx.fillRect(-7, -14, 14, 2);
+        // 頭與鋼盔
+        ctx.fillStyle = skin;
+        ctx.beginPath(); ctx.arc(0, -31, 6, 0, RE.TAU); ctx.fill();
+        ctx.fillStyle = flash ? '#ffffff' : (e.boss ? '#6a4a3a' : '#4a5a3a');
+        ctx.beginPath(); ctx.arc(0, -33, 7, Math.PI, RE.TAU); ctx.fill();
+        ctx.fillRect(-7, -33, 14, 3);
+        // 槍：瞄準時抬起來，這是玩家唯一的預警
+        ctx.fillStyle = flash ? '#ffffff' : '#2a2a2a';
+        if (e.st === 'aim' || e.st === 'cool') {
+            ctx.fillRect(4, -24, 16, 4);
+            if (e.st === 'aim') {
+                ctx.fillStyle = 'rgba(255,120,80,' + (0.35 + Math.sin(Date.now() * 0.05) * 0.35) + ')';
+                ctx.beginPath(); ctx.arc(22, -22, 4, 0, RE.TAU); ctx.fill();
+            }
+        } else {
+            ctx.fillRect(2, -20, 14, 4);
+        }
+    }
+    ctx.restore();
+
+    drawMetalEnemyOverlay(e);
+}
+
+function metalAtlasFrame(meta, seconds) {
+    var durations = meta.durations_ms || [];
+    if (!durations.length) return 0;
+    var total = 0;
+    for (var i = 0; i < durations.length; i++) total += durations[i];
+    var ms = seconds * 1000;
+    if (meta.loop) ms = total > 0 ? ms % total : 0;
+    else ms = Math.min(ms, Math.max(0, total - 1));
+    for (var j = 0; j < durations.length; j++) {
+        if (ms < durations[j]) return j;
+        ms -= durations[j];
+    }
+    return durations.length - 1;
+}
+
+function drawMetalAtlasPlayer(p) {
+    var art = METAL_PLAYER_ART, m = art.manifest;
+    if (!m || !art.image.complete || !art.image.naturalWidth) return false;
+
+    var state = p.knifeArtT > 0 ? 'side_knife' :
+        (p.throwArtT > 0 ? 'side_throw' :
+        (p.shotArtT > 0 ? 'side_shoot' :
+        (p.grounded && Math.abs(p.vx) > 20 ? 'side_run' : 'side_idle')));
+    if (p.dead > 0) state = 'side_idle';
+    var meta = m.animation && m.animation.rows && m.animation.rows[state];
+    var row = m.frame_layout && m.frame_layout.rows && m.frame_layout.rows[state];
+    if (!meta || !row || !row.length) return false;
+
+    var frame = Math.min(metalAtlasFrame(meta, p.spriteT), row.length - 1);
+    var r = row[frame];
+    ctx.save();
+    ctx.translate(p.x + p.w / 2, p.y + p.h);
+    if (p.dead > 0) ctx.rotate(-1.2);
+    ctx.scale(p.face, 1);
+    ctx.imageSmoothingEnabled = false;
+    // 224×160 cell 的底部透明安全區已在 curation 固定；這裡只做等比顯示。
+    ctx.drawImage(art.image, r.x, r.y, r.w, r.h, -32, -42, 64, 46);
+    ctx.restore();
+    if (p.shotArtT > 0.25 && !p.aimUp) {
+        drawMetalBattleAsset('muzzle', p.x + p.w / 2 + p.face * 28, p.y + 11,
+            30, 22, p.face < 0);
+    }
+    return true;
+}
+
+function drawPlayer() {
+    var p = s.p;
+    if (p.inv > 0 && Math.floor(p.inv * 14) % 2 === 0 && p.dead <= 0) return;
+    ctx.save();
+    ctx.fillStyle = 'rgba(18,24,18,0.28)';
+    ctx.beginPath(); ctx.ellipse(p.x + p.w / 2, p.y + p.h + 2, 12, 4, 0, 0, RE.TAU); ctx.fill();
+    ctx.restore();
+    // 現有圖集沒有斜上射擊列；該姿勢保留原作的程序繪製，避免拿水平射擊硬轉。
+    if ((p.dead > 0 || !p.aimUp) && drawMetalAtlasPlayer(p)) return;
+    ctx.save();
+    ctx.translate(p.x + p.w / 2, p.y + p.h);
+    if (p.dead > 0) ctx.rotate(-1.2);
+    ctx.scale(p.face, 1);
+
+    // 腿
+    ctx.fillStyle = '#3a5a7a';
+    var run = p.grounded && Math.abs(p.vx) > 20 ? Math.sin(p.anim * 17) * 5 : 0;
+    ctx.fillRect(-7 + run, -13, 6, 13);
+    ctx.fillRect(2 - run, -13, 6, 13);
+    // 身體（背心）
+    ctx.fillStyle = '#739956';
+    ctx.strokeStyle = 'rgba(22,27,20,0.95)'; ctx.lineWidth = 1.5;
+    RE.Draw.roundRect(ctx, -9, -28, 18, 16, 3); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#34482a';
+    ctx.fillRect(-9, -20, 18, 4);
+    // 頭與頭巾
+    ctx.fillStyle = '#e2b48a';
+    ctx.beginPath(); ctx.arc(0, -33, 6.5, 0, RE.TAU); ctx.fill();
+    ctx.fillStyle = '#ed5146';
+    ctx.fillRect(-7, -37, 14, 4);
+    ctx.fillRect(-9, -36, 4, 8);
+    ctx.fillRect(-13, -34 + Math.sin(p.anim * 10) * 2, 7, 3);
+    ctx.fillStyle = '#1a1208';
+    ctx.fillRect(2, -34, 2, 2);
+    // 武器
+    ctx.fillStyle = '#2a2a2a';
+    if (p.knifeT > 0) {
+        ctx.fillStyle = '#e8eef8';
+        ctx.save(); ctx.translate(9, -22); ctx.rotate(-0.5 + (0.18 - p.knifeT) * 6);
+        ctx.fillRect(0, -2, 20, 4); ctx.restore();
+    } else if (p.aimUp) {
+        ctx.fillRect(4, -44, 5, 18);
+    } else {
+        ctx.fillRect(6, -24, 18, 5);
+    }
+    ctx.restore();
+}
+
+function drawBullets() {
+    var i, b;
+    for (i = 0; i < s.bullets.length; i++) {
+        b = s.bullets[i];
+        ctx.save();
+        ctx.shadowBlur = 6; ctx.shadowColor = b.w.col;
+        ctx.fillStyle = b.w.col;
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        ctx.rotate(Math.atan2(b.vy, b.vx));
+        ctx.fillRect(-6, -b.w.sz / 2, 12, b.w.sz);
+        ctx.restore();
+        ctx.restore();
+    }
+    for (i = 0; i < s.ebullets.length; i++) {
+        b = s.ebullets[i];
+        if (b.delay > 0) continue;
+        ctx.save();
+        ctx.shadowBlur = 6; ctx.shadowColor = '#ff6a4a';
+        ctx.fillStyle = b.lob ? '#4a5a3a' : '#ff6a4a';
+        ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, RE.TAU); ctx.fill();
+        ctx.restore();
+    }
+    for (i = 0; i < s.nades.length; i++) {
+        var g = s.nades[i];
+        ctx.save();
+        ctx.translate(g.x, g.y); ctx.rotate(g.t * 12);
+        ctx.fillStyle = '#4a5a3a';
+        RE.Draw.roundRect(ctx, -4, -5, 8, 10, 3); ctx.fill();
+        ctx.fillStyle = '#8a8a6a'; ctx.fillRect(-2, -7, 4, 3);
+        ctx.restore();
+    }
+}
+
+/** 爆炸的四個階段：白閃 → 火球 → 黑煙 → 餘燼 */
+function drawExplosions() {
+    for (var i = 0; i < s.explosions.length; i++) {
+        var e = s.explosions[i], t = e.t, sc = e.s;
+        if (t >= 0.07) {
+            var formalName = t < 0.34 ? 'explosion' : 'smoke';
+            var formalK = t < 0.34 ? (t - 0.07) / 0.27 : (t - 0.34) / 0.41;
+            var formalSize = (t < 0.34 ? 52 + formalK * 28 : 62 + formalK * 24) * sc;
+            var formalAlpha = t < 0.34 ? 1 : Math.max(0, 1 - formalK);
+            if (drawMetalBattleAsset(formalName, e.x, e.y, formalSize, formalSize,
+                    false, null, formalAlpha)) continue;
+        }
+        ctx.save();
+        if (t < 0.07) {
+            ctx.fillStyle = 'rgba(255,255,255,' + (1 - t / 0.07) + ')';
+            ctx.beginPath(); ctx.arc(e.x, e.y, 22 * sc * (0.5 + t * 8), 0, RE.TAU); ctx.fill();
+        } else if (t < 0.30) {
+            var k = (t - 0.07) / 0.23;
+            ctx.globalAlpha = 1 - k * 0.4;
+            var g = ctx.createRadialGradient(e.x, e.y, 2, e.x, e.y, (16 + k * 30) * sc);
+            g.addColorStop(0, '#fff3c4'); g.addColorStop(0.5, '#ffb03a'); g.addColorStop(1, 'rgba(200,60,20,0)');
+            ctx.fillStyle = g;
+            ctx.beginPath(); ctx.arc(e.x, e.y, (16 + k * 30) * sc, 0, RE.TAU); ctx.fill();
+        } else {
+            var k2 = (t - 0.30) / 0.45;
+            ctx.globalAlpha = (1 - k2) * 0.55;
+            ctx.fillStyle = '#4a4a4a';
+            for (var j = 0; j < 4; j++) {
+                var a = j * 1.7 + t * 2;
+                ctx.beginPath();
+                ctx.arc(e.x + Math.cos(a) * 16 * sc * k2, e.y - 8 * k2 * sc + Math.sin(a) * 10 * sc * k2,
+                    (10 + k2 * 14) * sc, 0, RE.TAU);
+                ctx.fill();
+            }
+        }
+        ctx.restore();
+    }
+}
+
+function drawHUD() {
+    if (s.hintT > 0) {
+        var a = Math.min(1, s.hintT / 0.7);
+        ctx.globalAlpha = a;
+        RE.Draw.text(ctx, s.def.name, VW / 2, 14, { size: 15, align: 'center', color: '#ffe066' });
+        RE.Draw.text(ctx, s.def.hint, VW / 2, 36, { size: 11, align: 'center', color: '#f0e8d8' });
+        ctx.globalAlpha = 1;
+    }
+    drawFeedbackTimeline();
+    // 推進進度條
+    var w = 160, x0 = VW / 2 - w / 2;
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fillRect(x0, VH - 13, w, 5);
+    ctx.fillStyle = '#ffe066';
+    ctx.fillRect(x0, VH - 13, w * RE.clamp(s.p.x / (s.def.len + 90), 0, 1), 5);
+    var progress = Math.round(RE.clamp(s.p.x / (s.def.len + 90), 0, 1) * 100);
+    RE.Draw.text(ctx, '出發', x0, VH - 30, { size: 13, color: '#f0e8d8', stroke: false });
+    RE.Draw.text(ctx, '推進 ' + progress + '%', VW / 2, VH - 30,
+        { size: 13, align: 'center', color: '#ffe066', stroke: false });
+    RE.Draw.text(ctx, '旗幟', x0 + w, VH - 30, { size: 13, align: 'right', color: '#f0e8d8', stroke: false });
+    if (s.p.ammo !== Infinity && s.p.ammo > 0) {
+        RE.Draw.text(ctx, '彈藥 ' + s.p.ammo, VW - 8, VH - 26, { size: 11, align: 'right', color: '#ffd166' });
+    }
+}
+
+function drawFeedbackTimeline() {
+    var active = -1;
+    for (var i = 0; i < s.enemies.length; i++) {
+        var e = s.enemies[i];
+        if (e.hitT > 0) { active = Math.max(active, 0); continue; }
+        if (e.st === 'stagger') active = Math.max(active, 1);
+        else if (e.st === 'fly') active = Math.max(active, 2);
+        else if (e.st === 'land') active = Math.max(active, 3);
+        else if (e.st === 'corpse') active = Math.max(active, 4);
+    }
+    var labels = ['命中', '僵直', '拋飛', '落地', '倒下'];
+    var y = s.hintT > 0 ? 54 : 10;
+    var totalW = 214, x0 = 9, cell = totalW / labels.length;
+    ctx.fillStyle = 'rgba(22,22,25,0.56)';
+    RE.Draw.roundRect(ctx, x0, y, totalW, 18, 6); ctx.fill();
+    for (var k = 0; k < labels.length; k++) {
+        if (k === active) {
+            ctx.fillStyle = k < 2 ? '#fff0a8' : '#ff9a58';
+            RE.Draw.roundRect(ctx, x0 + k * cell + 2, y + 2, cell - 4, 14, 4); ctx.fill();
+        }
+        RE.Draw.text(ctx, labels[k], x0 + k * cell + cell / 2, y + 4,
+            { size: 12, align: 'center', color: k === active ? '#271708' : '#d8d2c5', stroke: false });
+        if (k < labels.length - 1) RE.Draw.text(ctx, '›', x0 + (k + 1) * cell - 2, y + 4,
+            { size: 12, align: 'center', color: '#8f887d', stroke: false });
+    }
+}
+
+// ======================================================================
+function openPause() {
+    G._state = 'paused';
+    RetroAudio.play('pause');
+    G.showOverlay({
+        title: '暫停中',
+        body: '注意敵人中彈之後那一串動作——僵直、踉蹌、被打飛、落地揚塵。那就是「手感」。',
+        buttons: [
+            { label: '▶ 繼續', onClick: function () { G.resume(); } },
+            { label: '↻ 重新開始', cls: 'ghost', onClick: function () { G.restart(); } }
+        ],
+        press: '按 P 或 ESC 繼續'
+    });
+}
+G.pause = openPause;
+
+function showTitleScreen() {
+    G._state = 'title';
+    G.showOverlay({
+        title: '鋼鐵突擊隊',
+        body: G.cfg.howto,
+        buttons: [{ label: '▶ 出擊', onClick: function () { G.hideOverlay(); G._state = 'playing'; reset(); } }],
+        press: '按 空白鍵 或 Enter 開始'
+    });
+    var onKey = function (e) {
+        if (G._state !== 'title') return;
+        if (e.code === 'Space' || e.code === 'Enter') {
+            e.preventDefault();
+            window.removeEventListener('keydown', onKey);
+            RetroAudio.play('confirm');
+            G.hideOverlay(); G._state = 'playing'; reset();
+        }
+    };
+    window.addEventListener('keydown', onKey);
+}
+
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+showTitleScreen();
+</script>
+</body>
+</html>

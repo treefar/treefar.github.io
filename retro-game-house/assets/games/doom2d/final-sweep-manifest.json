@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "kind": "runtime-integrated-art-candidate",
+  "status": "final-gate-pending",
+  "countedInLedger": false,
+  "game": "doom2d",
+  "set": "set-05-90s-action",
+  "tool": "Codex built-in ImageGen",
+  "model": "ImageGen（服務端版本未揭露）",
+  "generatedAt": "2026-08-24",
+  "prompt": "art-production/final-sweep/set-05-90s-action/prompt-v003.md",
+  "source": "art-production/final-sweep/set-05-90s-action/source/atlas-v003-imagegen.png",
+  "sourceSha256": "728141b2213622d3a68022806707f78f7d05f9ad1432196a7e254be413ee6cfc",
+  "postprocess": "模型 alpha 保留、連通物件裁切、等比例縮放、透明留白與圖集排版；未補畫內容。Set 05 依固定格裁切保留模型背景，實際呈現以圓角裁切避免方形貼紙感。",
+  "atlas": "final-sweep-atlas.png",
+  "atlasSha256": "7a3179c69d6401559bfa41e771d426e4902a62a7ed850bb7447c5451cdaabc9c",
+  "cellWidth": 128,
+  "cellHeight": 128,
+  "assets": {
+    "basalt_imp": {
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "敵人幀"
+    },
+    "prism_blaster": {
+      "index": 1,
+      "x": 128,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "武器／彈著"
+    },
+    "rust_corner": {
+      "index": 2,
+      "x": 256,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "牆地材質"
+    },
+    "rune_door": {
+      "index": 3,
+      "x": 384,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "門／燈光"
+    },
+    "citadel_crest": {
+      "index": 4,
+      "x": 0,
+      "y": 128,
+      "w": 128,
+      "h": 128,
+      "label": "章節插圖"
+    }
+  },
+  "runtimePresentation": "RetroShell 開場的美術圖譜層；正常流程可見，不介入遊戲亂數、碰撞或更新。",
+  "qa": {
+    "assetCount": 5,
+    "edgePixels": 0,
+    "emptyCells": 0,
+    "humanFinalGate": false
+  }
+}

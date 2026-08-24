@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 月面著陸計畫</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   月面著陸計畫 — 致敬 Lunar Lander (Atari, 1979)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. 把「物理真實」直接推到玩法核心。重力、推力、燃料三者互相牽制，
+      玩家要在「省燃料」與「安全減速」之間做取捨。
+   2. 落地判定同時檢查垂直速度、水平速度與船身角度——三者都達標才算成功。
+      這種多重條件的成功判定，讓「勉強成功」與「完美著陸」有明確區別。
+   3. 八個關卡的地形逐漸險惡：平台變窄、重力變大、燃料變少、加入側風。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'lunar_lander',
+    title: '月面著陸計畫',
+    tagline: '讓「物理」本身成為玩法的經典',
+    original: 'Lunar Lander (Atari, 1979)',
+    decade: '70s', year: 1979, platform: '大型街機', genre: '模擬／技巧',
+    developer: 'Atari', bgm: '70s',
+    width: 520, height: 400,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'best', label: 'BEST' },
+        { key: 'mission', label: '任務', init: 1 },
+        { key: 'fuel', label: '燃料', init: 1000 }
+    ],
+    touch: 'dpad+ab', labelA: '推進', maxScale: 2,
+    controls: [
+        { keys: ['←', '→'], desc: '調整姿態角度' },
+        { keys: ['↑', '空白'], desc: '主引擎推進（耗燃料）' }
+    ],
+    howto: '在標示的平台上著陸。成功條件有三個：<strong>下降速度低於 25、水平速度低於 15、船身接近水平</strong>。' +
+           '三者任一不達標就會墜毀。燃料用完就只能自由落體——請提早減速，別等到最後一刻。' +
+           '較窄的平台有較高的分數倍率。',
+    lesson: {
+        verb: '旋轉船身並以短促推進抵銷重力與側風，在燃料耗盡前同時把垂直速度、水平速度和角度壓進安全範圍。',
+        innovation: '成功不只看「有沒有碰到平台」，而是由三項連續物理量共同判定；燃料也讓每次修正同時具有資源成本。',
+        mission: '先在高空做三次短推進，觀察垂直速度如何延遲改變；著陸前讓左上三項數值全部變綠，再接觸任一黃色平台。',
+        evolution: '早期文字登月模擬把燃料換成數字決策，《Lunar Lander》在 1979 年改成即時向量控制；《Asteroids》再把旋轉與推進帶進持續戰鬥。',
+        reflection: '如果接觸平台就算成功，不檢查速度與角度，這仍然是物理模擬，還是只剩移動到指定位置？'
+    },
+    design: '《Lunar Lander》解決的問題是：如何讓只有旋轉與推進的少量輸入，仍產生可規劃、可失敗的長程控制。它把「操作延遲生效」本身變成玩法，推進器只能逐步改變速度，玩家必須先預測未來位置，再決定現在是否值得耗油修正。' +
+            '本站落地時同時檢查垂直速度低於 25、水平速度低於 15、船身傾角低於約 12°；平台越窄，分數倍率越高。' +
+            '八個任務再逐步提高重力、側風與地形粗糙度，讓同一套控制從「會按推進」演化成進場路線與燃料預算。' +
+            '現代儀表板把三個門檻直接並排變色，但不替玩家煞車，保留原型遊戲用數值壓力製造緊張感的核心。',
+    history: '登月題材在 1960 年代末至 1970 年代初已有文字式電腦模擬；Atari 於 1979 年推出大型街機《Lunar Lander》。' +
+             'The Strong 的資料記錄，玩家以推力控制桿點火，在黑白向量螢幕上處理重力、旋轉慣性與燃料；' +
+             '該館也把它列為 Atari 第一款採用向量顯示的作品。Atari 現行的復刻機資料仍以 1979、向量圖形與招牌推力控制桿' +
+             '作為原作辨識重點，因此本站保留黑底亮線與燃料推進，而不把它改成一般平台跳躍。',
+    sources: [
+        { label: 'Atari：1979 Lunar Lander 復刻機與原作控制', url: 'https://atari.com/products/lunar-lander-quarter-arcade' },
+        { label: 'The Strong：Lunar Lander 的向量畫面、推力與燃料', url: 'https://www.museumofplay.org/blog/fly-you-to-the-moon/' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(400);
+var FT = new RE.FloatText();
+var LUNAR_ART = { image: new Image(), manifest: null };
+LUNAR_ART.image.src = '../../assets/games/lunar_lander/vector-atlas.png';
+fetch('../../assets/games/lunar_lander/vector-manifest.json')
+    .then(function (r) { if (!r.ok) throw new Error('lunar art manifest ' + r.status); return r.json(); })
+    .then(function (m) { LUNAR_ART.manifest = m; })
+    .catch(function () { LUNAR_ART.manifest = null; });
+
+var MISSIONS = [
+    { name: '訓練場',     gravity: 20, fuel: 1000, padW: 92, landingPads: 2, wind: 1.0, rough: 0.5, name2: '寬平台，重力低。先熟悉推進的手感。' },
+    { name: '寧靜海',     gravity: 24, fuel: 900,  padW: 74, landingPads: 2, wind: 1.8, rough: 0.7, name2: '平台變窄了，注意水平速度。' },
+    { name: '風暴洋',     gravity: 26, fuel: 820,  padW: 62, landingPads: 2, wind: 3.2, rough: 0.9, name2: '有側風。推進時要預留修正的燃料。' },
+    { name: '第谷坑',     gravity: 30, fuel: 760,  padW: 54, landingPads: 2, wind: 5.0, rough: 1.2, name2: '地形開始崎嶇。' },
+    /* 後四關的燃料原本一路遞減（690／620／560／500）。實測下來那是錯的旋鈕：
+       八場裡有九次墜毀在「南極艾特肯」（wind 16），而且**墜毀原因全部是
+       「降落在崎嶇地面」——沒踩到平台，不是速度超標**。
+       落點偏離平台中心 60px、落地時 vx 還有 21.7、vy 48.4（門檻 25），
+       而燃料還剩 87～115。也就是說：風把著陸器吹偏，修正那段偏移燒掉了
+       大半燃料，剩下的不夠把垂直速度壓下來——是「來不及」不是「燒光了」。
+
+       兩個假設都量過（各 6 場）：
+         平台 34 → 46（回到第五關的寬度）：任務 7 照樣墜毀 4 次，**沒用**
+         風 16 → 11（退回第六關）：通關 0/6、照樣墜毀 4 次，**風不是主因**
+         燃料 560 → 700：通關 1/6 → **2/6**，任務 7 墜毀 5 次 → **1 次**
+       所以難度交給重力、風速、平台寬度去承擔，燃料只要夠「修正一次偏移
+       再減速」就好。燃料不足換來的不是「更難」而是「同一個失誤直接沒救」。 */
+    { name: '哥白尼坑',   gravity: 33, fuel: 760,  padW: 46, landingPads: 1, wind: 7.5, rough: 1.4, name2: '重力提高，下降要更早開始減速。' },
+    { name: '月球背面',   gravity: 36, fuel: 720,  padW: 40, landingPads: 1, wind: 11.0, rough: 1.7, name2: '窄平台加強風。這裡開始需要規劃。' },
+    { name: '南極艾特肯', gravity: 40, fuel: 700,  padW: 34, landingPads: 1, wind: 16.0, rough: 2.0, name2: '幾乎沒有容錯空間。' },
+    { name: '最終進場',   gravity: 44, fuel: 660,  padW: 28, landingPads: 1, wind: 23.0, rough: 2.3, name2: '最窄的平台、最強的風。' }
+];
+
+var s = {};
+
+/** 產生地形：一連串線段，其中若干段被指定為平坦的降落平台 */
+function makeTerrain(cfg) {
+    var pts = [];
+    var segW = 26;
+    var n = Math.ceil(W / segW) + 1;
+    var y = H - 60;
+    for (var i = 0; i < n; i++) {
+        y += RE.rand(-1, 1) * 26 * cfg.rough;
+        y = RE.clamp(y, H * 0.42, H - 22);
+        pts.push({ x: i * segW, y: y });
+    }
+
+    // 挑選平台位置：避開最左右兩端，彼此不相鄰
+    var pads = [];
+    var used = [];
+    for (var p = 0; p < cfg.landingPads; p++) {
+        var idx, tries = 0;
+        do {
+            idx = RE.randInt(2, n - 5);
+            tries++;
+        } while (used.some(function (u) { return Math.abs(u - idx) < 4; }) && tries < 30);
+        used.push(idx);
+
+        var span = Math.max(2, Math.ceil(cfg.padW / segW));
+        var py = pts[idx].y;
+        for (var k = 0; k <= span; k++) if (pts[idx + k]) pts[idx + k].y = py;
+        // 平台越窄倍率越高，給高手追求的目標
+        var wpx = span * segW;
+        pads.push({
+            x1: idx * segW, x2: (idx + span) * segW, y: py,
+            mult: wpx <= 40 ? 5 : wpx <= 60 ? 3 : wpx <= 84 ? 2 : 1
+        });
+    }
+    return { pts: pts, pads: pads, segW: segW };
+}
+
+function terrainYAt(x) {
+    var t = s.terrain;
+    var i = Math.floor(x / t.segW);
+    if (i < 0) i = 0;
+    if (i >= t.pts.length - 1) i = t.pts.length - 2;
+    var a = t.pts[i], b = t.pts[i + 1];
+    var f = (x - a.x) / (b.x - a.x);
+    return RE.lerp(a.y, b.y, RE.clamp(f, 0, 1));
+}
+
+function reset() {
+    s = {
+        mission: 1, score: 0, over: false,
+        lander: null, terrain: null, cfg: null,
+        result: null, resultTimer: 0,
+        attempts: 0
+    };
+    startMission(1);
+    G.setStat('score', 0);
+}
+
+function startMission(n) {
+    var cfg = MISSIONS[Math.min(n - 1, MISSIONS.length - 1)];
+    s.cfg = cfg;
+    s.terrain = makeTerrain(cfg);
+    s.lander = {
+        x: RE.rand(W * 0.2, W * 0.8), y: 44,
+        vx: RE.rand(-14, 14), vy: 6,
+        a: 0, fuel: cfg.fuel, thrust: 0, alive: true, landed: false
+    };
+    s.result = null;
+    s.resultTimer = 0;
+    G.setStat('mission', n);
+    G.setStat('fuel', cfg.fuel);
+}
+
+// ======================================================================
+function update(dt) {
+    if (s.over) return;
+
+    if (s.resultTimer > 0) {
+        s.resultTimer -= dt;
+        P.update(dt); FT.update(dt);
+        if (s.resultTimer <= 0) {
+            if (s.result === 'land') advance();
+            else retry();
+        }
+        return;
+    }
+
+    var L = s.lander;
+    if (!L.alive || L.landed) { P.update(dt); FT.update(dt); return; }
+
+    // ---- 姿態控制 ----
+    L.a += RE.Input.axisX() * 2.1 * dt;
+    L.a = RE.clamp(L.a, -Math.PI / 2.1, Math.PI / 2.1);
+
+    // ---- 主引擎 ----
+    var wantThrust = (RE.Input.down('up') || RE.Input.down('a')) && L.fuel > 0;
+    if (wantThrust) {
+        var power = 46;
+        L.vx += Math.sin(L.a) * power * dt;
+        L.vy -= Math.cos(L.a) * power * dt;
+        L.fuel -= 68 * dt;
+        if (L.fuel < 0) L.fuel = 0;
+        L.thrust = 1;
+        G.setStat('fuel', Math.round(L.fuel));
+
+        // 尾焰粒子：向下噴射，位置隨船身角度旋轉
+        var ex = L.x - Math.sin(L.a) * 12, ey = L.y + Math.cos(L.a) * 12;
+        for (var i = 0; i < 2; i++) {
+            P.spawn({
+                x: ex + RE.rand(-2, 2), y: ey,
+                vx: Math.sin(L.a) * RE.rand(50, 130) + RE.rand(-18, 18),
+                vy: Math.cos(L.a) * RE.rand(70, 160) + RE.rand(-10, 10),
+                size: RE.rand(1.8, 3.6), sizeEnd: 0,
+                color: RE.pick(['#ffd166', '#ff9ebb', '#fff8e7']),
+                life: RE.rand(0.14, 0.3), gravity: 0, drag: 0.9, glow: true, shape: 'circle'
+            });
+        }
+        if (Math.random() < 0.2) RetroAudio.play('engine');
+    } else {
+        L.thrust = Math.max(0, L.thrust - dt * 6);
+    }
+
+    // ---- 物理 ----
+    L.vy += s.cfg.gravity * dt;
+    L.vx += (s.cfg.wind / 40) * dt * 10;   // 側風持續推移
+    L.x += L.vx * dt;
+    L.y += L.vy * dt;
+
+    // 邊界：飄出畫面外算任務失敗
+    if (L.x < 8 || L.x > W - 8) { crash('飛出著陸區'); return; }
+
+    // ---- 觸地判定 ----
+    var groundY = terrainYAt(L.x);
+    if (L.y + 11 >= groundY) {
+        L.y = groundY - 11;
+        var pad = null;
+        for (var i = 0; i < s.terrain.pads.length; i++) {
+            var pd = s.terrain.pads[i];
+            if (L.x >= pd.x1 - 4 && L.x <= pd.x2 + 4) { pad = pd; break; }
+        }
+        if (!pad) { crash('降落在崎嶇地面'); return; }
+
+        var okV = L.vy < 25, okH = Math.abs(L.vx) < 15, okA = Math.abs(L.a) < 0.22;
+        if (okV && okH && okA) land(pad);
+        else crash(!okV ? '下降太快（' + Math.round(L.vy) + ' > 25）'
+                  : !okH ? '橫向漂移太大（' + Math.round(Math.abs(L.vx)) + ' > 15）'
+                  : '船身傾斜（' + Math.round(Math.abs(L.a) * 57) + '° > 12°）');
+        return;
+    }
+
+    P.update(dt);
+    FT.update(dt);
+}
+
+function land(pad) {
+    var L = s.lander;
+    L.landed = true;
+    s.result = 'land';
+    s.resultTimer = 2.2;
+
+    // 評分：剩餘燃料 + 平台倍率 + 落地平順度
+    var soft = RE.clamp(1 - L.vy / 25, 0, 1);
+    var base = 500 * pad.mult;
+    var fuelBonus = Math.round(L.fuel * 0.6);
+    var softBonus = Math.round(soft * 400);
+    var gain = base + fuelBonus + softBonus;
+    s.score += gain;
+    G.setStat('score', s.score);
+
+    var grade = soft > 0.72 ? 'PERFECT' : soft > 0.42 ? 'GOOD' : 'SAFE';
+    RetroAudio.play(grade === 'PERFECT' ? 'win' : 'powerup');
+    RE.juice.shake(0.12);
+    FT.add(L.x, L.y - 40, grade + ' 著陸', {
+        color: grade === 'PERFECT' ? '#ffd166' : '#70e4b5', size: 20, life: 2
+    });
+    FT.add(L.x, L.y - 20, '平台 ×' + pad.mult + '　燃料 +' + fuelBonus + '　平順 +' + softBonus,
+        { color: '#a7f3d0', size: 12, life: 2, vy: -20 });
+
+    // 落地塵埃
+    P.burst(L.x, L.y + 11, 16, {
+        angle: 0, spread: Math.PI, colors: ['#9fb3aa', '#c9d6d0'],
+        speedMin: 20, speedMax: 90, gravity: 60, lifeMin: 0.4, lifeMax: 0.9, sizeMax: 3
+    });
+}
+
+function crash(reason) {
+    var L = s.lander;
+    L.alive = false;
+    s.result = 'crash';
+    s.resultTimer = 2.2;
+    s.crashReason = reason;
+
+    RE.juice.impact(3);
+    RE.juice.flash('rgba(255,107,107,0.5)', 0.16);
+    RE.juice.slowmo(0.3, 0.9);
+    RetroAudio.play('bigExplosion');
+    P.burst(L.x, L.y, 34, {
+        colors: ['#ff6b6b', '#ffd166', '#fff8e7'], speedMin: 50, speedMax: 250,
+        gravity: 180, lifeMin: 0.35, lifeMax: 0.9
+    });
+    P.ring(L.x, L.y, '#ff6b6b', 70);
+    FT.add(L.x, L.y - 30, '墜毀', { color: '#ff6b6b', size: 22, life: 2 });
+    FT.add(L.x, L.y - 8, reason, { color: '#ff9ebb', size: 12, life: 2, vy: -18 });
+}
+
+function advance() {
+    s.mission++;
+    RE.Save.unlockLevel('lunar_lander', s.mission);
+    if (s.mission > MISSIONS.length) {
+        s.over = true;
+        G.gameOver({ score: s.score, win: true,
+            body: '八次任務全數成功著陸。1979 年的玩家會告訴你：燃料表才是真正的敵人。' });
+        return;
+    }
+    startMission(s.mission);
+    var cfg = s.cfg;
+    G.stageCard(s.mission, cfg.name, cfg.name2 + '　✦ 重力 ' + cfg.gravity + '　燃料 ' + cfg.fuel);
+}
+
+function retry() {
+    s.attempts++;
+    // 允許重試同一關，但每次重試扣一點分數，維持挑戰的意義
+    s.score = Math.max(0, s.score - 150);
+    G.setStat('score', s.score);
+    if (s.attempts >= 3) {
+        s.over = true;
+        G.gameOver({ score: s.score,
+            body: '第 ' + s.mission + ' 號任務「' + s.cfg.name + '」三次嘗試均失敗。' +
+                  '最後一次原因：' + s.crashReason + '。提早減速比拚命省燃料更划算。' });
+        return;
+    }
+    startMission(s.mission);
+    FT.add(W / 2, 90, '重新進場　剩餘嘗試 ' + (3 - s.attempts), { color: '#ffd166', size: 15, life: 1.8 });
+}
+
+// ======================================================================
+function drawLunarAsset(name, cx, cy, w, h, alpha, rotation) {
+    var m = LUNAR_ART.manifest;
+    if (!m || !m.assets || !m.assets[name] || !LUNAR_ART.image.complete ||
+        !LUNAR_ART.image.naturalWidth) return false;
+    var a = m.assets[name];
+    ctx.save();
+    ctx.globalAlpha = alpha === undefined ? 1 : alpha;
+    ctx.translate(cx, cy);
+    if (rotation) ctx.rotate(rotation);
+    ctx.drawImage(LUNAR_ART.image, a.x, a.y, a.w, a.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+}
+
+function render() {
+    G.clear('#03060a');
+
+    // 星空
+    ctx.save();
+    for (var i = 0; i < 70; i++) {
+        var sx = (i * 149) % W, sy = (i * 61) % Math.floor(H * 0.7);
+        ctx.globalAlpha = 0.15 + (i % 6) * 0.05;
+        ctx.fillStyle = '#dfe9e4';
+        ctx.fillRect(sx, sy, 1.4, 1.4);
+    }
+    ctx.restore();
+    drawLunarAsset('earth_crescent', W - 54, 75, 74, 74, 0.25);
+    drawLunarAsset('moon_disc', 64, 86, 62, 62, 0.12);
+    drawLunarAsset('star_cluster', W * 0.72, 80, 76, 60, 0.32);
+
+    G.beginWorld();
+
+    // 只作遠景深度，實際碰撞仍完全由 terrain 折線決定。
+    drawLunarAsset('lunar_ridge', 102, H - 78, 124, 64, 0.18);
+    drawLunarAsset('crater_rim', W - 112, H - 74, 116, 58, 0.15);
+    drawLunarAsset('boulders', W * 0.53, H - 54, 76, 48, 0.13);
+
+    // 地形（向量線條 + 填色地面）
+    var t = s.terrain;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(0, H);
+    for (var i = 0; i < t.pts.length; i++) ctx.lineTo(t.pts[i].x, t.pts[i].y);
+    ctx.lineTo(W, H);
+    ctx.closePath();
+    ctx.fillStyle = '#101c18';
+    ctx.fill();
+    ctx.strokeStyle = '#70e4b5';
+    ctx.lineWidth = 2;
+    ctx.shadowBlur = 6; ctx.shadowColor = '#70e4b5';
+    ctx.beginPath();
+    ctx.moveTo(t.pts[0].x, t.pts[0].y);
+    for (var i = 1; i < t.pts.length; i++) ctx.lineTo(t.pts[i].x, t.pts[i].y);
+    ctx.stroke();
+    ctx.restore();
+
+    // 降落平台
+    for (var i = 0; i < t.pads.length; i++) {
+        var pd = t.pads[i];
+        var padAsset = pd.mult >= 5 ? 'pad_expert' : pd.mult >= 3 ? 'pad_narrow' :
+            pd.mult >= 2 ? 'pad_medium' : 'pad_wide';
+        drawLunarAsset(padAsset, (pd.x1 + pd.x2) / 2, pd.y + 2,
+            Math.max(58, pd.x2 - pd.x1 + 28), 48, 0.68);
+        ctx.save();
+        ctx.shadowBlur = 12; ctx.shadowColor = '#ffd166';
+        ctx.fillStyle = '#ffd166';
+        ctx.fillRect(pd.x1, pd.y - 3, pd.x2 - pd.x1, 4);
+        ctx.restore();
+        RE.Draw.text(ctx, '×' + pd.mult, (pd.x1 + pd.x2) / 2, pd.y + 6,
+            { size: 14, align: 'center', color: '#ffd166' });
+        // 平台兩側的指示燈
+        ctx.fillStyle = '#fff0aa';
+        ctx.fillRect(pd.x1 - 1, pd.y - 9, 3, 7);
+        ctx.fillRect(pd.x2 - 2, pd.y - 9, 3, 7);
+    }
+
+    // 登月艙
+    var L = s.lander;
+    // 舊版推進火焰每個 render 消耗一次亂數。即使正式圖集接管畫面，也維持相同
+    // 呼叫次數，避免純美術切換改變後續模擬序列。
+    var flameJitter = L.alive && L.thrust > 0.15 ? Math.random() : 0;
+    if (L.alive) {
+        var landerAsset = L.thrust > 0.72 ? 'lander_high_thrust' :
+            L.thrust > 0.15 ? 'lander_low_thrust' : 'lander_neutral';
+        if (!drawLunarAsset(landerAsset, L.x, L.y, 52, 52, 0.96, L.a)) {
+            ctx.save();
+            ctx.translate(L.x, L.y);
+            ctx.rotate(L.a);
+            ctx.strokeStyle = '#fff8e7';
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 6; ctx.shadowColor = '#fff8e7';
+            // 艙體
+            ctx.beginPath();
+            ctx.moveTo(-8, -2); ctx.lineTo(-5, -9); ctx.lineTo(5, -9);
+            ctx.lineTo(8, -2); ctx.lineTo(6, 4); ctx.lineTo(-6, 4);
+            ctx.closePath();
+            ctx.stroke();
+            // 支架
+            ctx.beginPath();
+            ctx.moveTo(-6, 4); ctx.lineTo(-10, 11);
+            ctx.moveTo(6, 4); ctx.lineTo(10, 11);
+            ctx.moveTo(-13, 11); ctx.lineTo(-7, 11);
+            ctx.moveTo(7, 11); ctx.lineTo(13, 11);
+            ctx.stroke();
+            // 尾焰
+            if (L.thrust > 0.15) {
+                var fl = 8 + flameJitter * 12;
+                ctx.strokeStyle = '#ffd166';
+                ctx.beginPath();
+                ctx.moveTo(-4, 5); ctx.lineTo(0, 5 + fl); ctx.lineTo(4, 5);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+    } else if (s.result === 'crash') {
+        drawLunarAsset('crash_debris', L.x, L.y, 74, 62,
+            Math.min(1, Math.max(0.2, s.resultTimer / 2.2)));
+    }
+
+    P.draw(ctx);
+    FT.draw(ctx);
+
+    // ---- 儀表板：即時速度是這款遊戲最重要的資訊 ----
+    if (L.alive && !L.landed) {
+        var vyOK = L.vy < 25, vxOK = Math.abs(L.vx) < 15, aOK = Math.abs(L.a) < 0.22;
+        var panel = [
+            ['垂直速度', Math.round(L.vy), vyOK, '< 25'],
+            ['水平速度', Math.round(Math.abs(L.vx)), vxOK, '< 15'],
+            ['船身角度', Math.round(Math.abs(L.a) * 57) + '°', aOK, '< 12°']
+        ];
+        ctx.save();
+        ctx.fillStyle = 'rgba(8,16,13,0.72)';
+        RE.Draw.roundRect(ctx, 8, 8, 168, 62, 6);
+        ctx.fill();
+        for (var i = 0; i < panel.length; i++) {
+            var p = panel[i];
+            RE.Draw.text(ctx, p[0], 15, 14 + i * 17, { size: 14, color: '#9fb3aa', stroke: false });
+            RE.Draw.text(ctx, String(p[1]), 96, 14 + i * 17,
+                { size: 14, color: p[2] ? '#70e4b5' : '#ff6b6b', stroke: false });
+            RE.Draw.text(ctx, p[3], 130, 15 + i * 17, { size: 14, color: '#5c6b66', stroke: false });
+        }
+        ctx.restore();
+
+        // 燃料條
+        var fw = 120, fr = L.fuel / s.cfg.fuel;
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(W - fw - 14, 12, fw, 10);
+        ctx.fillStyle = fr > 0.4 ? '#70e4b5' : (fr > 0.18 ? '#ffd166' : '#ff6b6b');
+        ctx.fillRect(W - fw - 13, 13, (fw - 2) * fr, 8);
+        RE.Draw.text(ctx, '燃料 ' + Math.round(L.fuel), W - fw - 14, 26, { size: 14, color: '#dfe9e4' });
+        if (s.cfg.wind) {
+            RE.Draw.text(ctx, '側風 →' + s.cfg.wind, W - fw - 14, 42, { size: 14, color: '#7dd3fc' });
+        }
+    }
+
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.07, vignetteStrength: 0.5 });
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '在標示的平台上著陸。垂直速度 < 25、水平速度 < 15、船身接近水平——三者都要達標。每關限三次嘗試。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

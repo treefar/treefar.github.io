@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 撲翅小雀</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   撲翅小雀 — 致敬 Flappy Bird (Dong Nguyen, 2013)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. 原作的殘酷來自「一次失誤＝從零開始」。本作保留這個核心，
+      但加入「里程碑」系統：每通過 10 根管子解鎖一個新場景與新機制，
+      讓長時間遊玩有階段感，而不是純粹的無盡重複。
+   2. 手感關鍵：固定的向上衝量（不是加速度）、恆定重力、鳥的旋轉角度
+      由垂直速度直接映射——這三件事讓「一按就跳」的回饋極為明確。
+   3. 打擊感在於「擦身而過」：貼著管子邊緣通過會有額外分數與強化回饋。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'flappy_bird',
+    title: '撲翅小雀',
+    tagline: '一個按鍵、一種障礙，卻成為 2014 年最大的社群現象',
+    original: 'Flappy Bird (Dong Nguyen, 2013)',
+    decade: '10s', year: 2013, platform: 'iOS / Android', genre: '單鍵挑戰',
+    developer: 'dotGEARS · Dong Nguyen', bgm: '10s',
+    width: 400, height: 520,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'best', label: 'BEST' },
+        { key: 'stage', label: '區段', init: 1 }
+    ],
+    touch: 'dpad+ab', labelA: '拍翅', maxScale: 2,
+    controls: [
+        { keys: ['空白'], desc: '拍翅上升' },
+        { keys: ['點擊畫面'], desc: '同上' }
+    ],
+    howto: '穿過管子的縫隙，碰到任何東西就結束。<strong>貼著邊緣通過會有額外加分</strong>。' +
+           '每通過 10 根管子會進入新的區段，場景與機制都會改變——' +
+           '從固定管子、到會上下移動的管子、再到有風的區段。',
+    lesson: {
+        verb: '用單次拍翅改變垂直速度，預判下一根管子的縫隙，並在固定鏡頭中維持鳥的高度節奏。',
+        innovation: '把操作壓到一個點擊，卻保留可讀的重力、衝量與固定障礙間距；分數只記錄通過幾根管子，讓「再多一根」成為立即可理解的學習回饋。',
+        mission: '先通過 10 根管子觀察固定縫隙，再通過 30 根比較移動管與風，最後挑一根失敗的管子記錄「拍早／拍晚」各造成什麼高度誤差。',
+        evolution: '《Helicopter Game》讓玩家用按住／放開控制連續升力；《Doodle Jump》把自動彈跳改成水平落點；《Flappy Bird》再把垂直控制壓成單次拍翅，並影響《Crossy Road》等短回合手機作品。',
+        reflection: '如果加入護盾、血量或可調整的拍翅力度，遊戲會更公平，還是會失去「每次死亡都能指出一個時機錯誤」的教育價值？'
+    },
+    design: '《Flappy Bird》解決了「手機短時間遊玩缺少清楚技術目標」的問題。它用固定鏡頭、單次衝量、恆定重力與窄縫隙，把複雜操作刪到只剩拍翅時機；每次撞擊都能回溯成拍早或拍晚，死亡的責任與學習都很直接。這不是單純把難度拉高，而是把分數、節奏與失敗回饋壓縮到幾秒一個循環，承接《Helicopter Game》的升力控制，再由《Doodle Jump》與《Crossy Road》延伸成不同方向的短回合挑戰，也讓手機的單指輸入成為可被教學與觀察的技術動詞。',
+    history: 'Forbes 2014 年與 Dong Nguyen 的專訪記錄，《Flappy Bird》於 2013 年 5 月 24 日以免費 iOS 遊戲推出，作者表示核心程式約兩、三天完成；遊戲在 2014 年初爆紅後，他以「原本只想讓人放鬆玩幾分鐘，卻變成令人上癮的產品」為由撤下商店。這段事件讓作品本身與手機平台的分發、社群模仿及創作者責任一起成為遊戲史教材。',
+    sources: [
+        { label: 'Forbes：Dong Nguyen 專訪與下架說明', url: 'https://www.forbes.com/sites/lananhnguyen/2014/02/11/exclusive-flappy-bird-creator-dong-nguyen-says-app-gone-forever-because-it-was-an-addictive-product/' },
+        { label: 'The Verge：Flappy Bird 開發者訪談', url: 'https://www.theverge.com/2014/2/5/5383708/flappy-bird-revenue-50-k-per-day-dong-nguyen-interview' },
+        { label: 'TouchArcade：Gamelab 2014 開發者問答', url: 'https://toucharcade.com/2014/07/21/flappy-bird-developer-dong-nguyen-gamelab-2014-interview/' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(360);
+var FT = new RE.FloatText();
+
+// 五個區段：每 10 分推進一段，改變場景與機制
+var STAGES = [
+    { name: '晨光',   sky: ['#7dd3fc', '#c5ecff'], pipe: '#70e4b5', gap: 150, speed: 138, move: 0,  wind: 0,   ground: '#c9a35b' },
+    { name: '正午',   sky: ['#5bb8e8', '#a8e0f5'], pipe: '#4ec49a', gap: 140, speed: 152, move: 0,  wind: 0,   ground: '#c9a35b' },
+    { name: '黃昏',   sky: ['#f5a05b', '#ffd9a0'], pipe: '#e0854a', gap: 134, speed: 164, move: 26, wind: 0,   ground: '#a8813f' },
+    { name: '夜幕',   sky: ['#1a2a5e', '#3a4a8e'], pipe: '#7a5fd8', gap: 128, speed: 176, move: 40, wind: 0,   ground: '#4a3a6a' },
+    { name: '暴風夜', sky: ['#12162e', '#26305c'], pipe: '#5a4aa8', gap: 124, speed: 188, move: 52, wind: 62,  ground: '#2a2a4a' }
+];
+
+/* 完走分數。區段每 10 分推進一次、共五段，所以 40 分才剛進最後一段「暴風夜」，
+   再撐十根管子＝50 分才算真的走完設計曲線。 */
+var WIN_SCORE = 50;
+
+var GRAVITY = 1180;
+var FLAP = -352;
+var BIRD_R = 13;
+var GROUND_H = 58;
+var PIPE_W = 58;
+
+var s = {};
+
+function reset() {
+    s = {
+        bird: { y: H / 2, vy: 0, rot: 0, wing: 0 },
+        pipes: [], score: 0, stage: 1, over: false, won: false,
+        spawnX: W + 40, dist: 0, started: false,
+        clouds: [], grassOffset: 0, best: RE.Save.bestScore('flappy_bird'),
+        closeCalls: 0
+    };
+    for (var i = 0; i < 6; i++) {
+        s.clouds.push({ x: RE.rand(0, W), y: RE.rand(30, H * 0.5), sp: RE.rand(8, 22), sc: RE.rand(0.6, 1.3) });
+    }
+    addPipe(W + 120);
+    addPipe(W + 120 + 190);
+    addPipe(W + 120 + 380);
+    G.setStat('score', 0);
+    G.setStat('stage', 1);
+}
+
+function cfg() { return STAGES[Math.min(s.stage - 1, STAGES.length - 1)]; }
+
+function addPipe(x) {
+    var c = cfg();
+    var margin = 60;
+    var gapY = RE.rand(margin + c.gap / 2, H - GROUND_H - margin - c.gap / 2);
+    s.pipes.push({
+        x: x, gapY: gapY, gap: c.gap, passed: false,
+        baseY: gapY, phase: RE.rand(0, RE.TAU), move: c.move
+    });
+}
+
+function flap() {
+    if (s.over) return;
+    s.started = true;
+    s.bird.vy = FLAP;
+    s.bird.wing = 1;
+    RetroAudio.play('jump');
+    RE.juice.shake(0.05);
+    P.burst(76, s.bird.y + 8, 5, {
+        angle: Math.PI / 2, spread: 0.9, colors: ['#fff8e7', '#ffd166'],
+        speedMin: 40, speedMax: 110, gravity: 260, lifeMin: 0.14, lifeMax: 0.3, sizeMax: 3
+    });
+}
+
+// ======================================================================
+function update(dt) {
+    if (s.over) return;
+    var c = cfg();
+
+    // 雲層視差
+    for (var i = 0; i < s.clouds.length; i++) {
+        var cl = s.clouds[i];
+        cl.x -= cl.sp * dt;
+        if (cl.x < -60) { cl.x = W + 40; cl.y = RE.rand(30, H * 0.5); }
+    }
+
+    if (RE.Input.pressed('a') || RE.Input.pressed('up') || RE.Input.pointer.pressed) flap();
+
+    if (!s.started) {
+        // 待機時輕輕上下浮動，暗示「這是可以動的」
+        s.bird.y = H / 2 + Math.sin(performance.now() / 320) * 9;
+        P.update(dt); FT.update(dt);
+        return;
+    }
+
+    // ---- 鳥 ----
+    s.bird.vy += GRAVITY * dt;
+    if (c.wind) s.bird.vy += Math.sin(performance.now() / 700) * c.wind * dt;
+    s.bird.y += s.bird.vy * dt;
+    // 旋轉角度直接由垂直速度映射：上升抬頭、下墜低頭，回饋非常直觀
+    s.bird.rot = RE.clamp(s.bird.vy / 620, -0.6, 1.4);
+    s.bird.wing = Math.max(0, s.bird.wing - dt * 5);
+
+    if (s.bird.y - BIRD_R < 0) { s.bird.y = BIRD_R; s.bird.vy = 0; }
+    if (s.bird.y + BIRD_R > H - GROUND_H) { die('撞到地面'); return; }
+
+    // ---- 管子 ----
+    s.grassOffset = (s.grassOffset + c.speed * dt) % 24;
+    for (var i = s.pipes.length - 1; i >= 0; i--) {
+        var p = s.pipes[i];
+        p.x -= c.speed * dt;
+        if (p.move) {
+            p.phase += dt * 1.6;
+            p.gapY = p.baseY + Math.sin(p.phase) * p.move;
+            p.gapY = RE.clamp(p.gapY, 60 + p.gap / 2, H - GROUND_H - 60 - p.gap / 2);
+        }
+
+        // 通過計分
+        if (!p.passed && p.x + PIPE_W < 76 - BIRD_R) {
+            p.passed = true;
+            s.score++;
+            G.setStat('score', s.score);
+            // 擦身而過：離縫隙中心越遠、越貼近管壁，額外加分
+            var off = Math.abs(s.bird.y - p.gapY);
+            var edge = off > p.gap / 2 - 26;
+            if (edge) {
+                s.closeCalls++;
+                s.score += 2;
+                G.setStat('score', s.score);
+                FT.add(120, s.bird.y - 26, '擦邊！+2', { color: '#ffd166', size: 15, life: 0.9 });
+                RetroAudio.play('combo', Math.min(s.closeCalls, 8));
+                RE.juice.shake(0.16);
+                RE.juice.hitstop(0.025);
+                P.ring(76, s.bird.y, '#ffd166', 40);
+            } else {
+                RetroAudio.play('coin');
+                RE.juice.shake(0.06);
+            }
+            P.burst(76, s.bird.y, 6, { colors: ['#ffd166', '#fff0aa'], speedMin: 40, speedMax: 130,
+                gravity: 180, lifeMin: 0.18, lifeMax: 0.4, sizeMax: 3 });
+
+            // 每 10 分推進一個區段
+            var ns = Math.min(Math.floor(s.score / 10) + 1, STAGES.length);
+            if (ns > s.stage) {
+                s.stage = ns;
+                G.setStat('stage', s.stage);
+                RE.Save.unlockLevel('flappy_bird', s.stage);
+                RetroAudio.play('levelUp');
+                RE.juice.flash('rgba(255,209,102,0.3)', 0.18);
+                FT.add(W / 2, 90, '進入「' + cfg().name + '」', { color: '#ffd166', size: 18, life: 2 });
+                if (cfg().move) FT.add(W / 2, 118, '管子開始移動', { color: '#ff9ebb', size: 13, life: 2, vy: -20 });
+                if (cfg().wind) FT.add(W / 2, 140, '出現亂流', { color: '#7dd3fc', size: 13, life: 2, vy: -20 });
+            }
+
+            /* 完走條件：撐過最後一個區段（暴風夜）整整十根管子。
+               原本這款沒有全破結局，`gameOver` 永遠帶 win:false——
+               玩家玩得再好也只會看到 GAME OVER，違反本站
+               「過關／失敗／全破三種結局」的品質底線。
+               無盡類要有終點才有辦法收束設計論點：這款要講的是
+               「一個按鍵、一個規則、沒有任何寬容」，那就必須有一個
+               「你真的把它學會了」的時刻。 */
+            if (!s.won && s.score >= WIN_SCORE) {
+                s.won = true;
+                finishRun(true);
+                return;
+            }
+        }
+
+        // 碰撞
+        if (76 + BIRD_R > p.x && 76 - BIRD_R < p.x + PIPE_W) {
+            if (s.bird.y - BIRD_R < p.gapY - p.gap / 2 || s.bird.y + BIRD_R > p.gapY + p.gap / 2) {
+                die('撞到管子'); return;
+            }
+        }
+
+        if (p.x < -PIPE_W - 10) s.pipes.splice(i, 1);
+    }
+
+    // 補生新管子
+    var last = s.pipes[s.pipes.length - 1];
+    if (!last || last.x < W - 190) addPipe(W + 40);
+
+    P.update(dt);
+    FT.update(dt);
+}
+
+function die(reason) {
+    if (s.over) return;
+    s.over = true;
+    RE.juice.impact(3);
+    RE.juice.flash('rgba(255,107,107,0.45)', 0.2);
+    RE.juice.slowmo(0.22, 1.1);
+    RetroAudio.play('bigExplosion');
+    P.burst(76, s.bird.y, 30, { colors: ['#ffd166', '#ff6b6b', '#fff8e7'],
+        speedMin: 60, speedMax: 250, gravity: 420, lifeMin: 0.3, lifeMax: 0.9 });
+    finishRun(false, reason);
+}
+
+/**
+ * 收尾。win 為 true 時走全破分支。
+ * 兩種結局共用一個出口，才不會有一邊改了另一邊忘了改。
+ */
+function finishRun(win, reason) {
+    if (s.over && !win) { /* die() 已經設過 */ } else { s.over = true; }
+    if (win) {
+        RE.juice.flash('rgba(255,209,102,0.5)', 0.3);
+        RE.juice.slowmo(0.3, 1.4);
+        RetroAudio.play('win');
+        P.burst(76, s.bird.y, 40, { colors: ['#ffd166', '#fff0aa', '#70e4b5'],
+            speedMin: 60, speedMax: 260, gravity: 120, lifeMin: 0.4, lifeMax: 1.2, glow: true });
+        G.gameOver({
+            win: true, score: s.score,
+            body: '你撐過了暴風夜，通過 ' + s.score + ' 根管子，擦邊 ' + s.closeCalls + ' 次。' +
+                  '<strong>這款遊戲從頭到尾只有一個按鍵、一條規則，也沒有給過你任何寬容。</strong>' +
+                  '它之所以在 2013 年席捲全世界，不是因為難——' +
+                  '而是因為<strong>每一次失敗都清清楚楚是你自己按早了或按晚了</strong>，' +
+                  '而那個「再一次」的念頭，就是手機遊戲最強的鉤子。'
+        });
+        return;
+    }
+    G.gameOver({
+        win: false, score: s.score,
+        body: '通過 ' + s.score + ' 根管子，抵達「' + cfg().name + '」（' + reason + '）。' +
+              '擦邊通過 ' + s.closeCalls + ' 次。' +
+              (s.score < 5 ? '前幾次都會這樣，這就是它的設計。' :
+               '再 ' + Math.max(0, WIN_SCORE - s.score) + ' 根就能撐過暴風夜。')
+    });
+}
+
+// ======================================================================
+function render() {
+    var c = cfg();
+    // 天空漸層隨區段變化
+    var grd = ctx.createLinearGradient(0, 0, 0, H);
+    grd.addColorStop(0, c.sky[0]);
+    grd.addColorStop(1, c.sky[1]);
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, W, H);
+
+    G.beginWorld();
+
+    // 雲
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = '#ffffff';
+    for (var i = 0; i < s.clouds.length; i++) {
+        var cl = s.clouds[i];
+        ctx.beginPath();
+        ctx.arc(cl.x, cl.y, 13 * cl.sc, 0, RE.TAU);
+        ctx.arc(cl.x + 15 * cl.sc, cl.y - 6 * cl.sc, 17 * cl.sc, 0, RE.TAU);
+        ctx.arc(cl.x + 32 * cl.sc, cl.y, 12 * cl.sc, 0, RE.TAU);
+        ctx.fill();
+    }
+    ctx.restore();
+
+    // 管子
+    for (var i = 0; i < s.pipes.length; i++) {
+        var p = s.pipes[i];
+        drawPipe(p, c);
+    }
+
+    // 地面
+    ctx.fillStyle = c.ground;
+    ctx.fillRect(0, H - GROUND_H, W, GROUND_H);
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.fillRect(0, H - GROUND_H, W, 5);
+    ctx.fillStyle = c.pipe;
+    for (var x = -s.grassOffset; x < W; x += 24) {
+        ctx.beginPath();
+        ctx.moveTo(x, H - GROUND_H);
+        ctx.lineTo(x + 12, H - GROUND_H - 9);
+        ctx.lineTo(x + 24, H - GROUND_H);
+        ctx.fill();
+    }
+
+    // 鳥
+    ctx.save();
+    ctx.translate(76, s.bird.y);
+    ctx.rotate(s.bird.rot);
+    ctx.fillStyle = '#ffd166';
+    ctx.beginPath(); ctx.ellipse(0, 0, 14, 11, 0, 0, RE.TAU); ctx.fill();
+    ctx.fillStyle = '#ffe9a8';
+    ctx.beginPath(); ctx.ellipse(-2, 3, 9, 6, 0, 0, RE.TAU); ctx.fill();
+    // 翅膀：拍翅時上揚，滑翔時下垂
+    ctx.fillStyle = '#e0a020';
+    var wingA = -0.5 + s.bird.wing * 1.6;
+    ctx.save();
+    ctx.translate(-3, -1);
+    ctx.rotate(wingA);
+    ctx.beginPath(); ctx.ellipse(0, 0, 9, 5, 0, 0, RE.TAU); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = '#fff8e7';
+    ctx.beginPath(); ctx.arc(6, -4, 4.5, 0, RE.TAU); ctx.fill();
+    ctx.fillStyle = '#2a1a0a';
+    ctx.beginPath(); ctx.arc(7.5, -4, 2.2, 0, RE.TAU); ctx.fill();
+    ctx.fillStyle = '#ff8a3d';
+    ctx.beginPath();
+    ctx.moveTo(12, -1); ctx.lineTo(21, 2); ctx.lineTo(12, 5);
+    ctx.fill();
+    ctx.restore();
+
+    P.draw(ctx);
+    FT.draw(ctx);
+
+    // 大分數
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+    RE.Draw.text(ctx, String(s.score), W / 2, 40,
+        { size: 46, align: 'center', color: '#fff8e7', strokeWidth: 6 });
+    ctx.restore();
+    RE.Draw.text(ctx, cfg().name, W / 2, 96, { size: 13, align: 'center', color: '#fff8e7' });
+
+    if (!s.started && !s.over) {
+        ctx.save();
+        ctx.globalAlpha = 0.6 + Math.sin(performance.now() / 200) * 0.35;
+        RE.Draw.text(ctx, '按 空白鍵 或點擊畫面起飛', W / 2, H / 2 + 66,
+            { size: 14, align: 'center', color: '#fff8e7' });
+        ctx.restore();
+    }
+
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.05, vignetteStrength: 0.3 });
+}
+
+function drawPipe(p, c) {
+    var topH = p.gapY - p.gap / 2;
+    var botY = p.gapY + p.gap / 2;
+    function body(y, h) {
+        ctx.fillStyle = c.pipe;
+        ctx.fillRect(p.x, y, PIPE_W, h);
+        ctx.fillStyle = 'rgba(255,255,255,0.22)';
+        ctx.fillRect(p.x + 5, y, 8, h);
+        ctx.fillStyle = 'rgba(0,0,0,0.26)';
+        ctx.fillRect(p.x + PIPE_W - 12, y, 10, h);
+    }
+    function lip(y) {
+        ctx.fillStyle = c.pipe;
+        ctx.fillRect(p.x - 5, y, PIPE_W + 10, 20);
+        ctx.fillStyle = 'rgba(255,255,255,0.28)';
+        ctx.fillRect(p.x - 2, y + 2, 9, 16);
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillRect(p.x + PIPE_W - 6, y + 2, 10, 16);
+    }
+    body(0, topH - 20);
+    lip(topH - 20);
+    body(botY + 20, H - GROUND_H - botY - 20);
+    lip(botY);
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '按空白鍵或點擊畫面拍翅，穿過管子縫隙。貼著邊緣通過有額外加分。每 10 分進入新區段。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

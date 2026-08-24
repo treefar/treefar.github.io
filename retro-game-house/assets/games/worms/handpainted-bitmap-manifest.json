@@ -1,0 +1,212 @@
+{
+  "version": 1,
+  "kind": "game-art-atlas",
+  "game": "worms",
+  "source": "art-production/batch-08/worms/source/handpainted-bitmap-atlas-v003-chroma-imagegen.png",
+  "sourceSha256": "de035640e6e4a7f5fa2ab367cbe3582e0732a28a816c98aa5546c2663be17131",
+  "postprocess": "model-generated chroma background to alpha; 4x4 equal-cell slice; aspect-fit resize; no drawing or recolor",
+  "alphaMode": "model-chroma-key",
+  "atlas": "handpainted-bitmap-atlas.png",
+  "atlasSha256": "f1933f66ba08fcb84e3b427a377e4545616dadf9ce33dd9292dd4ec48f23470b",
+  "cellWidth": 128,
+  "cellHeight": 128,
+  "columns": 4,
+  "rows": 4,
+  "assets": {
+    "player_idle": {
+      "index": 0,
+      "row": 0,
+      "column": 0,
+      "x": 0,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "contentWidth": 102,
+      "contentHeight": 116
+    },
+    "player_aim": {
+      "index": 1,
+      "row": 0,
+      "column": 1,
+      "x": 128,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "contentWidth": 116,
+      "contentHeight": 88
+    },
+    "player_air": {
+      "index": 2,
+      "row": 0,
+      "column": 2,
+      "x": 256,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "contentWidth": 116,
+      "contentHeight": 88
+    },
+    "player_hurt": {
+      "index": 3,
+      "row": 0,
+      "column": 3,
+      "x": 384,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "contentWidth": 116,
+      "contentHeight": 102
+    },
+    "enemy_idle": {
+      "index": 4,
+      "row": 1,
+      "column": 0,
+      "x": 0,
+      "y": 128,
+      "w": 128,
+      "h": 128,
+      "contentWidth": 97,
+      "contentHeight": 116
+    },
+    "enemy_aim": {
+      "index": 5,
+      "row": 1,
+      "column": 1,
+      "x": 128,
+      "y": 128,
+      "w": 128,
+      "h": 128,
+      "contentWidth": 116,
+      "contentHeight": 92
+    },
+    "enemy_air": {
+      "index": 6,
+      "row": 1,
+      "column": 2,
+      "x": 256,
+      "y": 128,
+      "w": 128,
+      "h": 128,
+      "contentWidth": 116,
+      "contentHeight": 89
+    },
+    "enemy_hurt": {
+      "index": 7,
+      "row": 1,
+      "column": 3,
+      "x": 384,
+      "y": 128,
+      "w": 128,
+      "h": 128,
+      "contentWidth": 116,
+      "contentHeight": 97
+    },
+    "rocket": {
+      "index": 8,
+      "row": 2,
+      "column": 0,
+      "x": 0,
+      "y": 256,
+      "w": 128,
+      "h": 128,
+      "contentWidth": 116,
+      "contentHeight": 80
+    },
+    "grenade": {
+      "index": 9,
+      "row": 2,
+      "column": 1,
+      "x": 128,
+      "y": 256,
+      "w": 128,
+      "h": 128,
+      "contentWidth": 116,
+      "contentHeight": 106
+    },
+    "grave_player": {
+      "index": 10,
+      "row": 2,
+      "column": 2,
+      "x": 256,
+      "y": 256,
+      "w": 128,
+      "h": 128,
+      "contentWidth": 116,
+      "contentHeight": 112
+    },
+    "grave_enemy": {
+      "index": 11,
+      "row": 2,
+      "column": 3,
+      "x": 384,
+      "y": 256,
+      "w": 128,
+      "h": 128,
+      "contentWidth": 109,
+      "contentHeight": 116
+    },
+    "explosion": {
+      "index": 12,
+      "row": 3,
+      "column": 0,
+      "x": 0,
+      "y": 384,
+      "w": 128,
+      "h": 128,
+      "contentWidth": 100,
+      "contentHeight": 84
+    },
+    "water_splash": {
+      "index": 13,
+      "row": 3,
+      "column": 1,
+      "x": 128,
+      "y": 384,
+      "w": 128,
+      "h": 128,
+      "contentWidth": 116,
+      "contentHeight": 96
+    },
+    "aim_reticle": {
+      "index": 14,
+      "row": 3,
+      "column": 2,
+      "x": 256,
+      "y": 384,
+      "w": 128,
+      "h": 128,
+      "contentWidth": 116,
+      "contentHeight": 94
+    },
+    "turn_arrow": {
+      "index": 15,
+      "row": 3,
+      "column": 3,
+      "x": 384,
+      "y": 384,
+      "w": 128,
+      "h": 128,
+      "contentWidth": 86,
+      "contentHeight": 79
+    }
+  },
+  "qa": {
+    "assetCount": 16,
+    "edgePixels": 0,
+    "emptyCells": 0,
+    "minOccupiedPixels": 3411,
+    "maxOccupiedPixels": 7161,
+    "minContentHeight": 79,
+    "maxContentHeight": 116,
+    "alphaMode": "model-chroma-key",
+    "sourceHadTransparency": false,
+    "keyRule": "border-median chroma matte; distance 24 transparent to 112 opaque; RGB despill on partial-alpha pixels",
+    "keyRgb": [
+      242,
+      12,
+      237
+    ],
+    "removedPixels": 1114521,
+    "partialAlphaPixels": 11872
+  }
+}

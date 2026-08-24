@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 光跡封鎖戰</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   光跡封鎖戰 — 致敬 Blockade (Gremlin, 1976)
+   --------------------------------------------------------------------------
+   《Blockade》是貪食蛇與《創：光速戰記》光輪機車的共同祖先。
+   復刻重點：
+   1. 核心機制極簡到近乎完美：你走過的路變成牆，撞到任何牆就輸。
+      進攻與防守是同一個動作——這是遊戲設計中罕見的「單一動詞雙重意義」。
+   2. AI 採用「空間評估」而非追擊：它會計算每個方向的可用空間，
+      優先選擇不會把自己困死的路徑，並在有機會時切斷玩家的空間。
+   3. 五個回合，AI 的前瞻深度與反應速度逐級提升；後期加入場地障礙。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'blockade',
+    title: '光跡封鎖戰',
+    tagline: '你走過的路，就是你的武器，也是你的牢籠',
+    original: 'Blockade (Gremlin, 1976)',
+    decade: '70s', year: 1976, platform: '大型街機', genre: '策略／對戰',
+    developer: 'Gremlin Industries', bgm: '70s',
+    width: 480, height: 400,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'best', label: 'BEST' },
+        { key: 'round', label: '回合', init: 1 },
+        { key: 'wins', label: '勝場', init: 0 }
+    ],
+    touch: 'dpad', maxScale: 2,
+    controls: [
+        { keys: ['↑', '↓', '←', '→'], desc: '轉向（不能立刻回頭）' }
+    ],
+    howto: '你和對手都會不斷前進並留下光牆。<strong>撞到任何牆（包含自己的）就輸</strong>。' +
+           '目標是逼對手先撞牆。技巧是把對方逼進狹小空間，同時替自己保留退路。' +
+           '每回合對手都會變聰明。',
+    lesson: {
+        verb: '持續轉向並留下軌跡，用自己的路徑切割共享空間。',
+        innovation: '讓移動同時生成地形：每一步既是封鎖對手的攻擊，也是縮小自己退路的永久代價。',
+        mission: '嘗試切過場地中央一次，但在轉向前先指出自己的逃生區；比較主動分割與只沿外牆繞行的結果。',
+        evolution: '《Blockade》把移動留下的線變成致命牆面；《Snake》加入吃食物成長，《Slither.io》再把同一概念放進多人自由競爭。',
+        reflection: '如果軌跡幾秒後就自動消失，玩家還需要為十步以後的空間負責嗎？'
+    },
+    design: '雙人遊戲若沒有攻擊按鈕、飛彈或隨機道具，要如何產生攻守？《Blockade》的解法只有「持續前進並留下不會消失的線」。' +
+            '玩家不能停下，也不能立刻反向；每次轉彎既是在切割對手的未來路線，也是在替自己新增一面致命牆。' +
+            '因此真正的目標不是追著對手目前的位置跑，而是預測數步後哪一塊空間會先封死，並在進攻前替自己保留出口。' +
+            '**當同一個動作同時製造武器、地形與長期代價，極少規則也能產生完整策略。**' +
+            '本站的《Pong》要求預判下一次落點；《Blockade》再往前一步，讓每次預判的結果永久留在場上，成為之後所有決策的共同歷史。',
+    history: 'Gremlin 於 1976 年推出《Blockade》。國際街機博物館保存的機台資料、傳單與操作手冊顯示，它是黑白雙人街機：兩名玩家用方向控制持續畫線，先撞上邊界或任何軌跡者落敗。' +
+             '這套「移動會留下致命身體」的規則隨後出現許多相近作品，並成為後來 Snake 類型可辨認的祖型；Nokia 版《Snake》再把競爭封鎖改造成單人吃食物、身體愈來愈長的生存循環。' +
+             '目前找到的可靠資料不足以證實原文所寫的 Gremlin 官司，也不能把《TRON》直接當成單一路線的續作，因此本站移除這兩項斷言。',
+    sources: [
+        { label: 'International Arcade Museum：Blockade 機台與手冊', url: 'https://www.arcade-museum.com/Videogame/blockade' },
+        { label: 'MEL Magazine：Nokia Snake 口述史', url: 'https://melmagazine.com/en-us/story/snake-nokia-6110-oral-history-taneli-armanto' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(300);
+var FT = new RE.FloatText();
+
+var CELL = 8;
+var COLS = Math.floor(W / CELL), ROWS = Math.floor(H / CELL);
+
+var ROUNDS = [
+    { speed: 11, depth: 12,  aggression: 0.15, obstacles: 0, name: '練習賽' },
+    { speed: 13, depth: 22,  aggression: 0.3,  obstacles: 0, name: '第二對手' },
+    { speed: 15, depth: 40,  aggression: 0.45, obstacles: 6, name: '障礙賽場' },
+    { speed: 17, depth: 70,  aggression: 0.6,  obstacles: 10, name: '狹窄競技場' },
+    { speed: 19, depth: 120, aggression: 0.8,  obstacles: 14, name: '光跡大師' }
+];
+
+var DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+var DIRLIST = ['up', 'right', 'down', 'left'];
+
+var s = {};
+
+function newGrid(obstacles) {
+    var g = [];
+    for (var y = 0; y < ROWS; y++) {
+        g[y] = [];
+        for (var x = 0; x < COLS; x++) {
+            g[y][x] = (x === 0 || y === 0 || x === COLS - 1 || y === ROWS - 1) ? 3 : 0;
+        }
+    }
+    // 對稱放置障礙，維持雙方公平
+    for (var i = 0; i < obstacles; i++) {
+        var ox = RE.randInt(4, Math.floor(COLS / 2) - 3);
+        var oy = RE.randInt(4, ROWS - 5);
+        var len = RE.randInt(2, 5);
+        var vert = Math.random() < 0.5;
+        for (var k = 0; k < len; k++) {
+            var px = vert ? ox : ox + k, py = vert ? oy + k : oy;
+            if (px > 1 && px < COLS - 2 && py > 1 && py < ROWS - 2) {
+                g[py][px] = 3;
+                g[py][COLS - 1 - px] = 3;   // 鏡像
+            }
+        }
+    }
+    return g;
+}
+
+function reset() {
+    s = { round: 1, wins: 0, score: 0, over: false };
+    startRound(1);
+    G.setStat('score', 0); G.setStat('round', 1); G.setStat('wins', 0);
+}
+
+function startRound(n) {
+    var cfg = ROUNDS[Math.min(n - 1, ROUNDS.length - 1)];
+    s.cfg = cfg;
+    s.grid = newGrid(cfg.obstacles);
+    s.p1 = { x: 6, y: Math.floor(ROWS / 2), dir: 'right', next: 'right', alive: true, trail: [] };
+    s.p2 = { x: COLS - 7, y: Math.floor(ROWS / 2), dir: 'left', next: 'left', alive: true, trail: [] };
+    // 起點若被障礙擋住就清掉
+    for (var dx = -1; dx <= 1; dx++) {
+        for (var dy = -1; dy <= 1; dy++) {
+            if (s.grid[s.p1.y + dy]) s.grid[s.p1.y + dy][s.p1.x + dx] = 0;
+            if (s.grid[s.p2.y + dy]) s.grid[s.p2.y + dy][s.p2.x + dx] = 0;
+        }
+    }
+    s.grid[s.p1.y][s.p1.x] = 1;
+    s.grid[s.p2.y][s.p2.x] = 2;
+    s.tick = 0;
+    s.result = null;
+    s.resultTimer = 0;
+    s.survived = 0;
+    G.setStat('round', n);
+}
+
+function free(g, x, y) {
+    return y >= 0 && y < ROWS && x >= 0 && x < COLS && g[y][x] === 0;
+}
+
+/** 洪水填充計算某位置的可用空間，是這個 AI 的核心評估函式 */
+function floodCount(g, x, y, limit) {
+    if (!free(g, x, y)) return 0;
+    var seen = {}, stack = [[x, y]], count = 0;
+    while (stack.length && count < limit) {
+        var p = stack.pop();
+        var key = p[1] * COLS + p[0];
+        if (seen[key]) continue;
+        if (!free(g, p[0], p[1])) continue;
+        seen[key] = 1;
+        count++;
+        stack.push([p[0] + 1, p[1]], [p[0] - 1, p[1]], [p[0], p[1] + 1], [p[0], p[1] - 1]);
+    }
+    return count;
+}
+
+/**
+ * AI 決策：
+ * 1. 先排除會立刻撞牆的方向。
+ * 2. 對剩下的方向做洪水填充，選擇「自己空間最大」的走法（保命優先）。
+ * 3. 依據 aggression，加上「縮小對手空間」的權重（進攻）。
+ * 這種評估式 AI 比追擊式 AI 更像人類，也更容易調難度——調 depth 就好。
+ */
+function aiDecide() {
+    var me = s.p2, foe = s.p1, cfg = s.cfg;
+    var opts = [];
+    for (var i = 0; i < DIRLIST.length; i++) {
+        var d = DIRLIST[i];
+        // 不能立刻回頭
+        if (DIRS[d][0] === -DIRS[me.dir][0] && DIRS[d][1] === -DIRS[me.dir][1]) continue;
+        var nx = me.x + DIRS[d][0], ny = me.y + DIRS[d][1];
+        if (!free(s.grid, nx, ny)) continue;
+
+        // 模擬走一步後的空間
+        s.grid[ny][nx] = 2;
+        var mine = floodCount(s.grid, nx + DIRS[d][0], ny + DIRS[d][1], cfg.depth);
+        if (mine === 0) mine = floodCount(s.grid, nx, ny, cfg.depth);
+        var theirs = 0;
+        for (var k = 0; k < DIRLIST.length; k++) {
+            var fd = DIRLIST[k];
+            if (DIRS[fd][0] === -DIRS[foe.dir][0] && DIRS[fd][1] === -DIRS[foe.dir][1]) continue;
+            theirs = Math.max(theirs, floodCount(s.grid, foe.x + DIRS[fd][0], foe.y + DIRS[fd][1], cfg.depth));
+        }
+        s.grid[ny][nx] = 0;
+
+        // 保命分 + 進攻分（壓縮對手空間）
+        var score = mine - theirs * cfg.aggression;
+        // 微幅偏好直行，讓 AI 的走法看起來有意圖而非亂扭
+        if (d === me.dir) score += 1.5;
+        opts.push({ dir: d, score: score, mine: mine });
+    }
+    if (!opts.length) return me.dir;
+    opts.sort(function (a, b) { return b.score - a.score; });
+    // 低難度時偶爾選次佳解，讓 AI 會犯錯
+    if (opts.length > 1 && Math.random() > 0.6 + cfg.aggression * 0.35) return opts[1].dir;
+    return opts[0].dir;
+}
+
+// ======================================================================
+function update(dt) {
+    if (s.over) return;
+
+    if (s.resultTimer > 0) {
+        s.resultTimer -= dt;
+        P.update(dt); FT.update(dt);
+        if (s.resultTimer <= 0) afterRound();
+        return;
+    }
+
+    // ---- 讀取玩家轉向（在下次移動前都可以改）----
+    var d = null;
+    if (RE.Input.down('up')) d = 'up';
+    else if (RE.Input.down('down')) d = 'down';
+    else if (RE.Input.down('left')) d = 'left';
+    else if (RE.Input.down('right')) d = 'right';
+    if (d && !(DIRS[d][0] === -DIRS[s.p1.dir][0] && DIRS[d][1] === -DIRS[s.p1.dir][1])) {
+        s.p1.next = d;
+    }
+
+    // ---- 固定步進 ----
+    s.tick += dt * s.cfg.speed;
+    while (s.tick >= 1) {
+        s.tick -= 1;
+        step();
+        if (s.resultTimer > 0) break;
+    }
+
+    P.update(dt);
+    FT.update(dt);
+}
+
+function step() {
+    s.survived++;
+    s.p1.dir = s.p1.next;
+    s.p2.dir = aiDecide();
+
+    var n1 = { x: s.p1.x + DIRS[s.p1.dir][0], y: s.p1.y + DIRS[s.p1.dir][1] };
+    var n2 = { x: s.p2.x + DIRS[s.p2.dir][0], y: s.p2.y + DIRS[s.p2.dir][1] };
+
+    var d1 = !free(s.grid, n1.x, n1.y);
+    var d2 = !free(s.grid, n2.x, n2.y);
+    // 兩人同時走進同一格算平手
+    if (!d1 && !d2 && n1.x === n2.x && n1.y === n2.y) { d1 = d2 = true; }
+
+    if (d1 || d2) {
+        if (d1) explode(n1.x, n1.y, '#70e4b5');
+        if (d2) explode(n2.x, n2.y, '#ff9ebb');
+        endRound(d1, d2);
+        return;
+    }
+
+    s.p1.x = n1.x; s.p1.y = n1.y; s.grid[n1.y][n1.x] = 1;
+    s.p2.x = n2.x; s.p2.y = n2.y; s.grid[n2.y][n2.x] = 2;
+
+    // 每步的細微回饋，讓「一直在前進」有存在感
+    if (s.survived % 6 === 0) RetroAudio.play('step');
+    P.spawn({
+        x: n1.x * CELL + CELL / 2, y: n1.y * CELL + CELL / 2,
+        size: 3, sizeEnd: 0, color: '#a7f3d0', life: 0.32, gravity: 0, drag: 1, glow: true, shape: 'circle'
+    });
+}
+
+function explode(gx, gy, color) {
+    var px = gx * CELL + CELL / 2, py = gy * CELL + CELL / 2;
+    P.burst(px, py, 26, { colors: [color, '#fff8e7', '#ffd166'],
+        speedMin: 50, speedMax: 220, gravity: 0, drag: 0.93, lifeMin: 0.3, lifeMax: 0.8 });
+    P.ring(px, py, color, 60);
+    RE.juice.impact(3);
+    RE.juice.flash('rgba(255,255,255,0.4)', 0.1);
+    RetroAudio.play('bigExplosion');
+}
+
+function endRound(p1Dead, p2Dead) {
+    s.resultTimer = 1.9;
+    if (p1Dead && p2Dead) {
+        s.result = 'draw';
+        FT.add(W / 2, H / 2, '平手', { color: '#ffd166', size: 26, life: 1.9 });
+    } else if (p2Dead) {
+        s.result = 'win';
+        s.wins++;
+        var gain = 800 * s.round + s.survived * 3;
+        s.score += gain;
+        G.setStat('score', s.score);
+        G.setStat('wins', s.wins);
+        FT.add(W / 2, H / 2, '你贏了！', { color: '#70e4b5', size: 26, life: 1.9 });
+        FT.add(W / 2, H / 2 + 26, '+' + gain + '（存活 ' + s.survived + ' 步）',
+            { color: '#a7f3d0', size: 13, life: 1.9, vy: -18 });
+        RetroAudio.play('win');
+    } else {
+        s.result = 'lose';
+        FT.add(W / 2, H / 2, '你撞牆了', { color: '#ff6b6b', size: 24, life: 1.9 });
+        RetroAudio.play('gameover');
+    }
+}
+
+function afterRound() {
+    if (s.result === 'win') {
+        s.round++;
+        RE.Save.unlockLevel('blockade', s.round);
+        if (s.round > ROUNDS.length) {
+            s.over = true;
+            G.gameOver({ score: s.score, win: true,
+                body: '五個回合全勝。這個機制後來長成了《貪食蛇》和《TRON》光輪機車——' +
+                      '同一句規則，兩個類型。' });
+            return;
+        }
+        startRound(s.round);
+        G.stageCard(s.round, s.cfg.name,
+            '對手前瞻深度 ' + s.cfg.depth + '　攻擊性 ' + Math.round(s.cfg.aggression * 100) + '%' +
+            (s.cfg.obstacles ? '　✦ 場地有障礙' : ''));
+    } else if (s.result === 'draw') {
+        startRound(s.round);
+        FT.add(W / 2, 40, '重新開始這一回合', { color: '#ffd166', size: 15, life: 1.6 });
+    } else {
+        s.over = true;
+        G.gameOver({ score: s.score,
+            body: '在第 ' + s.round + ' 回合「' + s.cfg.name + '」落敗，存活 ' + s.survived + ' 步。' +
+                  '訣竅是把對手逼進小空間，同時替自己保留一條退路。' });
+    }
+}
+
+// ======================================================================
+function render() {
+    G.clear('#05090c');
+    G.beginWorld();
+
+    // 網格
+    ctx.save();
+    ctx.strokeStyle = 'rgba(112,228,181,0.05)';
+    ctx.lineWidth = 1;
+    for (var x = 0; x <= COLS; x++) {
+        ctx.beginPath(); ctx.moveTo(x * CELL, 0); ctx.lineTo(x * CELL, ROWS * CELL); ctx.stroke();
+    }
+    for (var y = 0; y <= ROWS; y++) {
+        ctx.beginPath(); ctx.moveTo(0, y * CELL); ctx.lineTo(COLS * CELL, y * CELL); ctx.stroke();
+    }
+    ctx.restore();
+
+    // 光牆
+    for (var y = 0; y < ROWS; y++) {
+        for (var x = 0; x < COLS; x++) {
+            var v = s.grid[y][x];
+            if (!v) continue;
+            if (v === 3) {
+                ctx.fillStyle = '#25352f';
+                ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+                ctx.fillStyle = 'rgba(255,255,255,0.06)';
+                ctx.fillRect(x * CELL, y * CELL, CELL, 2);
+            } else {
+                ctx.fillStyle = v === 1 ? '#2f7a5c' : '#8f3f57';
+                ctx.fillRect(x * CELL, y * CELL, CELL - 1, CELL - 1);
+                ctx.fillStyle = v === 1 ? 'rgba(167,243,208,0.35)' : 'rgba(255,196,214,0.35)';
+                ctx.fillRect(x * CELL + 1, y * CELL + 1, CELL - 3, CELL - 3);
+            }
+        }
+    }
+
+    // 車頭（發光）
+    drawHead(s.p1, '#70e4b5', '#eafff6');
+    drawHead(s.p2, '#ff9ebb', '#ffe6ee');
+
+    P.draw(ctx);
+    FT.draw(ctx);
+
+    // 剩餘空間提示：把 AI 的評估資訊也給玩家，讓策略可被學習
+    if (!s.resultTimer) {
+        var mySpace = floodCount(s.grid, s.p1.x + DIRS[s.p1.dir][0], s.p1.y + DIRS[s.p1.dir][1], 400);
+        var aiSpace = floodCount(s.grid, s.p2.x + DIRS[s.p2.dir][0], s.p2.y + DIRS[s.p2.dir][1], 400);
+        RE.Draw.text(ctx, '你的空間 ' + mySpace, 10, 8, { size: 12, color: '#70e4b5' });
+        RE.Draw.text(ctx, '對手空間 ' + aiSpace, W - 10, 8, { size: 12, color: '#ff9ebb', align: 'right' });
+    }
+
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.08, vignetteStrength: 0.5 });
+}
+
+function drawHead(p, glow, core) {
+    if (!p) return;
+    ctx.save();
+    ctx.shadowBlur = 14; ctx.shadowColor = glow;
+    ctx.fillStyle = core;
+    ctx.fillRect(p.x * CELL - 1, p.y * CELL - 1, CELL + 1, CELL + 1);
+    ctx.restore();
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '你走過的路會變成牆。撞到任何牆就輸——包括你自己的。把對手逼進死路，五回合全勝即通關。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

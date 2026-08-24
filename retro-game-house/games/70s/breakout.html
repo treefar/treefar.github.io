@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 魔法碎磚塔</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   魔法碎磚塔 — 致敬 Breakout (Atari, 1976)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. 保留 Breakout 的核心：擊球點決定角度、越上層磚塊分數越高、打穿頂層後
+      球會卡在天花板連續得分（原作最爽的瞬間，本作以「穿透模式」重現）。
+   2. 十關手繪關卡，包含多段耐久磚、不可破壞磚與可移動磚，難度階梯明確。
+   3. 道具系統：加寬球拍、多球、雷射、穿透球、慢速——給玩家翻盤的可能。
+   4. 打擊感：磚塊碎裂粒子、連段升 pitch、破磚時的頓幀與螢幕震動。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'breakout',
+    title: '魔法碎磚塔',
+    tagline: '把 Pong 折成單人遊戲，就長出了一個新類型',
+    original: 'Breakout (Atari, 1976)',
+    decade: '70s', year: 1976, platform: '大型街機', genre: '動作／反射',
+    developer: 'Atari', bgm: '70s',
+    width: 440, height: 480,
+    lives: 3,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'best', label: 'BEST' },
+        { key: 'level', label: 'LV', init: 1 }
+    ],
+    touch: 'dpad', maxScale: 2,
+    controls: [
+        { keys: ['←', '→'], desc: '移動球拍' },
+        { keys: ['滑鼠'], desc: '直接拖曳球拍' },
+        { keys: ['空白'], desc: '發球 / 雷射' }
+    ],
+    howto: '打掉所有彩色磚塊即可過關。<strong>用球拍邊緣擊球可以打出大角度</strong>，' +
+           '是把球送進上層縫隙的關鍵技巧。灰色磚不可破壞，深色磚需要打多次。' +
+           '掉落的符文是強化道具，接住它們。',
+    lesson: {
+        verb: '左右移動球拍接住球，並刻意用球拍左側、中央或右側改變下一次反彈方向。',
+        innovation: '《Pong》的第二位玩家被一面可逐塊清除的牆取代；接球不再只是防守，擊球點同時決定攻擊路線。',
+        mission: '等球下降到磚牆下方，依預測標記先打一次接近直上的球，再用球拍外側打出至少 45° 的大角度球。',
+        evolution: '《Breakout》把雙人反彈變成單人空間清除；《Arkanoid》加入敵人與道具，本站則用現代預測標記把原本隱藏的角度規則顯示出來。',
+        reflection: '如果球拍碰到球後永遠用固定角度反彈，玩家還是在「瞄準」，還是只剩下追著球跑？'
+    },
+    design: '《Breakout》把《Pong》的來回對抗改造成一個人對抗磚牆：接住球只是最低要求，真正的操作是選擇球拍上的擊球點。' +
+            '本站依球落在球拍中心左右的比例，連續映射到最大約 69° 的反彈偏角；中央適合穩定回球，外側能鑽入窄縫，代價是更難接下一球。' +
+            '當球穿過磚牆進入上方空間，玩家會暫時從逐次接球轉為觀看連續反彈清牆，形成蓄力後釋放的節奏。' +
+            '現代版本加入耐久磚、連擊與道具，但新增的落點／角度預測只揭露既有公式，不替玩家自動移動球拍。',
+    history: 'Atari 於 1976 年推出街機版《Breakout》，把《Pong》濃縮成單人打磚塊。The Strong 的館藏文章記錄，' +
+             'Nolan Bushnell 與 Steve Bristow 把電路設計工作交給 Atari 員工 Steve Jobs，Jobs 再找 Steve Wozniak 協作；' +
+             'Wozniak 在很短時間內完成低晶片數原型，但 Atari 最後採用的是便於量產的重製版本。Atari 後來的口述史也指出，' +
+             'Gary Waters 等工程師對量產版本有關鍵貢獻，因此不把成品簡化成單一人的發明。',
+    sources: [
+        { label: 'Atari：Breakout 起源與量產版本口述史', url: 'https://atari.com/blogs/atari/new-insight-into-breakout-s-origins' },
+        { label: 'The Strong：Steve Jobs、Wozniak 與 1976 Breakout', url: 'https://www.museumofplay.org/blog/steve-jobs-breakout-pioneer/' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(500);
+var FT = new RE.FloatText();
+
+var COLS = 11, BRICK_W = 36, BRICK_H = 16, TOP = 62, LEFT = 22;
+var PADDLE_Y = H - 40;
+
+// 關卡字元代表材質階級，9 = 不可破壞、0 = 空；實際耐久另由
+// BRICK_DURABILITY 壓縮，避免五級材質誤變成五次重複敲擊。
+// 每關手工排版，難度來自留白位置與硬磚配置，不是隨機生成。
+var LEVELS = [
+    { name: '入門之牆', hint: '用球拍邊緣打出角度，把球送上頂層。', rows: [
+        '11111111111',
+        '22222222222',
+        '33333333333',
+        '00000000000'
+    ]},
+    { name: '缺口', hint: '中間的通道能讓球直達頂端，但也更容易漏球。', rows: [
+        '11111011111',
+        '22222022222',
+        '33333033333',
+        '44444044444'
+    ]},
+    { name: '階梯', hint: '不對稱的排列會把球彈向難以預測的方向。', rows: [
+        '10000000001',
+        '11000000011',
+        '11100000111',
+        '11110001111',
+        '22222022222'
+    ]},
+    /* ⚠ 這一關的熟練版機器人卡在「鋼骨上方那一排」——剩八塊打不掉，
+       跑滿 200000 幀（3300 秒）零進展，而且六條命一條都沒少：
+       不是被打死，是打不到。
+       **但原因不是通道太窄**。試過把 `29999999992` 改成 `22999999922`
+       （左右各留兩格），平均推進一點都沒動，因為球半徑只有 5px、
+       一格 36px 的縫對它來說本來就很寬。假設錯了就回退，不要留著一個
+       「看起來比較合理」但量不出差別的改動。
+       真正的原因還沒查出來，方向應該是機器人的球拍策略
+       （它不會刻意把球打進側邊通道），不是關卡幾何。 */
+    { name: '鋼骨', hint: '灰色磚打不破，只能繞過它。', rows: [
+        '22222222222',
+        '29999999992',
+        '22222222222',
+        '33333333333'
+    ]},
+    { name: '城堡', hint: '厚牆需要多次擊打，注意球速已經加快。', rows: [
+        '44444444444',
+        '43333333334',
+        '43222222234',
+        '43299999234',
+        '11111111111'
+    ]},
+    { name: '蜂巢', hint: '交錯排列讓球的反彈路徑變得混亂。', rows: [
+        '10101010101',
+        '01010101010',
+        '20202020202',
+        '02020202020',
+        '30303030303'
+    ]},
+    { name: '雙塔', hint: '兩側的高塔擋住視線，善用穿透道具。', rows: [
+        '44900000944',
+        '44900000944',
+        '33922222933',
+        '33922222933',
+        '22911111922',
+        '11111111111'
+    ]},
+    { name: '漩渦', hint: '被包圍的核心必須從側邊突破。', rows: [
+        '99999999999',
+        '90000000009',
+        '90444444409',
+        '90433333409',
+        '90444444409',
+        '11111111111'
+    ]},
+    { name: '崩塌', hint: '磚塊會緩慢下降，動作要快。', descend: 5, rows: [
+        '33333333333',
+        '44444444444',
+        '33333333333',
+        '22222222222',
+        '11111111111'
+    ]},
+    { name: '終焉之壁', hint: '這是最後一面牆。所有機制在此匯集。', descend: 3, rows: [
+        '99999999999',
+        '45444444454',
+        '43955559534',
+        '43922229534',
+        '44433333444',
+        '22222222222',
+        '11111111111'
+    ]}
+];
+
+var BRICK_COLORS = {
+    1: ['#ff9ebb', '#e0567b'], 2: ['#ffd166', '#d49a22'],
+    3: ['#70e4b5', '#249e70'], 4: ['#7dd3fc', '#2b7fa8'],
+    5: ['#c084fc', '#7e22ce'], 9: ['#5c6b66', '#3a4642']
+};
+var BRICK_SCORE = { 1: 10, 2: 20, 3: 30, 4: 50, 5: 80 };
+/* 材質階級仍保留五種顏色與分數，但耐久只用 1／1／2／2／3。
+   2026-08-09 先以六種子篩選：較溫和的 1／2／2／3／4 與
+   1／1／2／3／4 都仍是 0/6，因此不保留。正式 12 種子與相同鋼骨通道
+   策略對照：原 1／2／3／4／5 為 0/12、botlab 平均／最差進度
+   8.67／6；本表為 4/12 通關、平均 11.33、最差 11（每場皆抵達
+   實際第 10 關），平均 45,333 幀（約 756 秒）。對照組仍是 0/12、
+   平均進度 2；縮短重複敲擊沒有讓核心動詞變得可有可無。 */
+var BRICK_DURABILITY = { 1: 1, 2: 1, 3: 2, 4: 2, 5: 3 };
+
+// 道具定義：掉落機率不同，效果都有時限，避免玩家永久變強
+var POWERS = [
+    { id: 'wide',  name: '寬版球拍', color: '#70e4b5', weight: 22, dur: 16 },
+    { id: 'multi', name: '三重球',   color: '#ffd166', weight: 16, dur: 0 },
+    { id: 'laser', name: '雷射砲',   color: '#ff6b6b', weight: 14, dur: 12 },
+    { id: 'pierce',name: '穿透球',   color: '#c084fc', weight: 10, dur: 9 },
+    { id: 'slow',  name: '減速',     color: '#7dd3fc', weight: 14, dur: 10 },
+    { id: 'life',  name: '額外機會', color: '#ff9ebb', weight: 5,  dur: 0 }
+];
+
+var s = {};
+
+function buildLevel(n) {
+    var lv = LEVELS[Math.min(n - 1, LEVELS.length - 1)];
+    var bricks = [];
+    for (var r = 0; r < lv.rows.length; r++) {
+        for (var c = 0; c < COLS; c++) {
+            var v = parseInt(lv.rows[r][c], 10);
+            if (!v) continue;
+            var durability = v === 9 ? 9 : BRICK_DURABILITY[v];
+            bricks.push({
+                x: LEFT + c * BRICK_W, y: TOP + r * BRICK_H,
+                kind: v, hp: durability, maxHp: durability,
+                solid: v === 9, flash: 0, offset: 0
+            });
+        }
+    }
+    return { cfg: lv, bricks: bricks };
+}
+
+function reset() {
+    s = {
+        level: 1, lives: 3, score: 0,
+        paddle: { x: W / 2 - 44, w: 88, baseW: 88, vx: 0 },
+        balls: [], lasers: [], drops: [],
+        bricks: [], cfg: null,
+        stuck: true,
+        combo: 0, comboTimer: 0,
+        powers: {},
+        descend: 0, descendTimer: 0,
+        speedMul: 1,
+        over: false, clearing: false,
+        pointerDownSeen: false
+    };
+    var L = buildLevel(1);
+    s.bricks = L.bricks; s.cfg = L.cfg;
+    newBall();
+    G.setStat('score', 0); G.setStat('level', 1); G.setLives(3);
+}
+
+function newBall() {
+    s.balls = [{ x: W / 2, y: PADDLE_Y - 10, vx: 0, vy: 0, r: 5, speed: 245, trail: [] }];
+    s.stuck = true;
+}
+
+function launch() {
+    if (!s.stuck) return;
+    s.stuck = false;
+    var b = s.balls[0];
+    var ang = -Math.PI / 2 + RE.rand(-0.35, 0.35);
+    b.vx = Math.cos(ang) * b.speed;
+    b.vy = Math.sin(ang) * b.speed;
+    RetroAudio.play('shoot');
+}
+
+function hasPower(id) { return (s.powers[id] || 0) > 0; }
+
+// ======================================================================
+// 更新
+// ======================================================================
+function pointerPressFresh() {
+    var pt = RE.Input.pointer;
+    if (!pt.down && !pt.pressed) { s.pointerDownSeen = false; return false; }
+    var fresh = pt.pressed || (pt.down && !s.pointerDownSeen);
+    if (fresh) s.pointerDownSeen = true;
+    return fresh;
+}
+
+function update(dt) {
+    if (s.over) return;
+
+    // ---- 道具計時 ----
+    for (var k in s.powers) {
+        if (s.powers[k] > 0) {
+            s.powers[k] -= dt;
+            if (s.powers[k] <= 0) {
+                s.powers[k] = 0;
+                if (k === 'wide') s.paddle.w = s.paddle.baseW;
+                FT.add(W / 2, PADDLE_Y - 30, '道具結束', { color: '#9fb3aa', size: 12, life: 0.7 });
+            }
+        }
+    }
+    s.paddle.w = hasPower('wide') ? s.paddle.baseW * 1.65 : s.paddle.baseW;
+
+    // ---- 球拍 ----
+    var ax = RE.Input.axisX();
+    if (RE.Input.pointer.down) {
+        // 滑鼠／觸控直接拖曳，手機上比虛擬鍵好用得多
+        var target = RE.Input.pointer.x - s.paddle.w / 2;
+        s.paddle.vx = (target - s.paddle.x) * 12;
+        s.paddle.x = RE.lerp(s.paddle.x, target, 1 - Math.pow(0.0005, dt));
+    } else {
+        s.paddle.vx = RE.approach(s.paddle.vx, ax * 430, 3600 * dt);
+        s.paddle.x += s.paddle.vx * dt;
+    }
+    s.paddle.x = RE.clamp(s.paddle.x, 6, W - s.paddle.w - 6);
+
+    if (RE.Input.pressed('a') || pointerPressFresh()) {
+        if (s.stuck) launch();
+        else if (hasPower('laser') && s.lasers.length < 4) {
+            s.lasers.push({ x: s.paddle.x + 6, y: PADDLE_Y });
+            s.lasers.push({ x: s.paddle.x + s.paddle.w - 6, y: PADDLE_Y });
+            RetroAudio.play('laser');
+        }
+    }
+
+    // ---- 黏在球拍上的球 ----
+    if (s.stuck && s.balls.length) {
+        s.balls[0].x = s.paddle.x + s.paddle.w / 2;
+        s.balls[0].y = PADDLE_Y - 10;
+    }
+
+    // ---- 磚牆下降（後期關卡）----
+    if (s.cfg.descend) {
+        s.descendTimer += dt;
+        if (s.descendTimer >= s.cfg.descend) {
+            s.descendTimer = 0;
+            for (var i = 0; i < s.bricks.length; i++) s.bricks[i].y += BRICK_H;
+            RetroAudio.play('drop');
+            RE.juice.shake(0.18);
+            // 磚牆壓到球拍高度就結束
+            for (var i = 0; i < s.bricks.length; i++) {
+                if (s.bricks[i].y + BRICK_H >= PADDLE_Y - 12) { gameOver(false); return; }
+            }
+        }
+    }
+
+    // ---- 球 ----
+    // 過關慶祝期間凍結球體。否則球會在 1.1 秒的字卡空窗掉出畫面，
+    // 讓玩家在「已經過關」之後莫名其妙少一條命。
+    var slow = hasPower('slow') ? 0.68 : 1;
+    for (var i = s.balls.length - 1; i >= 0; i--) {
+        var b = s.balls[i];
+        if (s.stuck || s.clearing) break;
+
+        var moveX = b.vx * slow * dt, moveY = b.vy * slow * dt;
+        var steps = Math.ceil(Math.max(Math.abs(moveX), Math.abs(moveY)) / 4) || 1;
+        for (var st = 0; st < steps; st++) {
+            b.x += moveX / steps;
+            b.y += moveY / steps;
+
+            // 牆
+            if (b.x - b.r <= 0 && b.vx < 0) { b.x = b.r; b.vx = -b.vx; wallHit(b); }
+            if (b.x + b.r >= W && b.vx > 0) { b.x = W - b.r; b.vx = -b.vx; wallHit(b); }
+            if (b.y - b.r <= 0 && b.vy < 0) { b.y = b.r; b.vy = -b.vy; wallHit(b); }
+
+            // 球拍
+            if (b.vy > 0 && b.y + b.r >= PADDLE_Y && b.y - b.r <= PADDLE_Y + 12 &&
+                b.x >= s.paddle.x - 4 && b.x <= s.paddle.x + s.paddle.w + 4) {
+                paddleHit(b);
+            }
+
+            // 磚塊
+            var hitBrick = checkBricks(b);
+            if (hitBrick) break;
+        }
+
+        // 拖尾
+        b.trail.push({ x: b.x, y: b.y });
+        if (b.trail.length > 9) b.trail.shift();
+
+        // 掉出畫面
+        if (b.y - b.r > H) {
+            s.balls.splice(i, 1);
+            if (s.balls.length === 0 && !s.clearing) loseBall();
+        }
+    }
+
+    // ---- 雷射 ----
+    for (var i = s.lasers.length - 1; i >= 0; i--) {
+        var l = s.lasers[i];
+        l.y -= 620 * dt;
+        if (l.y < -10) { s.lasers.splice(i, 1); continue; }
+        var hit = false;
+        for (var j = 0; j < s.bricks.length; j++) {
+            var br = s.bricks[j];
+            if (l.x >= br.x && l.x <= br.x + BRICK_W && l.y >= br.y && l.y <= br.y + BRICK_H) {
+                damageBrick(j, br, 1, false);
+                hit = true;
+                break;
+            }
+        }
+        if (hit) s.lasers.splice(i, 1);
+    }
+
+    // ---- 掉落道具 ----
+    for (var i = s.drops.length - 1; i >= 0; i--) {
+        var d = s.drops[i];
+        d.y += 132 * dt;
+        d.spin += dt * 4;
+        if (d.y > H + 20) { s.drops.splice(i, 1); continue; }
+        if (d.y + 8 >= PADDLE_Y && d.y <= PADDLE_Y + 14 &&
+            d.x + 8 >= s.paddle.x && d.x <= s.paddle.x + s.paddle.w) {
+            applyPower(d.power);
+            s.drops.splice(i, 1);
+        }
+    }
+
+    // ---- 連段衰減 ----
+    if (s.comboTimer > 0) { s.comboTimer -= dt; if (s.comboTimer <= 0) s.combo = 0; }
+
+    for (var i = 0; i < s.bricks.length; i++) if (s.bricks[i].flash > 0) s.bricks[i].flash -= dt;
+
+    // ---- 過關 ----
+    if (!s.clearing && s.bricks.every(function (b) { return b.solid; })) {
+        s.clearing = true;
+        s.clearTimer = 1.1;
+        RetroAudio.play('levelUp');
+        FT.add(W / 2, H / 2, 'CLEAR!', { color: '#70e4b5', size: 26, life: 1.3 });
+        addScore(500 * s.level);
+    }
+    if (s.clearing) {
+        s.clearTimer -= dt;
+        if (s.clearTimer <= 0) nextLevel();
+    }
+
+    P.update(dt);
+    FT.update(dt);
+}
+
+function wallHit(b) {
+    RetroAudio.play('blip');
+    RE.juice.shake(0.05);
+    P.burst(b.x, b.y, 3, { colors: ['#fff8e7'], speedMin: 20, speedMax: 70,
+        gravity: 0, lifeMin: 0.1, lifeMax: 0.22, sizeMax: 2 });
+}
+
+function paddleHit(b) {
+    // Breakout 的核心：擊球點決定角度
+    var off = RE.clamp((b.x - (s.paddle.x + s.paddle.w / 2)) / (s.paddle.w / 2), -1, 1);
+    var angle = -Math.PI / 2 + off * (Math.PI / 2.6);   // 最大約 ±69 度
+    b.speed = Math.min(b.speed * 1.012, 470);
+    b.vx = Math.cos(angle) * b.speed;
+    b.vy = Math.sin(angle) * b.speed;
+    b.y = PADDLE_Y - b.r - 1;
+
+    s.combo = 0;   // 碰到球拍就重置連段，鼓勵一次上去多打幾塊
+    var edge = Math.abs(off) > 0.7;
+    RE.juice.hitstop(edge ? 0.04 : 0.022);
+    RE.juice.shake(edge ? 0.18 : 0.1);
+    RetroAudio.play(edge ? 'heavyHit' : 'bounce');
+    P.sparks(b.x, PADDLE_Y, -Math.PI / 2, edge ? 10 : 6, edge ? '#ff9ebb' : '#70e4b5');
+    if (edge) FT.add(b.x, PADDLE_Y - 22, '大角度!', { color: '#ff9ebb', size: 12, life: 0.6 });
+}
+
+function checkBricks(b) {
+    for (var j = 0; j < s.bricks.length; j++) {
+        var br = s.bricks[j];
+        if (b.x + b.r < br.x || b.x - b.r > br.x + BRICK_W ||
+            b.y + b.r < br.y || b.y - b.r > br.y + BRICK_H) continue;
+
+        // 判斷從哪一面撞入，決定反射軸
+        var ballRect = { x: b.x - b.r, y: b.y - b.r, w: b.r * 2, h: b.r * 2 };
+        var brRect = { x: br.x, y: br.y, w: BRICK_W, h: BRICK_H };
+        var push = RE.resolveAABB(ballRect, brRect);
+
+        var pierce = hasPower('pierce') && !br.solid;
+        if (!pierce) {
+            if (push.x !== 0) { b.vx = -b.vx; b.x += push.x; }
+            if (push.y !== 0) { b.vy = -b.vy; b.y += push.y; }
+        }
+        damageBrick(j, br, pierce ? 99 : 1, true);
+        return true;
+    }
+    return false;
+}
+
+function damageBrick(index, br, dmg, fromBall) {
+    if (br.solid) {
+        br.flash = 0.15;
+        RetroAudio.play('block');
+        RE.juice.shake(0.12);
+        P.sparks(br.x + BRICK_W / 2, br.y + BRICK_H / 2, RE.rand(0, RE.TAU), 6, '#c9d6d0');
+        return;
+    }
+
+    br.hp -= dmg;
+    br.flash = 0.12;
+
+    var cx = br.x + BRICK_W / 2, cy = br.y + BRICK_H / 2;
+    var col = BRICK_COLORS[br.kind] ? BRICK_COLORS[br.kind][0] : '#fff8e7';
+
+    if (br.hp > 0) {
+        // 未破：小回饋，讓玩家知道「有打到但還沒破」
+        RetroAudio.play('hit');
+        RE.juice.hitstop(0.02);
+        RE.juice.shake(0.1);
+        P.burst(cx, cy, 5, { colors: [col], speedMin: 30, speedMax: 100,
+            gravity: 180, lifeMin: 0.15, lifeMax: 0.35, sizeMax: 3 });
+        return;
+    }
+
+    // 破了
+    s.bricks.splice(index, 1);
+    s.combo++;
+    s.comboTimer = 2.2;
+    var mult = 1 + Math.floor((s.combo - 1) / 3) * 0.5;
+    var gain = Math.round((BRICK_SCORE[br.kind] || 10) * mult);
+    addScore(gain);
+
+    FT.add(cx, cy, '+' + gain, { color: col, size: s.combo > 3 ? 15 : 12, life: 0.6 });
+    if (s.combo > 1 && s.combo % 3 === 0) {
+        RetroAudio.play('combo', s.combo / 3);
+        FT.add(cx, cy - 16, s.combo + ' 連擊!', { color: '#ffd166', size: 14, life: 0.8 });
+    } else {
+        RetroAudio.play('hit');
+    }
+
+    RE.juice.hitstop(0.03 + Math.min(s.combo, 6) * 0.004);
+    RE.juice.shake(0.16 + Math.min(s.combo, 8) * 0.014);
+    RE.juice.rumble(0.3, 0.06);
+
+    // 碎裂粒子：從磚塊本身的顏色噴出方形碎片
+    P.burst(cx, cy, 12, {
+        colors: BRICK_COLORS[br.kind] || ['#fff8e7'],
+        speedMin: 50, speedMax: 200, gravity: 320,
+        lifeMin: 0.25, lifeMax: 0.65, sizeMin: 2, sizeMax: 5
+    });
+    P.ring(cx, cy, col, 24);
+
+    // 道具掉落
+    if (Math.random() < 0.13) dropPower(cx, cy);
+}
+
+function dropPower(x, y) {
+    var total = POWERS.reduce(function (a, p) { return a + p.weight; }, 0);
+    var r = Math.random() * total, acc = 0, chosen = POWERS[0];
+    for (var i = 0; i < POWERS.length; i++) {
+        acc += POWERS[i].weight;
+        if (r <= acc) { chosen = POWERS[i]; break; }
+    }
+    s.drops.push({ x: x - 8, y: y, power: chosen, spin: 0 });
+}
+
+function applyPower(p) {
+    RetroAudio.play('powerup');
+    RE.juice.flash('rgba(255,209,102,0.3)', 0.1);
+    FT.add(W / 2, PADDLE_Y - 40, p.name + '!', { color: p.color, size: 18, life: 1 });
+    addScore(60);
+
+    if (p.id === 'multi') {
+        var src = s.balls[0];
+        if (src) {
+            for (var i = 0; i < 2; i++) {
+                var ang = Math.atan2(src.vy, src.vx) + (i === 0 ? 0.45 : -0.45);
+                s.balls.push({
+                    x: src.x, y: src.y, r: 5, speed: src.speed, trail: [],
+                    vx: Math.cos(ang) * src.speed, vy: Math.sin(ang) * src.speed
+                });
+            }
+        }
+    } else if (p.id === 'life') {
+        s.lives++;
+        G.setLives(s.lives);
+        RetroAudio.play('oneup');
+    } else {
+        s.powers[p.id] = p.dur;
+    }
+}
+
+function loseBall() {
+    s.lives--;
+    G.setLives(s.lives);
+    s.combo = 0;
+    s.powers = {};
+    s.paddle.w = s.paddle.baseW;
+    s.lasers = []; s.drops = [];
+
+    RE.juice.impact(3);
+    RE.juice.flash('rgba(255,107,107,0.4)', 0.15);
+    RetroAudio.play('hurt');
+    P.burst(W / 2, H - 12, 22, { colors: ['#ff6b6b', '#ff9ebb'], speedMin: 60, speedMax: 200,
+        gravity: -80, lifeMin: 0.3, lifeMax: 0.7 });
+
+    if (s.lives <= 0) { gameOver(false); return; }
+    newBall();
+}
+
+function addScore(n) { s.score += n; G.setStat('score', s.score); }
+
+function nextLevel() {
+    s.level++;
+    s.clearing = false;
+    if (s.level > LEVELS.length) { gameOver(true); return; }
+    G.setStat('level', s.level);
+    RE.Save.unlockLevel('breakout', s.level);
+
+    var L = buildLevel(s.level);
+    s.bricks = L.bricks; s.cfg = L.cfg;
+    s.drops = []; s.lasers = []; s.powers = {};
+    s.descendTimer = 0;
+    s.paddle.w = s.paddle.baseW;
+    newBall();
+    // 每關球速微幅提升，形成整體難度曲線
+    s.balls[0].speed = 245 + (s.level - 1) * 13;
+    G.stageCard(s.level, L.cfg.name, L.cfg.hint);
+}
+
+function gameOver(win) {
+    if (s.over) return;
+    s.over = true;
+    if (win) RE.Save.unlockLevel('breakout', LEVELS.length + 1);
+    G.gameOver({
+        score: s.score, win: win,
+        body: win ? '十面牆全數打穿。Wozniak 當年為了移植這款遊戲，替 Apple II 加上了彩色與音效。'
+                  : '停在第 ' + s.level + ' 關「' + s.cfg.name + '」。試試用球拍邊緣把球送進上層縫隙。'
+    });
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function render() {
+    G.clear('#0a1014');
+    G.beginWorld();
+
+    // 頂部裝飾框
+    ctx.fillStyle = '#16241d';
+    ctx.fillRect(0, 0, W, TOP - 8);
+    ctx.fillStyle = 'rgba(255,209,102,0.12)';
+    ctx.fillRect(0, TOP - 10, W, 2);
+
+    // 磚塊
+    for (var i = 0; i < s.bricks.length; i++) {
+        var br = s.bricks[i];
+        var pair = BRICK_COLORS[br.solid ? 9 : br.kind] || ['#fff8e7', '#888'];
+        // 受損的磚塊顏色變暗，讓耐久度一眼可辨
+        var wear = br.solid ? 1 : br.hp / br.maxHp;
+        ctx.fillStyle = pair[1];
+        ctx.fillRect(br.x, br.y, BRICK_W - 2, BRICK_H - 2);
+        ctx.fillStyle = br.flash > 0 ? '#ffffff' : pair[0];
+        ctx.globalAlpha = br.flash > 0 ? 1 : (0.45 + wear * 0.55);
+        ctx.fillRect(br.x + 1, br.y + 1, BRICK_W - 4, BRICK_H - 5);
+        ctx.globalAlpha = 1;
+        // 高光
+        ctx.fillStyle = 'rgba(255,255,255,0.28)';
+        ctx.fillRect(br.x + 2, br.y + 2, BRICK_W - 6, 2);
+        if (!br.solid && br.maxHp >= 2) {
+            RE.Draw.text(ctx, String(br.hp), br.x + BRICK_W / 2 - 1, br.y + 3,
+                { size: 9, align: 'center', color: 'rgba(0,0,0,0.55)', stroke: false });
+        }
+    }
+
+    // 掉落道具
+    for (var i = 0; i < s.drops.length; i++) {
+        var d = s.drops[i];
+        ctx.save();
+        ctx.translate(d.x + 8, d.y + 8);
+        ctx.rotate(Math.sin(d.spin) * 0.35);
+        ctx.shadowBlur = 10; ctx.shadowColor = d.power.color;
+        ctx.fillStyle = d.power.color;
+        RE.Draw.roundRect(ctx, -9, -8, 18, 16, 4);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#12211b';
+        RE.Draw.text(ctx, d.power.id.charAt(0).toUpperCase(), 0, -6,
+            { size: 11, align: 'center', color: '#12211b', stroke: false });
+        ctx.restore();
+    }
+
+    // 雷射
+    ctx.fillStyle = '#ff6b6b';
+    for (var i = 0; i < s.lasers.length; i++) {
+        ctx.save(); ctx.shadowBlur = 8; ctx.shadowColor = '#ff6b6b';
+        ctx.fillRect(s.lasers[i].x - 1.5, s.lasers[i].y - 12, 3, 12);
+        ctx.restore();
+    }
+
+    // 球拍
+    var px = s.paddle.x, pw = s.paddle.w;
+    ctx.save();
+    ctx.shadowBlur = 12; ctx.shadowColor = hasPower('laser') ? '#ff6b6b' : '#70e4b5';
+    ctx.fillStyle = hasPower('laser') ? '#ff8f8f' : '#70e4b5';
+    RE.Draw.roundRect(ctx, px, PADDLE_Y, pw, 11, 5);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    // 中央亮帶：提示直球區
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillRect(px + pw / 2 - 8, PADDLE_Y + 3, 16, 4);
+    ctx.restore();
+
+    // 球
+    for (var i = 0; i < s.balls.length; i++) {
+        var b = s.balls[i];
+        for (var t = 0; t < b.trail.length; t++) {
+            var a = (t + 1) / b.trail.length;
+            ctx.globalAlpha = a * 0.35;
+            ctx.fillStyle = hasPower('pierce') ? '#c084fc' : '#ffd166';
+            ctx.beginPath();
+            ctx.arc(b.trail[t].x, b.trail[t].y, b.r * a * 0.9, 0, RE.TAU);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        ctx.save();
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = hasPower('pierce') ? '#c084fc' : '#ffd166';
+        ctx.fillStyle = hasPower('pierce') ? '#e9d5ff' : '#fff8e7';
+        ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, RE.TAU); ctx.fill();
+        ctx.restore();
+    }
+
+    // 球已離開磚牆、正往下時，顯示依現有球拍位置計算的落點與反彈角。
+    // 只揭露 paddleHit() 的公式，不修正球路也不代替玩家移動。
+    drawPaddlePrediction();
+
+    P.draw(ctx);
+    FT.draw(ctx);
+
+    // 待發球提示
+    if (s.stuck && !s.over) {
+        ctx.save();
+        ctx.globalAlpha = 0.6 + Math.sin(performance.now() / 200) * 0.35;
+        RE.Draw.text(ctx, '按 空白鍵 或點擊畫面發球', W / 2, PADDLE_Y - 44,
+            { size: 13, align: 'center', color: '#a7f3d0' });
+        ctx.restore();
+    }
+
+    // 生效中的道具列表
+    var active = [];
+    for (var k in s.powers) if (s.powers[k] > 0) active.push(k);
+    if (active.length) {
+        for (var i = 0; i < active.length; i++) {
+            var pw2 = POWERS.filter(function (p) { return p.id === active[i]; })[0];
+            RE.Draw.text(ctx, pw2.name + ' ' + Math.ceil(s.powers[active[i]]) + 's',
+                8, 8 + i * 15, { size: 11, color: pw2.color });
+        }
+    }
+
+    G.endWorld();
+    drawBreakoutLessonRail();
+    G.postFX({ scanAlpha: 0.09, vignetteStrength: 0.42 });
+}
+
+function predictPaddleImpact(b) {
+    if (!b || s.stuck || s.clearing || b.vy <= 0) return null;
+    var lowestBrick = 0;
+    for (var i = 0; i < s.bricks.length; i++) {
+        lowestBrick = Math.max(lowestBrick, s.bricks[i].y + BRICK_H);
+    }
+    // 磚牆下方才預測；上方仍可能再次撞磚，不能拿不完整路徑誤導玩家。
+    if (b.y <= lowestBrick + b.r + 5) return null;
+    var targetY = PADDLE_Y - b.r - 1;
+    var t = (targetY - b.y) / b.vy;
+    if (t <= 0 || t > 3) return null;
+
+    // 左右牆反射以三角波折回；球心活動範圍正是 [r, W-r]。
+    var lo = b.r, span = W - b.r * 2;
+    var raw = b.x + b.vx * t;
+    var period = span * 2;
+    var m = ((raw - lo) % period + period) % period;
+    var x = lo + (m <= span ? m : period - m);
+    var center = s.paddle.x + s.paddle.w / 2;
+    var off = RE.clamp((x - center) / (s.paddle.w / 2), -1, 1);
+    return {
+        x: x,
+        off: off,
+        hit: x >= s.paddle.x - 4 && x <= s.paddle.x + s.paddle.w + 4
+    };
+}
+
+function drawPaddlePrediction() {
+    var best = null;
+    for (var i = 0; i < s.balls.length; i++) {
+        var prediction = predictPaddleImpact(s.balls[i]);
+        if (prediction) { best = prediction; break; }
+    }
+    if (!best) return;
+    var col = best.hit ? '#70e4b5' : '#ff6b6b';
+    ctx.save();
+    ctx.strokeStyle = col;
+    ctx.fillStyle = col;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(best.x, PADDLE_Y - 31);
+    ctx.lineTo(best.x, PADDLE_Y - 5);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(best.x, PADDLE_Y - 3);
+    ctx.lineTo(best.x - 5, PADDLE_Y - 10);
+    ctx.lineTo(best.x + 5, PADDLE_Y - 10);
+    ctx.closePath(); ctx.fill();
+    var dir = best.off < -0.15 ? '左斜' : (best.off > 0.15 ? '右斜' : '直上');
+    var label = best.hit ? ('落點：' + dir + ' ' + Math.round(Math.abs(best.off) * 69) + '°') : '落點：會漏接';
+    RE.Draw.text(ctx, label, RE.clamp(best.x, 58, W - 58), PADDLE_Y - 43,
+        { size: 10, align: 'center', color: col, strokeWidth: 3 });
+    ctx.restore();
+}
+
+function drawBreakoutLessonRail() {
+    ctx.save();
+    ctx.fillStyle = 'rgba(4,9,12,0.78)';
+    ctx.fillRect(0, H - 28, W, 28);
+    RE.Draw.text(ctx, '球拍落點決定反彈角　左側 ↖　中央 ↑　右側 ↗', W / 2, H - 21,
+        { size: 10, align: 'center', color: '#a7f3d0', stroke: false });
+    ctx.restore();
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '打掉所有彩色磚塊過關。球拍邊緣擊球會產生大角度——這是把球送上頂層的關鍵技巧。共十關。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

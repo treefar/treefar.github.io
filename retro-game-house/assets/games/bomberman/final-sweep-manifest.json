@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "kind": "runtime-integrated-art-candidate",
+  "status": "final-gate-pending",
+  "countedInLedger": false,
+  "game": "bomberman",
+  "set": "set-03-arcade-pixel-b",
+  "tool": "Codex built-in ImageGen",
+  "model": "ImageGen（服務端版本未揭露）",
+  "generatedAt": "2026-08-24",
+  "prompt": "art-production/final-sweep/set-03-arcade-pixel-b/prompt-v002.md",
+  "source": "art-production/final-sweep/set-03-arcade-pixel-b/source/atlas-v002-imagegen.png",
+  "sourceSha256": "952158b8331197e35674514a95c496df7c538629c54bb5aaae36507d4537d88a",
+  "postprocess": "模型 alpha 保留、連通物件裁切、等比例縮放、透明留白與圖集排版；未補畫內容。Set 05 依固定格裁切保留模型背景，實際呈現以圓角裁切避免方形貼紙感。",
+  "atlas": "final-sweep-atlas.png",
+  "atlasSha256": "1d055dd4acb4d7ae6b55edb7fa4764eee5e52e2feb3892801e55a569a9818d66",
+  "cellWidth": 128,
+  "cellHeight": 128,
+  "assets": {
+    "candle_miner": {
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "專屬主角幀"
+    },
+    "furnace_enemy": {
+      "index": 1,
+      "x": 128,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "專屬敵人"
+    },
+    "soft_block_pickup": {
+      "index": 2,
+      "x": 256,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "軟磚／道具"
+    },
+    "fire_sequence": {
+      "index": 3,
+      "x": 384,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "爆炸序列"
+    },
+    "arena_floor": {
+      "index": 4,
+      "x": 0,
+      "y": 128,
+      "w": 128,
+      "h": 128,
+      "label": "競技場材質"
+    }
+  },
+  "runtimePresentation": "RetroShell 開場的美術圖譜層；正常流程可見，不介入遊戲亂數、碰撞或更新。",
+  "qa": {
+    "assetCount": 5,
+    "edgePixels": 0,
+    "emptyCells": 0,
+    "humanFinalGate": false
+  }
+}

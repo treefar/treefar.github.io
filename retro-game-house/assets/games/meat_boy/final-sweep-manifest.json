@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "kind": "runtime-integrated-art-candidate",
+  "status": "final-gate-pending",
+  "countedInLedger": false,
+  "game": "meat_boy",
+  "set": "set-07-flash-action",
+  "tool": "Codex built-in ImageGen",
+  "model": "ImageGen（服務端版本未揭露）",
+  "generatedAt": "2026-08-24",
+  "prompt": "art-production/final-sweep/set-07-flash-action/prompt-v001.md",
+  "source": "art-production/final-sweep/set-07-flash-action/source/atlas-v001-imagegen.png",
+  "sourceSha256": "d7f98c26da099e17ae031dd641d139d4ca96c3541038d13b8d8a448bd1002a24",
+  "postprocess": "模型 alpha 保留、連通物件裁切、等比例縮放、透明留白與圖集排版；未補畫內容。Set 05 依固定格裁切保留模型背景，實際呈現以圓角裁切避免方形貼紙感。",
+  "atlas": "final-sweep-atlas.png",
+  "atlasSha256": "df4fd474d6d444409cb0e512752da75386b57df0e6cadfe06f5c659a1e16a7eb",
+  "cellWidth": 128,
+  "cellHeight": 128,
+  "assets": {
+    "clay_acrobat": {
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "角色動作"
+    },
+    "steel_saw": {
+      "index": 1,
+      "x": 128,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "危險物"
+    },
+    "concrete_corner": {
+      "index": 2,
+      "x": 256,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "工業材質"
+    },
+    "pipe_window": {
+      "index": 3,
+      "x": 384,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "前後景"
+    },
+    "retry_splat": {
+      "index": 4,
+      "x": 0,
+      "y": 128,
+      "w": 128,
+      "h": 128,
+      "label": "死亡／結算演出"
+    }
+  },
+  "runtimePresentation": "RetroShell 開場的美術圖譜層；正常流程可見，不介入遊戲亂數、碰撞或更新。",
+  "qa": {
+    "assetCount": 5,
+    "edgePixels": 0,
+    "emptyCells": 0,
+    "humanFinalGate": false
+  }
+}

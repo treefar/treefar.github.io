@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 方塊迴旋</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   方塊迴旋 — 致敬 Tetris (Alexey Pajitnov, 1984)
+   --------------------------------------------------------------------------
+   復刻重點（採用現代標準規則，讓手感符合當代玩家預期）：
+   1. 7-bag 隨機器：每七個方塊為一輪，保證不會連續好幾個沒有 I 型。
+      純隨機會產生「長時間拿不到需要的方塊」的挫折，7-bag 是業界標準解法。
+   2. SRS 旋轉系統 + 踢牆表（wall kick）：貼牆與貼地時仍能旋轉，
+      並支援 T-Spin 判定。這是「旋轉不是只有轉，還要能塞進去」的關鍵。
+   3. 鎖定延遲（lock delay）：方塊落地後有 0.5 秒可以繼續移動，
+      且每次成功移動會重置（最多 15 次）。沒有這個，快速下落會變得極不友善。
+   4. Hold 暫存、Ghost 落點預覽、軟落／硬落分數、Back-to-Back 與 Combo 獎勵。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'tetris',
+    title: '方塊迴旋',
+    tagline: '沒有主題、沒有角色、沒有結局——純粹規則就足以永恆',
+    original: 'Tetris (Alexey Pajitnov, 1984)',
+    decade: '80s', year: 1984, platform: 'Electronika 60 / 多平台', genre: '落下式益智',
+    developer: 'Alexey Pajitnov', bgm: '80s',
+    width: 460, height: 520,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'best', label: 'BEST' },
+        { key: 'lines', label: 'LINES', init: 0 },
+        { key: 'level', label: 'LV', init: 1 }
+    ],
+    touch: 'dpad+ab', labelA: '旋轉', labelB: '暫存', maxScale: 2,
+    controls: [
+        { keys: ['←', '→'], desc: '左右移動' },
+        { keys: ['↓'], desc: '軟落（加速下降）' },
+        { keys: ['↑', 'Z'], desc: '順時針旋轉' },
+        { keys: ['空白'], desc: '硬落（瞬間落底）' },
+        { keys: ['C', 'K'], desc: '暫存方塊（Hold）' }
+    ],
+    howto: '填滿一整橫排即可消除。<strong>一次消四行（Tetris）分數最高</strong>。' +
+           '連續消除（Combo）與連續大消除（Back-to-Back）都有額外加分。' +
+           '方塊落地後有短暫的鎖定延遲，還可以繼續微調位置。灰色影子是落點預覽。',
+    lesson: {
+        verb: '旋轉、平移與落下七種四格骨牌，在持續上升的堆疊中補滿橫列、消除空間債務。',
+        innovation: '把幾何拼圖從靜態解答改成不可停止的即時整理：每一塊都必須先落地，但完成的一整列反而會消失。',
+        mission: '刻意保留一格寬的直井，先承受堆高的風險，再用 I 形方塊一次消除四行；比較立即消單行與等待 Tetris 的安全、得分差異。',
+        evolution: '《Tetris》用下落與消行建立即時空間整理；《Bejeweled》把消除改成交換配對，《Suika Game》再讓堆疊受連續物理碰撞與合成尺寸影響。',
+        reflection: '如果方塊可以永久等待、錯放也能隨時取回，玩家還會在「先保命」與「留下高分缺口」之間掙扎嗎？'
+    },
+    design: '《Tetris》解決的問題是：如何讓沒有角色與劇情的幾何拼圖持續產生即時壓力。規則只有下落、旋轉、平移與消行，深度卻來自每一塊都同時改變眼前落點與未來可用空間。' +
+            '立即補平單行能降低高度，留下直井等待 I 形方塊則能換取一次四行的高分；這讓空洞不是單純失誤，而是一筆可能獲利、也可能壓垮場面的空間債務。' +
+            '速度逐級上升後，玩家從逐格計算轉為辨識輪廓與預先承諾位置，幾何整理遂變成即時技能。' +
+            '本站保留十欄二十列、七種 Tetrimino 與 Tetris 高報酬，另加入影子落點、暫存、硬落、鎖定延遲、Combo 與 Back-to-Back，明確呈現現代版本如何降低操作歧義、增加長期技巧。' +
+            '這些輔助沒有替玩家完成拼圖；它們把注意力從「我按到了嗎」移回「我要留下什麼形狀」。',
+    history: 'Tetris 官方年表記錄：Alexey Pajitnov 於 1984 年在莫斯科以 Electronika 60 製作第一版，1985 年移植至 IBM PC，1987 年開始在北美與歐洲個人電腦流通。' +
+             '1989 年 Henk Rogers 取得掌上型權利並授權 Nintendo，Game Boy 以《Tetris》作為同捆遊戲之一，官方記錄其銷量超過 3,500 萬套。' +
+             '官方規則把七種 Tetrimino、矩形 Matrix、完成橫列與越過 Skyline 定義為核心。' +
+             '因此它的歷史意義不是靠角色或敘事擴張，而是證明一套抽象規則能跨越電腦、主機、掌機與世代持續被重新實作。',
+    sources: [
+        { label: 'Tetris 官方：1984 至今的歷史年表', url: 'https://tetris.com/news/the-history-of-tetris' },
+        { label: 'Tetris 官方：核心規則、Tetrimino 與 Matrix', url: 'https://www.tetris.com/about' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(600);
+var FT = new RE.FloatText();
+
+var COLS = 10, ROWS = 20, CELL = 22;
+var BOARD_X = 24, BOARD_Y = 46;
+
+// 七種方塊的四個旋轉狀態（SRS 標準座標）
+var SHAPES = {
+    I: { color: '#7dd3fc', cells: [
+        [[0,1],[1,1],[2,1],[3,1]], [[2,0],[2,1],[2,2],[2,3]],
+        [[0,2],[1,2],[2,2],[3,2]], [[1,0],[1,1],[1,2],[1,3]]] },
+    J: { color: '#5b8dee', cells: [
+        [[0,0],[0,1],[1,1],[2,1]], [[1,0],[2,0],[1,1],[1,2]],
+        [[0,1],[1,1],[2,1],[2,2]], [[1,0],[1,1],[0,2],[1,2]]] },
+    L: { color: '#ffb347', cells: [
+        [[2,0],[0,1],[1,1],[2,1]], [[1,0],[1,1],[1,2],[2,2]],
+        [[0,1],[1,1],[2,1],[0,2]], [[0,0],[1,0],[1,1],[1,2]]] },
+    O: { color: '#ffd166', cells: [
+        [[1,0],[2,0],[1,1],[2,1]], [[1,0],[2,0],[1,1],[2,1]],
+        [[1,0],[2,0],[1,1],[2,1]], [[1,0],[2,0],[1,1],[2,1]]] },
+    S: { color: '#70e4b5', cells: [
+        [[1,0],[2,0],[0,1],[1,1]], [[1,0],[1,1],[2,1],[2,2]],
+        [[1,1],[2,1],[0,2],[1,2]], [[0,0],[0,1],[1,1],[1,2]]] },
+    T: { color: '#c084fc', cells: [
+        [[1,0],[0,1],[1,1],[2,1]], [[1,0],[1,1],[2,1],[1,2]],
+        [[0,1],[1,1],[2,1],[1,2]], [[1,0],[0,1],[1,1],[1,2]]] },
+    Z: { color: '#ff6b6b', cells: [
+        [[0,0],[1,0],[1,1],[2,1]], [[2,0],[1,1],[2,1],[1,2]],
+        [[0,1],[1,1],[1,2],[2,2]], [[1,0],[0,1],[1,1],[0,2]]] }
+};
+var TYPES = ['I', 'J', 'L', 'O', 'S', 'T', 'Z'];
+
+// SRS 踢牆表：旋轉受阻時依序嘗試這些位移
+var KICKS_JLSTZ = {
+    '0>1': [[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],
+    '1>0': [[0,0],[1,0],[1,-1],[0,2],[1,2]],
+    '1>2': [[0,0],[1,0],[1,-1],[0,2],[1,2]],
+    '2>1': [[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],
+    '2>3': [[0,0],[1,0],[1,1],[0,-2],[1,-2]],
+    '3>2': [[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],
+    '3>0': [[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],
+    '0>3': [[0,0],[1,0],[1,1],[0,-2],[1,-2]]
+};
+var KICKS_I = {
+    '0>1': [[0,0],[-2,0],[1,0],[-2,-1],[1,2]],
+    '1>0': [[0,0],[2,0],[-1,0],[2,1],[-1,-2]],
+    '1>2': [[0,0],[-1,0],[2,0],[-1,2],[2,-1]],
+    '2>1': [[0,0],[1,0],[-2,0],[1,-2],[-2,1]],
+    '2>3': [[0,0],[2,0],[-1,0],[2,1],[-1,-2]],
+    '3>2': [[0,0],[-2,0],[1,0],[-2,-1],[1,2]],
+    '3>0': [[0,0],[1,0],[-2,0],[1,-2],[-2,1]],
+    '0>3': [[0,0],[-1,0],[2,0],[-1,2],[2,-1]]
+};
+
+// 每級的下落間隔（秒），與經典 Tetris 的重力曲線接近
+var GRAVITY = [0.80, 0.72, 0.63, 0.55, 0.47, 0.38, 0.30, 0.22, 0.15, 0.10,
+               0.08, 0.07, 0.06, 0.05, 0.04];
+
+var s = {};
+
+function reset() {
+    s = {
+        board: [], bag: [], next: [], hold: null, holdUsed: false,
+        piece: null, score: 0, lines: 0, level: 1,
+        dropTimer: 0, lockTimer: 0, lockResets: 0,
+        combo: -1, backToBack: false,
+        clearing: null, clearTimer: 0,
+        das: 0, dasDir: 0, arr: 0, pointerDownSeen: false,
+        over: false, won: false, shakeRows: {}
+    };
+    for (var y = 0; y < ROWS; y++) {
+        s.board[y] = [];
+        for (var x = 0; x < COLS; x++) s.board[y][x] = null;
+    }
+    refillBag();
+    for (var i = 0; i < 5; i++) s.next.push(drawFromBag());
+    spawn();
+    G.setStat('score', 0); G.setStat('lines', 0); G.setStat('level', 1);
+}
+
+/** 7-bag 隨機器：每輪包含全部七種，洗牌後依序發出 */
+function refillBag() {
+    var b = TYPES.slice();
+    for (var i = b.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = b[i]; b[i] = b[j]; b[j] = t;
+    }
+    s.bag = s.bag.concat(b);
+}
+
+function drawFromBag() {
+    if (s.bag.length < 2) refillBag();
+    return s.bag.shift();
+}
+
+function spawn(type) {
+    var t = type || s.next.shift();
+    if (!type) s.next.push(drawFromBag());
+    s.piece = { type: t, rot: 0, x: 3, y: -1, lastKick: null, lastMoveRot: false };
+    s.dropTimer = 0;
+    s.lockTimer = 0;
+    s.lockResets = 0;
+    if (collide(s.piece, 0, 0, 0)) {
+        // 出生點被佔滿：遊戲結束
+        s.over = true;
+        RE.juice.flash('rgba(255,107,107,0.5)', 0.3);
+        G.gameOver({
+            score: s.score,
+            body: '堆到頂了。消除 ' + s.lines + ' 行，抵達等級 ' + s.level + '。' +
+                  '記得：堆高等 I 型雖然分數高，但風險也全在你身上。'
+        });
+    }
+}
+
+/** 全破：撐到 GRAVITY 表的最後一級，下落間隔已經到底。 */
+function winRun() {
+    s.over = true;
+    RE.juice.flash('rgba(255,209,102,0.5)', 0.35);
+    RE.juice.slowmo(0.3, 1.5);
+    RetroAudio.play('win');
+    G.gameOver({
+        win: true, score: s.score,
+        body: '等級 ' + s.level + '，消除 ' + s.lines + ' 行——方塊的下落間隔已經到底，' +
+              '再往上升也不會更快了。' +
+              '<strong>這款遊戲沒有主題、沒有角色、沒有結局</strong>，' +
+              'Alexey Pajitnov 1984 年在莫斯科寫出來的時候，它只是一組規則。' +
+              '而它至今仍在被玩，靠的正是這件事：' +
+              '<strong>當規則本身就完整時，一切裝飾都是多餘的。</strong>'
+    });
+}
+
+function cellsOf(p, rotOffset, dx, dy) {
+    var rot = ((p.rot + (rotOffset || 0)) % 4 + 4) % 4;
+    var raw = SHAPES[p.type].cells[rot];
+    var out = [];
+    for (var i = 0; i < raw.length; i++) {
+        out.push([p.x + raw[i][0] + (dx || 0), p.y + raw[i][1] + (dy || 0)]);
+    }
+    return out;
+}
+
+function collide(p, dx, dy, rotOffset) {
+    var c = cellsOf(p, rotOffset, dx, dy);
+    for (var i = 0; i < c.length; i++) {
+        var x = c[i][0], y = c[i][1];
+        if (x < 0 || x >= COLS || y >= ROWS) return true;
+        if (y >= 0 && s.board[y][x]) return true;
+    }
+    return false;
+}
+
+function tryRotate(dir) {
+    var p = s.piece;
+    var from = p.rot, to = ((p.rot + dir) % 4 + 4) % 4;
+    var key = from + '>' + to;
+    var table = p.type === 'I' ? KICKS_I : KICKS_JLSTZ;
+    var kicks = p.type === 'O' ? [[0, 0]] : (table[key] || [[0, 0]]);
+
+    for (var i = 0; i < kicks.length; i++) {
+        var kx = kicks[i][0], ky = -kicks[i][1];   // SRS 的 y 軸方向與畫面相反
+        if (!collide(p, kx, ky, dir)) {
+            p.x += kx; p.y += ky; p.rot = to;
+            p.lastKick = i;
+            p.lastMoveRot = true;
+            RetroAudio.play('rotate');
+            resetLockDelay();
+            return true;
+        }
+    }
+    RetroAudio.play('error');
+    return false;
+}
+
+function resetLockDelay() {
+    // 落地後每次成功操作都重置鎖定計時，但最多 15 次，避免無限拖延
+    if (s.lockTimer > 0 && s.lockResets < 15) {
+        s.lockTimer = 0;
+        s.lockResets++;
+    }
+}
+
+// ======================================================================
+function update(dt) {
+    if (s.over) return;
+
+    // ---- 消除動畫 ----
+    if (s.clearing) {
+        s.clearTimer -= dt;
+        if (s.clearTimer <= 0) finishClear();
+        P.update(dt); FT.update(dt);
+        return;
+    }
+
+    var p = s.piece;
+
+    // ---- 水平移動：DAS（延遲自動位移）+ ARR（自動重複速率）----
+    // 這兩個參數是所有落下式遊戲手感的關鍵：太慢像卡頓，太快難以微調。
+    var ax = RE.Input.axisX();
+    if (ax !== 0) {
+        if (s.dasDir !== ax) {
+            s.dasDir = ax; s.das = 0; s.arr = 0;
+            move(ax);
+        } else {
+            s.das += dt;
+            if (s.das >= 0.14) {
+                s.arr += dt;
+                while (s.arr >= 0.035) { s.arr -= 0.035; move(ax); }
+            }
+        }
+    } else {
+        s.dasDir = 0; s.das = 0; s.arr = 0;
+    }
+
+    // ---- 旋轉 / 暫存 ----
+    // 注意：不使用 pressed('a')，因為引擎把空白鍵也對映到 a，
+    // 而空白鍵在本作是硬落。旋轉改由 ↑ 與畫面上的 A 鍵各自觸發。
+    if (RE.Input.pressed('up') || s.touchRotate) { tryRotate(1); s.touchRotate = false; }
+    if ((RE.Input.pressed('b') || s.touchHold) && !s.holdUsed) { doHold(); s.touchHold = false; }
+    /* 全速更新或低更新率裝置可能在 pressed 旗標被清掉後才跑到遊戲。
+       用 down 的上升沿補一次，確保每次實際點擊只硬落一次。 */
+    var pt = RE.Input.pointer;
+    if (!pt.down && !pt.pressed) s.pointerDownSeen = false;
+    var freshPointer = pt.pressed || (pt.down && !s.pointerDownSeen);
+    if (freshPointer) { s.pointerDownSeen = true; hardDrop(); }
+
+    // ---- 軟落 ----
+    var soft = RE.Input.down('down');
+    var interval = GRAVITY[Math.min(s.level - 1, GRAVITY.length - 1)];
+    if (soft) interval = Math.min(interval, 0.035);
+
+    s.dropTimer += dt;
+    while (s.dropTimer >= interval) {
+        s.dropTimer -= interval;
+        if (!collide(p, 0, 1, 0)) {
+            p.y++;
+            p.lastMoveRot = false;
+            if (soft) { s.score += 1; G.setStat('score', s.score); }
+        } else {
+            break;
+        }
+    }
+
+    // ---- 鎖定延遲 ----
+    if (collide(p, 0, 1, 0)) {
+        s.lockTimer += dt;
+        if (s.lockTimer >= 0.5) lockPiece();
+    } else {
+        s.lockTimer = 0;
+    }
+
+    P.update(dt);
+    FT.update(dt);
+}
+
+function move(dir) {
+    if (!collide(s.piece, dir, 0, 0)) {
+        s.piece.x += dir;
+        s.piece.lastMoveRot = false;
+        RetroAudio.play('step');
+        resetLockDelay();
+    }
+}
+
+function hardDrop() {
+    var p = s.piece, d = 0;
+    while (!collide(p, 0, d + 1, 0)) d++;
+    if (d > 0) {
+        // 落下軌跡的殘影，讓硬落有速度感
+        var c = cellsOf(p, 0, 0, 0);
+        for (var i = 0; i < c.length; i++) {
+            for (var k = 1; k <= d; k += 2) {
+                P.spawn({
+                    x: BOARD_X + (c[i][0] + 0.5) * CELL,
+                    y: BOARD_Y + (c[i][1] + k + 0.5) * CELL,
+                    size: CELL * 0.5, sizeEnd: 0,
+                    color: SHAPES[p.type].color, life: 0.18, gravity: 0, drag: 1
+                });
+            }
+        }
+    }
+    p.y += d;
+    s.score += d * 2;
+    G.setStat('score', s.score);
+    RetroAudio.play('drop');
+    RE.juice.shake(0.1 + Math.min(d, 20) * 0.008);
+    lockPiece();
+}
+
+function doHold() {
+    var cur = s.piece.type;
+    s.holdUsed = true;
+    RetroAudio.play('select');
+    if (s.hold) {
+        var h = s.hold;
+        s.hold = cur;
+        spawn(h);
+    } else {
+        s.hold = cur;
+        spawn();
+    }
+}
+
+/** T-Spin 判定：T 型方塊、最後一步是旋轉、四個角落中至少三個被佔 */
+function detectTSpin() {
+    var p = s.piece;
+    if (p.type !== 'T' || !p.lastMoveRot) return false;
+    var corners = [[0, 0], [2, 0], [0, 2], [2, 2]];
+    var filled = 0;
+    for (var i = 0; i < corners.length; i++) {
+        var x = p.x + corners[i][0], y = p.y + corners[i][1];
+        if (x < 0 || x >= COLS || y >= ROWS || (y >= 0 && s.board[y][x])) filled++;
+    }
+    return filled >= 3;
+}
+
+function lockPiece() {
+    var p = s.piece;
+    var tspin = detectTSpin();
+    var c = cellsOf(p, 0, 0, 0);
+    var topOut = false;
+    for (var i = 0; i < c.length; i++) {
+        var x = c[i][0], y = c[i][1];
+        if (y < 0) { topOut = true; continue; }
+        s.board[y][x] = SHAPES[p.type].color;
+    }
+
+    RetroAudio.play('hit');
+    RE.juice.hitstop(0.02);
+    RE.juice.shake(0.08);
+    // 落地火花
+    for (var i = 0; i < c.length; i++) {
+        if (c[i][1] < 0) continue;
+        P.burst(BOARD_X + (c[i][0] + 0.5) * CELL, BOARD_Y + (c[i][1] + 1) * CELL, 3, {
+            angle: -Math.PI / 2, spread: 1.1, colors: [SHAPES[p.type].color, '#fff8e7'],
+            speedMin: 25, speedMax: 90, gravity: 220, lifeMin: 0.12, lifeMax: 0.3, sizeMax: 3
+        });
+    }
+
+    if (topOut) {
+        s.over = true;
+        G.gameOver({ score: s.score,
+            body: '方塊堆出畫面了。消除 ' + s.lines + ' 行，抵達等級 ' + s.level + '。' });
+        return;
+    }
+
+    // 檢查滿行
+    var full = [];
+    for (var y = 0; y < ROWS; y++) {
+        var ok = true;
+        for (var x = 0; x < COLS; x++) if (!s.board[y][x]) { ok = false; break; }
+        if (ok) full.push(y);
+    }
+
+    if (full.length) {
+        s.clearing = { rows: full, tspin: tspin };
+        s.clearTimer = 0.32;
+        celebrate(full, tspin);
+    } else {
+        s.combo = -1;
+        s.holdUsed = false;
+        spawn();
+    }
+}
+
+function celebrate(rows, tspin) {
+    var n = rows.length;
+    s.combo++;
+
+    // 計分：符合現代 Tetris 準則
+    var base = tspin ? [0, 800, 1200, 1600][n] || 400
+             : [0, 100, 300, 500, 800][n];
+    var isDifficult = (n === 4) || tspin;
+    var b2b = isDifficult && s.backToBack;
+    var total = base * s.level;
+    if (b2b) total = Math.round(total * 1.5);
+    if (s.combo > 0) total += 50 * s.combo * s.level;
+
+    s.score += total;
+    s.lines += n;
+    G.setStat('score', s.score);
+    G.setStat('lines', s.lines);
+    s.backToBack = isDifficult;
+
+    // 等級：每 10 行升一級
+    var newLevel = Math.floor(s.lines / 10) + 1;
+    if (newLevel > s.level) {
+        s.level = newLevel;
+        G.setStat('level', s.level);
+        RetroAudio.play('levelUp');
+        FT.add(W / 2, 120, '等級 ' + s.level + '！方塊變快了', { color: '#ffd166', size: 17, life: 1.6 });
+        RE.Save.unlockLevel('tetris', s.level);
+
+        /* 完走條件：撐到 GRAVITY 表的最後一級。
+           那一級的下落間隔已經到底，再往上升也不會更快——
+           **難度曲線在這裡結束了**，所以這裡就是這款的終點。
+           原本這款沒有全破結局，玩家不管堆得多好都只會看到 GAME OVER，
+           而《Tetris》的設計論點恰恰需要一個「你已經追上機器」的時刻才收得住。 */
+        if (!s.won && s.level >= GRAVITY.length) { s.won = true; winRun(); return; }
+    }
+
+    // 回饋強度與消除行數掛勾——四行消除必須「感覺完全不一樣」
+    var name = tspin ? ('T-SPIN ' + ['', 'SINGLE', 'DOUBLE', 'TRIPLE'][n])
+             : ['', 'SINGLE', 'DOUBLE', 'TRIPLE', 'TETRIS'][n];
+    var color = n === 4 ? '#ffd166' : tspin ? '#c084fc' : (n >= 2 ? '#70e4b5' : '#a7f3d0');
+
+    RetroAudio.play(n >= 4 || tspin ? 'tetrisClear' : 'lineClear');
+    RE.juice.hitstop(0.03 + n * 0.018);
+    RE.juice.shake(0.15 + n * 0.11);
+    RE.juice.rumble(0.3 + n * 0.15, 0.14);
+    if (n >= 3 || tspin) {
+        RE.juice.flash(n === 4 ? 'rgba(255,209,102,0.42)' : 'rgba(192,132,252,0.35)', 0.14);
+        RE.juice.slowmo(0.4, 0.5);
+    }
+
+    var midY = BOARD_Y + (rows[Math.floor(rows.length / 2)] + 0.5) * CELL;
+    FT.add(BOARD_X + COLS * CELL / 2, midY - 22, name, { color: color, size: n === 4 ? 26 : 20, life: 1.5 });
+    FT.add(BOARD_X + COLS * CELL / 2, midY + 4, '+' + total.toLocaleString('en-US'),
+        { color: '#fff8e7', size: 15, life: 1.4, vy: -34 });
+    if (b2b) FT.add(BOARD_X + COLS * CELL / 2, midY + 26, 'BACK-TO-BACK ×1.5',
+        { color: '#ff9ebb', size: 13, life: 1.5, vy: -26 });
+    if (s.combo > 0) {
+        FT.add(BOARD_X + COLS * CELL / 2, midY + 44, s.combo + ' COMBO',
+            { color: '#7dd3fc', size: 14, life: 1.4, vy: -26 });
+        RetroAudio.play('combo', s.combo);
+    }
+
+    // 每一行都爆出方塊自己的顏色
+    for (var i = 0; i < rows.length; i++) {
+        for (var x = 0; x < COLS; x++) {
+            P.burst(BOARD_X + (x + 0.5) * CELL, BOARD_Y + (rows[i] + 0.5) * CELL, 4, {
+                colors: [s.board[rows[i]][x] || '#fff8e7', '#fff8e7'],
+                speedMin: 40, speedMax: 190, gravity: 280,
+                lifeMin: 0.25, lifeMax: 0.7, sizeMin: 2, sizeMax: 5
+            });
+        }
+        P.ring(BOARD_X + COLS * CELL / 2, BOARD_Y + (rows[i] + 0.5) * CELL, color, COLS * CELL * 0.6);
+    }
+}
+
+function finishClear() {
+    var rows = s.clearing.rows;
+    // 由下往上刪除，避免索引錯位
+    rows.sort(function (a, b) { return a - b; });
+    for (var i = rows.length - 1; i >= 0; i--) {
+        s.board.splice(rows[i], 1);
+    }
+    for (var i = 0; i < rows.length; i++) {
+        var blank = [];
+        for (var x = 0; x < COLS; x++) blank.push(null);
+        s.board.unshift(blank);
+    }
+    s.clearing = null;
+    s.holdUsed = false;
+    spawn();
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function render() {
+    G.clear('#0a1014');
+    G.beginWorld();
+
+    // 場地背景與格線
+    ctx.fillStyle = '#0d1a18';
+    ctx.fillRect(BOARD_X, BOARD_Y, COLS * CELL, ROWS * CELL);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.045)';
+    ctx.lineWidth = 1;
+    for (var x = 1; x < COLS; x++) {
+        ctx.beginPath(); ctx.moveTo(BOARD_X + x * CELL, BOARD_Y);
+        ctx.lineTo(BOARD_X + x * CELL, BOARD_Y + ROWS * CELL); ctx.stroke();
+    }
+    for (var y = 1; y < ROWS; y++) {
+        ctx.beginPath(); ctx.moveTo(BOARD_X, BOARD_Y + y * CELL);
+        ctx.lineTo(BOARD_X + COLS * CELL, BOARD_Y + y * CELL); ctx.stroke();
+    }
+    ctx.restore();
+
+    // 已固定的方塊
+    for (var y = 0; y < ROWS; y++) {
+        for (var x = 0; x < COLS; x++) {
+            if (s.board[y][x]) {
+                var flashing = s.clearing && s.clearing.rows.indexOf(y) >= 0;
+                drawCell(BOARD_X + x * CELL, BOARD_Y + y * CELL,
+                         flashing ? '#ffffff' : s.board[y][x]);
+            }
+        }
+    }
+
+    if (!s.over && s.piece && !s.clearing) {
+        var p = s.piece;
+        // 落點預覽（Ghost）：現代 Tetris 的必備輔助
+        var d = 0;
+        while (!collide(p, 0, d + 1, 0)) d++;
+        var gc = cellsOf(p, 0, 0, d);
+        ctx.save();
+        ctx.globalAlpha = 0.22;
+        for (var i = 0; i < gc.length; i++) {
+            if (gc[i][1] < 0) continue;
+            drawCell(BOARD_X + gc[i][0] * CELL, BOARD_Y + gc[i][1] * CELL, SHAPES[p.type].color);
+        }
+        ctx.restore();
+
+        // 目前方塊。快鎖定時閃爍提示
+        var lockRatio = s.lockTimer / 0.5;
+        var c = cellsOf(p, 0, 0, 0);
+        for (var i = 0; i < c.length; i++) {
+            if (c[i][1] < 0) continue;
+            drawCell(BOARD_X + c[i][0] * CELL, BOARD_Y + c[i][1] * CELL,
+                     SHAPES[p.type].color, lockRatio);
+        }
+    }
+
+    // 場地外框
+    ctx.strokeStyle = '#4a2c1b';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(BOARD_X - 1.5, BOARD_Y - 1.5, COLS * CELL + 3, ROWS * CELL + 3);
+
+    // ---- 側欄：NEXT / HOLD ----
+    var sx = BOARD_X + COLS * CELL + 18;
+    RE.Draw.text(ctx, 'NEXT', sx, BOARD_Y, { size: 13, color: '#ffd166' });
+    for (var i = 0; i < Math.min(5, s.next.length); i++) {
+        drawMini(s.next[i], sx, BOARD_Y + 20 + i * 46, i === 0 ? 1 : 0.72);
+    }
+    RE.Draw.text(ctx, 'HOLD', sx, BOARD_Y + 262, { size: 13, color: '#ffd166' });
+    if (s.hold) drawMini(s.hold, sx, BOARD_Y + 282, s.holdUsed ? 0.35 : 1);
+    else RE.Draw.text(ctx, '(空)', sx, BOARD_Y + 288, { size: 12, color: '#5c6b66' });
+
+    // 狀態指示
+    if (s.backToBack) RE.Draw.text(ctx, 'B2B 就緒', sx, BOARD_Y + 344, { size: 11, color: '#ff9ebb' });
+    if (s.combo > 0) RE.Draw.text(ctx, s.combo + ' COMBO', sx, BOARD_Y + 360, { size: 11, color: '#7dd3fc' });
+    RE.Draw.text(ctx, '下落 ' + GRAVITY[Math.min(s.level - 1, GRAVITY.length - 1)].toFixed(2) + 's',
+        sx, BOARD_Y + 378, { size: 10, color: '#9fb3aa' });
+
+    P.draw(ctx);
+    FT.draw(ctx);
+
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.07, vignetteStrength: 0.4 });
+}
+
+function drawCell(x, y, color, lockRatio) {
+    ctx.fillStyle = color;
+    ctx.fillRect(x + 1, y + 1, CELL - 2, CELL - 2);
+    // 立體高光與陰影
+    ctx.fillStyle = 'rgba(255,255,255,0.32)';
+    ctx.fillRect(x + 1, y + 1, CELL - 2, 3);
+    ctx.fillRect(x + 1, y + 1, 3, CELL - 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(x + 1, y + CELL - 4, CELL - 2, 3);
+    ctx.fillRect(x + CELL - 4, y + 1, 3, CELL - 2);
+    if (lockRatio > 0.15) {
+        ctx.fillStyle = 'rgba(255,255,255,' + (lockRatio * 0.55) + ')';
+        ctx.fillRect(x + 1, y + 1, CELL - 2, CELL - 2);
+    }
+}
+
+function drawMini(type, x, y, alpha) {
+    var raw = SHAPES[type].cells[0];
+    var mc = 12;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    // 置中：計算方塊的實際範圍
+    var minX = 9, maxX = 0;
+    for (var i = 0; i < raw.length; i++) {
+        minX = Math.min(minX, raw[i][0]); maxX = Math.max(maxX, raw[i][0]);
+    }
+    var offX = (4 - (maxX - minX + 1)) * mc / 2 - minX * mc;
+    for (var i = 0; i < raw.length; i++) {
+        var cxp = x + offX + raw[i][0] * mc, cyp = y + raw[i][1] * mc;
+        ctx.fillStyle = SHAPES[type].color;
+        ctx.fillRect(cxp + 1, cyp + 1, mc - 2, mc - 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.fillRect(cxp + 1, cyp + 1, mc - 2, 2);
+    }
+    ctx.restore();
+}
+
+// ======================================================================
+// 輸入綁定
+// ----------------------------------------------------------------------
+// 空白鍵＝硬落（一次性動作，必須用 keydown 而非持續狀態判定）。
+// 手機上：A 鍵旋轉、B 鍵暫存、點畫面硬落。
+window.addEventListener('keydown', function (e) {
+    if (!G.isPlaying() || s.over || s.clearing || !s.piece) return;
+    if (e.code === 'Space') { e.preventDefault(); hardDrop(); }
+    else if (e.code === 'KeyZ' || e.code === 'KeyX') tryRotate(1);
+    else if (e.code === 'KeyC' || e.code === 'KeyK') { if (!s.holdUsed) doHold(); }
+});
+
+// 接管畫面上的虛擬按鍵，語意才會和鍵盤一致
+setTimeout(function () {
+    var aBtn = document.querySelector('.rs-abtn.a');
+    var bBtn = document.querySelector('.rs-abtn.b');
+    function bind(el, fn) {
+        if (!el) return;
+        el.addEventListener('touchstart', function (ev) { ev.preventDefault(); fn(); }, { passive: false });
+        el.addEventListener('mousedown', function (ev) { ev.preventDefault(); fn(); });
+    }
+    bind(aBtn, function () { s.touchRotate = true; });
+    bind(bBtn, function () { s.touchHold = true; });
+}, 0);
+
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '填滿一整橫排即可消除。一次消四行分數最高，但堆高的風險也全在你身上。空白鍵硬落、C 鍵暫存。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

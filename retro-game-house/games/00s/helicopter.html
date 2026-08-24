@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 洞穴飛行器</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   洞穴飛行器 — 致敬 Helicopter Game (seethru, 2002)
+   --------------------------------------------------------------------------
+   全部的操作就是**一個按鍵**：按著上升、放開下降。沒有左右、沒有煞車、
+   沒有第二顆按鈕可以救你。
+
+   一個按鍵的遊戲要好玩，難的不是做出來，是讓它**有深度**。
+   這一版的深度來自三件事：
+   1. **升力與重力都是加速度，不是速度**。你按下去的那一刻不會馬上上升，
+      放開也不會馬上下降——所以你操作的其實是「未來 0.4 秒的自己」。
+   2. **通道會呼吸**。上下邊界用兩條相位不同的漂移曲線生成，
+      寬窄不斷變化，玩家必須一直重新估算「現在該按多久」。
+   3. **障礙物長在通道裡面**，不是隨機灑的。它們永遠留得下一條通路，
+      但那條通路會逼你在錯誤的時機改變垂直速度。
+
+   五個難度段是照「同一組參數逐段收緊」設計的，
+   不是隨機亂數硬拉——每一段收緊什麼，都寫在 STAGES 表裡。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'helicopter',
+    title: '洞穴飛行器',
+    tagline: '一個按鍵，可以簡單到沒有說明書，也可以難到你懷疑人生',
+    original: 'Helicopter Game (seethru, 2002)',
+    decade: '00s', year: 2002, platform: 'Flash（網頁）', genre: '單鍵動作',
+    developer: 'David McCandless / Leandro Barreto（seethru）', bgm: '00s',
+    width: 480, height: 320,
+    hud: [
+        { key: 'stage', label: '區段', init: '1' },
+        { key: 'dist', label: '距離', init: '0m' },
+        { key: 'best', label: '最遠', init: '0m' },
+        { key: 'score', label: 'SCORE' }
+    ],
+    touch: 'none',
+    controls: [
+        { keys: ['空白鍵 / A'], desc: '按住上升，放開下降。就這樣，沒有別的了' },
+        { keys: ['滑鼠 / 觸控'], desc: '按住畫面上升' },
+        { keys: ['P'], desc: '暫停' }
+    ],
+    howto: '<strong>按住上升、放開下降</strong>；升力與重力都有慣性，要提前半秒修正。' +
+           '穿過五段逐漸變窄的洞穴。',
+    lesson: {
+        verb: '按住累積向上加速度、放開累積向下加速度，提前修正垂直速度以穿過持續移動的通道。',
+        innovation: '用滑鼠單鍵建立連續類比感：輸入雖只有開與關，慣性、按壓時間與洞穴預讀仍形成無數種飛行軌跡。',
+        mission: '第一段先用一次長按、一次長放穿越，再改用短促脈衝；觀察放開之後機身是否仍上升，並在第二段用提前量維持在通道中線附近。',
+        evolution: '《Lunar Lander》用多方向推力管理速度；《Helicopter Game》把控制壓縮成按住／放開；《Flappy Bird》再把連續升力改為一次一次的離散拍翼。',
+        reflection: '只有一個按鍵的遊戲，若按下就立刻上移、放開就立刻下移而完全沒有慣性，還會需要預判嗎？'
+    },
+    design: '《Helicopter Game》把操作壓到只剩滑鼠按住與放開，卻用加速度讓二元輸入產生連續結果。' +
+            '機身不會在按下瞬間反向，因此玩家控制的其實不是現在的位置，而是數十幀後的垂直速度；看到牆才反應通常已經太晚。' +
+            '原作以無盡綠色洞穴與浮動方塊維持壓力，本站把同一套語法整理成五段：逐步提高速度、振幅與障礙密度，同時限制通道漂移速度低於機身能力。' +
+            '現代化不靠增加按鍵，而是加入可讀的機身傾角、煙跡、區段進度與可驗證的可通過生成規則。' +
+            '<strong>極簡操作仍能有深度，前提是輸入時間會留下可預測、也必須承擔的後果。</strong>',
+    history: 'Internet Archive 最早保存的 seethru《Helicopter Game》頁面日期為 2002 年 6 月 4 日，因此本頁校正為 2002 年，而非先前誤植的 2001／2004。' +
+             'MobyGames 的來源考證指出，作品為 BBC 電視劇《Attachments》的延伸網站 seethru.co.uk 製作，由網站編輯 David McCandless 設計、員工 Leandro Barreto 以 Flash 程式實作。' +
+             '原頁面只要求玩家用滑鼠左鍵飛得越遠越好；這種小檔案、免安裝、一次就懂的形式，正適合早期網頁透過連結與轉載擴散。' +
+             '它的重要性不在複雜內容，而在提前示範「單一輸入、短回合、立即重試」可以支撐完整技巧曲線。',
+    sources: [
+        { label: 'Internet Archive：2002 年 seethru 原始遊戲頁面', url: 'https://web.archive.org/web/20020604072320/http://www.seethru.co.uk/zine/south_coast/helicopter_game.htm' },
+        { label: 'MobyGames：seethru、設計與程式製作考證', url: 'https://www.mobygames.com/game/163119/helicopter-game/trivia/' },
+        { label: 'OneSwitch：單鍵遊戲資料庫的作者與操作紀錄', url: 'https://oneswitch.org.uk/page/oneswitch-puzzle' }
+    ]
+});
+
+var ctx = G.ctx, VW = G.width, VH = G.height;
+var P = new RE.Particles(260);
+var FT = new RE.FloatText();
+
+// ======================================================================
+// 手感參數。一個按鍵的遊戲，全部的個性就這幾個數字。
+// ======================================================================
+var TUNE = {
+    lift: -1180,          // 按住時的向上加速度
+    gravity: 900,         // 放開時的向下加速度
+    maxUp: -280, maxDown: 330,
+    drag: 0.995,
+    tiltPerVel: 0.0016,   // 機身傾角跟著垂直速度走，把「慣性」畫出來
+    craftW: 30, craftH: 14
+};
+
+// ======================================================================
+// 五個難度段：同一組參數逐段收緊，每一段收緊什麼都寫在這裡
+// ======================================================================
+// 每一段的 amp × freq × speed 就是「通道中線的漂移速度」。
+// 這個數字一旦逼近機身的極速上限（280px/s），玩家就算操作完美也追不上，
+// 難度會從「要早半秒動作」變成「物理上做不到」。
+// 第一版第 3~5 段就是這樣爆掉的（第 5 段算出來要 264px/s），自動駕駛全部撞牆。
+// 現在把上限壓在極速的六成（168px/s）以內，難度改用「通道變窄＋障礙變密」來加。
+var STAGES = [
+    { name: '入口', len: 1100, speed: 132, gap: 160, amp: 22, freq: 0.0070, obst: 0.0000,
+      hint: '按住上升，放開下降。先感覺一下機身的慣性。' },
+    { name: '窄口', len: 1300, speed: 150, gap: 136, amp: 28, freq: 0.0085, obst: 0.0016,
+      hint: '通道開始起伏了。提早動作，不要等看到牆。' },
+    { name: '亂流', len: 1500, speed: 165, gap: 118, amp: 34, freq: 0.0100, obst: 0.0026,
+      hint: '上下壁不同步了，寬窄會自己呼吸。' },
+    { name: '石林', len: 1700, speed: 180, gap: 106, amp: 38, freq: 0.0110, obst: 0.0042,
+      hint: '柱子長在通道裡面。它一定留了路，但不會留在你想要的高度。' },
+    { name: '深處', len: 2000, speed: 195, gap: 96,  amp: 42, freq: 0.0125, obst: 0.0050,
+      hint: '最後一段。窄、晃、密——但規則從頭到尾沒變過。' }
+];
+
+// ======================================================================
+// 狀態
+// ======================================================================
+var s = null;
+
+function reset() {
+    s = {
+        stage: 0, dist: 0, score: 0, dead: false, deadT: 0,
+        y: VH / 2, vy: 0, tilt: 0,
+        cols: [],            // 通道剖面：每 COL_W 一格，存上下壁的 y
+        scrollX: 0, spawnX: 0,
+        obstacles: [], smoke: 0, clearT: 0,
+        phaseA: 0, phaseB: 1.7, best: RE.Save.bestScore('helicopter_dist') || 0
+    };
+    P.clear(); FT.clear();
+    G.setStat('score', 0);
+    G.setStat('dist', '0m');
+    G.setStat('best', Math.round(s.best) + 'm');
+    startStage(0);
+}
+
+var COL_W = 8;
+var NCOL = Math.ceil(VW / COL_W) + 3;
+
+function startStage(n) {
+    var st = STAGES[n];
+    s.stage = n; s.st = st;
+    s.stageDist = 0;
+    s.hintT = 3.0;
+    s.obstacles.length = 0;
+    G.setStat('stage', String(n + 1));
+
+    // 重建通道剖面：開場一段先給很寬的入口，讓玩家有時間穩住機身
+    s.cols.length = 0;
+    s.gen = 0;
+    for (var i = 0; i < NCOL; i++) s.cols.push(makeCol(i * COL_W, true));
+    s.y = VH / 2; s.vy = 0;
+}
+
+/**
+ * 通道剖面。上下壁用**兩條相位不同的漂移曲線**，
+ * 所以通道不只是上下擺動，寬窄也會呼吸——這是難度的主要來源。
+ */
+function makeCol(worldX, intro) {
+    var st = s.st;
+    var t = worldX * st.freq;
+    var mid = VH / 2
+        + Math.sin(t) * st.amp
+        + Math.sin(t * 0.53 + 2.1) * st.amp * 0.55;
+    var breath = Math.sin(t * 0.37 + 1.1) * 0.5 + 0.5;      // 0~1
+    var gap = st.gap * (0.82 + breath * 0.36);
+    if (intro) gap = Math.max(gap, 180);                     // 開場先給寬的
+    mid = RE.clamp(mid, gap / 2 + 18, VH - gap / 2 - 18);
+    return { top: mid - gap / 2, bot: mid + gap / 2, x: worldX };
+}
+
+function colAtScreenX(sx) {
+    var idx = Math.floor((sx + s.scrollX % COL_W) / COL_W);
+    idx = RE.clamp(idx, 0, s.cols.length - 1);
+    return s.cols[idx];
+}
+
+// ======================================================================
+// 更新
+// ======================================================================
+function update(dt) {
+    if (!s) return;
+    P.update(dt); FT.update(dt);
+    if (s.hintT > 0) s.hintT -= dt;
+
+    if (s.dead) {
+        s.deadT -= dt;
+        if (s.deadT <= 0 && !s.overShown) {
+            s.overShown = true;
+            gameOver();
+        }
+        return;
+    }
+
+    if (s.clearT > 0) {
+        s.clearT -= dt;
+        if (s.clearT <= 0) {
+            if (s.stage < STAGES.length - 1) {
+                var n = s.stage + 1;
+                G.stageCard(n + 1, STAGES[n].name, STAGES[n].hint, function () { startStage(n); });
+            } else finish();
+        }
+        return;
+    }
+
+    var st = s.st;
+    var holding = RE.Input.down('a') || RE.Input.down('b') || RE.Input.pointer.down;
+
+    // ---------- 一個按鍵的全部內容 ----------
+    s.vy += (holding ? TUNE.lift : TUNE.gravity) * dt;
+    s.vy *= Math.pow(TUNE.drag, dt * 60);
+    s.vy = RE.clamp(s.vy, TUNE.maxUp, TUNE.maxDown);
+    s.y += s.vy * dt;
+    s.tilt = RE.lerp(s.tilt, RE.clamp(s.vy * TUNE.tiltPerVel, -0.42, 0.42), 1 - Math.pow(0.002, dt));
+
+    // ---------- 捲動與生成 ----------
+    var move = st.speed * dt;
+    s.scrollX += move;
+    s.dist += move / 10;
+    s.stageDist += move;
+
+    while (s.scrollX >= COL_W) {
+        s.scrollX -= COL_W;
+        s.gen++;
+        s.cols.shift();
+        var worldX = (s.gen + NCOL) * COL_W + s.stage * 4000;
+        s.cols.push(makeCol(worldX, s.stageDist < 260));
+        maybeSpawnObstacle();
+    }
+
+    for (var i = s.obstacles.length - 1; i >= 0; i--) {
+        var o = s.obstacles[i];
+        o.x -= move;
+        if (o.x + o.w < -20) s.obstacles.splice(i, 1);
+    }
+
+    // ---------- 排煙 ----------
+    s.smoke += dt;
+    if (s.smoke > 0.045) {
+        s.smoke = 0;
+        P.spawn({
+            x: 92 - TUNE.craftW / 2, y: s.y + 3,
+            vx: -st.speed * 0.55 + RE.rand(-14, 14), vy: RE.rand(-16, 16),
+            gravity: -12, drag: 0.94,
+            size: RE.rand(3, 6), sizeEnd: 0,
+            color: holding ? 'rgba(210,225,255,0.55)' : 'rgba(160,175,200,0.4)',
+            life: RE.rand(0.35, 0.7), shape: 'circle'
+        });
+    }
+
+    // ---------- 碰撞 ----------
+    checkHit();
+
+    var shown = Math.round(s.dist);
+    if (shown !== s.distShown) {
+        s.distShown = shown;
+        G.setStat('dist', shown + 'm');
+        addScore(0);
+    }
+
+    // ---------- 過段 ----------
+    if (s.stageDist >= st.len) {
+        s.clearT = 0.9;
+        addScore(1200);
+        RetroAudio.play('win');
+        RE.juice.flash('rgba(200,235,255,0.3)', 0.15);
+        FT.add(240, 90, '通過 ' + st.name, { color: '#8fe8ff', size: 15 });
+    }
+}
+
+/** 障礙物長在通道裡面，且一定留得下一條通路 */
+function maybeSpawnObstacle() {
+    var st = s.st;
+    if (st.obst <= 0) return;
+    if (s.stageDist < 260) return;                 // 開場緩衝區不放
+    if (Math.random() > st.obst * COL_W) return;
+    var last = s.obstacles[s.obstacles.length - 1];
+    if (last && last.x > VW - 130) return;         // 別擠在一起
+
+    var col = s.cols[s.cols.length - 1];
+    var gap = col.bot - col.top;
+    var minPass = 52;                              // 保證留給玩家的通路高度
+    if (gap < minPass + 26) return;
+    var h = Math.min(gap - minPass, RE.rand(26, 64));
+    var fromTop = Math.random() < 0.5;
+    s.obstacles.push({
+        x: VW + 20, w: RE.randInt(12, 20), h: h,
+        top: fromTop, seed: Math.random() * 10
+    });
+}
+
+function craftRect() {
+    return { x: 92 - TUNE.craftW / 2, y: s.y - TUNE.craftH / 2, w: TUNE.craftW, h: TUNE.craftH };
+}
+
+function checkHit() {
+    var c = craftRect();
+    // 洞壁：取機身橫跨的每一格剖面比對
+    for (var x = c.x; x <= c.x + c.w; x += 4) {
+        var col = colAtScreenX(x);
+        if (!col) continue;
+        if (c.y < col.top || c.y + c.h > col.bot) { crash(); return; }
+    }
+    // 障礙物
+    for (var i = 0; i < s.obstacles.length; i++) {
+        var o = s.obstacles[i];
+        var colO = colAtScreenX(o.x + o.w / 2);
+        var oy = o.top ? colO.top : colO.bot - o.h;
+        if (RE.aabb(c, { x: o.x, y: oy, w: o.w, h: o.h })) { crash(); return; }
+    }
+}
+
+function crash() {
+    if (s.dead) return;
+    s.dead = true; s.deadT = 1.0;
+    RetroAudio.play('explosion');
+    RE.juice.hitstop(0.1); RE.juice.shake(0.6);
+    RE.juice.flash('rgba(255,180,90,0.35)', 0.16);
+    P.burst(92, s.y, 26, {
+        colors: ['#ffd166', '#ff8a3d', '#ffe9c4', '#8a8f9c'],
+        speedMin: 60, speedMax: 260, gravity: 340, lifeMin: 0.35, lifeMax: 0.8, glow: true
+    });
+    P.ring(92, s.y, '#ffd166', 46);
+}
+
+function addScore(n) {
+    s.score = Math.round(s.dist) * 10 + (s.bonus || 0) + (n ? (s.bonus = (s.bonus || 0) + n, 0) : 0);
+    G.setStat('score', s.score);
+}
+
+function gameOver() {
+    var d = Math.round(s.dist);
+    if (d > s.best) { RE.Save.submitScore('helicopter_dist', d); s.best = d; }
+    G.setStat('best', Math.round(s.best) + 'm');
+    G.gameOver({
+        win: false, score: s.score,
+        body: '你在第 ' + (s.stage + 1) + ' 段「' + s.st.name + '」墜毀，飛了 ' + d + ' 公尺。' +
+              '想一下你最後那一下是「按太久」還是「放太久」——' +
+              '答案幾乎永遠是<strong>你反應得太晚</strong>。' +
+              '這款遊戲只有一個按鍵，所以它能考的東西只剩一個：' +
+              '<strong>你有沒有在操作「現在」，還是在操作「半秒後的自己」。</strong>'
+    });
+}
+
+function finish() {
+    var d = Math.round(s.dist);
+    if (d > s.best) { RE.Save.submitScore('helicopter_dist', d); s.best = d; }
+    addScore(3000);
+    G.gameOver({
+        win: true, score: s.score,
+        body: '你飛完了整座洞穴，' + d + ' 公尺。' +
+              '從頭到尾，這款遊戲只教過你一件事：<strong>按住上升，放開下降</strong>。' +
+              '沒有新招式、沒有道具、沒有升級——難度全部來自' +
+              '同一組參數被一段一段收緊。' +
+              '這就是 Flash 時代那批單鍵小品最厲害的地方：' +
+              '<strong>零學習成本的入口，加上一條可以無限延伸的難度曲線。</strong>'
+    });
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function render() {
+    if (!s) return;
+    G.beginWorld();
+    drawBack();
+    drawCave();
+    drawObstacles();
+    if (!s.dead) drawCraft();
+    P.draw(ctx);
+    FT.draw(ctx);
+    G.endWorld();
+    drawHUD();
+    G.postFX({ scanAlpha: 0.05, vignetteStrength: 0.45 });
+}
+
+function drawBack() {
+    var g = ctx.createLinearGradient(0, 0, 0, VH);
+    g.addColorStop(0, '#10141f');
+    g.addColorStop(1, '#070a12');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, VW, VH);
+    // 遠景礦柱：用比通道慢的速度捲動，做出縱深
+    ctx.fillStyle = 'rgba(120,150,200,0.05)';
+    var off = (s.gen * COL_W + s.scrollX) * 0.25;
+    for (var i = 0; i < 8; i++) {
+        var x = ((i * 90 - off) % (VW + 180) + VW + 180) % (VW + 180) - 90;
+        ctx.fillRect(x, 0, 26, VH);
+    }
+}
+
+function caveColor(i) {
+    // 每一段換一組岩色，讓「進入下一段」看得出來
+    var pal = [
+        ['#3a4a63', '#5d7396'], ['#3f4358', '#67708f'], ['#4a3f5c', '#786399'],
+        ['#4d4433', '#7d6f4d'], ['#3b2c34', '#6b4a58']
+    ][s.stage] || ['#3a4a63', '#5d7396'];
+    return pal[i];
+}
+
+function drawCave() {
+    var dark = caveColor(0), light = caveColor(1);
+    var ox = -(s.scrollX % COL_W);
+
+    // 上壁
+    ctx.fillStyle = dark;
+    ctx.beginPath();
+    ctx.moveTo(-COL_W, -2);
+    for (var i = 0; i < s.cols.length; i++) ctx.lineTo(ox + i * COL_W, s.cols[i].top);
+    ctx.lineTo(VW + COL_W, -2);
+    ctx.closePath(); ctx.fill();
+    // 下壁
+    ctx.beginPath();
+    ctx.moveTo(-COL_W, VH + 2);
+    for (i = 0; i < s.cols.length; i++) ctx.lineTo(ox + i * COL_W, s.cols[i].bot);
+    ctx.lineTo(VW + COL_W, VH + 2);
+    ctx.closePath(); ctx.fill();
+
+    // 岩面高光：讓通道邊界一眼看得出來，這是單鍵遊戲最重要的可讀性
+    ctx.strokeStyle = light;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    for (i = 0; i < s.cols.length; i++) {
+        var x = ox + i * COL_W;
+        if (i === 0) ctx.moveTo(x, s.cols[i].top); else ctx.lineTo(x, s.cols[i].top);
+    }
+    ctx.stroke();
+    ctx.beginPath();
+    for (i = 0; i < s.cols.length; i++) {
+        x = ox + i * COL_W;
+        if (i === 0) ctx.moveTo(x, s.cols[i].bot); else ctx.lineTo(x, s.cols[i].bot);
+    }
+    ctx.stroke();
+
+    // 鐘乳石紋理
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    for (i = 0; i < s.cols.length; i += 5) {
+        x = ox + i * COL_W;
+        var c = s.cols[i];
+        var n = ((i + s.gen) * 2654435761) % 100 / 100;
+        ctx.fillRect(x, c.top - 12 - n * 10, 3, 12 + n * 10);
+        ctx.fillRect(x + 3, c.bot, 3, 10 + n * 12);
+    }
+}
+
+function drawObstacles() {
+    for (var i = 0; i < s.obstacles.length; i++) {
+        var o = s.obstacles[i];
+        var col = colAtScreenX(o.x + o.w / 2);
+        if (!col) continue;
+        var y = o.top ? col.top : col.bot - o.h;
+        ctx.fillStyle = caveColor(0);
+        ctx.fillRect(o.x, y, o.w, o.h);
+        ctx.fillStyle = caveColor(1);
+        if (o.top) ctx.fillRect(o.x, y + o.h - 3, o.w, 3);
+        else ctx.fillRect(o.x, y, o.w, 3);
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillRect(o.x + o.w - 3, y, 3, o.h);
+    }
+}
+
+function drawCraft() {
+    var x = 92, y = s.y;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(s.tilt);
+
+    // 機身
+    ctx.fillStyle = '#e8b04a';
+    RE.Draw.roundRect(ctx, -15, -7, 26, 14, 6); ctx.fill();
+    ctx.fillStyle = '#c98f2e';
+    RE.Draw.roundRect(ctx, -15, 0, 26, 7, 5); ctx.fill();
+    // 尾桁
+    ctx.fillStyle = '#b8811f';
+    ctx.fillRect(8, -2, 12, 4);
+    ctx.fillStyle = '#e8b04a';
+    ctx.fillRect(17, -8, 3, 10);
+    // 座艙罩
+    ctx.fillStyle = 'rgba(160,220,255,0.85)';
+    ctx.beginPath(); ctx.arc(-6, -1, 5.5, 0, RE.TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.beginPath(); ctx.arc(-7.5, -3, 1.8, 0, RE.TAU); ctx.fill();
+    // 滑橇
+    ctx.strokeStyle = '#8a6b46'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-11, 7); ctx.lineTo(-11, 10); ctx.moveTo(4, 7); ctx.lineTo(4, 10);
+    ctx.moveTo(-14, 10); ctx.lineTo(7, 10);
+    ctx.stroke();
+    // 主旋翼：轉速跟著升力走，把「我正在按著」畫出來
+    var holding = RE.Input.down('a') || RE.Input.down('b') || RE.Input.pointer.down;
+    var spin = Date.now() * (holding ? 0.055 : 0.03);
+    var w = Math.abs(Math.cos(spin)) * 22 + 4;
+    ctx.strokeStyle = holding ? 'rgba(220,240,255,0.9)' : 'rgba(180,195,215,0.6)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(-3 - w, -10); ctx.lineTo(-3 + w, -10); ctx.stroke();
+    ctx.fillStyle = '#8a6b46';
+    ctx.fillRect(-4.5, -11, 3, 5);
+    // 尾旋翼
+    var tw = Math.abs(Math.sin(spin * 1.6)) * 5 + 1;
+    ctx.strokeStyle = 'rgba(200,215,235,0.7)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(19, -6 - tw); ctx.lineTo(19, -6 + tw); ctx.stroke();
+    ctx.restore();
+
+    // 按住時機腹補一圈氣流，讓「升力正在作用」有回饋
+    if (holding) {
+        ctx.save();
+        ctx.globalAlpha = 0.25 + Math.sin(Date.now() * 0.02) * 0.08;
+        ctx.strokeStyle = '#bfe4ff'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.ellipse(x - 2, y + 14, 13, 4, 0, 0, RE.TAU); ctx.stroke();
+        ctx.restore();
+    }
+}
+
+function drawHUD() {
+    if (s.hintT > 0) {
+        var a = Math.min(1, s.hintT / 0.7);
+        ctx.globalAlpha = a;
+        RE.Draw.text(ctx, s.st.name, VW / 2, 14, { size: 15, align: 'center', color: '#8fe8ff' });
+        RE.Draw.text(ctx, s.st.hint, VW / 2, 36, { size: 11, align: 'center', color: '#dfe9ff' });
+        ctx.globalAlpha = 1;
+    }
+    // 本段進度條：一個按鍵的遊戲沒有別的資訊，至少要讓玩家知道還剩多遠
+    var w = 150, x0 = VW / 2 - w / 2, y0 = VH - 14;
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fillRect(x0, y0, w, 5);
+    ctx.fillStyle = '#8fe8ff';
+    ctx.fillRect(x0, y0, w * RE.clamp(s.stageDist / s.st.len, 0, 1), 5);
+}
+
+// ======================================================================
+function openPause() {
+    G._state = 'paused';
+    RetroAudio.play('pause');
+    G.showOverlay({
+        title: '暫停中',
+        body: '只有一個按鍵：按住上升、放開下降。難的是提早半秒動作。',
+        buttons: [
+            { label: '▶ 繼續', onClick: function () { G.resume(); } },
+            { label: '↻ 重新開始', cls: 'ghost', onClick: function () { G.restart(); } }
+        ],
+        press: '按 P 或 ESC 繼續'
+    });
+}
+G.pause = openPause;
+
+function showTitleScreen() {
+    G._state = 'title';
+    G.showOverlay({
+        title: '洞穴飛行器',
+        body: G.cfg.howto,
+        buttons: [{ label: '▶ 起飛', onClick: function () { G.hideOverlay(); G._state = 'playing'; reset(); } }],
+        press: '按 空白鍵 或 Enter 開始'
+    });
+    var onKey = function (e) {
+        if (G._state !== 'title') return;
+        if (e.code === 'Space' || e.code === 'Enter') {
+            e.preventDefault();
+            window.removeEventListener('keydown', onKey);
+            RetroAudio.play('confirm');
+            G.hideOverlay(); G._state = 'playing'; reset();
+        }
+    };
+    window.addEventListener('keydown', onKey);
+}
+
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+showTitleScreen();
+</script>
+</body>
+</html>

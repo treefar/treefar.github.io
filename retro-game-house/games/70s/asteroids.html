@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 隕石迴旋</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   隕石迴旋 — 致敬 Asteroids (Atari, 1979)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. 慣性物理：飛船沒有煞車，只能靠反推減速。這個「難操作」正是設計核心，
+      讓每一次移動都要預先規劃，操作本身成為技巧。
+   2. 畫面環繞（wrap-around）：沒有邊界，離開一側從另一側回來。
+   3. 隕石分裂：大→中→小，打碎會讓場面更混亂，玩家必須管理場上密度。
+   4. 向量線條美學：全部以線條繪製，重現 1979 年向量顯示器的銳利感。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'asteroids',
+    title: '隕石迴旋',
+    tagline: '沒有煞車的飛船，是它最偉大的設計決定',
+    original: 'Asteroids (Atari, 1979)',
+    decade: '70s', year: 1979, platform: '大型街機', genre: '多向射擊',
+    developer: 'Atari · Ed Logg', bgm: '70s',
+    width: 520, height: 400,
+    lives: 3,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'best', label: 'BEST' },
+        { key: 'wave', label: 'WAVE', init: 1 }
+    ],
+    touch: 'dpad+ab', labelA: '射擊', labelB: '推進',
+    controls: [
+        { keys: ['←', '→'], desc: '旋轉' },
+        { keys: ['↑'], desc: '推進' },
+        { keys: ['空白'], desc: '射擊' },
+        { keys: ['↓'], desc: '超空間跳躍（隨機傳送，有風險）' }
+    ],
+    howto: '打碎所有隕石即可進入下一波。<strong>飛船沒有煞車</strong>——要停下來必須轉身反推。' +
+           '大隕石打碎會變成兩顆中隕石，中的再變兩顆小的，場面會越來越亂。' +
+           '走投無路時可用超空間跳躍脫身，但有機率直接撞死。',
+    lesson: {
+        verb: '旋轉、推進與反推控制沒有煞車的飛船，再決定何時把一顆大隕石拆成更多高速目標。',
+        innovation: '畫面環繞取消了安全邊界；每顆大隕石又會依「大→兩中→四小」展開成七個目標，射擊因此同時是解題與製造風險。',
+        mission: '先只擊碎一顆大隕石，觀察下方分裂鏈與場上大／中／小數量；接著停止射擊五秒，用轉身反推把速度降下來。',
+        evolution: '《Asteroids》把《Spacewar!》式的旋轉／推進控制搬進街機，再由《Gravitar》結合《Lunar Lander》的重力與洞穴探索。',
+        reflection: '如果大隕石被命中後直接消失，玩家還需要管理射擊順序與場上密度嗎？'
+    },
+    design: '《Asteroids》的核心矛盾是「解決眼前危險，會先製造更多危險」。' +
+            '一顆大隕石會變成兩顆中隕石，兩顆中隕石又會變成四顆更快的小隕石；玩家若只追求命中，場上目標數會短時間暴增。' +
+            '飛船沒有煞車，必須轉身反推；畫面四邊又彼此相連，因此逃離畫面並不等於脫離危險。' +
+            '本站保留向量線條、慣性、環繞與超空間風險，並以固定資訊列即時列出分裂規則和場上組成，' +
+            '讓現代玩家不用先背攻略，也能看見「射擊順序就是空間管理」的設計論點。',
+    history: 'Atari 於 1979 年 11 月推出《Asteroids》。The Strong 的館藏資料指出，Atari 主管 Lyle Rains 與設計師 Ed Logg' +
+             '從不同於《Space Invaders》仿作的方向發展這款作品；單色向量線、旋轉／推進／射擊／超空間，以及隕石越打越碎共同形成其辨識度。' +
+             'Atari 售出超過七萬台街機，使它成為該公司最暢銷的街機作品；排行榜則屬於早期允許玩家留下三字母縮寫的作品之一，' +
+             '不宜寫成未經限定的「第一款」。',
+    sources: [
+        { label: 'Atari：Asteroids: Recharged 與 1979 年原作特色', url: 'https://atari.com/blogs/newsroom/asteroids%E2%84%A2-recharged-rains-ufos-space-debris-dec-14' },
+        { label: 'The Strong：Asteroids 世界電玩名人堂資料', url: 'https://www.museumofplay.org/games/asteroids/' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(500);
+var FT = new RE.FloatText();
+var ASTEROIDS_ART = { image: new Image(), manifest: null };
+ASTEROIDS_ART.image.src = '../../assets/games/asteroids/phosphor-vector-atlas.png';
+fetch('../../assets/games/asteroids/phosphor-vector-manifest.json')
+    .then(function (r) { if (!r.ok) throw new Error('asteroids art manifest ' + r.status); return r.json(); })
+    .then(function (m) { ASTEROIDS_ART.manifest = m; })
+    .catch(function () { ASTEROIDS_ART.manifest = null; });
+
+var WAVES = [
+    { count: 4, speed: 1.00, ufo: 0,    name: '外圍碎石帶' },
+    { count: 5, speed: 1.10, ufo: 22,   name: '密集區' },
+    { count: 6, speed: 1.20, ufo: 18,   name: '深空遭遇' },
+    { count: 7, speed: 1.32, ufo: 15,   name: '不速之客' },
+    { count: 8, speed: 1.45, ufo: 12,   name: '碎石風暴' },
+    { count: 9, speed: 1.58, ufo: 10,   name: '重力陷阱' },
+    { count: 10, speed: 1.72, ufo: 8,   name: '最後一片' }
+];
+
+var s = {};
+
+function makeAsteroid(x, y, size, speedMul) {
+    // 每顆隕石有自己的不規則輪廓，用固定隨機值產生一次
+    var pts = [], n = RE.randInt(8, 12);
+    var radius = size === 3 ? 34 : (size === 2 ? 20 : 11);
+    for (var i = 0; i < n; i++) {
+        pts.push(radius * RE.rand(0.68, 1.28));
+    }
+    var ang = RE.rand(0, RE.TAU);
+    var spd = (size === 3 ? 26 : size === 2 ? 42 : 66) * speedMul;
+    return {
+        x: x, y: y, size: size, r: radius * 0.86,
+        vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
+        rot: RE.rand(0, RE.TAU), spin: RE.rand(-1.1, 1.1),
+        pts: pts, flash: 0
+    };
+}
+
+function reset() {
+    s = {
+        wave: 1, lives: 3, score: 0,
+        ship: { x: W / 2, y: H / 2, vx: 0, vy: 0, a: -Math.PI / 2, thrust: 0, invuln: 3, alive: true },
+        bullets: [], rocks: [], ufo: null, ufoBullets: [],
+        ufoTimer: 20, respawn: 0,
+        streak: 0, streakTimer: 0,
+        hyperCool: 0,
+        artFx: [],
+        over: false, clearTimer: 0
+    };
+    spawnWave(1);
+    G.setStat('score', 0); G.setStat('wave', 1); G.setLives(3);
+}
+
+function spawnWave(n) {
+    var cfg = WAVES[Math.min(n - 1, WAVES.length - 1)];
+    s.rocks = [];
+    for (var i = 0; i < cfg.count; i++) {
+        // 隕石不能生在飛船附近，否則玩家一開場就被撞死
+        var x, y, tries = 0;
+        do {
+            x = RE.rand(0, W); y = RE.rand(0, H);
+            tries++;
+        } while (RE.dist(x, y, s.ship.x, s.ship.y) < 130 && tries < 40);
+        s.rocks.push(makeAsteroid(x, y, 3, cfg.speed));
+    }
+    s.cfg = cfg;
+    s.ufoTimer = cfg.ufo || 999;
+}
+
+function wrap(o) {
+    if (o.x < -20) o.x = W + 20; else if (o.x > W + 20) o.x = -20;
+    if (o.y < -20) o.y = H + 20; else if (o.y > H + 20) o.y = -20;
+}
+
+// ======================================================================
+function update(dt) {
+    if (s.over) return;
+
+    if (s.respawn > 0) {
+        s.respawn -= dt;
+        if (s.respawn <= 0) {
+            s.ship.x = W / 2; s.ship.y = H / 2;
+            s.ship.vx = 0; s.ship.vy = 0;
+            s.ship.a = -Math.PI / 2;
+            s.ship.alive = true;
+            s.ship.invuln = 2.6;
+        }
+    }
+
+    // ---- 飛船 ----
+    var sh = s.ship;
+    if (sh.alive) {
+        sh.a += RE.Input.axisX() * 3.9 * dt;
+
+        var thrusting = RE.Input.down('up') || RE.Input.down('b');
+        if (thrusting) {
+            sh.vx += Math.cos(sh.a) * 245 * dt;
+            sh.vy += Math.sin(sh.a) * 245 * dt;
+            sh.thrust = 1;
+            // 推進尾焰粒子：讓「加速中」在視覺上明確可見
+            if (Math.random() < 0.75) {
+                P.spawn({
+                    x: sh.x - Math.cos(sh.a) * 11, y: sh.y - Math.sin(sh.a) * 11,
+                    vx: -Math.cos(sh.a) * RE.rand(60, 150) + RE.rand(-24, 24),
+                    vy: -Math.sin(sh.a) * RE.rand(60, 150) + RE.rand(-24, 24),
+                    size: RE.rand(1.6, 3.4), color: RE.pick(['#ffd166', '#ff9ebb', '#fff8e7']),
+                    life: RE.rand(0.16, 0.34), gravity: 0, drag: 0.9, glow: true, shape: 'circle'
+                });
+            }
+            if (Math.random() < 0.14) RetroAudio.play('step');
+        } else {
+            sh.thrust = Math.max(0, sh.thrust - dt * 5);
+        }
+
+        // 阻力極小：慣性是這款遊戲的靈魂，但完全不衰減會讓新手失控
+        var drag = Math.pow(0.994, dt * 60);
+        sh.vx *= drag; sh.vy *= drag;
+        var sp = Math.hypot(sh.vx, sh.vy);
+        if (sp > 320) { sh.vx = sh.vx / sp * 320; sh.vy = sh.vy / sp * 320; }
+
+        sh.x += sh.vx * dt; sh.y += sh.vy * dt;
+        wrap(sh);
+
+        if (sh.invuln > 0) sh.invuln -= dt;
+
+        // 射擊
+        if (RE.Input.pressed('a') && s.bullets.length < 5) {
+            s.bullets.push({
+                x: sh.x + Math.cos(sh.a) * 13, y: sh.y + Math.sin(sh.a) * 13,
+                vx: Math.cos(sh.a) * 430 + sh.vx * 0.5,
+                vy: Math.sin(sh.a) * 430 + sh.vy * 0.5,
+                life: 1.15
+            });
+            RetroAudio.play('shoot');
+            RE.juice.shake(0.05);
+            // 後座力：射擊會把飛船稍微往後推，強化打擊回饋
+            sh.vx -= Math.cos(sh.a) * 12;
+            sh.vy -= Math.sin(sh.a) * 12;
+        }
+
+        // 超空間跳躍
+        if (s.hyperCool > 0) s.hyperCool -= dt;
+        if (RE.Input.pressed('down') && s.hyperCool <= 0) {
+            s.hyperCool = 3;
+            addAsteroidArtFx('hyperjump_ring', sh.x, sh.y, 72, 72, 0.46);
+            P.burst(sh.x, sh.y, 18, { colors: ['#c084fc', '#e9d5ff'], speedMin: 60, speedMax: 190,
+                gravity: 0, lifeMin: 0.2, lifeMax: 0.5, shape: 'circle', glow: true });
+            sh.x = RE.rand(40, W - 40); sh.y = RE.rand(40, H - 40);
+            sh.vx = 0; sh.vy = 0;
+            RetroAudio.play('dash');
+            P.ring(sh.x, sh.y, '#c084fc', 50);
+            addAsteroidArtFx('hyperjump_ring', sh.x, sh.y, 64, 64, 0.46);
+            // 原作的超空間有機率直接爆炸，這裡改成「有機率傳送到危險位置」
+            for (var i = 0; i < s.rocks.length; i++) {
+                if (RE.dist(sh.x, sh.y, s.rocks[i].x, s.rocks[i].y) < s.rocks[i].r + 14) {
+                    FT.add(sh.x, sh.y - 24, '跳進隕石裡了！', { color: '#ff6b6b', size: 14 });
+                    die();
+                    break;
+                }
+            }
+        }
+    }
+
+    // ---- 子彈 ----
+    for (var i = s.bullets.length - 1; i >= 0; i--) {
+        var b = s.bullets[i];
+        b.x += b.vx * dt; b.y += b.vy * dt;
+        b.life -= dt;
+        wrap(b);
+        if (b.life <= 0) { s.bullets.splice(i, 1); continue; }
+
+        var hit = false;
+        for (var j = s.rocks.length - 1; j >= 0; j--) {
+            var r = s.rocks[j];
+            if (RE.dist(b.x, b.y, r.x, r.y) < r.r) {
+                breakRock(j, r);
+                s.bullets.splice(i, 1);
+                hit = true;
+                break;
+            }
+        }
+        if (hit) continue;
+        if (s.ufo && RE.dist(b.x, b.y, s.ufo.x, s.ufo.y) < 17) {
+            killUFO();
+            s.bullets.splice(i, 1);
+        }
+    }
+
+    // ---- 隕石 ----
+    for (var i = 0; i < s.rocks.length; i++) {
+        var r = s.rocks[i];
+        r.x += r.vx * dt; r.y += r.vy * dt;
+        r.rot += r.spin * dt;
+        if (r.flash > 0) r.flash -= dt;
+        wrap(r);
+        if (sh.alive && sh.invuln <= 0 && RE.dist(sh.x, sh.y, r.x, r.y) < r.r + 8) { die(); }
+    }
+
+    // ---- UFO ----
+    s.ufoTimer -= dt;
+    if (s.ufoTimer <= 0 && !s.ufo && s.rocks.length > 0) {
+        var fromLeft = Math.random() < 0.5;
+        s.ufo = { x: fromLeft ? -25 : W + 25, y: RE.rand(60, H - 60),
+                  vx: (fromLeft ? 1 : -1) * 78, vy: 0, fire: 1.6, zig: 0 };
+        s.ufoTimer = 22;
+        RetroAudio.play('laser');
+    }
+    if (s.ufo) {
+        var u = s.ufo;
+        u.zig += dt;
+        if (u.zig > 1.1) { u.zig = 0; u.vy = RE.pick([-52, 0, 52]); }
+        u.x += u.vx * dt; u.y += u.vy * dt;
+        u.y = RE.clamp(u.y, 30, H - 30);
+        u.fire -= dt;
+        if (u.fire <= 0 && sh.alive) {
+            u.fire = 1.5;
+            // UFO 會朝玩家射擊，但有誤差，隨波次逐漸變準
+            var ang = Math.atan2(sh.y - u.y, sh.x - u.x) + RE.rand(-0.32, 0.32) / Math.min(s.wave, 5);
+            s.ufoBullets.push({ x: u.x, y: u.y, vx: Math.cos(ang) * 210, vy: Math.sin(ang) * 210, life: 2.4 });
+            RetroAudio.play('shoot');
+        }
+        if (u.x < -50 || u.x > W + 50) s.ufo = null;
+    }
+
+    for (var i = s.ufoBullets.length - 1; i >= 0; i--) {
+        var ub = s.ufoBullets[i];
+        ub.x += ub.vx * dt; ub.y += ub.vy * dt;
+        ub.life -= dt;
+        wrap(ub);
+        if (ub.life <= 0) { s.ufoBullets.splice(i, 1); continue; }
+        if (sh.alive && sh.invuln <= 0 && RE.dist(ub.x, ub.y, sh.x, sh.y) < 11) {
+            s.ufoBullets.splice(i, 1);
+            die();
+        }
+    }
+
+    if (s.streakTimer > 0) { s.streakTimer -= dt; if (s.streakTimer <= 0) s.streak = 0; }
+
+    // ---- 過波 ----
+    if (s.rocks.length === 0 && !s.clearTimer) {
+        s.clearTimer = 1.3;
+        RetroAudio.play('levelUp');
+        addScore(400 * s.wave);
+        FT.add(W / 2, H / 2, 'WAVE CLEAR', { color: '#70e4b5', size: 24, life: 1.3 });
+    }
+    if (s.clearTimer > 0) {
+        s.clearTimer -= dt;
+        if (s.clearTimer <= 0) {
+            s.clearTimer = 0;
+            nextWave();
+        }
+    }
+
+    for (var af = s.artFx.length - 1; af >= 0; af--) {
+        s.artFx[af].t -= dt;
+        if (s.artFx[af].t <= 0) s.artFx.splice(af, 1);
+    }
+    P.update(dt);
+    FT.update(dt);
+}
+
+function breakRock(index, r) {
+    s.rocks.splice(index, 1);
+    s.streak++;
+    s.streakTimer = 2;
+
+    var base = r.size === 3 ? 20 : (r.size === 2 ? 50 : 100);
+    var mult = 1 + Math.floor((s.streak - 1) / 4) * 0.5;
+    var gain = Math.round(base * mult);
+    addScore(gain);
+    FT.add(r.x, r.y, '+' + gain, { color: r.size === 1 ? '#ffd166' : '#a7f3d0', size: 14 + (3 - r.size) * 2 });
+
+    RE.juice.hitstop(0.02 + (3 - r.size) * 0.008);
+    RE.juice.shake(0.1 + (3 - r.size) * 0.06);
+    RE.juice.rumble(0.3, 0.07);
+    RetroAudio.play(r.size === 3 ? 'explosion' : 'hit');
+    if (s.streak > 1 && s.streak % 4 === 0) RetroAudio.play('combo', s.streak / 4);
+
+    P.burst(r.x, r.y, r.size === 3 ? 22 : r.size === 2 ? 14 : 8, {
+        colors: ['#a7f3d0', '#70e4b5', '#fff8e7'], speedMin: 40, speedMax: 190,
+        gravity: 0, drag: 0.94, lifeMin: 0.25, lifeMax: 0.6, sizeMax: r.size + 2
+    });
+    P.ring(r.x, r.y, '#a7f3d0', 16 + r.size * 12);
+    addAsteroidArtFx('asteroid_shards', r.x, r.y, 38 + r.size * 13, 38 + r.size * 13, 0.34, r.rot);
+
+    // 分裂：大→2 中，中→2 小，小→消失
+    if (r.size > 1) {
+        for (var k = 0; k < 2; k++) {
+            var nr = makeAsteroid(r.x, r.y, r.size - 1, s.cfg.speed);
+            // 讓碎片往原本速度的兩側散開，看起來像真的被打碎
+            var base_ang = Math.atan2(r.vy, r.vx) + (k === 0 ? 0.7 : -0.7);
+            var sp = Math.hypot(nr.vx, nr.vy);
+            nr.vx = Math.cos(base_ang) * sp;
+            nr.vy = Math.sin(base_ang) * sp;
+            s.rocks.push(nr);
+        }
+    }
+}
+
+function killUFO() {
+    addAsteroidArtFx('ufo_wreck', s.ufo.x, s.ufo.y, 62, 48, 0.58);
+    addScore(250);
+    FT.add(s.ufo.x, s.ufo.y, '+250', { color: '#ff6b6b', size: 18 });
+    P.burst(s.ufo.x, s.ufo.y, 26, { colors: ['#ff6b6b', '#ffd166', '#fff8e7'],
+        speedMin: 60, speedMax: 240, gravity: 0, drag: 0.93, lifeMin: 0.3, lifeMax: 0.7 });
+    P.ring(s.ufo.x, s.ufo.y, '#ff6b6b', 55);
+    RE.juice.impact(2);
+    RetroAudio.play('bigExplosion');
+    s.ufo = null;
+}
+
+function die() {
+    if (!s.ship.alive) return;
+    s.ship.alive = false;
+    s.lives--;
+    s.streak = 0;
+    G.setLives(s.lives);
+    addAsteroidArtFx('ship_hurt', s.ship.x, s.ship.y, 54, 54, 0.14, s.ship.a);
+    addAsteroidArtFx('ship_wreck', s.ship.x, s.ship.y, 62, 62, 0.72, s.ship.a);
+
+    RE.juice.impact(3);
+    RE.juice.flash('rgba(255,107,107,0.45)', 0.15);
+    RE.juice.slowmo(0.3, 0.8);
+    RetroAudio.play('bigExplosion');
+    P.burst(s.ship.x, s.ship.y, 34, { colors: ['#ff6b6b', '#ffd166', '#fff8e7'],
+        speedMin: 50, speedMax: 260, gravity: 0, drag: 0.95, lifeMin: 0.4, lifeMax: 1 });
+    P.ring(s.ship.x, s.ship.y, '#ff6b6b', 70);
+
+    if (s.lives <= 0) {
+        s.over = true;
+        G.gameOver({
+            score: s.score,
+            body: '撐到第 ' + s.wave + ' 波「' + s.cfg.name + '」。記住：要停下來，得先轉身反推。'
+        });
+    } else {
+        s.respawn = 1.6;
+    }
+}
+
+function addScore(n) { s.score += n; G.setStat('score', s.score); }
+
+function nextWave() {
+    s.wave++;
+    if (s.wave > WAVES.length) {
+        s.over = true;
+        RE.Save.unlockLevel('asteroids', WAVES.length + 1);
+        G.gameOver({ score: s.score, win: true,
+            body: '七波隕石全數清空。1979 年的原作沒有終點——它會一直循環到你死為止。' });
+        return;
+    }
+    G.setStat('wave', s.wave);
+    RE.Save.unlockLevel('asteroids', s.wave);
+    s.bullets = []; s.ufoBullets = []; s.ufo = null;
+    s.ship.vx = 0; s.ship.vy = 0;
+    s.ship.invuln = 2;
+    spawnWave(s.wave);
+    G.stageCard(s.wave, s.cfg.name, s.cfg.count + ' 顆大隕石' + (s.cfg.ufo < 99 ? '　✦ 敵方 UFO 出沒' : ''));
+}
+
+// ======================================================================
+// 向量風繪製
+// ======================================================================
+function strokePoly(pts, color, lw, glow) {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lw || 2;
+    ctx.lineJoin = 'round';
+    if (glow !== false) { ctx.shadowBlur = 8; ctx.shadowColor = color; }
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (var i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawAsteroidsAsset(name, cx, cy, w, h, alpha, rotation) {
+    var m = ASTEROIDS_ART.manifest;
+    if (!m || !m.assets || !m.assets[name] || !ASTEROIDS_ART.image.complete ||
+        !ASTEROIDS_ART.image.naturalWidth) return false;
+    var a = m.assets[name];
+    ctx.save();
+    ctx.globalAlpha = alpha === undefined ? 1 : alpha;
+    ctx.translate(cx, cy);
+    if (rotation) ctx.rotate(rotation);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(ASTEROIDS_ART.image, a.x, a.y, a.w, a.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+}
+
+function addAsteroidArtFx(name, x, y, w, h, life, rotation) {
+    if (!s.artFx) s.artFx = [];
+    s.artFx.push({ name: name, x: x, y: y, w: w, h: h, t: life, max: life, rotation: rotation || 0 });
+}
+
+function drawAsteroidArtFx() {
+    for (var i = 0; i < s.artFx.length; i++) {
+        var fx = s.artFx[i], p = RE.clamp(fx.t / fx.max, 0, 1);
+        drawWrapped(fx.x, fx.y, Math.max(fx.w, fx.h) / 2, function (dx, dy) {
+            drawAsteroidsAsset(fx.name, dx, dy, fx.w * (1.12 - p * 0.12),
+                fx.h * (1.12 - p * 0.12), p, fx.rotation);
+        });
+    }
+}
+
+function render() {
+    G.clear('#05090c');
+    G.beginWorld();
+
+    // 星點
+    ctx.save();
+    for (var i = 0; i < 55; i++) {
+        var sx = (i * 131) % W, sy = (i * 77) % H;
+        ctx.globalAlpha = 0.1 + (i % 5) * 0.05;
+        ctx.fillStyle = '#c9e8dd';
+        ctx.fillRect(sx, sy, 1.4, 1.4);
+    }
+    ctx.restore();
+
+    // 隕石
+    for (var i = 0; i < s.rocks.length; i++) {
+        var r = s.rocks[i];
+        // 環繞繪製：靠近邊界時同時畫在對側，避免視覺上突然消失
+        drawWrapped(r.x, r.y, r.r + 6, function (dx, dy) {
+            var art = r.size === 3 ? 'asteroid_large' : (r.size === 2 ? 'asteroid_medium' : 'asteroid_small');
+            if (!drawAsteroidsAsset(art, dx, dy, r.r * 2.65, r.r * 2.65,
+                r.flash > 0 ? 0.7 : 1, r.rot)) {
+                var pts = [];
+                for (var k = 0; k < r.pts.length; k++) {
+                    var a = r.rot + (k / r.pts.length) * RE.TAU;
+                    pts.push([dx + Math.cos(a) * r.pts[k], dy + Math.sin(a) * r.pts[k]]);
+                }
+                strokePoly(pts, r.flash > 0 ? '#ffffff' : '#a7f3d0', r.size === 3 ? 2.4 : 1.8);
+            }
+        });
+    }
+
+    // 飛船
+    var sh = s.ship;
+    if (sh.alive && (sh.invuln <= 0 || Math.floor(sh.invuln * 12) % 2 === 0)) {
+        drawWrapped(sh.x, sh.y, 20, function (dx, dy) {
+            var shipArt = sh.thrust > 0.2 ? 'ship_thrust' : 'ship_idle';
+            if (!drawAsteroidsAsset(shipArt, dx, dy, 54, 54, 1, sh.a)) {
+                var c = Math.cos(sh.a), si = Math.sin(sh.a);
+                function pt(px, py) { return [dx + px * c - py * si, dy + px * si + py * c]; }
+                strokePoly([pt(15, 0), pt(-10, 9), pt(-5, 0), pt(-10, -9)], '#fff8e7', 2.2);
+                if (sh.thrust > 0.2) {
+                    // 尾焰只用顯示時間擺動，不消耗遊戲亂數；render() 不應改變同種子世界。
+                    var fl = 12 + Math.sin(performance.now() / 45) * 4;
+                    strokePoly([pt(-6, 4), pt(-6 - fl, 0), pt(-6, -4)], '#ffd166', 2);
+                }
+            }
+            if (sh.thrust > 0.2) {
+                drawAsteroidsAsset('thrust_sparks', dx - Math.cos(sh.a) * 24,
+                    dy - Math.sin(sh.a) * 24, 34, 34, 0.72, sh.a + Math.PI);
+            }
+        });
+    }
+
+    // UFO
+    if (s.ufo) {
+        drawWrapped(s.ufo.x, s.ufo.y, 24, function (dx, dy) {
+            if (!drawAsteroidsAsset('ufo_idle', dx, dy, 58, 44)) {
+                strokePoly([[dx - 17, dy], [dx - 8, dy - 6], [dx + 8, dy - 6], [dx + 17, dy],
+                            [dx + 8, dy + 7], [dx - 8, dy + 7]], '#ff6b6b', 2.2);
+                strokePoly([[dx - 8, dy - 6], [dx - 4, dy - 13], [dx + 4, dy - 13], [dx + 8, dy - 6]], '#ff9ebb', 1.8);
+            }
+        });
+    }
+
+    // 子彈
+    for (var i = 0; i < s.bullets.length; i++) {
+        var pb = s.bullets[i];
+        if (!drawAsteroidsAsset('player_bolt', pb.x, pb.y, 18, 10, 1, Math.atan2(pb.vy, pb.vx))) {
+            ctx.fillStyle = '#fff8e7'; ctx.beginPath(); ctx.arc(pb.x, pb.y, 2.4, 0, RE.TAU); ctx.fill();
+        }
+    }
+    for (var i = 0; i < s.ufoBullets.length; i++) {
+        var eb = s.ufoBullets[i];
+        if (!drawAsteroidsAsset('enemy_bolt', eb.x, eb.y, 18, 10, 1, Math.atan2(eb.vy, eb.vx))) {
+            ctx.fillStyle = '#ff9ebb'; ctx.beginPath(); ctx.arc(eb.x, eb.y, 2.8, 0, RE.TAU); ctx.fill();
+        }
+    }
+
+    drawAsteroidArtFx();
+    if (s.clearTimer > 0) drawAsteroidsAsset('wave_emblem', W / 2, H / 2 + 48, 66, 66,
+        Math.min(1, s.clearTimer * 1.8));
+    P.draw(ctx);
+    FT.draw(ctx);
+
+    if (s.respawn > 0 && !s.over) {
+        RE.Draw.text(ctx, '重新出擊 ' + Math.ceil(s.respawn), W / 2, H / 2 - 10,
+            { size: 18, align: 'center', color: '#ffd166' });
+    }
+    G.endWorld();
+    // 核心規則與超空間狀態固定在螢幕座標，不跟著撞擊震動偏移。
+    drawAsteroidLessonRail();
+    G.postFX({ scanAlpha: 0.07, vignetteStrength: 0.55 });
+}
+
+function drawAsteroidLessonRail() {
+    var counts = { 1: 0, 2: 0, 3: 0 };
+    for (var i = 0; i < s.rocks.length; i++) counts[s.rocks[i].size]++;
+    var y = H - 38;
+    ctx.save();
+    ctx.fillStyle = 'rgba(3,8,12,0.86)';
+    RE.Draw.roundRect(ctx, 8, y, W - 16, 30, 5); ctx.fill();
+    ctx.strokeStyle = 'rgba(167,243,208,0.24)';
+    ctx.strokeRect(8.5, y + 0.5, W - 17, 29);
+    // 520px 畫布在手機縮成約 0.66 倍；教學軌低於 14px 會落到 9px 以下，玩家看不懂隕石分裂規則。
+    RE.Draw.text(ctx, '分裂：大 → 2 中 → 4 小', 16, y + 5,
+        { size: 14, color: '#a7f3d0', stroke: false });
+    RE.Draw.text(ctx, '場上　大 ' + counts[3] + '　中 ' + counts[2] + '　小 ' + counts[1], 16, y + 18,
+        { size: 14, color: '#fff8e7', stroke: false });
+    for (var life = 0; life < s.lives; life++) {
+        drawAsteroidsAsset('life_ship', W / 2 - 17 + life * 17, y + 15, 17, 17, 0.82);
+    }
+    var hyper = s.hyperCool > 0 ? ('超空間：' + s.hyperCool.toFixed(1) + 's') :
+                (s.ship.alive ? '↓ 超空間：就緒' : '等待出擊');
+    RE.Draw.text(ctx, hyper, W - 16, y + 6,
+        { size: 14, align: 'right', color: '#c084fc', stroke: false });
+    RE.Draw.text(ctx, '邊界：相連 ↔', W - 16, y + 19,
+        { size: 14, align: 'right', color: '#6f8c84', stroke: false });
+    ctx.restore();
+}
+
+/** 在畫面環繞的邊界處同時繪製對側副本，避免物件「半截消失」 */
+function drawWrapped(x, y, r, fn) {
+    fn(x, y);
+    if (x < r) fn(x + W, y);
+    if (x > W - r) fn(x - W, y);
+    if (y < r) fn(x, y + H);
+    if (y > H - r) fn(x, y - H);
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '飛船沒有煞車——要停下來必須轉身反推。打碎所有隕石過波，但小心：打碎會製造更多目標。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

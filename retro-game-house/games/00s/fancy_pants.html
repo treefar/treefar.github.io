@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 塗鴉冒險家</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   塗鴉冒險家 — 致敬 Fancy Pants Adventures (Brad Borne, 2006)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. **這款的全部價值都在手感**。它沒有新機制、沒有新玩法，
+      就是跑和跳——但在 2006 年的 Flash 遊戲裡，它的跑跳比任何一款都順。
+   2. **斜坡是主角**。地形不是水平磚塊拼起來的，而是連續起伏的曲線；
+      角色永遠貼著坡面，衝上凸坡會被拋出去、衝下凹坡會加速。
+      **玩家追求的不是「過關」，是「跑得漂亮」。**
+   3. 加速度曲線分三段（起步、巡航、極速），轉身時會滑步煞車，
+      這些都不影響能不能過關，只影響「好不好玩」。
+   4. 收集物散佈在只有高速才搆得到的位置——
+      獎勵給的不是探索，是**跑得夠好**。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'fancy_pants',
+    title: '塗鴉冒險家',
+    tagline: '過關很容易，跑得漂亮很難',
+    original: 'Fancy Pants Adventures (Brad Borne, 2006)',
+    decade: '00s', year: 2006, platform: 'Flash / 瀏覽器', genre: '高速平台',
+    developer: 'Brad Borne', bgm: '00s',
+    width: 560, height: 400,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'stage', label: '關卡', init: '1/5' },
+        { key: 'swirl', label: '塗鴉', init: '0/8' },
+        { key: 'spd', label: '速度', init: 0 }
+    ],
+    lives: 3,
+    touch: 'dpad+ab',
+    controls: [
+        { keys: ['←', '→'], desc: '跑（放開會滑步煞車）' },
+        { keys: ['Z', 'A'], desc: '跳（按越久跳越高）' },
+        { keys: ['↓'], desc: '蹲滑：高速時下坡可以滑得更遠' }
+    ],
+    howto: '按住方向跑，速度會分三段慢慢上來。' +
+           '<strong>地形是連續的斜坡</strong>——衝上凸坡會被拋出去，衝下凹坡會加速。' +
+           '跳躍按越久跳越高。轉身時會滑步，那不是延遲，是這款遊戲的味道。' +
+           '塗鴉散佈在只有跑夠快才搆得到的位置。',
+    lesson: {
+        verb: '順著坡面累積動能，在凸坡、深谷與浮台之間選擇起跳、續按或蹲滑，盡量不以急停破壞節奏。',
+        innovation: '把手繪逐格動畫、曲面地形與分段加速度結合，讓「移動本身好不好看、順不順」成為平台遊戲的主要獎勵。',
+        mission: '第一關先用反覆急停方式到達第一個深谷，再重開並持續順坡跑；比較 HUD 最高速度、跨谷穩定度，以及能否吃到高處塗鴉。',
+        evolution: '《Sonic》以坡度保存速度；《Fancy Pants Adventures》用 Flash 手繪動畫把動能變成角色表演；《Celeste》則把流暢移動轉成短房間、即時重試的精準節奏。',
+        reflection: '如果每次轉向都能瞬間完成、每道斜坡都不改變速度，角色仍然會顯得靈活，還是只剩動畫看起來很流暢？'
+    },
+    design: '《Fancy Pants Adventures》真正的設計問題不是再發明一個平台動作，而是如何讓最熟悉的跑與跳本身就足以成為內容。' +
+            '角色速度分段上升，反向輸入先滑步煞車；連續坡面則把下坡轉成加速、凸坡轉成自然拋飛，使地形不只是碰撞邊界。' +
+            '手繪火柴人的四肢延遲、伸展與翻轉把速度具象化，玩家不用看數字也能感覺角色是否正在失去動能。' +
+            '高處塗鴉與快速路線不阻擋基本過關，卻把漂亮移動變成可追求、可比較的第二層目標。' +
+            '本站保留曲面、變高跳、滑步與蹲滑，再用五關逐步增加深谷與浮台，讓 Flash 時代的表現力接受現代可達性與關卡驗證。' +
+            '<strong>它證明同一組老動詞，只要回饋、動畫與地形彼此一致，仍能成為新的遊戲體驗。</strong>',
+    history: 'Brad Borne 於 2006 年 3 月 14 日把《Fancy Pants Adventures》上傳 Newgrounds，作者留言稱它是自己對經典橫向平台公式的版本。' +
+             'Borne 的官方頁面把 World 1 描述為多年研究 2D 平台引擎與繪製翻頁動畫的成果；原版頁面則明列手繪動畫、草稿式關卡、動量、斜坡與迴圈為系列基礎。' +
+             '他後來回顧，起點其實只是想讓火柴人移動起來：先有動畫，再加程式與地面，長期焦點始終是角色左右移動時的感受。' +
+             '系列之後由 Flash 走向家用主機，Borne 仍把每一代的進步建立在核心移動上，顯示獨立網頁作品也能以手感而非內容量形成長期設計語言。',
+    sources: [
+        { label: 'Newgrounds：2006 年 World 1 原始上傳與作者留言', url: 'https://www.newgrounds.com/portal/view/301341' },
+        { label: 'Borne Games：World 1 原版與動量平台特色', url: 'https://www.bornegames.com/games/fpa-world-1/original/' },
+        { label: 'Game Developer：Brad Borne 談動畫與移動手感起點', url: 'https://www.gamedeveloper.com/design/a-fast-and-fancy-dev-q-a-with-brad-borne' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(400);
+var FT = new RE.FloatText();
+
+// ======================================================================
+// 手感參數。這款遊戲的全部價值都在這裡，所以每個數字都給了理由。
+// ======================================================================
+var MOVE = {
+    accel1: 900,      // 起步：要有明顯的「推起來」的感覺
+    accel2: 520,      // 巡航：中段加速放緩，速度才有層次
+    accel3: 260,      // 極速前：再放緩，讓極速像是掙來的
+    v1: 150, v2: 280, vMax: 420,
+    friction: 1500,   // 放開方向鍵的減速
+    turnBrake: 2600,  // 反方向時的煞車：比一般減速快得多，這就是「滑步」的來源
+    airAccel: 420, airMax: 380,
+    gravity: 2000, fallGravity: 2700,
+    jump: 620, jumpCut: 0.42,
+    coyote: 0.1, buffer: 0.15,
+    slideMin: 260,    // 蹲滑需要的最低速度
+    slideFriction: 300
+};
+
+var T = 28;
+
+/* ----------------------------------------------------------------------
+   五關。地形用「高度函式的關鍵點」描述：每個關鍵點是 (格X, 地面高度格Y)，
+   之間用線性內插連成連續的坡。這樣寫出來的地形天生沒有垂直落差，
+   角色永遠貼得住——這正是原作的地形觀。
+   平台（浮空）另外列，收集物放在需要速度才搆得到的位置。
+
+   **深谷的擺放有一條硬規則：每個洞的左緣前方至少要有 3 格連續平地。**
+   第一版沒有這條，十四個洞裡有十二個的洞口正前方是陡下坡——
+   玩家在下坡上是騰空的（地面掉得比重力快），抵達洞口時土狼時間早就用完，
+   物理上根本按不了跳。體檢量出來的「可站助跑」是 0px。
+   那一版之所以看起來能過，是因為當時的落地判定有缺陷，
+   會把掉進洞裡的玩家直接吸回對岸——等於所有深谷都是畫上去的裝飾。
+
+   洞寬（實際格數 = b − a − 1，因為 inPit 用的是嚴格內側判定）
+   照關卡遞增：3 → 3/4 → 4/4/4 → 4/4/5/5 → 4/5/5/4/5。
+   對照滿速滿跳 226px（8.1 格），最寬的 5 格＝140px 仍留 38% 餘裕。
+
+   另外兩條也是實測撞出來的擺放規則：
+   **一、浮空平台的右緣跑出去，落點必須是實地。**
+   平台高、地面低，從平台跑出去會自由落體 4~7 格才著地；
+   第一版有六片平台的落點正好在下一個洞裡——玩家什麼都沒做錯卻必死，
+   而那片平台在畫面上看起來是獎勵路線。
+   **二、相鄰兩個深谷的間距要大於滿跳距離（8 格）。**
+   否則跨過前一個洞的那一跳會直接落進下一個洞：
+   第四關原本 pit2 收在 48、pit3 從 53 開始，中間還有五格的下坡，
+   熟練版跳過 pit2 之後落點正好是 pit3 的洞裡，完全沒有補救機會。
+   ---------------------------------------------------------------------- */
+/* 塗鴉高度不是憑感覺擺的，是照實測算的：
+   滿跳高 91px、角色高 22px，所以跳到最高點時**身體中心**在
+   「起跳地面高度 − 102px」＝ 起跳地面格數 − 3.64 格。
+   收集判定的容差是 22px，換算過來——
+     空中塗鴉 = 起跳處地面格數 − 4 格   （誤差 4px，穩穩吃得到）
+     地面塗鴉 = 該處地面格數 − 1 格
+     平台上的塗鴉 = 該平台格數 − 1 格
+   差一格就變成 24px，剛好超出容差、看得到吃不到。 */
+var STAGES = [
+    { name: '暖身坡道', hint: '按住方向跑，速度分三段上來',
+      ground: [[0, 10], [8, 10], [12, 8], [20, 8], [24, 11], [34, 11], [38, 9], [46, 9], [50, 12], [58, 12]],
+      plats: [[14, 6, 4], [40, 7, 3]],
+      pits: [[27, 31]],
+      swirls: [[4, 9], [16, 5], [22, 7], [29, 7], [33, 10], [41, 6], [48, 8], [54, 11]],
+      goalX: 55 },
+    { name: '起伏丘陵', hint: '衝上凸坡會被拋出去，那是設計好的',
+      ground: [[0, 11], [6, 11], [10, 7], [16, 7], [20, 11], [30, 11], [34, 7], [40, 7], [44, 11], [54, 11], [58, 9], [66, 9]],
+      plats: [[12, 4, 4], [36, 4, 4], [56, 6, 4]],
+      pits: [[23, 27], [47, 52]],
+      swirls: [[4, 10], [13, 3], [22, 10], [25, 7], [37, 3], [45, 10], [49, 7], [57, 5]],
+      goalX: 63 },
+    { name: '塗鴉高台', hint: '高處的塗鴉要靠速度＋長跳才拿得到',
+      ground: [[0, 12], [8, 12], [12, 9], [20, 9], [24, 12], [34, 12], [38, 8], [46, 8], [50, 12], [62, 12], [66, 10], [74, 10]],
+      plats: [[14, 6, 4], [34, 5, 3], [47, 5, 3], [64, 6, 3]],
+      pits: [[27, 32], [44, 49], [58, 63]],
+      swirls: [[4, 11], [15, 5], [22, 8], [29, 8], [35, 4], [46, 4], [48, 4], [60, 8], [65, 5], [70, 9]],
+      goalX: 71 },
+    { name: '長坡連段', hint: '連續的坡可以一路不落地',
+      ground: [[0, 11], [6, 11], [10, 7], [18, 7], [22, 11], [32, 11], [36, 7], [44, 7], [48, 12], [60, 12], [64, 8], [82, 8]],
+      plats: [[12, 4, 5], [34, 4, 3], [52, 9, 3], [74, 5, 3]],
+      pits: [[25, 30], [43, 48], [56, 62], [67, 73]],
+      swirls: [[4, 10], [13, 3], [24, 10], [27, 7], [35, 3], [45, 3], [53, 8], [59, 8], [70, 4], [75, 4]],
+      goalX: 78 },
+    /* 最後一關的每個深谷都刻意擺在「兩側等高」的平地上。
+       高處起跳、低處落地的跳躍會遠得多：從第 7 格高度跳到第 12 格高度，
+       多掉的 140px 讓滯空從 0.5 秒變成 0.72 秒，水平距離從 226px 變成約 330px（11.8 格）。
+       第一版就是這樣——跨過第三個洞的那一跳，落點直接是第四個洞。
+       兩側等高之後，8 格的間距規則才成立。
+       這一關也刻意不放中段的浮空平台：它叫「極速跑道」，
+       主題就是不停地跑，而任何一片平台的落點都會落進下一個洞。 */
+    { name: '極速跑道', hint: '最後一關。跑滿速，然後別停',
+      ground: [[0, 12], [10, 12], [14, 8], [22, 8], [26, 12], [38, 12], [42, 7], [54, 7], [58, 12], [70, 12], [74, 8], [88, 8], [92, 12], [102, 12]],
+      plats: [[16, 5, 4], [90, 6, 4]],
+      pits: [[5, 10], [30, 36], [46, 52], [62, 68], [78, 84]],
+      swirls: [[3, 11], [7, 8], [17, 4], [20, 7], [33, 8], [44, 6], [49, 3], [60, 11], [65, 8], [76, 7], [81, 4], [91, 5]],
+      goalX: 98 }
+];
+
+var s = {};
+
+// ======================================================================
+function reset() {
+    s = {
+        stage: 0, mode: 'play',
+        p: null, cam: 0,
+        swirls: [], plats: [],
+        got: 0, score: 0, lives: 3,
+        over: false, win: false,
+        resultT: 0, resultText: '',
+        bestSpd: 0
+    };
+    G.setStat('score', 0);
+    G.setLives(3);
+    loadStage(0);
+}
+
+function cfg() { return STAGES[Math.min(s.stage, STAGES.length - 1)]; }
+
+function loadStage(n) {
+    s.stage = n;
+    var c = cfg();
+    s.mode = 'play';
+    s.cam = 0; s.got = 0; s.resultT = 0;
+    s.swirls = c.swirls.map(function (sw) {
+        return { x: sw[0] * T + T / 2, y: sw[1] * T + T / 2, got: false, t: RE.rand(0, 6) };
+    });
+    s.plats = c.plats.map(function (pl) {
+        return { x: pl[0] * T, y: pl[1] * T, w: pl[2] * T };
+    });
+    spawnPlayer();
+    G.setStat('stage', (n + 1) + '/' + STAGES.length);
+    G.setStat('swirl', '0/' + s.swirls.length);
+}
+
+function spawnPlayer() {
+    var x = 40;
+    s.p = { x: x, y: groundAt(x) - 22, vx: 0, vy: 0, w: 15, h: 22,
+            grounded: true, coyote: 0, face: 1, anim: 0, run: 0,
+            jumpHeld: false, slide: 0, brake: 0, tilt: 0, deadT: 0 };
+}
+
+// ======================================================================
+// 地形：關鍵點之間線性內插。整款遊戲的手感都建立在這兩個函式上
+// ======================================================================
+/* 深谷：掉下去就重來。
+   沒有洞的話這款會變成「往右走就會到終點」——實測亂按版 6/6 全破，
+   跳躍等於裝飾。洞寬一律小於助跑滿跳距離（226px≈8 格）並留餘裕，
+   所以每一個洞都跳得過去，難的是「要維持速度才跳得過」。 */
+function inPit(px) {
+    var pits = cfg().pits;
+    if (!pits) return false;
+    var gx = px / T;
+    for (var i = 0; i < pits.length; i++) {
+        if (gx > pits[i][0] && gx < pits[i][1]) return true;
+    }
+    return false;
+}
+
+function groundAt(px) {
+    if (inPit(px)) return 100000;
+    var g = cfg().ground;
+    var gx = px / T;
+    if (gx <= g[0][0]) return g[0][1] * T;
+    for (var i = 0; i < g.length - 1; i++) {
+        if (gx >= g[i][0] && gx <= g[i + 1][0]) {
+            var t = (gx - g[i][0]) / (g[i + 1][0] - g[i][0]);
+            return (g[i][1] + (g[i + 1][1] - g[i][1]) * t) * T;
+        }
+    }
+    return g[g.length - 1][1] * T;
+}
+
+/** 地面斜率（往右下為正）。用相鄰兩點的差分算，因為地形本來就是折線 */
+function slopeAt(px) {
+    if (inPit(px)) return 0;
+    var g = cfg().ground;
+    var gx = px / T;
+    for (var i = 0; i < g.length - 1; i++) {
+        if (gx >= g[i][0] && gx <= g[i + 1][0]) {
+            return (g[i + 1][1] - g[i][1]) / (g[i + 1][0] - g[i][0]);
+        }
+    }
+    return 0;
+}
+
+function stageWidth() { var g = cfg().ground; return g[g.length - 1][0] * T; }
+
+// ======================================================================
+function update(dt) {
+    P.update(dt); FT.update(dt);
+    if (s.over) return;
+
+    if (s.mode === 'result') {
+        s.resultT -= dt;
+        if (s.resultT <= 0) nextStage();
+        return;
+    }
+    if (s.mode === 'dead') {
+        s.p.deadT -= dt;
+        s.p.y += 400 * dt;
+        if (s.p.deadT <= 0) respawn();
+        return;
+    }
+
+    var p = s.p;
+    var c = cfg();
+    p.anim += dt * (6 + Math.abs(p.vx) * 0.03);
+
+    var ax = RE.Input.axisX();
+    var down = RE.Input.down('down');
+
+    // ---- 水平移動：三段加速曲線 ----
+    if (p.grounded) {
+        if (p.slide > 0) {
+            // 蹲滑：不能主動加速，靠地形與慣性。下坡會越滑越快
+            p.slide -= dt;
+            var sl = slopeAt(p.x);
+            p.vx += sl * 1400 * dt;
+            p.vx -= Math.sign(p.vx) * MOVE.slideFriction * dt;
+            if (Math.abs(p.vx) < 120 || !down) p.slide = 0;
+        } else if (ax) {
+            var sameDir = Math.sign(ax) === Math.sign(p.vx) || p.vx === 0;
+            if (!sameDir) {
+                // 反方向 = 滑步煞車。這一段比一般減速快很多，
+                // 玩家會看到角色腳底冒煙、身體後仰——這就是這款的招牌
+                p.vx += ax * MOVE.turnBrake * dt;
+                p.brake = 1;
+                if (Math.random() < dt * 30) {
+                    P.spawn({ x: p.x, y: p.y + p.h, vx: RE.rand(-60, 60), vy: RE.rand(-40, 0),
+                              color: '#ffffff', life: 0.25, size: 2.5 });
+                }
+            } else {
+                var sp = Math.abs(p.vx);
+                var a = sp < MOVE.v1 ? MOVE.accel1 : (sp < MOVE.v2 ? MOVE.accel2 : MOVE.accel3);
+                p.vx += ax * a * dt;
+                p.vx = RE.clamp(p.vx, -MOVE.vMax, MOVE.vMax);
+            }
+            p.face = ax > 0 ? 1 : -1;
+            // 下坡加速、上坡減速：坡度直接影響速度，玩家才會想「順著地形跑」
+            p.vx += slopeAt(p.x) * 520 * dt * Math.sign(p.vx || ax);
+            p.vx = RE.clamp(p.vx, -MOVE.vMax * 1.15, MOVE.vMax * 1.15);
+        } else {
+            var f = MOVE.friction * dt;
+            if (Math.abs(p.vx) <= f) p.vx = 0; else p.vx -= Math.sign(p.vx) * f;
+        }
+        if (down && !p.slide && Math.abs(p.vx) > MOVE.slideMin) {
+            p.slide = 0.8;
+            RetroAudio.play('dash');
+        }
+    } else {
+        if (ax) {
+            p.vx += ax * MOVE.airAccel * dt;
+            p.vx = RE.clamp(p.vx, -MOVE.airMax * 1.2, MOVE.airMax * 1.2);
+            p.face = ax > 0 ? 1 : -1;
+        }
+    }
+    if (p.brake > 0) p.brake -= dt * 3;
+
+    // ---- 跳躍：可變高度 + 土狼時間 + 輸入緩衝 ----
+    if (p.grounded) p.coyote = MOVE.coyote; else p.coyote -= dt;
+    if (RE.Input.buffered('a', MOVE.buffer) && p.coyote > 0) {
+        RE.Input.consumeBuffer('a');
+        p.vy = -MOVE.jump;
+        // 起跳角度受坡度影響：從凸坡衝出去會被拋得更高，這是原作的招牌手感
+        p.vy += slopeAt(p.x) * 260;
+        p.grounded = false;
+        p.coyote = 0;
+        p.jumpHeld = true;
+        p.slide = 0;
+        RetroAudio.play('jump');
+        P.burst(p.x, p.y + p.h, 6, { colors: ['#ffffff'], speedMin: 30, speedMax: 90,
+            gravity: 260, lifeMin: 0.1, lifeMax: 0.3, sizeMax: 2.5 });
+    }
+    if (p.jumpHeld && !RE.Input.down('a') && p.vy < 0) {
+        p.vy *= MOVE.jumpCut;
+        p.jumpHeld = false;
+    }
+
+    // ---- 垂直 ----
+    var prevBottom = p.y + p.h;               // 移動前的腳底，貼地判定要用到
+    p.vy += (p.vy > 0 ? MOVE.fallGravity : MOVE.gravity) * dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+
+    if (p.x < 8) { p.x = 8; p.vx = 0; }
+
+    // ---- 貼地 ----
+    /* 只有「上一幀腳底還在地面上方（或只低一點點）」才算落地。
+       少了這個條件，掉進深谷的玩家一碰到對岸的地面就會被直接吸上去——
+       實測 84px 的洞在滿速下只會掉 54px，對岸接住之後照樣繼續跑，
+       等於所有深谷都是畫上去的裝飾，跳躍一次都不需要用到。
+       這是亂按版能 4/4 全破的真正原因，不是洞開得不夠寬。
+
+       容差要跟著坡度走：跑上最陡的坡（斜率 1.25）時，
+       地面每幀會抬高 |slope| × |vx| × dt ≈ 10px，
+       固定容差設太小會讓上坡跑到一半掉下去。 */
+    var gy = groundAt(p.x);
+    var wasGround = p.grounded;
+    var snapTol = Math.max(14, Math.abs(slopeAt(p.x)) * Math.abs(p.vx) * dt * 2);
+    p.grounded = false;
+    if (p.y + p.h >= gy && p.vy >= 0 && prevBottom <= gy + snapTol) {
+        p.y = gy - p.h;
+        p.vy = 0;
+        p.grounded = true;
+        if (!wasGround) {
+            RetroAudio.play('land');
+            P.burst(p.x, p.y + p.h, 5, { colors: ['#ffffff'], speedMin: 20, speedMax: 70,
+                gravity: 220, lifeMin: 0.1, lifeMax: 0.25, sizeMax: 2 });
+        }
+    }
+    // 浮空平台：只有從上方落下時才會踩到
+    for (var i = 0; i < s.plats.length; i++) {
+        var pl = s.plats[i];
+        if (p.vy >= 0 && p.x + p.w / 2 > pl.x && p.x - p.w / 2 < pl.x + pl.w &&
+            p.y + p.h >= pl.y && p.y + p.h <= pl.y + 18 + p.vy * dt) {
+            p.y = pl.y - p.h; p.vy = 0; p.grounded = true;
+            if (!wasGround) RetroAudio.play('land');
+        }
+    }
+
+    // 身體傾斜跟著坡度：純視覺，但少了它整個手感就散了
+    var wantTilt = p.grounded ? Math.atan(slopeAt(p.x)) * 0.7 : RE.clamp(p.vy / 900, -0.4, 0.4);
+    p.tilt += (wantTilt - p.tilt) * Math.min(1, dt * 12);
+
+    // ---- 掉出畫面 ----
+    if (p.y > H + 400) { die(); return; }
+
+    // ---- 塗鴉 ----
+    for (var k = 0; k < s.swirls.length; k++) {
+        var sw = s.swirls[k];
+        if (sw.got) continue;
+        sw.t += dt;
+        if (Math.abs(sw.x - p.x) < 20 && Math.abs(sw.y - (p.y + p.h / 2)) < 22) {
+            sw.got = true; s.got++;
+            addScore(120);
+            G.setStat('swirl', s.got + '/' + s.swirls.length);
+            RetroAudio.play('coin');
+            P.burst(sw.x, sw.y, 10, { colors: ['#ffd166', '#ff9ec4'], speedMin: 40, speedMax: 150,
+                gravity: 0, drag: 0.9, lifeMin: 0.2, lifeMax: 0.5, sizeMax: 3, glow: true });
+        }
+    }
+
+    var spd = Math.round(Math.abs(p.vx));
+    if (spd > s.bestSpd) s.bestSpd = spd;
+    G.setStat('spd', spd);
+
+    // 鏡頭：高速時往前多看一點，這樣跑起來才不會撞到看不見的東西
+    var lead = RE.clamp(p.vx * 0.45, -140, 140);
+    var want = p.x + lead - W / 2;
+    s.cam += (want - s.cam) * Math.min(1, dt * 6);
+    s.cam = RE.clamp(s.cam, 0, Math.max(0, stageWidth() - W));
+
+    if (p.x >= c.goalX * T) stageClear();
+}
+
+function die() {
+    s.lives--;
+    G.setLives(Math.max(0, s.lives));
+    s.mode = 'dead';
+    s.p.deadT = 0.9;
+    RE.juice.impact(2);
+    RetroAudio.play('hurt');
+    if (s.lives <= 0) { s.mode = 'play'; finish(false); }
+}
+
+function respawn() {
+    s.mode = 'play';
+    spawnPlayer();
+}
+
+function stageClear() {
+    s.mode = 'result';
+    s.resultT = 1.8;
+    s.resultText = '抵達終點';
+    addScore(500 + s.stage * 250 + s.got * 80);
+    RetroAudio.play('win');
+    RE.juice.flash('rgba(255,209,102,0.2)', 0.25);
+}
+
+function nextStage() {
+    if (s.stage >= STAGES.length - 1) { finish(true); return; }
+    loadStage(s.stage + 1);
+    G.stageCard(s.stage + 1, cfg().name, cfg().hint);
+}
+
+function addScore(n) { s.score += n; G.setStat('score', s.score); }
+
+function finish(win) {
+    s.over = true; s.win = win;
+    if (win) {
+        addScore(2000);
+        G.gameOver({ score: s.score, win: true,
+            body: '五關跑完，最高速度 ' + s.bestSpd + '。' +
+                  '回想一下，這款遊戲從頭到尾沒有出過任何一道謎題——' +
+                  '**當核心動詞夠好玩，關卡的功能就從「出題」變成「提供跑道」**。' +
+                  '你追求的本來就不是通關，是跑得漂亮。' });
+    } else {
+        G.gameOver({ score: s.score, win: false,
+            body: '停在第 ' + (s.stage + 1) + ' 關「' + cfg().name + '」。' +
+                  '訣竅是**順著地形跑**：下坡加速、凸坡起跳，' +
+                  '轉身時的滑步不是延遲，是要你提早半拍做決定。' });
+    }
+}
+
+// ======================================================================
+// 繪製：極簡塗鴉風，因為原作的美術也是這樣
+// ======================================================================
+function render() {
+    var c = cfg();
+    var g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#eef4fb');
+    g.addColorStop(1, '#cfe0f0');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    G.beginWorld();
+    drawHills();
+    drawGround();
+    drawPlats();
+    drawSwirls();
+    drawGoal(c);
+    if (s.mode !== 'dead' || Math.floor(s.p.deadT * 12) % 2 === 0) drawPlayer();
+    P.draw(ctx);
+    FT.draw(ctx);
+    drawHUD(c);
+    if (s.mode === 'result') drawResult();
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.03, vignetteStrength: 0.25 });
+}
+
+function drawHills() {
+    ctx.fillStyle = 'rgba(160,190,220,0.45)';
+    ctx.beginPath();
+    ctx.moveTo(0, H);
+    for (var x = 0; x <= W; x += 10) {
+        ctx.lineTo(x, 240 + Math.sin((s.cam * 0.25 + x) * 0.004) * 40);
+    }
+    ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+}
+
+function drawGround() {
+    // 地形分段畫：遇到深谷就把筆提起來，洞才會是真的洞
+    var seg = [], cur = null;
+    for (var x = 0; x <= W; x += 3) {
+        var wx = s.cam + x;
+        if (inPit(wx)) { if (cur) { seg.push(cur); cur = null; } continue; }
+        if (!cur) cur = [];
+        cur.push([x, groundAt(wx)]);
+    }
+    if (cur) seg.push(cur);
+
+    for (var i = 0; i < seg.length; i++) {
+        var pts = seg[i];
+        if (pts.length < 2) continue;
+        ctx.fillStyle = '#2b3440';
+        ctx.beginPath();
+        ctx.moveTo(pts[0][0], H);
+        for (var k = 0; k < pts.length; k++) ctx.lineTo(pts[k][0], pts[k][1]);
+        ctx.lineTo(pts[pts.length - 1][0], H);
+        ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        for (var m = 0; m < pts.length; m++) {
+            if (m === 0) ctx.moveTo(pts[m][0], pts[m][1]); else ctx.lineTo(pts[m][0], pts[m][1]);
+        }
+        ctx.stroke();
+    }
+}
+
+function drawPlats() {
+    for (var i = 0; i < s.plats.length; i++) {
+        var pl = s.plats[i];
+        var x = pl.x - s.cam;
+        if (x + pl.w < -20 || x > W + 20) continue;
+        ctx.fillStyle = '#2b3440';
+        RE.Draw.roundRect(ctx, x, pl.y, pl.w, 12, 5); ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        RE.Draw.roundRect(ctx, x, pl.y, pl.w, 4, 2); ctx.fill();
+    }
+}
+
+function drawSwirls() {
+    for (var i = 0; i < s.swirls.length; i++) {
+        var sw = s.swirls[i];
+        if (sw.got) continue;
+        var x = sw.x - s.cam;
+        if (x < -20 || x > W + 20) continue;
+        var y = sw.y + Math.sin(sw.t * 3) * 4;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(sw.t);
+        ctx.strokeStyle = '#ff9ec4';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        for (var a = 0; a < 12; a++) {
+            var r = 2 + a * 0.8, ang = a * 0.6;
+            if (a === 0) ctx.moveTo(Math.cos(ang) * r, Math.sin(ang) * r);
+            else ctx.lineTo(Math.cos(ang) * r, Math.sin(ang) * r);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
+function drawGoal(c) {
+    var x = c.goalX * T - s.cam;
+    if (x < -40 || x > W + 40) return;
+    var y = groundAt(c.goalX * T);
+    ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - 70); ctx.stroke();
+    ctx.fillStyle = '#ffd166';
+    ctx.beginPath();
+    ctx.moveTo(x, y - 70); ctx.lineTo(x + 34, y - 58); ctx.lineTo(x, y - 46);
+    ctx.closePath(); ctx.fill();
+}
+
+function drawPlayer() {
+    var p = s.p;
+    var x = p.x - s.cam, y = p.y;
+    ctx.save();
+    ctx.translate(x, y + p.h);
+    ctx.rotate(p.tilt);
+
+    var run = Math.abs(p.vx) > 30;
+    var leg = Math.sin(p.anim * 2) * (p.slide > 0 ? 0 : 8);
+
+    // 褲子（原作的招牌就是那條褲子）
+    ctx.fillStyle = '#ff6b6b';
+    ctx.beginPath();
+    if (p.slide > 0) {
+        ctx.ellipse(0, -8, 14, 8, 0, 0, RE.TAU);
+    } else {
+        ctx.moveTo(-8, -20); ctx.lineTo(8, -20);
+        ctx.lineTo(6 + leg * 0.3, 0); ctx.lineTo(1, -6);
+        ctx.lineTo(-4 - leg * 0.3, 0); ctx.closePath();
+    }
+    ctx.fill();
+    // 身體與頭
+    ctx.strokeStyle = '#2b3440';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(0, -20); ctx.lineTo(0, -32);
+    ctx.stroke();
+    ctx.fillStyle = '#2b3440';
+    ctx.beginPath(); ctx.arc(0, -38, 7, 0, RE.TAU); ctx.fill();
+    // 手臂：跑步時前後擺
+    ctx.beginPath();
+    ctx.moveTo(0, -28);
+    ctx.lineTo(p.face * (run ? 10 : 6), -28 + (run ? -leg * 0.6 : 4));
+    ctx.stroke();
+    ctx.restore();
+
+    // 高速時的速度線
+    if (Math.abs(p.vx) > MOVE.v2) {
+        ctx.strokeStyle = 'rgba(43,52,64,0.35)'; ctx.lineWidth = 2;
+        for (var i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.moveTo(x - p.face * (16 + i * 12), y + 6 + i * 7);
+            ctx.lineTo(x - p.face * (30 + i * 12), y + 6 + i * 7);
+            ctx.stroke();
+        }
+    }
+}
+
+function drawHUD(c) {
+    // 速度條：這款的核心回饋就是速度，一定要看得見
+    var bw = 140, bx = W / 2 - bw / 2;
+    ctx.fillStyle = 'rgba(43,52,64,0.2)';
+    RE.Draw.roundRect(ctx, bx, 12, bw, 8, 4); ctx.fill();
+    var sp = RE.clamp(Math.abs(s.p.vx) / MOVE.vMax, 0, 1);
+    ctx.fillStyle = sp > 0.85 ? '#ff6b6b' : (sp > 0.55 ? '#ffd166' : '#7ec8a9');
+    RE.Draw.roundRect(ctx, bx, 12, Math.max(3, bw * sp), 8, 4); ctx.fill();
+    RE.Draw.text(ctx, c.name, W / 2, 26, { size: 12, align: 'center', color: '#2b3440', stroke: false });
+
+    // 進度
+    var prog = RE.clamp(s.p.x / (c.goalX * T), 0, 1);
+    ctx.fillStyle = 'rgba(43,52,64,0.2)';
+    RE.Draw.roundRect(ctx, 12, H - 20, W - 24, 6, 3); ctx.fill();
+    ctx.fillStyle = '#2b3440';
+    RE.Draw.roundRect(ctx, 12, H - 20, Math.max(3, (W - 24) * prog), 6, 3); ctx.fill();
+}
+
+function drawResult() {
+    ctx.save();
+    ctx.fillStyle = 'rgba(240,246,252,0.85)';
+    ctx.fillRect(0, 0, W, H);
+    RE.Draw.text(ctx, s.resultText, W / 2, H / 2 - 20,
+        { size: 32, align: 'center', color: '#2b3440', stroke: false });
+    RE.Draw.text(ctx, '塗鴉 ' + s.got + '/' + s.swirls.length + '　最高速 ' + s.bestSpd,
+        W / 2, H / 2 + 22, { size: 15, align: 'center', color: '#5a6675', stroke: false });
+    ctx.restore();
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '按住方向跑，速度分三段上來。地形是連續的斜坡——衝上凸坡會被拋出去，' +
+          '衝下凹坡會加速。跳躍按越久跳越高，轉身會滑步。' +
+          '塗鴉散在只有跑夠快才搆得到的位置。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

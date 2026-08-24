@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "kind": "runtime-integrated-art-candidate",
+  "status": "final-gate-pending",
+  "countedInLedger": false,
+  "game": "space_invaders",
+  "set": "set-01-early-raster",
+  "tool": "Codex built-in ImageGen",
+  "model": "ImageGen（服務端版本未揭露）",
+  "generatedAt": "2026-08-24",
+  "prompt": "art-production/final-sweep/set-01-early-raster/prompt-v001.md",
+  "source": "art-production/final-sweep/set-01-early-raster/source/atlas-v001-imagegen.png",
+  "sourceSha256": "ed93032392f8a9ec2afe6f39bfb59d9df92f84af66f458c664ee87a2dee0abc1",
+  "postprocess": "模型 alpha 保留、連通物件裁切、等比例縮放、透明留白與圖集排版；未補畫內容。Set 05 依固定格裁切保留模型背景，實際呈現以圓角裁切避免方形貼紙感。",
+  "atlas": "final-sweep-atlas.png",
+  "atlasSha256": "0eb5214b27671bf6ec0b7ed72be009810610ae00b9f8daebf51e6c504ee2eca3",
+  "cellWidth": 128,
+  "cellHeight": 128,
+  "assets": {
+    "invader_heavy": {
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "敵群幀"
+    },
+    "invader_scout": {
+      "index": 1,
+      "x": 128,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "掩體受損"
+    },
+    "barrier_damaged": {
+      "index": 2,
+      "x": 256,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "爆炸"
+    },
+    "explosion": {
+      "index": 3,
+      "x": 384,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "星空層"
+    },
+    "star_cluster": {
+      "index": 4,
+      "x": 0,
+      "y": 128,
+      "w": 128,
+      "h": 128,
+      "label": "章節插圖"
+    }
+  },
+  "runtimePresentation": "RetroShell 開場的美術圖譜層；正常流程可見，不介入遊戲亂數、碰撞或更新。",
+  "qa": {
+    "assetCount": 5,
+    "edgePixels": 0,
+    "emptyCells": 0,
+    "humanFinalGate": false
+  }
+}

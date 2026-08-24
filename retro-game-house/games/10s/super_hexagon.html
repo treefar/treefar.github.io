@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 六角漩渦</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   六角漩渦 — 致敬 Super Hexagon (Terry Cavanagh, 2012)
+   --------------------------------------------------------------------------
+   這款遊戲的設計論述可以濃縮成一句話：
+   **當重試的成本趨近於零時，難度可以趨近於無限。**
+
+   它是市面上最難的遊戲之一——多數人第一次玩活不過三秒。
+   但它同時是最讓人「再來一次」的遊戲之一。原因不在難度本身，
+   而在它把「失敗到下一次嘗試」之間的所有摩擦全部刪掉了：
+
+     · 沒有讀取畫面、沒有結算統計、沒有「你確定要重試嗎」
+     · 死亡到重生只有 0.5 秒，而且音樂**不會停**
+     · 你的手指甚至不用離開按鍵
+
+   這裡有一個很少被明說的細節：**音樂連續是關鍵**。
+   如果每次死亡音樂都重來，玩家會清楚感覺到「一局結束了」；
+   音樂不斷，大腦就把一百次嘗試當成同一段連續的體驗，
+   於是「我玩了四十分鐘」的感覺變成「我一直在同一次挑戰裡」。
+
+   本作把這一整套照抄：即時重生、不中斷的節奏脈動、
+   以及六個難度段——每一段只調三個數字（牆速、旋轉速度、圖樣複雜度）。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'super_hexagon',
+    title: '六角漩渦',
+    tagline: '重試成本趨近於零，難度就可以趨近於無限',
+    original: 'Super Hexagon (Terry Cavanagh, 2012)',
+    decade: '10s', year: 2012, platform: 'iOS / PC / 多平台', genre: '極限反應',
+    developer: 'Terry Cavanagh', bgm: '10s',
+    width: 480, height: 320,
+    hud: [
+        { key: 'level', label: '難度', init: '1' },
+        { key: 'time', label: '存活', init: '0.00' },
+        { key: 'best', label: '最久', init: '0.00' },
+        { key: 'tries', label: '嘗試', init: 0 }
+    ],
+    /* 這款唯一的操作是 axisX（左右轉），而 axisX 只有 dpad 產得出來。
+       原本設成 'none'，手機上完全沒有任何可以按的東西——不是難玩，是不能玩。 */
+    touch: 'dpad',
+    controls: [
+        { keys: ['←', '→'], desc: '沿著六邊形轉。就這樣，沒有別的操作（手機用畫面下方的方向鍵）' },
+        { keys: ['P'], desc: '暫停' }
+    ],
+    /* 開場教學保留一個畫面能讀完的核心規則；完整的設計分析仍在 lesson/design，
+       避免手機上長段文字把開始按鈕推出畫面。 */
+    howto: '你是中央六邊形外的<strong>小三角</strong>。' +
+           '<strong>只能左右轉到缺口</strong>，碰牆即死，0.5 秒後重來。' +
+           '撐過 <strong>6 段</strong>；旋轉、脈動、變色都是節拍提示。',
+    lesson: {
+        verb: '用左右微調保持在旋轉中心的安全縫隙，讓節奏與方向判斷同步。',
+        innovation: '把一個按鍵的反應遊戲壓縮成旋轉幾何與音樂節拍，沒有道具、劇情或長關卡，只有越來越快的路徑辨識。',
+        mission: '先通過六個難度階段，再記錄死亡前最後一次成功換位；比較提前轉與看到縫才轉兩種節奏的差異。',
+        evolution: '從 Terry Cavanagh 的一日原型《Hexagon》發展為《Super Hexagon》，延續《VVVVVV》的極簡高難度與 chiptune 節奏；後來的手機極限挑戰也沿用短回合反應。',
+        reflection: '你失敗時真正缺少的是手速、預判，還是沒有把旋轉方向當成節拍？請用一次重試說明你的判斷？'
+    },
+    design: '《Super Hexagon》證明了一件反直覺的事：' +
+            '<strong>難度不是勸退玩家的東西，摩擦才是。</strong>' +
+            '它難到多數人第一次活不過三秒，卻讓人一玩就是四十分鐘。' +
+            '關鍵在於它刪掉了「失敗」與「下一次嘗試」之間的所有摩擦——' +
+            '沒有讀取畫面、沒有結算統計、沒有確認對話框，' +
+            '死亡到重生只有半秒，手指甚至不用離開按鍵。' +
+            '其中最容易被忽略的一項是<strong>音樂不會重來</strong>：' +
+            '如果每次死亡音樂都從頭播放，玩家會清楚感覺到「一局結束了」；' +
+            '音樂連續，大腦就把一百次嘗試當成同一段連續的體驗，' +
+            '「我玩了四十分鐘」的感覺變成「我一直在同一次挑戰裡」。' +
+            '這條原則後來成為整個 2010 年代高難度遊戲的標準配備——' +
+            '本站的果凍勇者（00s）與登峰之路（10s）走的是同一條路，' +
+            '只是它們把省下來的難度預算花在關卡上，' +
+            '而《Super Hexagon》全部花在<strong>反應速度</strong>上。',
+    history: '《Super Hexagon》2012 年由 Terry Cavanagh 開發（他也是本站 10s 頁' +
+             '重力翻轉者的作者），音樂由 Chipzel 以 Game Boy 音源創作。' +
+             '它原是 Cavanagh 為 Pirate Kart 遊戲節在幾小時內做出的《Hexagon》，' +
+             '後來擴充成完整版。' +
+             '這款遊戲讓「超高難度 + 零摩擦重試」成為手機平台上一個確實可行的商業模式，' +
+             '也讓 Chipzel 的 chiptune 被整個獨立遊戲圈認識。',
+    sources: [
+        { label: 'Terry Cavanagh 官方 itch.io 頁', url: 'https://terrycavanagh.itch.io/super-hexagon' },
+        { label: 'Super Hexagon 官方網站', url: 'https://superhexagon.com/' },
+        { label: 'Terry Cavanagh Games 官方網站', url: 'https://terrycavanaghgames.com/' }
+    ],
+});
+
+var ctx = G.ctx, VW = G.width, VH = G.height;
+var P = new RE.Particles(280);
+var CX = VW / 2, CY = VH / 2;
+var SIDES = 6;
+var SEG = Math.PI * 2 / SIDES;
+
+// ======================================================================
+// 六個難度段。每一段只調三個數字：牆速、畫面旋轉、圖樣複雜度。
+// ======================================================================
+var LEVELS = [
+    { name: '入門',   goal: 10, wallSpeed: 118, spin: 0.30, pool: 0, gapMin: 3, hint: '←→ 轉到缺口那一格。' },
+    { name: '加速',   goal: 12, wallSpeed: 146, spin: 0.45, pool: 1, gapMin: 3, hint: '牆變快了。提早開始轉。' },
+    { name: '螺旋',   goal: 14, wallSpeed: 172, spin: 0.62, pool: 2, gapMin: 2, hint: '缺口會連續往同一邊移動——跟著轉。' },
+    { name: '交錯',   goal: 16, wallSpeed: 196, spin: 0.80, pool: 3, gapMin: 2, hint: '缺口左右跳。別轉過頭。' },
+    { name: '窄門',   goal: 18, wallSpeed: 214, spin: 0.95, pool: 4, gapMin: 1, hint: '只剩一格缺口了。' },
+    { name: '漩渦',   goal: 20, wallSpeed: 232, spin: 1.10, pool: 5, gapMin: 1, hint: '最後一段。規則從頭到尾沒變過。' }
+];
+
+var TUNE = {
+    playerR: 44,          // 玩家繞行半徑
+    coreR: 26,            // 中央六邊形半徑
+    spawnR: 340,          // 牆的生成半徑
+    // 每秒轉幾弧度。這個值必須大到「即使畫面在自轉，也還轉得動一格」——
+    // 第一版是 4.6，在最後一段（牆速 252、自轉 1.3）時，
+    // 轉一格需要 3.88 rad/s 再加上抵銷自轉的 1.3，合計 5.18 已經超過上限，
+    // 於是最後一段變成操作完美也過不去。
+    turnSpeed: 7.0,
+    wallThick: 22,
+    ringGap: 46,          // 環與環的間距。這個數字決定玩家有多少時間換格
+    respawn: 0.5
+};
+
+// ======================================================================
+// 圖樣：每一個都保證**至少留一個缺口**，否則就是不講理
+// 用 6 bit 表示哪幾格有牆（1 = 有牆）
+// ======================================================================
+// 圖樣改用「環數 + 每環缺口位移」描述，不再直接寫死 bitmask。
+//
+// 原因是一個真的會讓遊戲不講理的錯誤：原本每個圖樣自己帶 bitmask，
+// 而不同 bitmask 的缺口落在不同位元，旋轉對齊後就變成
+// **連續兩環的缺口相差三格**——但兩環抵達的時間差只夠轉一格。
+// 玩家操作再完美也過不去，死得莫名其妙。
+// 現在缺口序列由 step 產生，而 step 在生成時會被夾在
+// 「這個難度下真的轉得過去」的範圍內（見 spawnPattern）。
+//
+// alt = 三缺口交替型（101010 / 010101），永遠只需要移動一格。
+var PATTERNS = [
+    [{ n: 1, step: 0 }, { n: 1, step: 1 }, { n: 2, step: 0 }],
+    [{ n: 2, step: 0 }, { n: 2, step: 1 }, { n: 3, step: 0 }],
+    [{ n: 4, step: 1 }, { n: 4, step: -1 }, { n: 3, step: 1 }],
+    [{ n: 4, step: 2 }, { n: 4, step: -2 }, { n: 4, alt: true }],
+    [{ n: 5, step: 1 }, { n: 5, step: -1 }, { n: 5, step: 2 }, { n: 4, alt: true }],
+    [{ n: 6, step: 1 }, { n: 6, step: -2 }, { n: 6, step: 2 }, { n: 5, alt: true }]
+];
+
+// ======================================================================
+// 狀態
+// ======================================================================
+var s = null;
+
+function reset() {
+    s = {
+        level: 0, tries: 0, best: RE.Save.bestScore('super_hexagon') / 100 || 0,
+        beat: 0, hue: 0
+    };
+    P.clear();
+    G.setStat('tries', 0);
+    G.setStat('best', s.best.toFixed(2));
+    startLevel(0);
+}
+
+function startLevel(n) {
+    s.level = n; s.def = LEVELS[n];
+    G.setStat('level', String(n + 1));
+    s.hintT = 3.0;
+    restartRun();
+}
+
+/** 重來一次。**不重置 beat 與 hue**——音樂與畫面的脈動是連續的，這是設計核心。 */
+function restartRun() {
+    s.ang = 0;                       // 玩家角度
+    s.walls = [];
+    s.t = 0;
+    s.dead = false; s.deadT = 0;
+    s.spawnT = 0;
+    s.rot = s.rot || 0;
+    s.pulse = 0;
+    s.nextGap = RE.randInt(0, SIDES - 1);
+    G.setStat('time', '0.00');
+}
+
+/**
+ * 生成一組圖樣。兩個保證，缺一不可：
+ *   1. 每一環至少有一格缺口（不然就是死路）
+ *   2. **相鄰兩環的缺口位移，一定在玩家轉得過去的範圍內**
+ *      ——用「環距 ÷ 牆速」算出兩環抵達的時間差，
+ *        再乘上轉速得到可轉角度，換算成格數後夾住 step。
+ *      這一條沒做的話，高難度會出現「操作完美也過不去」的組合。
+ */
+function spawnPattern() {
+    var pat = RE.pick(PATTERNS[s.def.pool]);
+    var spacing = TUNE.wallThick + TUNE.ringGap;
+    var reachSlots = Math.max(1, Math.floor(
+        TUNE.turnSpeed * (spacing / s.def.wallSpeed) / SEG * 0.8));
+
+    var gap = s.nextGap, r = TUNE.spawnR;
+    for (var i = 0; i < pat.n; i++) {
+        var mask;
+        if (pat.alt) {
+            mask = (i % 2 === 0) ? 0x2A : 0x15;          // 三缺口交替，永遠只需移一格
+            // 旋轉到目前缺口所在的奇偶位置，讓它接得上前一環
+            if (((gap % 2) === 0) !== ((i % 2) === 0)) mask = (i % 2 === 0) ? 0x15 : 0x2A;
+        } else {
+            mask = 0x3F & ~(1 << gap);                   // 單缺口
+            if (pat.n <= 2 && i === 0 && Math.random() < 0.4) {
+                mask &= ~(1 << ((gap + 3) % SIDES));     // 偶爾開對面第二個缺口，喘口氣
+            }
+        }
+        if (mask === 0x3F) mask &= ~(1 << gap);          // 保險：絕不出現整圈都是牆
+        s.walls.push({ r: r, mask: mask });
+        r += spacing;
+        var step = RE.clamp(pat.step || 0, -reachSlots, reachSlots);
+        gap = (gap + step + SIDES * 2) % SIDES;
+    }
+    s.nextGap = gap;
+    s.spawnT = (r - TUNE.spawnR) / s.def.wallSpeed + 0.10;
+}
+
+// ======================================================================
+// 更新
+// ======================================================================
+function update(dt) {
+    if (!s) return;
+    P.update(dt);
+    if (s.hintT > 0) s.hintT -= dt;
+
+    // 節奏脈動與旋轉：**死掉也照跑**，這就是「音樂不會停」的視覺對應
+    s.beat += dt * 2.6;
+    s.hue += dt * 26;
+    s.rot += s.def.spin * dt * (1 + Math.sin(s.beat * 0.5) * 0.25);
+    s.pulse = Math.max(0, s.pulse - dt * 4);
+    if (s.beat % 1 < dt * 2.6) s.pulse = 1;
+
+    if (s.dead) {
+        s.deadT -= dt;
+        if (s.deadT <= 0) restartRun();
+        return;
+    }
+
+    // 轉向：唯一的操作
+    var ax = RE.Input.axisX();
+    s.ang += ax * TUNE.turnSpeed * dt;
+    s.ang = (s.ang % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+
+    // 牆推進
+    s.spawnT -= dt;
+    if (s.spawnT <= 0) spawnPattern();
+    for (var i = s.walls.length - 1; i >= 0; i--) {
+        var w = s.walls[i];
+        w.r -= s.def.wallSpeed * dt;
+        if (w.r + TUNE.wallThick < TUNE.coreR - 4) s.walls.splice(i, 1);
+    }
+
+    // 碰撞：玩家所在的那一格，在玩家半徑上有沒有牆
+    var slot = playerSlot();
+    for (i = 0; i < s.walls.length; i++) {
+        w = s.walls[i];
+        if (!(w.mask & (1 << slot))) continue;
+        if (TUNE.playerR + 5 > w.r && TUNE.playerR - 5 < w.r + TUNE.wallThick) { die(); return; }
+    }
+
+    s.t += dt;
+    G.setStat('time', s.t.toFixed(2));
+    if (s.t > s.best) {
+        s.best = s.t;
+        G.setStat('best', s.best.toFixed(2));
+        RE.Save.submitScore('super_hexagon', Math.round(s.best * 100));
+    }
+    if (s.t >= s.def.goal) nextLevel();
+}
+
+function playerSlot() {
+    // 玩家角度落在哪一格（格子跟著畫面一起轉，所以要扣掉 rot）
+    var a = (s.ang - s.rot) % (Math.PI * 2);
+    a = (a + Math.PI * 2) % (Math.PI * 2);
+    return Math.floor(a / SEG) % SIDES;
+}
+
+function die() {
+    if (s.dead) return;
+    s.dead = true; s.deadT = TUNE.respawn;
+    s.tries++;
+    G.setStat('tries', s.tries);
+    RetroAudio.play('hurt');
+    RE.juice.hitstop(0.05); RE.juice.shake(0.5);
+    RE.juice.flash('rgba(255,255,255,0.35)', 0.1);
+    var px = CX + Math.cos(s.ang) * TUNE.playerR, py = CY + Math.sin(s.ang) * TUNE.playerR;
+    P.burst(px, py, 20, {
+        colors: ['#ffffff', hsl(s.hue, 80, 65), hsl(s.hue + 40, 80, 60)],
+        speedMin: 60, speedMax: 260, gravity: 0, drag: 0.9,
+        lifeMin: 0.25, lifeMax: 0.5, glow: true });
+}
+
+function nextLevel() {
+    if (s.level < LEVELS.length - 1) {
+        var n = s.level + 1;
+        RetroAudio.play('levelUp');
+        RE.juice.flash('rgba(255,255,255,0.4)', 0.2);
+        G.stageCard(n + 1, LEVELS[n].name, LEVELS[n].hint, function () { startLevel(n); });
+        return;
+    }
+    finish();
+}
+
+function finish() {
+    G.gameOver({
+        win: true, score: Math.round(s.best * 100),
+        body: '六段全破，總共嘗試了 ' + s.tries + ' 次。' +
+              '注意到了嗎——你死了幾十次，但從來沒有看過讀取畫面、' +
+              '沒有按過「確定」、音樂也沒有中斷過一次。' +
+              '<strong>難度不是勸退玩家的東西，摩擦才是。</strong>' +
+              '《Super Hexagon》把失敗到下一次嘗試之間的所有摩擦刪光，' +
+              '於是它敢把難度推到多數人活不過三秒的程度，' +
+              '而你還是玩了這麼久。'
+    });
+}
+
+function gameOverGiveUp() {
+    G.gameOver({
+        win: false, score: Math.round(s.best * 100),
+        body: '最久撐了 ' + s.best.toFixed(2) + ' 秒，嘗試了 ' + s.tries + ' 次。' +
+              '這款遊戲的重點從來不是那幾秒，是<strong>你願意再按一次的次數</strong>。'
+    });
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function hsl(h, sat, l) { return 'hsl(' + (((h % 360) + 360) % 360) + ',' + sat + '%,' + l + '%)'; }
+
+function render() {
+    if (!s) return;
+    G.beginWorld();
+    drawBack();
+    ctx.save();
+    ctx.translate(CX, CY);
+    ctx.rotate(s.rot);
+    ctx.scale(1 + s.pulse * 0.035, 1 + s.pulse * 0.035);
+    drawWalls();
+    ctx.restore();
+    ctx.save();
+    ctx.translate(CX, CY);
+    ctx.rotate(s.rot);
+    ctx.scale(1 + s.pulse * 0.035, 1 + s.pulse * 0.035);
+    drawCore();
+    ctx.restore();
+    drawPlayer();
+    P.draw(ctx);
+    G.endWorld();
+    drawHUD();
+    G.postFX({ scanAlpha: 0.05, vignetteStrength: 0.5 });
+}
+
+function drawBack() {
+    // 背景：交替的扇形。它跟著畫面一起轉，是玩家判讀旋轉方向的主要線索
+    ctx.save();
+    ctx.translate(CX, CY);
+    ctx.rotate(s.rot);
+    var R = 420;
+    for (var i = 0; i < SIDES; i++) {
+        ctx.fillStyle = i % 2 ? hsl(s.hue, 42, 13 + s.pulse * 3) : hsl(s.hue, 42, 18 + s.pulse * 4);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, R, i * SEG, (i + 1) * SEG);
+        ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+}
+
+function ringPath(r, thick, slot) {
+    var a0 = slot * SEG, a1 = (slot + 1) * SEG;
+    var r2 = r + thick;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a0) * r, Math.sin(a0) * r);
+    ctx.lineTo(Math.cos(a1) * r, Math.sin(a1) * r);
+    ctx.lineTo(Math.cos(a1) * r2, Math.sin(a1) * r2);
+    ctx.lineTo(Math.cos(a0) * r2, Math.sin(a0) * r2);
+    ctx.closePath();
+}
+
+function drawWalls() {
+    for (var i = 0; i < s.walls.length; i++) {
+        var w = s.walls[i];
+        if (w.r > 400) continue;
+        ctx.fillStyle = hsl(s.hue + 30, 72, 62);
+        for (var b = 0; b < SIDES; b++) {
+            if (!(w.mask & (1 << b))) continue;
+            ringPath(Math.max(w.r, TUNE.coreR), TUNE.wallThick, b);
+            ctx.fill();
+        }
+    }
+}
+
+function drawCore() {
+    var r = TUNE.coreR * (1 + s.pulse * 0.10);
+    ctx.fillStyle = hsl(s.hue + 30, 72, 62);
+    ctx.beginPath();
+    for (var i = 0; i < SIDES; i++) {
+        var a = i * SEG;
+        if (i === 0) ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+        else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = hsl(s.hue, 42, 13);
+    ctx.beginPath();
+    for (i = 0; i < SIDES; i++) {
+        var a2 = i * SEG, rr = r - 5;
+        if (i === 0) ctx.moveTo(Math.cos(a2) * rr, Math.sin(a2) * rr);
+        else ctx.lineTo(Math.cos(a2) * rr, Math.sin(a2) * rr);
+    }
+    ctx.closePath(); ctx.fill();
+}
+
+function drawPlayer() {
+    if (s.dead) return;
+    var a = s.ang;
+    var px = CX + Math.cos(a) * TUNE.playerR, py = CY + Math.sin(a) * TUNE.playerR;
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(a + Math.PI / 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(0, -7); ctx.lineTo(6, 5); ctx.lineTo(-6, 5);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+}
+
+function drawHUD() {
+    if (s.hintT > 0) {
+        var al = Math.min(1, s.hintT / 0.7);
+        ctx.globalAlpha = al;
+        RE.Draw.text(ctx, s.def.name, VW / 2, 12, { size: 15, align: 'center', color: '#ffffff' });
+        RE.Draw.text(ctx, s.def.hint, VW / 2, 34, { size: 11, align: 'center', color: '#e8e8f8' });
+        ctx.globalAlpha = 1;
+    }
+    // 進度條：撐到目標秒數就過關
+    var w = 170, x0 = VW / 2 - w / 2, y0 = VH - 16;
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fillRect(x0, y0, w, 6);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x0, y0, w * RE.clamp(s.t / s.def.goal, 0, 1), 6);
+    RE.Draw.text(ctx, '撐到 ' + s.def.goal + ' 秒進入下一段', VW / 2, y0 - 16,
+        { size: 10, align: 'center', color: 'rgba(255,255,255,0.65)' });
+    if (s.dead) {
+        RE.Draw.text(ctx, '再一次', VW / 2, CY - 8, { size: 18, align: 'center', color: '#ffffff' });
+    }
+}
+
+// ======================================================================
+function openPause() {
+    G._state = 'paused';
+    RetroAudio.play('pause');
+    G.showOverlay({
+        title: '暫停中',
+        body: '死了 ' + s.tries + ' 次。注意到你從來沒看過讀取畫面嗎？那才是這款遊戲的設計重點。',
+        buttons: [
+            { label: '▶ 繼續', onClick: function () { G.resume(); } },
+            { label: '↻ 從第一段重來', cls: 'ghost', onClick: function () { G.restart(); } },
+            { label: '⚑ 結束', cls: 'ghost', onClick: function () { G.hideOverlay(); G._state = 'playing'; gameOverGiveUp(); } }
+        ],
+        press: '按 P 或 ESC 繼續'
+    });
+}
+G.pause = openPause;
+
+function showTitleScreen() {
+    G._state = 'title';
+    G.showOverlay({
+        title: '六角漩渦',
+        body: G.cfg.howto,
+        buttons: [{ label: '▶ 開始', onClick: function () { G.hideOverlay(); G._state = 'playing'; reset(); } }],
+        press: '按 空白鍵 或 Enter 開始'
+    });
+    var onKey = function (e) {
+        if (G._state !== 'title') return;
+        if (e.code === 'Space' || e.code === 'Enter') {
+            e.preventDefault();
+            window.removeEventListener('keydown', onKey);
+            RetroAudio.play('confirm');
+            G.hideOverlay(); G._state = 'playing'; reset();
+        }
+    };
+    window.addEventListener('keydown', onKey);
+}
+
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+showTitleScreen();
+</script>
+</body>
+</html>

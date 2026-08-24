@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>遊戲時光屋 ✦ 電子遊戲五十年發展史互動教材</title>
+<meta name="description" content="以每十年為一階段，梳理電子遊戲從 1971 到 2020 年代的發展重點、硬體限制、關鍵年表與設計理論，並提供各年代代表作的致敬式原創復刻，可直接在瀏覽器遊玩。">
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="home.css">
+</head>
+<body>
+
+<a class="skip-link" href="#decades">跳到主要內容</a>
+
+<nav class="nav">
+    <div class="wrap">
+        <a class="brand" href="index.html">✦ 遊戲時光屋</a>
+        <ul id="navList"></ul>
+    </div>
+</nav>
+
+<header class="hero">
+    <div class="wrap">
+        <p class="hero-kicker">PLAYABLE GAME HISTORY · 1971—2025</p>
+        <h1>遊戲時光屋</h1>
+        <p class="sub">電子遊戲五十年發展史　·　互動教材</p>
+        <p class="desc">
+            不是只把老遊戲排成清單，而是用 57 款可玩復刻追問：
+            <strong>每個年代如何發展、普及一種核心動詞？</strong>
+            先讀限制、帶著任務玩，再回頭驗證設計；拿掉那個動詞，遊戲就會明顯變難。
+        </p>
+        <div class="stats">
+            <div><b id="statDecades">6</b><span>個十年</span></div>
+            <div><b id="statGames">0</b><span>款代表作</span></div>
+            <div><b id="statPlayable">0</b><span>款可玩復刻</span></div>
+            <div><b id="statSpan">—</b><span>橫跨年份</span></div>
+        </div>
+        <div class="cta-row">
+            <a class="btn" href="#decades">📖 從 1970 年代開始</a>
+            <a class="btn ghost" href="#games">🎮 直接找遊戲玩</a>
+        </div>
+        <ol class="hero-route" aria-label="本站學習路徑">
+            <li><b>01 定位</b><span>先認出核心動詞</span></li>
+            <li><b>02 驗證</b><span>帶著指定任務遊玩</span></li>
+            <li><b>03 反思</b><span>連回技術與設計史</span></li>
+        </ol>
+        <div class="era-showcase" aria-label="六個年代快速入口">
+            <div class="era-showcase-head">
+                <span>六個年代，一眼預覽</span>
+                <small>左右滑動選擇年代</small>
+            </div>
+            <div class="era-strip" id="eraStrip"></div>
+        </div>
+    </div>
+</header>
+
+<main>
+
+<section id="decades">
+    <div class="wrap">
+        <div class="sec-head">
+            <span class="num">01 / 時間軸</span>
+            <h2>六個十年，六種完全不同的遊戲</h2>
+            <p>每個年代都有它的硬體天花板、商業結構與設計問題。
+               點進去看那個十年真正發生了什麼。</p>
+        </div>
+        <div class="decades" id="decadeGrid"></div>
+    </div>
+</section>
+
+<section id="pathways" class="pathways-section">
+    <div class="wrap">
+        <div class="sec-head">
+            <span class="num">02 / 設計演化線</span>
+            <h2>不只按年份，也按玩家「做什麼」來讀</h2>
+            <p>七條主學習線把不同年代的作品串在一起。選一條路徑，觀察同一種玩家行為如何因硬體、介面與商業模式改變。</p>
+        </div>
+        <div class="pathway-grid" id="pathwayGrid"></div>
+    </div>
+</section>
+
+<section id="games" style="background:rgba(255,255,255,.018)">
+    <div class="wrap">
+        <div class="sec-head">
+            <span class="num">03 / 可玩復刻</span>
+            <h2>🎮 用 57 個核心動詞讀遊戲史</h2>
+            <p>每張卡先告訴你要練的動詞，再讓遊戲證明它不是裝飾。
+               全部為致敬式原創復刻；各款依玩法提供鍵盤、觸控或遊戲手把操作，實際方式以遊戲頁標示為準。</p>
+        </div>
+        <div class="catalog-tools">
+            <div class="path-context" id="pathContext" hidden></div>
+            <label class="search-box" for="gameSearch">
+                <span>搜尋遊戲、復刻名或核心意義</span>
+                <input id="gameSearch" type="search" autocomplete="off" placeholder="例如：蔚藍、跳躍、資源管理">
+            </label>
+            <div class="filter-row" id="filterRow" aria-label="依年代篩選"></div>
+            <div class="catalog-status">
+                <p id="gameCount" aria-live="polite"></p>
+                <button class="clear-filter" id="clearFilter" type="button">清除條件</button>
+            </div>
+        </div>
+        <div class="grid" id="gameGrid"></div>
+    </div>
+</section>
+
+<section id="about">
+    <div class="wrap">
+        <div class="sec-head">
+            <span class="num">04 / 關於本站</span>
+            <h2>這個網站怎麼用</h2>
+        </div>
+        <div class="notes">
+            <div class="note">
+                <h3>📖 給修課學生</h3>
+                <p>建議依年代順序閱讀。每款遊戲都用<strong>定位、驗證、突破、演化、反思</strong>五步帶學，
+                   先知道要觀察什麼，再用指定任務親手驗證；不是玩過就算完成。</p>
+            </div>
+            <div class="note">
+                <h3>🎮 給只想玩的人</h3>
+                <p>直接到上方的可玩復刻區。每款都有<strong>多個關卡、難度曲線與完整結算</strong>；
+                   操作方式會依原作特色提供鍵盤、觸控或遊戲手把。遊戲頁下方附有該作的
+                   <strong>設計解讀與史料</strong>，玩完再看效果最好。</p>
+            </div>
+            <div class="note">
+                <h3>🛠 技術說明</h3>
+                <p>所有遊戲以純 HTML5 Canvas 與 Web Audio 即時合成音效寫成，
+                   <strong>程式、Runtime 圖像與音效皆封裝於站內</strong>；完整美術圖譜需透過本站或本機伺服器開啟。
+                   共用引擎提供固定時步迴圈、輸入緩衝、頓幀、螢幕震動與粒子系統，
+                   確保各款的手感一致。</p>
+            </div>
+            <div class="note">
+                <h3>⚖️ 版權說明</h3>
+                <p>介紹文字以原作名稱進行史料討論與評論。
+                   可玩版本一律為<strong>致敬式原創</strong>——角色、名稱與美術皆為本站自製，
+                   僅參考原作的核心玩法機制，供教學與研究使用。
+                   所有原作商標與著作權歸各自權利人所有。</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+</main>
+
+<footer>
+    <div class="wrap">
+        <p>遊戲時光屋 ✦ 電子遊戲發展史互動教材</p>
+        <p style="font-size:.78rem;opacity:.8;margin-top:8px">
+            本站所有可玩遊戲皆為致敬式原創復刻，僅參考原作的核心玩法機制，供教學與研究討論使用。<br>
+            文中提及之遊戲名稱、商標與著作權均歸各自權利人所有。
+        </p>
+    </div>
+</footer>
+
+<script src="data/gamedb.js"></script>
+<script src="data/lessondb.js"></script>
+<script src="data/pathwaydb.js"></script>
+<script src="home.js"></script>
+</body>
+</html>

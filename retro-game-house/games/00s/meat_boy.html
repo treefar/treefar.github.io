@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 果凍勇者</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   果凍勇者 — 致敬 Meat Boy (Team Meat, 2008)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. **死亡懲罰趨近於零**。重生 0.25 秒、沒有生命數、沒有退關、連分數都不扣。
+      因為失敗便宜到不值一提，關卡才敢擺滿圓鋸。這個設計十年後由《Celeste》
+      發揚光大（見 10s 頁的登峰之路）——先玩這款再玩那款，能看到一條傳承線。
+   2. **死亡會留下果凍漬**，而且同一個房間裡永遠不擦掉。你失敗過的每個位置
+      都變成地圖的一部分——死亡不是進度的反面，死亡就是進度本身。
+   3. **動量式手感**：加速極快、跑速極高、地面微滑、牆跳可以連刷。
+      和講究「一格一格算」的 Celeste 相反，這款的準是「在高速中準」。
+   4. 威脅全部即死、全部可預判：固定圓鋸、沿軌道往返的圓鋸、
+      踩了就溶的方塊。沒有血量條，只有「碰到就重來」的乾脆。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'meat_boy',
+    title: '果凍勇者',
+    tagline: '死亡不用錢，所以難度可以不用客氣',
+    original: 'Meat Boy (Team Meat, 2008)',
+    decade: '00s', year: 2008, platform: 'Flash（網頁）', genre: '精準平台',
+    developer: 'Edmund McMillen · Jonathan McEntee', bgm: '00s',
+    width: 480, height: 320,
+    hud: [
+        { key: 'stage', label: '房間', init: '1-1' },
+        { key: 'deaths', label: '爆漿', init: 0 },
+        { key: 'time', label: '用時', init: '0:00' },
+        { key: 'score', label: 'SCORE' }
+    ],
+    touch: 'dpad+ab', labelA: '跳', labelB: '跳',
+    controls: [
+        { keys: ['←', '→'], desc: '移動；貼著牆壁會慢慢下滑' },
+        { keys: ['A', 'B'], desc: '跳；貼牆時是牆跳（兩顆都是跳，順手就好）' },
+        { keys: ['P'], desc: '暫停' }
+    ],
+    howto: '衝到每間房的<strong>棉花糖妹妹</strong>；貼牆按跳可牆跳。' +
+           '碰到圓鋸會爆漿，但<strong>0.25 秒回到房間起點</strong>，死亡漬會留下路線筆記。',
+    lesson: {
+        verb: '以高速奔跑、跳躍與牆跳穿過一個個短房間；每次爆漿都把危險位置變成下一次的路線提示。',
+        innovation: '把高難度平台遊戲的主要代價從「失去生命與重玩整關」改成「立刻回到房間起點」，再用短房間、可預判陷阱與死亡漬維持學習節奏。',
+        mission: '先完成第一區三間房，再挑一間自己爆漿三次以上的房間重跑；觀察你是否能把第一次死亡的位置，轉成下一次的起跳時機或牆跳方向。',
+        evolution: 'Flash 版《Meat Boy》把精準跳躍帶進瀏覽器；《Super Meat Boy》擴成大量短關卡與重播；《Celeste》再加入衝刺、對話與輔助模式，延續「難，但重試便宜」的設計。',
+        reflection: '如果每次爆漿都要回到上一個檢查點、等待讀取或扣掉生命，這些圓鋸與溶解平台還會鼓勵你主動學習嗎？'
+    },
+    design: '本作解決了高難度平台遊戲「玩家知道自己死了，卻不想再等一次」的問題：短房間讓玩家立即知道死因，0.25 秒重生讓嘗試密度維持在高點，死亡漬則把失敗轉成空間記憶。牆跳、溶解方塊與可預判圓鋸各自只增加一個判斷，組合後才形成硬派難度；這也是瀏覽器 Flash 時代用少量規則做出高重玩性的典型。相較於《超級瑪利歐》的長關卡與檢查點，本作把路線拆得更短；後來《Celeste》與《VVVVVV》延續這種低重試成本，分別把它推向衝刺與翻轉重力。',
+    history: '《Meat Boy》是 Edmund McMillen 與 Jonathan McEntee 製作的 2008 年 Flash 網頁遊戲，之後才由 McMillen 與 Tommy Refenes 組成 Team Meat，發展為 2010 年的《Super Meat Boy》。因此本頁保留的是「短房間、牆跳、即死重來」的原始核心，而不是把後來主機版的世界地圖、角色解鎖與章節規模硬塞回 Flash 原型。',
+    sources: [
+        { label: 'GDC Vault：Team Meat Presents SUPER MEAT BOY Meatmortem', url: 'https://gdcvault.com/play/1014684/Team-Meat-Presents-SUPER-MEAT' },
+        { label: 'Game Developer：Team Meat 的 Super Meat Boy postmortem', url: 'https://www.gamedeveloper.com/audio/postmortem-team-meat-s-i-super-meat-boy-i-' },
+        { label: 'Kongregate：Meat Boy 原始 Flash 版保存頁', url: 'https://www.kongregate.com/en/games/edmund/meat-boy' }
+    ]
+});
+
+var ctx = G.ctx, VW = G.width, VH = G.height;
+var P = new RE.Particles(420);
+var FT = new RE.FloatText();
+
+var T = 20, COLS = 24, ROWS = 16;
+
+// ======================================================================
+// 手感參數。Meat Boy 的靈魂全在這張表：加速要暴力、極速要嚇人、
+// 地面要有一點滑（frictionRun 比 Celeste 低），牆跳要能連刷。
+// ======================================================================
+var PHYS = {
+    accel: 2600, accelAir: 1700,
+    friction: 1350, frictionAir: 300,
+    maxRun: 210,
+    gravity: 980, gravityFall: 1500, maxFall: 430,
+    jumpVel: -330, jumpCut: 0.42, coyote: 0.09, buffer: 0.13,
+    wallSlide: 55, wallJumpX: 215, wallJumpY: -310, wallLock: 0.12,
+    respawn: 0.25,
+    sawR: 11, sawSpeed: 80,
+    dissolveShake: 0.12,   // 踩上去到開始碎裂
+    dissolveGone: 0.30,    // 碎裂到完全消失
+    dissolveBack: 2.2      // 消失到重生
+};
+
+// ======================================================================
+// 地圖圖例
+//   .空　X實體　^地刺　v天花板刺　>左牆刺　<右牆刺
+//   Z固定圓鋸　H水平往返圓鋸　V垂直往返圓鋸（軌道自動探測到牆為止）
+//   C溶解方塊（踩到或貼牆就開始溶）　G方糖　P起點　D棉花糖妹妹
+// ======================================================================
+var CHAPTERS = [
+    {
+        name: '第一區 · 果凍工廠', hint: '先學會跑跳和牆跳。圓鋸碰到就爆漿。',
+        sky: ['#3d2438', '#1c0f1e'], rock: '#6d4a5c', rockTop: '#a8798c', gear: '#54394a',
+        rooms: [
+            { name: '初次爆漿', hint: '←→ 移動，A 跳。坑底有刺，跳過去。',
+              rows: [
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '.......G................',
+                '........................',
+                '..P..................D..',
+                'XXXXXX...XXXXX....XXXXXX',
+                'XXXXXX...XXXXX....XXXXXX',
+                'XXXXXX^^^XXXXX^^^^XXXXXX'
+              ] },
+            { name: '豎井', hint: '貼牆會下滑，這時按跳＝牆跳。兩面牆輪流蹬。',
+              rows: [
+                '........................',
+                '...............D........',
+                '.........XXXXXXXX.......',
+                '.................X...X..',
+                '.................X...X..',
+                '.................X...X..',
+                '.................X...X..',
+                '.................X.G.X..',
+                '.................X...X..',
+                '.................X...X..',
+                '.................X...X..',
+                '.................X...X..',
+                '..P..................X..',
+                'XXXXXXXXXXXXXXXXXXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX'
+              ] },
+            { name: '圓鋸你好', hint: '跳太高會撞鋸。輕點一下跳，是小跳。',
+              rows: [
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                'XXXXXXXXXXXXXXXXXXXXXXXX',
+                '........................',
+                '......Z.......Z.........',
+                '........................',
+                '..............G.........',
+                '..P..................D..',
+                'XXXXX...XXXXX...XXXXXXXX',
+                'XXXXX...XXXXX...XXXXXXXX',
+                'XXXXX^^^XXXXX^^^XXXXXXXX'
+              ] }
+        ]
+    },
+    {
+        name: '第二區 · 切割車間', hint: '鋸片不會動，但擺的位置很有想法。',
+        sky: ['#33203f', '#150d1e'], rock: '#5c4a72', rockTop: '#8f7aab', gear: '#463659',
+        rooms: [
+            /* 缺口 5 格、落腳台 3 格，是照滿跳的水平距離 128px 排的。
+               第一版是缺口 4 格（80px）配落腳台 2 格（40px），而 80+40=120 < 128——
+               **從落腳台右緣滿跳一定會飛過下一座落腳台**。
+               表現出來是第一跳剛好落在台子最右端、第二跳就整個飛過去掉進缺口撞鋸，
+               三個缺口只有前兩個過得去。人類玩家可以靠鬆手調高度躲過，
+               但一款教「跳大力一點」的房間卻只有放輕才過得去，等於提示在騙人。
+               現在：從右緣起跳，落點在下一座台子左緣往內 28px、離右緣還有 32px。 */
+            { name: '踏石', hint: '柱子之間的低處有鋸。跳大力一點，從上面飛過去。',
+              rows: [
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '......G.......G.........',
+                '........................',
+                '..P..................D..',
+                'XXXX.....XXX.....XXXXXXX',
+                '......Z.......Z.........',
+                'XXXX.....XXX.....XXXXXXX',
+                'XXXX.....XXX.....XXXXXXX',
+                'XXXX^^^^^XXX^^^^^XXXXXXX'
+              ] },
+            { name: '低空飛行', hint: '天花板有刺。這條路要壓著跳。',
+              rows: [
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                'XXXXXXXXXXXXXXXXXXXXXXXX',
+                'XXXXvvXXXXXXvvXXXXXXvvXX',
+                '........................',
+                '.............G..........',
+                '..P..................D..',
+                'XXXXXX^^XXXXXX^^XXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX'
+              ] },
+            // 鋸的高度是算出來的，不是擺好看的。站著頭頂 y=146、小跳頭頂 y=127、
+            // 滿跳頭頂 y=88；鋸放在第 4 列（下緣 y=101）剛好讓小跳過得去、滿跳撞上。
+            // 第一版把鋸放在第 5 列，下緣 121，連小跳都會撞——那條縫隙就變成
+            // 「無論怎麼跳都死、不跳又會掉進坑」的死路，機器人怎麼跑都過不了。
+            { name: '下探回升', hint: '井底有方糖。上來要蹬牆，最後那道縫要小跳。',
+              rows: [
+                '........................',
+                '........................',
+                '..P.....................',
+                'XXXXX...................',
+                '....X...X......Z........',
+                '....X...X...............',
+                '....X...X...............',
+                '....X...X...........D...',
+                '....X...XXXXXXX..XXXXXXX',
+                '....X...X...............',
+                '....X.G.X...............',
+                '....X...X...............',
+                '....XXXXX...............',
+                '........................',
+                '........................',
+                '........................'
+              ] }
+        ]
+    },
+    {
+        name: '第三區 · 攪拌機房', hint: '鋸片開始移動了。看清楚軌道再走。',
+        sky: ['#1e2c40', '#0d1420'], rock: '#44586e', rockTop: '#7690a8', gear: '#334457',
+        rooms: [
+            /* 這一間整個是從跳躍包絡線反推出來的，每個數字都對得上：
+                 · 滿跳從平台邊緣起跳、落回同高度：水平 128px
+                 · 從平台跳進低 26px 的壕溝：水平 140px
+               第一版是一條 340px 的長壕溝、中間一根一格高的柱子。兩個問題：
+                 1. 340px 要落地兩次才穿得過，而**兩個落點都必然在鋸的軌道上**，
+                    沒有任何一組相位能同時滿足兩段——機器人怎麼調都死在 x≈223。
+                 2. 柱子只比人的頭頂高 6px，人跳過它的時候還在上升段，
+                    根本站不上去。「安全島」四個字在實作上是假的。
+               現在的排法：兩段壕溝各 100px（col4～8、col11～15），
+               中間 col9～10 是一座**與左右平台同高**的落腳台。
+               從左平台右緣（x=68）滿跳，落點 x=196，正好落在落腳台上（180～220，
+               左右各留 16px 與 12px）；從落腳台右緣（x=208）再滿跳，落點 x=336，
+               落在右平台上（320 起，留 16px）。
+               兩次飛越的最低點都在 y=175～191，而鋸心在 y=250——垂直差 52px 以上，
+               鋸是「掉下去才會碰到的東西」，不是要賭相位的東西。
+               站在落腳台上時人的中心 y=213、鋸心 250，差 37px（致命距離是 17px）。 */
+            { name: '往返切割', hint: '兩顆鋸各管一段走廊。中間那塊平台是唯一的落腳點。',
+              rows: [
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '..P........G.........D..',
+                'XXXX.....XX.....XXXXXXXX',
+                'XXXX.H...XX...H.XXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX'
+              ] },
+            { name: '升降鋸', hint: '兩道鋸門一上一下。貼著地走，看準空檔。',
+              rows: [
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                'XXXXXXXXXXXXXXXXXXXXXXXX',
+                '........V...............',
+                '........................',
+                '.....G..................',
+                '..P.............V....D..',
+                'XXXXXXXXXXX^^XXXXXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX'
+              ] },
+            // 這一間試過「把 V 鋸放進豎井裡」，玩不了：鋸的殺傷半徑 11、玩家半寬 6，
+            // 危險半徑 17px 比一格 20px 只小 3px——貼在隔壁那一格的牆上只剩 3px 餘裕，
+            // 人類不可能穩定做到，而且重生點也會落在鋸的掃描路徑上（一復活就死）。
+            // 改成「鋸守在通往豎井的走廊」：豎井本身乾淨，鋸負責前段的通行時機。
+            // 兩顆 V 鋸的軌道上有天花板（第 3 列）、下有地板，掃描出來的行程剛好是走廊全高。
+            { name: '絞肉機', hint: '兩把鍘刀擋在路上。等它升上去再衝過，然後爬井。',
+              rows: [
+                '........................',
+                '.........D..............',
+                '.......XXXXXXXX.........',
+                '..X...X........XXXXXXXXX',
+                '..X...X.................',
+                '..X...X........V...V....',
+                '..X...X.................',
+                '..X...X.................',
+                '..X.G.X.................',
+                '..X...X.................',
+                '..X...X.................',
+                '..X...X.................',
+                '..X...................P.',
+                'XXXXXXXXXXXXXXXXXXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX'
+              ] }
+        ]
+    },
+    {
+        name: '第四區 · 溶解池', hint: '棕色方塊踩了就溶。不要停下來。',
+        sky: ['#2c3a24', '#131a0e'], rock: '#556b42', rockTop: '#87a468', gear: '#42552f',
+        rooms: [
+            { name: '溶解橋', hint: '橋會在你腳下消失。一口氣跑過去。',
+              rows: [
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........G...............',
+                '..P..................D..',
+                'XXXXCCCCCCCCCCCCCCCXXXXX',
+                'XXXX...............XXXXX',
+                'XXXX...............XXXXX',
+                'XXXX^^^^^^^^^^^^^^^XXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX'
+              ] },
+            { name: '碎步跳石', hint: '每塊踏石只夠踩一下。上面還掛著鋸，別跳滿。',
+              rows: [
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '..........Z.............',
+                '........................',
+                '.....G..................',
+                '..P..................D..',
+                'XXXX..CC...CC...CC...XXX',
+                'XXXX.................XXX',
+                'XXXX.................XXX',
+                'XXXX^^^^^^^^^^^^^^^^^XXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX'
+              ] },
+            // 最上面兩格是實心的，不是偷懶：整面牆都會溶的話，最後一蹬往往踩空——
+            // 玩家爬到井口時那格已經在他手裡碎掉了，變成「做對了還是會掉下去」。
+            // 留兩格石頭當終點把手，中段照樣會溶，逼你不能停。
+            { name: '會消失的牆', hint: '牆也會溶。蹬一下就換邊，慢了就沒得蹬。',
+              rows: [
+                /* col0 從第 3 列到第 12 列是一道實心岩壁，不是裝飾。
+                   沒有它的時候，玩家從井裡往左蹬出來會直接飛過 col0～col4 的空區、
+                   離開畫面左緣——畫面外沒有任何碰撞，人就一路往左飄然後掉出世界。
+                   井的左牆本來就是會溶的（設計就是要它消失），所以「往左是空的」
+                   是這一間的常態而不是意外，邊界必須自己密封。 */
+                '........................',
+                '..D.....................',
+                'XXXXX...................',
+                'X....X...X..............',
+                'X....X...X..............',
+                'X....C...C..............',
+                'X....C...C..............',
+                'X....C...C..............',
+                'X....C...C..............',
+                'X....C...C..............',
+                'X....C...C..............',
+                'X....C...C..............',
+                'X......P................',
+                'XXXXXXXXXXXXXXXXXXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX'
+              ] }
+        ]
+    },
+    {
+        name: '第五區 · 防腐實驗室', hint: '前面學的全部一起來。她就在最裡面。',
+        sky: ['#401f2e', '#1e0d15', ], rock: '#6e3c52', rockTop: '#a86f88', gear: '#57303f',
+        rooms: [
+            // 豎井裡不放鋸，理由同「絞肉機」那條註解：三格寬的井放不下一顆鋸。
+            // 這一間的壓力來自「橋在腳下消失」與「井要一路蹬上去」的接續，
+            // 中途沒有任何可以停下來喘口氣的地方。
+            // 豎井的入口一定要開在「玩家腳踩地板時，身體所在的那一列」。
+            // 第一版把左牆一路砌到底，玩家跑到牆前就卡死——牆有九格高，跳不過去，
+            // 整間房間根本沒有入口。現在左牆止於第 11 列，第 12 列是門。
+            { name: '全套服務', hint: '溶解橋接豎井，中間沒有地方可以停。',
+              rows: [
+                '........................',
+                '.....................D..',
+                '.................XXXXXXX',
+                '.............X...X......',
+                '.............X...X......',
+                '.............X...X......',
+                '.............X...X......',
+                '.............X...X......',
+                '.............X.G.X......',
+                '.............X...X......',
+                '.............X...X......',
+                '..P..........X...X......',
+                'XXXXXCCCCCC......X......',
+                'XXXXX......XXXXXXX......',
+                'XXXXX^^^^^^XXXXXXX......',
+                'XXXXXXXXXXXXXXXXXX......'
+              ] },
+            // 這間的難度來自「不准跳滿」。天花板整排倒刺（下緣 y=200），
+            // 站著頭頂 y=246、小跳頭頂 y=227 安全，滿跳頭頂 y=188 直接插上去。
+            // 腳下又是一排只夠踩一下的溶解踏石，非跳不可——於是每一跳都得剛剛好。
+            // 前一版是平地加一顆鋸，亂按亂跳八次全過；改成這樣之後同一隻亂按機器人零過關。
+            { name: '防腐走廊', hint: '腳下是空的，頭上全是刺。非跳不可，但只能輕輕跳。',
+              rows: [
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                '........................',
+                'XXXXXXXXXXXXXXXXXXXXXXXX',
+                'XXXXXvvvvvvvvvvvvvvvvXXX',
+                '........................',
+                '........................',
+                '..P..G...............D..',
+                'XXXX..CC...CC...CC...XXX',
+                'XXXX.................XXX',
+                'XXXX^^^^^^^^^^^^^^^^^XXX'
+              ] },
+            // 最後一間：先蹬上豎井，再走一條「跳得起來、但不能跳滿」的低天花板走廊。
+            // 鋸掛在第 1 列（下緣 y=41），小跳頭頂 y=67 過得去、滿跳頭頂 y=28 撞上去。
+            // 走廊中間挖了兩格洞逼你非跳不可，鋸就正好掛在那個洞的上方——
+            // 這一跳必須「剛剛好」，是整款遊戲教過的所有東西的期末考。
+            { name: '營救', hint: '爬出井，然後低頭衝。那道縫要跳，但跳滿就撞鋸。',
+              rows: [
+                '........................',
+                '............Z....Z......',
+                '........................',
+                '........................',
+                '.....................D..',
+                '...X...XXXXX..CCXXXXXXXX',
+                '...X...X................',
+                '...X...X................',
+                '...X.G.X................',
+                '...X...X................',
+                '...X...X................',
+                '...X...X................',
+                '...X.P.X................',
+                'XXXXXXXX^^^^^^^^^^^^XXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX',
+                'XXXXXXXXXXXXXXXXXXXXXXXX'
+              ] }
+        ]
+    }
+];
+
+// ======================================================================
+// 狀態
+// ======================================================================
+var s = null;
+var splatCv = null, splatCtx = null;   // 果凍漬圖層：房間級離屏 canvas，死亡時畫上去就不再清除
+
+function reset() {
+    s = { ch: 0, room: 0, deaths: 0, sugars: 0, score: 0, time: 0, timeShown: -1 };
+    P.clear(); FT.clear();
+    G.setStat('deaths', 0); G.setStat('score', 0); G.setStat('time', '0:00');
+    loadRoom(0, 0);
+}
+
+function roomDef(ch, r) { return CHAPTERS[ch].rooms[r]; }
+
+function loadRoom(ch, r) {
+    var def = roomDef(ch, r);
+    var solid = {}, hazard = {}, dissolves = [], saws = [], movSaws = [], sugars = [], door = null, start = null;
+    var x, y, c;
+
+    for (y = 0; y < def.rows.length; y++) {
+        var row = def.rows[y];
+        for (x = 0; x < row.length; x++) {
+            c = row[x];
+            var k = x + ',' + y;
+            if (c === 'X') solid[k] = 1;
+            else if (c === '^' || c === 'v' || c === '>' || c === '<') { solid[k] = 1; hazard[k] = c; }
+            else if (c === 'C') dissolves.push({ x: x, y: y, state: 0, t: 0 });
+            else if (c === 'Z') saws.push({ x: x * T + T / 2, y: y * T + T / 2, spin: 0 });
+            else if (c === 'H' || c === 'V') movSaws.push({ gx: x, gy: y, axis: c, spin: 0 });
+            else if (c === 'G') sugars.push({ x: x, y: y, taken: false, t: (x * 7 + y * 13) % 6 });
+            else if (c === 'D') door = { x: x, y: y };
+            else if (c === 'P') start = { x: x, y: y };
+        }
+    }
+
+    s.ch = ch; s.room = r;
+    s.def = def; s.cfg = CHAPTERS[ch];
+    s.solid = solid; s.hazard = hazard;
+    s.dissolves = dissolves; s.saws = saws; s.movSaws = movSaws;
+    s.sugars = sugars; s.door = door; s.start = start;
+    s.clearT = 0; s.roomDeaths = 0; s.roomTime = 0; s.hintT = 2.6;
+    s.girlT = 0;
+
+    // 移動圓鋸的軌道：從起始格沿軸向兩側掃到實體磚或畫面邊界。
+    // 先算好存起來，運行時只做 ping-pong，軌道也才畫得出來。
+    for (var i = 0; i < movSaws.length; i++) {
+        var m = movSaws[i];
+        var lo = m.axis === 'H' ? m.gx : m.gy;
+        var hi = lo;
+        while (lo > 0 && !solidStaticAt(m.axis === 'H' ? lo - 1 : m.gx, m.axis === 'H' ? m.gy : lo - 1)) lo--;
+        while (hi < (m.axis === 'H' ? COLS : ROWS) - 1 && !solidStaticAt(m.axis === 'H' ? hi + 1 : m.gx, m.axis === 'H' ? m.gy : hi + 1)) hi++;
+        m.min = lo * T + T / 2; m.max = hi * T + T / 2;
+        m.pos = (m.axis === 'H' ? m.gx : m.gy) * T + T / 2;
+        // 偶數顆往正向走、奇數顆反向，讓同房的鋸自然錯開節奏
+        m.dir = (i % 2 === 0) ? 1 : -1;
+        m.x = m.axis === 'H' ? m.pos : m.gx * T + T / 2;
+        m.y = m.axis === 'V' ? m.pos : m.gy * T + T / 2;
+    }
+
+    // 果凍漬圖層重建（換房才清；同房重試永遠累積）
+    splatCv = document.createElement('canvas');
+    splatCv.width = VW; splatCv.height = VH;
+    splatCtx = splatCv.getContext('2d');
+
+    G.setStat('stage', (ch + 1) + '-' + (r + 1));
+    spawn();
+
+    function solidStaticAt(cx, cy) { return !!solid[cx + ',' + cy]; }
+}
+
+function spawn() {
+    var st = s.start || { x: 2, y: 12 };
+    s.p = {
+        x: st.x * T + 4, y: st.y * T + T - 14, w: 12, h: 14,
+        vx: 0, vy: 0, grounded: false, coyote: 0, face: 1,
+        jumping: false, wall: 0, lock: 0, lockDir: 0,
+        dead: 0, anim: 0, squash: 0, deadlyHit: null
+    };
+    for (var i = 0; i < s.dissolves.length; i++) { s.dissolves[i].state = 0; s.dissolves[i].t = 0; }
+    RE.Input.consumeBuffer('a');
+    RE.Input.consumeBuffer('b');
+}
+
+// ---------- 地形查詢 ----------
+function solidAt(cx, cy) {
+    if (s.solid[cx + ',' + cy]) return true;
+    for (var i = 0; i < s.dissolves.length; i++) {
+        var d = s.dissolves[i];
+        if (d.x === cx && d.y === cy && d.state < 2) return true;
+    }
+    return false;
+}
+function solidStatic(cx, cy) { return !!s.solid[cx + ',' + cy]; }
+function hazardAt(cx, cy) { return s.hazard[cx + ',' + cy] || null; }
+
+// 尖刺只有「朝向你的那一面」會殺人，玩家可以安全站在刺牆頂上
+function hazardKills(dir, o) {
+    if (dir === '^') return o.vy >= 0;
+    if (dir === 'v') return o.vy <= 0;
+    if (dir === '>') return o.vx <= 0;
+    if (dir === '<') return o.vx >= 0;
+    return false;
+}
+
+// 踩到溶解方塊：開始計時
+function touchDissolve(cx, cy) {
+    for (var i = 0; i < s.dissolves.length; i++) {
+        var d = s.dissolves[i];
+        if (d.x === cx && d.y === cy && d.state === 0) {
+            d.state = 1; d.t = 0;
+            RetroAudio.play('blip');
+        }
+    }
+}
+
+/**
+ * 移動並解算 tilemap 碰撞。X、Y 一定要分兩階段——
+ * 兩軸一起解算時，落地那一幀角色已陷入地板，
+ * 水平解算會把它誤判成撞牆而從側面推開。（沿用 celeste_like 的成熟版本）
+ */
+function moveAndCollide(o, dt) {
+    var grounded = false, hitWallDir = 0, r, c;
+    o.deadlyHit = null;
+
+    o.x += o.vx * dt;
+    var r0 = Math.floor(o.y / T), r1 = Math.floor((o.y + o.h - 1) / T);
+    var c0 = Math.floor(o.x / T), c1 = Math.floor((o.x + o.w - 1) / T);
+    for (r = r0; r <= r1; r++) {
+        for (c = c0; c <= c1; c++) {
+            if (!solidAt(c, r)) continue;
+            var hz = hazardAt(c, r);
+            if (hz && hazardKills(hz, o)) o.deadlyHit = hz;
+            if (o.vx > 0) { o.x = c * T - o.w; o.vx = 0; hitWallDir = 1; }
+            else if (o.vx < 0) { o.x = (c + 1) * T; o.vx = 0; hitWallDir = -1; }
+        }
+    }
+
+    o.y += o.vy * dt;
+    c0 = Math.floor(o.x / T); c1 = Math.floor((o.x + o.w - 1) / T);
+    r0 = Math.floor(o.y / T); r1 = Math.floor((o.y + o.h - 1) / T);
+    for (r = r0; r <= r1; r++) {
+        for (c = c0; c <= c1; c++) {
+            if (!solidAt(c, r)) continue;
+            var hz2 = hazardAt(c, r);
+            if (hz2 && hazardKills(hz2, o)) o.deadlyHit = hz2;
+            if (o.vy > 0) { o.y = r * T - o.h; o.vy = 0; grounded = true; touchDissolve(c, r); }
+            else if (o.vy < 0) { o.y = (r + 1) * T; o.vy = 0; }
+        }
+    }
+    // 貼地探測：解算會把腳「剛好」放在磚塊上緣，下一幀的檢查範圍是 y+h-1，
+    // 正好差一像素碰不到磚塊，grounded 會每隔一幀閃一次（celeste_like 的血淚）
+    if (!grounded && o.vy >= 0) {
+        var pr = Math.floor((o.y + o.h + 1) / T);
+        var pc0 = Math.floor(o.x / T), pc1 = Math.floor((o.x + o.w - 1) / T);
+        for (c = pc0; c <= pc1; c++) {
+            if (solidAt(c, pr)) { grounded = true; touchDissolve(c, pr); break; }
+        }
+    }
+    o.grounded = grounded; o.wallDir = hitWallDir;
+    return grounded;
+}
+
+// 貼牆判定：往前探 2px。探到溶解方塊時順便觸發它開始溶（牆也會被你貼壞）
+function wallSide(o, dir) {
+    var x = dir > 0 ? o.x + o.w + 2 : o.x - 2;
+    var cx = Math.floor(x / T);
+    var r0 = Math.floor((o.y + 2) / T), r1 = Math.floor((o.y + o.h - 3) / T);
+    var found = false;
+    for (var r = r0; r <= r1; r++) {
+        if (solidAt(cx, r)) { found = true; touchDissolve(cx, r); }
+    }
+    return found;
+}
+function wallSpiked(o, dir) {
+    var x = dir > 0 ? o.x + o.w + 2 : o.x - 2;
+    var cx = Math.floor(x / T);
+    var r0 = Math.floor((o.y + 2) / T), r1 = Math.floor((o.y + o.h - 3) / T);
+    for (var r = r0; r <= r1; r++) if (hazardAt(cx, r)) return true;
+    return false;
+}
+
+// ======================================================================
+// 玩家
+// ======================================================================
+function updatePlayer(dt) {
+    var p = s.p;
+    if (p.dead > 0) {
+        p.dead -= dt;
+        if (p.dead <= 0) spawn();
+        return;
+    }
+
+    var ax = RE.Input.axisX();
+    if (p.lock > 0) { p.lock -= dt; ax = p.lockDir; }
+
+    // ---------- 水平移動：暴力加速 + 微滑地面 ----------
+    var accel = p.grounded ? PHYS.accel : PHYS.accelAir;
+    var fric = p.grounded ? PHYS.friction : PHYS.frictionAir;
+    if (ax !== 0) {
+        p.vx += ax * accel * dt;
+        if (Math.abs(p.vx) > PHYS.maxRun) p.vx = ax * PHYS.maxRun;
+        p.face = ax > 0 ? 1 : -1;
+    } else {
+        if (p.vx > 0) p.vx = Math.max(0, p.vx - fric * dt);
+        else if (p.vx < 0) p.vx = Math.min(0, p.vx + fric * dt);
+    }
+
+    // ---------- 貼牆下滑 ----------
+    var onWall = 0;
+    if (!p.grounded) {
+        if (ax > 0 && wallSide(p, 1) && !wallSpiked(p, 1)) onWall = 1;
+        else if (ax < 0 && wallSide(p, -1) && !wallSpiked(p, -1)) onWall = -1;
+    }
+    p.wall = onWall;
+
+    // ---------- 重力 ----------
+    var g = p.vy < 0 ? PHYS.gravity : PHYS.gravityFall;
+    p.vy += g * dt;
+    var maxFall = onWall ? PHYS.wallSlide : PHYS.maxFall;
+    if (p.vy > maxFall) p.vy = maxFall;
+
+    // ---------- 跳躍：土狼時間 + 輸入緩衝 + 可變高度；A、B 都是跳 ----------
+    if (p.grounded) p.coyote = PHYS.coyote;
+    else if (p.coyote > 0) p.coyote -= dt;
+
+    var jumpBuffered = RE.Input.buffered('a', PHYS.buffer) || RE.Input.buffered('b', PHYS.buffer);
+    if (jumpBuffered) {
+        if (p.coyote > 0) {
+            consumeJump();
+            p.vy = PHYS.jumpVel; p.jumping = true; p.coyote = 0;
+            p.squash = 0.12;
+            RetroAudio.play('jump');
+            P.burst(p.x + p.w / 2, p.y + p.h, 6, { angle: -Math.PI / 2, spread: 1.1,
+                speedMin: 30, speedMax: 100, gravity: 300, colors: ['#ff8a9e', '#d94f63'], lifeMin: 0.15, lifeMax: 0.3 });
+        } else if (onWall !== 0) {
+            consumeJump();
+            p.vy = PHYS.wallJumpY;
+            p.vx = -onWall * PHYS.wallJumpX;
+            p.lock = PHYS.wallLock; p.lockDir = -onWall;
+            p.face = -onWall;
+            p.jumping = true;
+            p.squash = 0.12;
+            RetroAudio.play('doubleJump');
+            RE.juice.shake(0.07);
+            P.burst(p.x + (onWall > 0 ? p.w : 0), p.y + p.h / 2, 8, {
+                angle: onWall > 0 ? Math.PI : 0, spread: 0.8,
+                speedMin: 50, speedMax: 150, gravity: 240,
+                colors: ['#ff8a9e', '#ffd166'], lifeMin: 0.15, lifeMax: 0.32 });
+        }
+    }
+    if (p.jumping && !RE.Input.down('a') && !RE.Input.down('b') && p.vy < 0) {
+        p.vy *= PHYS.jumpCut; p.jumping = false;
+    }
+    if (p.vy >= 0) p.jumping = false;
+
+    var wasAir = !p.grounded;
+    moveAndCollide(p, dt);
+    if (wasAir && p.grounded) {
+        p.squash = 0.14;
+        RetroAudio.play('step');
+        P.burst(p.x + p.w / 2, p.y + p.h, 5, { angle: -Math.PI / 2, spread: 1.4,
+            speedMin: 20, speedMax: 70, gravity: 320, colors: ['#d94f63'], lifeMin: 0.1, lifeMax: 0.25, sizeMin: 1.5, sizeMax: 3 });
+    }
+    afterMove(dt);
+}
+
+function consumeJump() {
+    RE.Input.consumeBuffer('a');
+    RE.Input.consumeBuffer('b');
+}
+
+function sawHitsPlayer(sx, sy) {
+    var p = s.p;
+    var cx = RE.clamp(sx, p.x, p.x + p.w);
+    var cy = RE.clamp(sy, p.y, p.y + p.h);
+    var dx = sx - cx, dy = sy - cy;
+    return dx * dx + dy * dy < PHYS.sawR * PHYS.sawR;
+}
+
+function afterMove(dt) {
+    var p = s.p;
+    p.anim += dt;
+    if (p.squash > 0) p.squash -= dt;
+
+    if (p.deadlyHit) { die(); return; }
+    if (p.y > VH + 40) { die(); return; }
+
+    // 圓鋸（固定 + 移動）
+    for (var i = 0; i < s.saws.length; i++) {
+        if (sawHitsPlayer(s.saws[i].x, s.saws[i].y)) { die(); return; }
+    }
+    for (i = 0; i < s.movSaws.length; i++) {
+        if (sawHitsPlayer(s.movSaws[i].x, s.movSaws[i].y)) { die(); return; }
+    }
+
+    // 方糖
+    for (i = 0; i < s.sugars.length; i++) {
+        var g = s.sugars[i];
+        if (g.taken) continue;
+        var gx = g.x * T + T / 2, gy = g.y * T + T / 2;
+        if (Math.abs(p.x + p.w / 2 - gx) < 14 && Math.abs(p.y + p.h / 2 - gy) < 15) {
+            g.taken = true;
+            s.sugars_taken = (s.sugars_taken || 0) + 1;
+            s.sugarCount = (s.sugarCount || 0) + 1;
+            addScore(500);
+            RetroAudio.play('coin');
+            RE.juice.hitstop(0.05);
+            RE.juice.punchZoom(0.05);
+            FT.add(gx, gy - 8, '方糖 +500', { color: '#ffe9f0', size: 13 });
+            P.burst(gx, gy, 14, { colors: ['#ffffff', '#ffd166', '#ffe9f0'],
+                speedMin: 50, speedMax: 160, gravity: 160, lifeMin: 0.3, lifeMax: 0.55, glow: true });
+        }
+    }
+
+    // 棉花糖妹妹（出口）
+    if (s.door && s.clearT <= 0) {
+        var dx2 = s.door.x * T, dy2 = s.door.y * T;
+        if (p.x + p.w > dx2 + 2 && p.x < dx2 + T - 2 &&
+            p.y + p.h > dy2 + 2 && p.y < dy2 + T + 2) clearRoom();
+    }
+}
+
+function addScore(n) { s.score += n; G.setStat('score', s.score); }
+
+// ======================================================================
+// 死亡：0.25 秒重生 + 果凍漬永久留在房間圖層上
+// ======================================================================
+function die() {
+    var p = s.p;
+    if (p.dead > 0) return;
+    p.dead = PHYS.respawn;
+    s.deaths++; s.roomDeaths++;
+    G.setStat('deaths', s.deaths);
+
+    paintSplat(p.x + p.w / 2, p.y + p.h / 2);
+
+    RetroAudio.play('splash');
+    RE.juice.hitstop(0.06);
+    RE.juice.shake(0.3);
+    RE.juice.flash('rgba(255,80,110,0.25)', 0.1);
+    P.burst(p.x + p.w / 2, p.y + p.h / 2, 26, {
+        colors: ['#ff4d6d', '#d43354', '#ff8a9e'],
+        speedMin: 60, speedMax: 230, gravity: 500, drag: 0.94,
+        lifeMin: 0.3, lifeMax: 0.7, sizeMin: 2, sizeMax: 5
+    });
+}
+
+/** 在房間的果凍漬圖層上永久畫一灘。同房重試不清除——死亡即地圖。 */
+function paintSplat(x, y) {
+    var c = splatCtx;
+    c.save();
+    c.globalAlpha = 0.5;
+    var n = 5 + Math.floor(Math.random() * 4);
+    for (var i = 0; i < n; i++) {
+        var a = Math.random() * RE.TAU;
+        var d = Math.random() * 9;
+        var r = 2.5 + Math.random() * 5;
+        c.fillStyle = Math.random() < 0.5 ? '#d43354' : '#a8244a';
+        c.beginPath();
+        c.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, r, 0, RE.TAU);
+        c.fill();
+    }
+    // 往下的滴痕
+    c.globalAlpha = 0.35;
+    for (i = 0; i < 2; i++) {
+        var ox = (Math.random() - 0.5) * 14;
+        c.fillStyle = '#a8244a';
+        c.fillRect(x + ox, y, 2, 6 + Math.random() * 12);
+    }
+    c.restore();
+}
+
+// ======================================================================
+// 過關 / 全破 / 放棄
+// ======================================================================
+function clearRoom() {
+    s.clearT = 0.9;
+    s.girlT = 0.9;
+    RetroAudio.play('win');
+    RE.juice.flash('rgba(255,255,255,0.35)', 0.14);
+    RE.juice.punchZoom(0.07);
+    addScore(300);
+    var d = s.door;
+    P.burst(d.x * T + T / 2, d.y * T + T / 2, 20, {
+        colors: ['#fff3fa', '#ffd166', '#ff8fc8'],
+        speedMin: 60, speedMax: 190, gravity: 90, lifeMin: 0.35, lifeMax: 0.7, glow: true
+    });
+    FT.add(d.x * T + T / 2, d.y * T - 12,
+        s.ch === CHAPTERS.length - 1 && s.room === CHAPTERS[s.ch].rooms.length - 1 ? '救到了！' : '又被抓走了！',
+        { color: '#ffd166', size: 13 });
+}
+
+function nextRoom() {
+    var ch = s.ch, r = s.room;
+    if (r < CHAPTERS[ch].rooms.length - 1) { loadRoom(ch, r + 1); return; }
+    addScore(1000);
+    if (ch < CHAPTERS.length - 1) {
+        var n = ch + 1;
+        G.stageCard(n + 1, CHAPTERS[n].name, CHAPTERS[n].hint, function () { loadRoom(n, 0); });
+        return;
+    }
+    finish();
+}
+
+function finish() {
+    var t = Math.floor(s.time);
+    var bonus = Math.max(0, 5000 - t * 15);
+    addScore(bonus);
+    var mm = Math.floor(t / 60), ss = ('0' + (t % 60)).slice(-2);
+    G.gameOver({
+        win: true, score: s.score,
+        body: '救到棉花糖妹妹了！全程 ' + mm + ':' + ss + '，爆漿 ' + s.deaths + ' 次，' +
+              '帶回 ' + (s.sugarCount || 0) + ' 顆方糖。' +
+              '注意到了嗎——爆漿 ' + s.deaths + ' 次，分數一分都沒扣。' +
+              '<strong>當失敗便宜到不值一提，玩家就會一直試到成功為止。</strong>' +
+              '這就是《Meat Boy》教給後來十年動作遊戲的一課；' +
+              '十年後的《Celeste》（見 10s 頁）把它接了過去，再加上輔助模式。'
+    });
+}
+
+function giveUp() {
+    G.hideOverlay();
+    G._state = 'playing';
+    G.gameOver({
+        win: false, score: s.score,
+        body: '你在 ' + (s.ch + 1) + '-' + (s.room + 1) + ' 收手了，總共爆漿 ' + s.deaths + ' 次。' +
+              '當年 Newgrounds 上的玩家全破平均要爆好幾百次——你這樣真的不算多。' +
+              '房間裡的果凍漬都還記著你試過的路線，隨時回來接著畫完它。'
+    });
+}
+
+// ======================================================================
+// 暫停與標題
+// ======================================================================
+function openPause() {
+    G._state = 'paused';
+    RetroAudio.play('pause');
+    G.showOverlay({
+        title: '暫停中',
+        body: '死了 ' + s.deaths + ' 次？《Super Meat Boy》的玩家平均全破要死幾百次。繼續。',
+        buttons: [
+            { label: '▶ 繼續', onClick: function () { G.resume(); } },
+            { label: '↻ 重新開始', cls: 'ghost', onClick: function () { G.restart(); } },
+            { label: '⚑ 放棄營救', cls: 'ghost', onClick: function () { giveUp(); } }
+        ],
+        press: '按 P 或 ESC 繼續'
+    });
+}
+G.pause = openPause;
+
+function showTitleScreen() {
+    G._state = 'title';
+    G.showOverlay({
+        title: '果凍勇者',
+        body: G.cfg.howto,
+        buttons: [
+            { label: '▶ 開始營救', onClick: function () { G.hideOverlay(); G._state = 'playing'; reset(); } }
+        ],
+        press: '按 空白鍵 或 Enter 開始'
+    });
+    var onKey = function (e) {
+        if (G._state !== 'title') return;
+        if (e.code === 'Space' || e.code === 'Enter') {
+            e.preventDefault();
+            window.removeEventListener('keydown', onKey);
+            RetroAudio.play('confirm');
+            G.hideOverlay(); G._state = 'playing'; reset();
+        }
+    };
+    window.addEventListener('keydown', onKey);
+}
+
+// ======================================================================
+// 主迴圈
+// ======================================================================
+function update(dt) {
+    if (!s) return;
+    P.update(dt); FT.update(dt);
+    if (s.hintT > 0) s.hintT -= dt;
+    s.time += dt;
+    s.roomTime += dt;
+
+    var shown = Math.floor(s.time);
+    if (shown !== s.timeShown) {
+        s.timeShown = shown;
+        G.setStat('time', Math.floor(shown / 60) + ':' + ('0' + (shown % 60)).slice(-2));
+    }
+
+    var i;
+    // 溶解方塊
+    for (i = 0; i < s.dissolves.length; i++) {
+        var d = s.dissolves[i];
+        if (d.state === 1) {
+            d.t += dt;
+            if (d.t >= PHYS.dissolveShake) {
+                d.state = 2; d.t = 0;
+                P.burst(d.x * T + T / 2, d.y * T + T / 2, 8, {
+                    colors: ['#8d6b46', '#b58b5e'], speedMin: 30, speedMax: 100,
+                    gravity: 420, lifeMin: 0.25, lifeMax: 0.5 });
+                RetroAudio.play('drop');
+            }
+        } else if (d.state === 2) {
+            d.t += dt;
+            if (d.t >= PHYS.dissolveBack) {
+                var px = Math.floor((s.p.x + s.p.w / 2) / T), py = Math.floor((s.p.y + s.p.h / 2) / T);
+                if (!(px === d.x && py === d.y)) { d.state = 0; d.t = 0; }
+            }
+        }
+    }
+
+    // 圓鋸
+    for (i = 0; i < s.saws.length; i++) s.saws[i].spin += dt * 9;
+    for (i = 0; i < s.movSaws.length; i++) {
+        var m = s.movSaws[i];
+        m.spin += dt * 9;
+        m.pos += m.dir * PHYS.sawSpeed * dt;
+        if (m.pos > m.max) { m.pos = m.max; m.dir = -1; }
+        if (m.pos < m.min) { m.pos = m.min; m.dir = 1; }
+        if (m.axis === 'H') m.x = m.pos; else m.y = m.pos;
+    }
+
+    for (i = 0; i < s.sugars.length; i++) s.sugars[i].t += dt;
+    if (s.girlT > 0) s.girlT -= dt;
+
+    if (s.clearT > 0) {
+        s.clearT -= dt;
+        if (s.clearT <= 0) { nextRoom(); return; }
+        return;
+    }
+    updatePlayer(dt);
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+function render() {
+    if (!s || !s.p) return;
+    G.beginWorld();
+    drawSky();
+    drawTiles();
+    ctx.drawImage(splatCv, 0, 0);       // 果凍漬圖層：畫在磚上、活動物件下
+    drawDissolves();
+    drawSugars();
+    drawDoor();
+    drawSaws();
+    drawPlayer();
+    P.draw(ctx);
+    FT.draw(ctx);
+    G.endWorld();
+    drawHUD();
+    G.postFX({ scanAlpha: 0.05, vignetteStrength: 0.42 });
+}
+
+function drawSky() {
+    var g = ctx.createLinearGradient(0, 0, 0, VH);
+    g.addColorStop(0, s.cfg.sky[0]);
+    g.addColorStop(1, s.cfg.sky[1]);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, VW, VH);
+
+    // 工廠背景：兩顆慢轉的大齒輪剪影 + 垂直管線
+    drawGear(70, 84, 55, Date.now() * 0.00018);
+    drawGear(400, 210, 74, -Date.now() * 0.00012);
+    ctx.fillStyle = 'rgba(0,0,0,0.13)';
+    ctx.fillRect(180, 0, 10, VH);
+    ctx.fillRect(310, 0, 6, VH);
+}
+
+function drawGear(cx, cy, r, rot) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rot);
+    ctx.fillStyle = s.cfg.gear;
+    ctx.globalAlpha = 0.4;
+    for (var i = 0; i < 8; i++) {
+        var a = i / 8 * RE.TAU;
+        ctx.fillRect(Math.cos(a) * r - 6, Math.sin(a) * r - 6, 12, 12);
+    }
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.92, 0, RE.TAU); ctx.fill();
+    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = s.cfg.sky[1];
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.4, 0, RE.TAU); ctx.fill();
+    ctx.restore();
+}
+
+function drawTiles() {
+    for (var y = 0; y < ROWS; y++) {
+        for (var x = 0; x < COLS; x++) {
+            var k = x + ',' + y;
+            if (!s.solid[k]) continue;
+            var hz = s.hazard[k];
+            if (hz) { drawSpike(x, y, hz); continue; }
+            drawRock(x, y);
+        }
+    }
+}
+
+function drawRock(x, y) {
+    var px = x * T, py = y * T;
+    ctx.fillStyle = s.cfg.rock;
+    ctx.fillRect(px, py, T, T);
+    if (!solidStatic(x, y - 1)) { ctx.fillStyle = s.cfg.rockTop; ctx.fillRect(px, py, T, 4); }
+    ctx.fillStyle = 'rgba(0,0,0,0.16)';
+    ctx.fillRect(px, py + T - 3, T, 3);
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    ctx.fillRect(px + 3, py + 7, 5, 3);
+    ctx.fillRect(px + 11, py + 12, 4, 2);
+}
+
+function drawSpike(x, y, dir) {
+    var px = x * T, py = y * T;
+    ctx.fillStyle = s.cfg.rock;
+    ctx.fillRect(px, py, T, T);
+    ctx.fillStyle = '#e7edf7';
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+    ctx.lineWidth = 1;
+    for (var i = 0; i < 3; i++) {
+        var o = i * (T / 3);
+        ctx.beginPath();
+        if (dir === '^') {
+            ctx.moveTo(px + o, py + T); ctx.lineTo(px + o + T / 6, py + 2); ctx.lineTo(px + o + T / 3, py + T);
+        } else if (dir === 'v') {
+            ctx.moveTo(px + o, py); ctx.lineTo(px + o + T / 6, py + T - 2); ctx.lineTo(px + o + T / 3, py);
+        } else if (dir === '>') {
+            ctx.moveTo(px, py + o); ctx.lineTo(px + T - 2, py + o + T / 6); ctx.lineTo(px, py + o + T / 3);
+        } else {
+            ctx.moveTo(px + T, py + o); ctx.lineTo(px + 2, py + o + T / 6); ctx.lineTo(px + T, py + o + T / 3);
+        }
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+}
+
+function drawDissolves() {
+    for (var i = 0; i < s.dissolves.length; i++) {
+        var d = s.dissolves[i];
+        if (d.state === 2) {
+            ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(d.x * T + 2, d.y * T + 2, T - 4, T - 4);
+            continue;
+        }
+        var sh = d.state === 1 ? Math.sin(d.t * 70) * 1.8 : 0;
+        var px = d.x * T + sh, py = d.y * T;
+        ctx.fillStyle = d.state === 1 ? '#c99a68' : '#9c7850';
+        ctx.fillRect(px, py, T, T);
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.fillRect(px, py, T, 3);
+        ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(px + 5, py + 3); ctx.lineTo(px + 9, py + 10); ctx.lineTo(px + 6, py + T - 2);
+        ctx.moveTo(px + 14, py + 2); ctx.lineTo(px + 12, py + 9); ctx.lineTo(px + 15, py + T - 3);
+        ctx.stroke();
+    }
+}
+
+function drawSaws() {
+    var i, m;
+    // 移動鋸先畫軌道，玩家第一眼就要能預判
+    ctx.strokeStyle = 'rgba(255,255,255,0.13)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 5]);
+    for (i = 0; i < s.movSaws.length; i++) {
+        m = s.movSaws[i];
+        ctx.beginPath();
+        if (m.axis === 'H') { ctx.moveTo(m.min, m.y); ctx.lineTo(m.max, m.y); }
+        else { ctx.moveTo(m.x, m.min); ctx.lineTo(m.x, m.max); }
+        ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    for (i = 0; i < s.saws.length; i++) drawSaw(s.saws[i].x, s.saws[i].y, s.saws[i].spin);
+    for (i = 0; i < s.movSaws.length; i++) drawSaw(s.movSaws[i].x, s.movSaws[i].y, s.movSaws[i].spin);
+}
+
+function drawSaw(x, y, spin) {
+    var r = PHYS.sawR;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(spin);
+    ctx.fillStyle = '#c8ccd8';
+    ctx.beginPath();
+    for (var i = 0; i < 8; i++) {
+        var a0 = i / 8 * RE.TAU, a1 = (i + 0.5) / 8 * RE.TAU;
+        ctx.lineTo(Math.cos(a0) * (r + 3), Math.sin(a0) * (r + 3));
+        ctx.lineTo(Math.cos(a1) * (r - 2), Math.sin(a1) * (r - 2));
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#8a90a3';
+    ctx.beginPath(); ctx.arc(0, 0, r - 4, 0, RE.TAU); ctx.fill();
+    ctx.fillStyle = '#565b6b';
+    ctx.beginPath(); ctx.arc(0, 0, 3, 0, RE.TAU); ctx.fill();
+    ctx.restore();
+}
+
+function drawSugars() {
+    for (var i = 0; i < s.sugars.length; i++) {
+        var g = s.sugars[i];
+        if (g.taken) continue;
+        var gx = g.x * T + T / 2, gy = g.y * T + T / 2 + Math.sin(g.t * 2.6) * 3;
+        ctx.save();
+        ctx.translate(gx, gy);
+        ctx.rotate(Math.sin(g.t * 1.8) * 0.2);
+        ctx.shadowBlur = 8; ctx.shadowColor = '#ffffff';
+        ctx.fillStyle = '#f4f6ff';
+        ctx.fillRect(-5, -5, 10, 10);
+        ctx.fillStyle = 'rgba(180,200,255,0.6)';
+        ctx.fillRect(-5, 2, 10, 3);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(-3, -3, 3, 3);
+        ctx.restore();
+    }
+}
+
+// 棉花糖妹妹：粉白小人，頭上蝴蝶結。過關瞬間被防腐博士的爪子吊走。
+function drawDoor() {
+    if (!s.door) return;
+    var px = s.door.x * T, py = s.door.y * T;
+    var t = Date.now() * 0.003;
+    var bob = Math.sin(t) * 1.5;
+
+    if (s.girlT > 0) {
+        // 被抓走的演出：往上吊
+        var k = 1 - s.girlT / 0.9;
+        py -= k * 90;
+        ctx.strokeStyle = '#3a3a44';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(px + T / 2, py + 2); ctx.lineTo(px + T / 2, -4); ctx.stroke();
+    }
+
+    ctx.save();
+    ctx.translate(px + T / 2, py + T / 2 + bob);
+    ctx.shadowBlur = 10; ctx.shadowColor = 'rgba(255,143,200,0.8)';
+    // 身體
+    ctx.fillStyle = '#fff3fa';
+    RE.Draw.roundRect(ctx, -6, -7, 12, 14, 4); ctx.fill();
+    ctx.shadowBlur = 0;
+    // 腮紅與眼睛
+    ctx.fillStyle = '#ffb8d9';
+    ctx.fillRect(-5, 0, 3, 2); ctx.fillRect(2, 0, 3, 2);
+    ctx.fillStyle = '#4a2a3a';
+    ctx.fillRect(-3, -3, 2, 3); ctx.fillRect(1, -3, 2, 3);
+    // 蝴蝶結
+    ctx.fillStyle = '#ff8fc8';
+    ctx.beginPath();
+    ctx.moveTo(0, -7); ctx.lineTo(-6, -11); ctx.lineTo(-2, -6); ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(0, -7); ctx.lineTo(6, -11); ctx.lineTo(2, -6); ctx.closePath(); ctx.fill();
+    ctx.restore();
+}
+
+function drawPlayer() {
+    var p = s.p;
+    if (p.dead > 0) return;
+
+    // 果凍的擠壓變形：跳伸長、落地與起跳壓扁、奔跑晃動
+    var sx = 1, sy = 1;
+    if (p.squash > 0) { sx = 1.25; sy = 0.72; }
+    else if (!p.grounded && p.vy < -60) { sx = 0.82; sy = 1.2; }
+    else if (!p.grounded && p.vy > 120) { sx = 0.9; sy = 1.1; }
+    else if (p.grounded && Math.abs(p.vx) > 60) {
+        sx = 1 + Math.sin(p.anim * 22) * 0.08;
+        sy = 1 - Math.sin(p.anim * 22) * 0.08;
+    }
+    if (p.wall !== 0) { sx = 0.8; sy = 1.12; }
+
+    ctx.save();
+    ctx.translate(p.x + p.w / 2, p.y + p.h);
+    ctx.scale(sx, sy);
+
+    // 果凍身體：紅色圓角塊 + 半透明高光
+    ctx.fillStyle = '#e8385c';
+    RE.Draw.roundRect(ctx, -p.w / 2, -p.h, p.w, p.h, 4); ctx.fill();
+    ctx.fillStyle = '#c22548';
+    RE.Draw.roundRect(ctx, -p.w / 2, -5, p.w, 5, 3); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillRect(-p.w / 2 + 2, -p.h + 2, 4, 3);
+
+    // 眼睛（大白眼珠是 Meat Boy 的招牌臉）
+    var ex = p.face > 0 ? 1 : -4;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(ex - 2, -p.h + 4, 4, 5);
+    ctx.fillRect(ex + 3, -p.h + 4, 4, 5);
+    ctx.fillStyle = '#1a1a24';
+    ctx.fillRect(ex - 1 + p.face, -p.h + 6, 2, 2);
+    ctx.fillRect(ex + 4 + p.face, -p.h + 6, 2, 2);
+    ctx.restore();
+
+    // 貼牆摩擦光
+    if (p.wall !== 0) {
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.fillRect(p.wall > 0 ? p.x + p.w : p.x - 2, p.y + 2, 2, p.h - 4);
+        if (Math.random() < 0.4) {
+            P.burst(p.wall > 0 ? p.x + p.w : p.x, p.y + p.h - 2, 1, {
+                colors: ['#ff8a9e'], speedMin: 10, speedMax: 40, gravity: -60,
+                lifeMin: 0.2, lifeMax: 0.4, sizeMin: 1, sizeMax: 2 });
+        }
+    }
+
+    // 高速奔跑殘影感：速度夠快時腳下冒粒子
+    if (p.grounded && Math.abs(p.vx) > 170 && Math.random() < 0.3) {
+        P.burst(p.x + p.w / 2 - p.face * 5, p.y + p.h - 1, 1, {
+            colors: ['#d94f63'], speedMin: 10, speedMax: 50, gravity: 200,
+            lifeMin: 0.15, lifeMax: 0.3, sizeMin: 1.5, sizeMax: 2.5 });
+    }
+}
+
+function drawHUD() {
+    if (s.hintT > 0) {
+        var a = Math.min(1, s.hintT / 0.6);
+        ctx.globalAlpha = a;
+        RE.Draw.text(ctx, s.def.name, VW / 2, 14, { size: 15, align: 'center', color: '#ff8fc8' });
+        RE.Draw.text(ctx, s.def.hint, VW / 2, 36, { size: 11, align: 'center', color: '#ffe9f0' });
+        ctx.globalAlpha = 1;
+    }
+    if (s.roomDeaths >= 10) {
+        RE.Draw.text(ctx, '這間爆漿 ' + s.roomDeaths + ' 次。原作玩家全破平均爆幾百次，繼續。',
+            VW / 2, VH - 18, { size: 10, align: 'center', color: 'rgba(255,255,255,0.45)', stroke: false });
+    }
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+showTitleScreen();
+</script>
+</body>
+</html>

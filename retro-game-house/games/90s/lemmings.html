@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 小旅鼠遷徙</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   小旅鼠遷徙 — 致敬 Lemmings (DMA Design, 1991)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. **玩家不能控制任何一隻旅鼠**。牠們只會往前走、撞牆轉身、掉下去摔死。
+      你唯一能做的是改變牠們腳下的世界——挖穿地面、架一座橋、
+      或是叫一隻停在那裡當牆壁。這叫「間接控制」。
+   2. 因此這款遊戲的難點從「操作」變成「規劃」：
+      你要預判一群不聽話的角色接下來會走去哪，然後提前把路鋪好。
+   3. 職業數量有限。每一關給你的挖、擋、架橋各只有幾個，
+      **資源限制才是關卡的謎題本體**，地形只是題目的外觀。
+   4. 不需要救全部——每關只要救到門檻數量就過關。
+      這個「可以放棄一些」的設定，讓解法有彈性，也讓失敗不那麼絕對。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'lemmings',
+    title: '小旅鼠遷徙',
+    tagline: '你不能指揮牠們，只能改變牠們腳下的世界',
+    original: 'Lemmings (DMA Design, 1991)',
+    decade: '90s', year: 1991, platform: 'Amiga / PC 等', genre: '間接控制解謎',
+    developer: 'DMA Design', bgm: '90s',
+    // 物理世界本來就是 60×40 格（480×320），職業列卻從 y=262 開始覆蓋，
+    // 第一關挖洞後的落點與出口因此完全藏在介面底下。畫布加高只容納職業列，
+    // 世界座標、地形、碰撞與解法都維持原值。
+    width: 480, height: 378,
+    hud: [
+        { key: 'stage', label: '關卡', init: '1/5' },
+        { key: 'saved', label: '已救', init: '0/0' },
+        { key: 'alive', label: '場上', init: 0 },
+        { key: 'time', label: '時間', init: '0:00' }
+    ],
+    lives: 3,
+    touch: 'dpad+ab', labelA: '指派', labelB: '換職業',
+    controls: [
+        { keys: ['滑鼠 / 觸控'], desc: '點下方職業列選職業，再點旅鼠指派' },
+        { keys: ['←', '→'], desc: '移動游標' },
+        { keys: ['↑', '↓'], desc: '切換職業' },
+        { keys: ['A'], desc: '把目前職業指派給游標附近的旅鼠' },
+        { keys: ['B'], desc: '切換職業' }
+    ],
+    howto: '旅鼠<strong>只會自己往前走</strong>，撞到牆就轉身，掉太高會摔死。' +
+           '你不能直接控制牠們，只能<strong>指派職業改變地形</strong>：' +
+           '<strong>挖</strong>往下挖穿地板、<strong>橫挖</strong>往前挖穿牆、' +
+           '<strong>架橋</strong>蓋一段斜坡、<strong>擋路</strong>站著不動讓同伴轉身、' +
+           '<strong>攀爬</strong>可以爬上垂直牆面、<strong>浮空</strong>摔不死。' +
+           '每種職業每關的數量都是固定的，用完就沒了。' +
+           '把足夠數量的旅鼠送進出口就過關——<strong>不需要救全部</strong>。',
+    lesson: {
+        verb: '把有限職業指派給自動行走的旅鼠，藉由改變地形與方向引導整個群體。',
+        innovation: '把直接控制改成環境介入：玩家不操作主角，而是安排少數關鍵角色，讓群體行為自行展開。',
+        mission: '每次指派前先指出這個職業要改變哪一段路，以及後方旅鼠會因此往哪裡走；至少完成一次「擋路轉向，再用挖掘或架橋開路」。',
+        evolution: '《Q*bert》讓一名角色以腳步改變方塊；《Lemmings》讓玩家改變地形去引導一群角色，控制權由角色本身移到環境。',
+        reflection: '如果可以直接用方向鍵控制每隻旅鼠，有限職業與救援門檻還會形成同樣的規劃壓力嗎？'
+    },
+    design: '群體角色通常會帶來一個設計問題：若玩家能逐隻直接操控，操作會過度繁瑣；若角色全自動，又可能只剩觀看。' +
+            '《Lemmings》的解法是讓所有旅鼠依固定規則前進，玩家只能把有限的挖掘、架橋、擋路、攀爬與浮空能力指派給少數個體。' +
+            '一次正確指派會改變後方整群的路線，因此玩家真正控制的不是某隻旅鼠，而是地形、時機與群體流向。' +
+            '每關又只要求救到門檻，不要求全員存活：失誤不必立刻重來，但玩家必須判斷還能犧牲多少，資源限制與救援配額共同構成謎題。' +
+            '**間接控制的深度，來自玩家能預測規則，卻不能隨時撤回已展開的群體後果。**' +
+            '本站《Q*bert》把每一步留成方塊顏色；《Lemmings》則把每次介入留成可供整群通過或墜落的地形。',
+    history: '《Lemmings》由 DMA Design 開發、Psygnosis 發行，1991 年先在 Amiga 推出。共同創作者 Mike Dailly 的開發史指出，起點是 1989 年 8 月為另一個專案《Walker》所做的小人物動畫。' +
+             'Scott Johnston 原先在 16×16 像素框內畫角色，Dailly 為證明 8×8 像素也能呈現步態，做出一群不斷行走的小人；Russell Kay 看見後說「這裡面有一款遊戲」，團隊才逐步加入陷阱、地形與職業。' +
+             '正式版由 Dave Jones、Russell Kay、Mike Dailly、Gary Timmons、Scott Johnston 等多人共同完成，之後移植到眾多平台。' +
+             '原文所寫的「首日售出 55,000 套」目前未在這些第一手資料中獲得足夠支持，本站因此不把它當成教材史實。',
+    sources: [
+        { label: 'Mike Dailly：The Complete History of Lemmings', url: 'https://lemmings.info/lemmings-gamehistory/' },
+        { label: 'Game Developer／GDC：Lemmings 經典遊戲回顧', url: 'https://www.gamedeveloper.com/audio/video-the-i-lemmings-i-classic-game-postmortem' }
+    ]
+});
+
+var ctx = G.ctx, VW = G.width, VH = G.height;
+var P = new RE.Particles(300);
+var FT = new RE.FloatText();
+var LEMMINGS_ART = { image: new Image(), manifest: null };
+LEMMINGS_ART.image.src = '../../assets/games/lemmings/strategy-pixel-atlas.png';
+fetch('../../assets/games/lemmings/strategy-pixel-manifest.json')
+    .then(function (r) { if (!r.ok) throw new Error('lemmings art manifest ' + r.status); return r.json(); })
+    .then(function (m) { LEMMINGS_ART.manifest = m; })
+    .catch(function () { LEMMINGS_ART.manifest = null; });
+
+var T = 8, GW = 60, GH = 40;          // 8px 一格，地形夠細才挖得出感覺
+var PLAY_H = GH * T;                   // 完整顯示 320px 世界，下方 58px 才是職業列
+
+// ======================================================================
+// 職業
+// ======================================================================
+var JOBS = [
+    { key: 'dig',   name: '挖',   desc: '往下挖穿地板' },
+    { key: 'bash',  name: '橫挖', desc: '往前挖穿牆壁' },
+    { key: 'build', name: '架橋', desc: '往前上方蓋十二塊磚' },
+    { key: 'block', name: '擋路', desc: '站著不動，同伴碰到就轉身' },
+    { key: 'climb', name: '攀爬', desc: '之後遇到垂直牆可以爬上去' },
+    { key: 'float', name: '浮空', desc: '之後從多高掉下來都摔不死' }
+];
+
+// ======================================================================
+// 關卡。地形用矩形拼出來（單位是格），比手刻 40 列字元安全得多。
+// 每一關的 solution 欄位寫著設計時預想的解法，測試腳本會照著跑一遍。
+// ======================================================================
+var LEVELS = [
+    {
+        name: '第一關 · 只要往下挖',
+        hint: '牠們被關在平台上，怎麼走都出不去。挖穿腳下的地板。',
+        total: 10, need: 8, time: 90, rate: 1.1,
+        skills: { dig: 2, bash: 0, build: 0, block: 0, climb: 0, float: 0 },
+        // 平台底 264、地板頂 288，落差 48px < 摔死線 62px。
+        // 第一版平台放在 y=28，跟著跳進洞的旅鼠會摔 64px 剛好摔死。
+        terrain: [ {x:0,y:0,w:2,h:40}, {x:58,y:0,w:2,h:40},
+                   {x:2,y:30,w:56,h:3}, {x:2,y:36,w:56,h:4} ],
+        entry: { x: 6, y: 28 }, exit: { x: 48, y: 34 }
+    },
+    {
+        name: '第二關 · 架一座橋',
+        hint: '前面斷了一大截。指派架橋，牠會邊走邊鋪磚。',
+        total: 10, need: 8, time: 100, rate: 1.1,
+        skills: { dig: 0, bash: 0, build: 3, block: 0, climb: 0, float: 0 },
+        // 斷崖寬 80px。架橋者鋪十二塊磚剛好前進 96px，留一點餘裕才接得上。
+        terrain: [ {x:0,y:0,w:2,h:40}, {x:58,y:0,w:2,h:40},
+                   {x:2,y:30,w:22,h:10}, {x:34,y:30,w:24,h:10} ],
+        entry: { x: 6, y: 28 }, exit: { x: 50, y: 28 }
+    },
+    {
+        name: '第三關 · 挖穿它',
+        hint: '中間是一堵厚牆。橫挖可以直接開一條路穿過去。',
+        total: 12, need: 9, time: 110, rate: 1.0,
+        skills: { dig: 1, bash: 2, build: 1, block: 0, climb: 0, float: 0 },
+        terrain: [ {x:0,y:0,w:2,h:40}, {x:58,y:0,w:2,h:40},
+                   {x:2,y:32,w:56,h:8}, {x:26,y:14,w:8,h:18} ],
+        entry: { x: 6, y: 30 }, exit: { x: 50, y: 30 }
+    },
+    {
+        name: '第四關 · 叫一隻停下來',
+        hint: '出口在左邊，牠們卻往右走，而右邊沒有路。快叫一隻停下來擋著。',
+        total: 12, need: 9, time: 110, rate: 1.0,
+        skills: { dig: 1, bash: 0, build: 1, block: 2, climb: 0, float: 0 },
+        // 右邊原本擺一堵牆，結果旅鼠撞牆會自己轉身走回出口，擋路根本用不到。
+        // 改成右邊直接斷掉——不擋就是一路走出畫面。
+        terrain: [ {x:0,y:0,w:2,h:40}, {x:58,y:0,w:2,h:40},
+                   {x:2,y:32,w:40,h:8} ],
+        entry: { x: 30, y: 30 }, exit: { x: 6, y: 30 }
+    },
+    {
+        name: '第五關 · 牆與斷崖',
+        hint: '先挖穿牆，再架橋過斷崖。攀爬與浮空是另一條路。',
+        total: 14, need: 10, time: 140, rate: 0.95,
+        skills: { dig: 1, bash: 2, build: 3, block: 1, climb: 2, float: 3 },
+        terrain: [ {x:0,y:0,w:2,h:40}, {x:58,y:0,w:2,h:40},
+                   {x:2,y:32,w:22,h:8}, {x:18,y:20,w:4,h:12},
+                   {x:35,y:32,w:23,h:8} ],
+        entry: { x: 6, y: 30 }, exit: { x: 50, y: 30 }
+    }
+];
+
+// ======================================================================
+// 物理與狀態
+// ======================================================================
+var WALK = 26, GRAV = 300, MAX_FALL_PX = 62, FLOAT_VY = 46;
+// STEP_UP 必須剛好等於一格。架橋者鋪出來的階梯一階就是一格高（8px），
+// 原本設 6px 的話，跟在後面的旅鼠爬不上自己同伴蓋的橋，會在橋頭轉身走掉。
+// 8px 剛好讓「一格的坎走得上去、兩格的牆走不上去」。
+var STEP_UP = 8, BODY_H = 9;
+var DIG_T = 0.32, BASH_T = 0.28, BUILD_T = 0.34, BUILD_N = 12;
+
+var grid = new Uint8Array(GW * GH);
+// 只記錄哪些實心格是玩家架出的橋，碰撞仍只讀原本的 grid。
+var builtGrid = new Uint8Array(GW * GH);
+var s = null;
+
+function solidT(tx, ty) {
+    if (tx < 0 || ty < 0 || tx >= GW || ty >= GH) return false;
+    return grid[ty * GW + tx] === 1;
+}
+function solidPx(px, py) { return solidT(Math.floor(px / T), Math.floor(py / T)); }
+function carve(tx, ty) {
+    if (tx < 0 || ty < 0 || tx >= GW || ty >= GH) return;
+    if (grid[ty * GW + tx] === 1) {
+        grid[ty * GW + tx] = 0;
+        builtGrid[ty * GW + tx] = 0;
+        P.burst(tx * T + T / 2, ty * T + T / 2, 3, {
+            colors: ['#8d6b46', '#6a4f34'], speedMin: 20, speedMax: 70,
+            gravity: 260, lifeMin: 0.2, lifeMax: 0.45, sizeMin: 1.5, sizeMax: 3 });
+    }
+}
+function place(tx, ty) {
+    if (tx < 0 || ty < 0 || tx >= GW || ty >= GH) return;
+    grid[ty * GW + tx] = 1;
+    builtGrid[ty * GW + tx] = 1;
+}
+
+function reset() {
+    s = { level: 0, total: 0 };
+    P.clear(); FT.clear();
+    G.setStat('score', 0);
+    G.setLives(3);
+    loadLevel(0);
+}
+
+function loadLevel(i) {
+    var L = LEVELS[i];
+    var k, r, x, y;
+    for (k = 0; k < grid.length; k++) { grid[k] = 0; builtGrid[k] = 0; }
+    for (k = 0; k < L.terrain.length; k++) {
+        r = L.terrain[k];
+        for (y = r.y; y < r.y + r.h; y++)
+            for (x = r.x; x < r.x + r.w; x++)
+                if (x >= 0 && y >= 0 && x < GW && y < GH) grid[y * GW + x] = 1;
+    }
+    s.level = i;
+    s.L = L;
+    s.lems = [];
+    s.saveFx = [];
+    s.spawned = 0; s.saved = 0; s.dead = 0;
+    s.spawnT = 0.6;
+    s.time = L.time;
+    s.skills = {};
+    for (k in L.skills) s.skills[k] = L.skills[k];
+    s.job = 0;
+    s.cur = { x: L.entry.x * T, y: (L.entry.y + 2) * T };
+    s.over = 0; s.overT = 0;
+    s.banner = L.name; s.bannerT = 2.6;
+    G.setStat('stage', (i + 1) + '/' + LEVELS.length);
+    G.setStat('saved', '0/' + L.need);
+    G.setStat('alive', 0);
+    updateTime();
+}
+
+function updateTime() {
+    var t = Math.max(0, Math.ceil(s.time));
+    G.setStat('time', Math.floor(t / 60) + ':' + (t % 60 < 10 ? '0' : '') + (t % 60));
+}
+
+function spawnLem() {
+    var L = s.L;
+    s.lems.push({
+        x: L.entry.x * T + T / 2, y: (L.entry.y + 2) * T,
+        dir: 1, state: 'fall', vy: 0, fall: 0,
+        climber: false, floater: false,
+        t: 0, bricks: 0, anim: Math.random() * 4, dead: 0, assignFx: 0
+    });
+    s.spawned++;
+}
+
+// ======================================================================
+// 旅鼠：牠們不聽你的，只會照這段程式走
+// ======================================================================
+function updateLem(l, dt) {
+    if (l.assignFx > 0) l.assignFx -= dt;
+    if (l.dead > 0) { l.dead -= dt; return; }
+    l.anim += dt;
+    var L = s.L;
+
+    // 掉出畫面底部
+    if (l.y > GH * T + 20) { killLem(l, '摔出畫面'); return; }
+
+    if (l.state === 'fall') {
+        var vmax = l.floater ? FLOAT_VY : 600;
+        l.vy = Math.min(vmax, l.vy + GRAV * dt);
+        var dy = l.vy * dt;
+        l.y += dy;
+        if (!l.floater) l.fall += dy;
+        if (solidPx(l.x, l.y)) {
+            // 對齊到地表
+            while (solidPx(l.x, l.y - 1)) l.y--;
+            if (l.fall > MAX_FALL_PX && !l.floater) { splat(l); return; }
+            l.vy = 0; l.fall = 0; l.state = 'walk';
+        }
+        return;
+    }
+
+    if (l.state === 'block') return;   // 擋路的就是站著，什麼都不做
+
+    if (l.state === 'dig') {
+        l.t -= dt;
+        if (l.t <= 0) {
+            l.t = DIG_T;
+            var ty = Math.floor(l.y / T), tx = Math.floor(l.x / T);
+            carve(tx - 1, ty); carve(tx, ty); carve(tx + 1, ty);
+            RetroAudio.play('step');
+            l.y += T;
+            if (!solidPx(l.x, l.y)) { l.state = 'fall'; l.vy = 0; l.fall = 0; }
+        }
+        return;
+    }
+
+    if (l.state === 'bash') {
+        l.t -= dt;
+        if (l.t <= 0) {
+            l.t = BASH_T;
+            var bx = Math.floor(l.x / T) + l.dir, by = Math.floor(l.y / T);
+            var any = false;
+            for (var q = 1; q <= 3; q++) if (solidT(bx, by - q)) any = true;
+            for (q = 1; q <= 3; q++) carve(bx, by - q);
+            if (any) { l.bashed++; RetroAudio.play('step'); }
+            l.x += T * l.dir;
+            // 前面還沒開始挖就先讓牠走過去。指派時要求玩家剛好貼著牆按下去太苛，
+            // 只有「已經挖過、而且前面沒東西了」才算挖穿收工。
+            if (!any && l.bashed > 0) l.state = 'walk';
+            if (!solidPx(l.x, l.y)) { l.state = 'fall'; l.vy = 0; l.fall = 0; }
+        }
+        return;
+    }
+
+    if (l.state === 'build') {
+        l.t -= dt;
+        if (l.t <= 0) {
+            l.t = BUILD_T;
+            var px = Math.floor(l.x / T), py = Math.floor(l.y / T);
+            place(px, py); place(px + l.dir, py);
+            l.x += T * l.dir;
+            if (l.bricks % 2 === 1) l.y -= T;
+            l.bricks++;
+            RetroAudio.play('blip');
+            if (l.bricks >= BUILD_N) { l.state = 'walk'; }
+            // 撞到頭就停工轉身
+            if (solidPx(l.x, l.y - BODY_H)) { l.state = 'walk'; l.dir *= -1; }
+        }
+        return;
+    }
+
+    if (l.state === 'climb') {
+        l.y -= 34 * dt;
+        // 牆面到頂了就翻上去
+        if (!solidPx(l.x + l.dir * 3, l.y - 1)) {
+            l.x += l.dir * 4;
+            while (solidPx(l.x, l.y - 1)) l.y--;
+            l.state = 'walk';
+        }
+        if (solidPx(l.x, l.y - BODY_H - 1)) { l.dir *= -1; l.state = 'fall'; l.vy = 0; l.fall = 0; }
+        return;
+    }
+
+    // ---------- walk ----------
+    var nx = l.x + l.dir * WALK * dt;
+
+    // 被擋路的同伴擋住就轉身——這就是「擋路」的全部作用
+    for (var i = 0; i < s.lems.length; i++) {
+        var o = s.lems[i];
+        if (o === l || o.state !== 'block' || o.dead > 0) continue;
+        if (Math.abs(o.y - l.y) < 12 && Math.abs(o.x - nx) < 6) { l.dir *= -1; return; }
+    }
+
+    var ny = l.y;
+    var up = 0;
+    while (up <= STEP_UP && solidPx(nx, ny - 1 - up)) up++;
+    if (up > STEP_UP) {
+        if (l.climber) { l.state = 'climb'; return; }
+        l.dir *= -1;
+        return;
+    }
+    l.x = nx; l.y = ny - up;
+    var drop = 0;
+    while (!solidPx(l.x, l.y) && drop < 4) { l.y++; drop++; }
+    if (!solidPx(l.x, l.y)) { l.state = 'fall'; l.vy = 0; l.fall = 0; }
+}
+
+function splat(l) {
+    l.dead = 0.5;
+    s.dead++;
+    RetroAudio.play('hurt');
+    RE.juice.shake(0.12);
+    P.burst(l.x, l.y, 10, { colors: ['#c8404a', '#8e1418'], speedMin: 40, speedMax: 140,
+        gravity: 320, lifeMin: 0.25, lifeMax: 0.5 });
+    FT.add(l.x, l.y - 12, '摔死', { color: '#ff8f8f', size: 11 });
+}
+function killLem(l, why) {
+    l.dead = 0.3; l.gone = true; s.dead++;
+    RetroAudio.play('hurt');
+}
+
+function saveLem(l) {
+    l.gone = true;
+    s.saved++;
+    s.saveFx.push({ x: l.x, y: l.y - 7, t: 0.7, max: 0.7, dir: l.dir });
+    G.setStat('saved', s.saved + '/' + s.L.need);
+    RetroAudio.play('coin');
+    RE.juice.hitstop(0.03);
+    P.burst(l.x, l.y - 4, 12, { colors: ['#6aaa64', '#c7f0c0', '#fff3c4'],
+        speedMin: 40, speedMax: 150, gravity: 120, lifeMin: 0.3, lifeMax: 0.6, glow: true });
+    FT.add(l.x, l.y - 14, '+1', { color: '#8fe0a0', size: 13 });
+}
+
+// ======================================================================
+// 指派職業
+// ======================================================================
+function assignAt(px, py) {
+    var job = JOBS[s.job].key;
+    if (s.skills[job] <= 0) { RetroAudio.play('error'); return false; }
+    var best = null, bd = 20;
+    for (var i = 0; i < s.lems.length; i++) {
+        var l = s.lems[i];
+        if (l.dead > 0) continue;
+        var d = Math.abs(l.x - px) + Math.abs(l.y - 4 - py) * 0.8;
+        if (d < bd) { bd = d; best = l; }
+    }
+    if (!best) { RetroAudio.play('error'); return false; }
+    return applyJob(best, job);
+}
+
+function applyJob(l, job) {
+    if (s.skills[job] <= 0) return false;
+    if (job === 'climb') { if (l.climber) return false; l.climber = true; }
+    else if (job === 'float') { if (l.floater) return false; l.floater = true; }
+    else {
+        if (l.state === 'fall' || l.state === 'climb') return false;
+        if (l.state === 'block') return false;
+        if (job === 'dig') { l.state = 'dig'; l.t = 0.05; }
+        else if (job === 'bash') { l.state = 'bash'; l.t = 0.05; l.bashed = 0; }
+        else if (job === 'build') { l.state = 'build'; l.t = 0.05; l.bricks = 0; }
+        else if (job === 'block') { l.state = 'block'; }
+    }
+    s.skills[job]--;
+    l.assignFx = 0.42;
+    RetroAudio.play('powerup');
+    RE.juice.hitstop(0.03);
+    P.ring(l.x, l.y - 5, '#ffd166', 18);
+    return true;
+}
+
+// ======================================================================
+// 主迴圈
+// ======================================================================
+function update(dt) {
+    if (!s) return;
+    P.update(dt); FT.update(dt);
+    if (s.bannerT > 0) s.bannerT -= dt;
+    for (var fx = s.saveFx.length - 1; fx >= 0; fx--) {
+        s.saveFx[fx].t -= dt;
+        if (s.saveFx[fx].t <= 0) s.saveFx.splice(fx, 1);
+    }
+
+    if (s.over) {
+        s.overT -= dt;
+        if (s.overT <= 0) {
+            var w = s.over === 1;
+            s.over = 0;
+            if (w) nextLevel(); else afterFail();
+        }
+        return;
+    }
+
+    s.time -= dt;
+    updateTime();
+    if (s.time <= 0) { endLevel(); return; }
+
+    // 出生
+    if (s.spawned < s.L.total) {
+        s.spawnT -= dt;
+        if (s.spawnT <= 0) { s.spawnT = s.L.rate; spawnLem(); }
+    }
+
+    var i, l;
+    for (i = 0; i < s.lems.length; i++) updateLem(s.lems[i], dt);
+
+    // 進出口
+    var ex = s.L.exit;
+    for (i = 0; i < s.lems.length; i++) {
+        l = s.lems[i];
+        if (l.dead > 0) continue;
+        if (l.x > ex.x * T && l.x < (ex.x + 3) * T &&
+            l.y > ex.y * T - 4 && l.y < (ex.y + 2) * T + 6) saveLem(l);
+    }
+    // 死亡倒數在 updateLem 裡減，這裡只負責移除，避免同一幀被扣兩次
+    for (i = s.lems.length - 1; i >= 0; i--) if (s.lems[i].gone || s.lems[i].dead < 0) s.lems.splice(i, 1);
+    G.setStat('alive', s.lems.length);
+
+    if (s.spawned >= s.L.total && s.lems.length === 0) { endLevel(); return; }
+
+    // ---------- 輸入 ----------
+    if (RE.Input.pressed('up')) { s.job = (s.job + JOBS.length - 1) % JOBS.length; RetroAudio.play('blip'); }
+    if (RE.Input.pressed('down') || RE.Input.pressed('b')) { s.job = (s.job + 1) % JOBS.length; RetroAudio.play('blip'); }
+    if (RE.Input.down('left')) s.cur.x = Math.max(4, s.cur.x - 150 * dt);
+    if (RE.Input.down('right')) s.cur.x = Math.min(VW - 4, s.cur.x + 150 * dt);
+    if (RE.Input.pressed('a')) {
+        // 游標只有 x，找最接近該 x 的旅鼠
+        var bestL = null, bd = 24;
+        for (i = 0; i < s.lems.length; i++) {
+            l = s.lems[i];
+            if (l.dead > 0) continue;
+            var d = Math.abs(l.x - s.cur.x);
+            if (d < bd) { bd = d; bestL = l; }
+        }
+        if (bestL) applyJob(bestL, JOBS[s.job].key); else RetroAudio.play('error');
+    }
+    if (RE.Input.pointer.pressed) {
+        var px = RE.Input.pointer.x, py = RE.Input.pointer.y;
+        if (py > PLAY_H) {
+            var idx = Math.floor((px - jobBarX()) / JOB_W);
+            if (idx >= 0 && idx < JOBS.length) { s.job = idx; RetroAudio.play('select'); }
+        } else { s.cur.x = px; assignAt(px, py); }
+    }
+}
+
+function endLevel() {
+    if (s.over) return;
+    var win = s.saved >= s.L.need;
+    s.over = win ? 1 : -1;
+    s.overT = 1.8;
+    if (win) {
+        RetroAudio.play('win');
+        RE.juice.flash('rgba(140,255,180,0.32)', 0.18);
+        s.total += 500 + s.saved * 200 + Math.max(0, Math.round(s.time)) * 5;
+    } else {
+        RetroAudio.play('gameover');
+        RE.juice.shake(0.3);
+    }
+}
+
+function nextLevel() {
+    if (s.level >= LEVELS.length - 1) {
+        G.gameOver({
+            win: true, score: s.total,
+            body: '五關全通，總共救出的旅鼠都靠你事先鋪好的路。' +
+                  '你從頭到尾沒有操作過任何一隻旅鼠——' +
+                  '你做的是預判一群不受控的角色會走去哪，然後提前改變牠們腳下的世界。' +
+                  '這就是《Lemmings》留給後來所有經營與模擬遊戲的東西。'
+        });
+        return;
+    }
+    var n = s.level + 1;
+    G.stageCard(n + 1, LEVELS[n].name, LEVELS[n].hint, function () { loadLevel(n); });
+}
+
+function afterFail() {
+    G.setLives(G.lives - 1);
+    if (G.lives <= 0) {
+        G.gameOver({
+            win: false, score: s.total,
+            body: '在第 ' + (s.level + 1) + ' 關結束。' +
+                  '記住：旅鼠不會等你，牠們從出生那一刻就一直往前走。' +
+                  '你要做的不是救眼前這一隻，而是在牠走到之前就把路準備好。'
+        });
+        return;
+    }
+    var i = s.level;
+    G.stageCard(i + 1, LEVELS[i].name, '只救到 ' + s.saved + ' 隻，需要 ' + s.L.need + ' 隻。再試一次。',
+        function () { loadLevel(i); });
+}
+
+// ======================================================================
+// 繪製
+// ======================================================================
+var JOB_W = 66, JOB_H = 40;
+function jobBarX() { return VW / 2 - JOBS.length * JOB_W / 2; }
+
+function drawLemmingAsset(name, cx, cy, w, h, alpha, flip) {
+    var m = LEMMINGS_ART.manifest;
+    if (!m || !m.assets || !m.assets[name] || !LEMMINGS_ART.image.complete ||
+        !LEMMINGS_ART.image.naturalWidth) return false;
+    var a = m.assets[name];
+    ctx.save();
+    ctx.globalAlpha = alpha === undefined ? 1 : alpha;
+    ctx.translate(cx, cy);
+    if (flip) ctx.scale(-1, 1);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(LEMMINGS_ART.image, a.x, a.y, a.w, a.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+}
+
+function render() {
+    if (!s) return;
+    G.beginWorld();
+    var g = ctx.createLinearGradient(0, 0, 0, PLAY_H);
+    g.addColorStop(0, '#1b2340'); g.addColorStop(1, '#0d1226');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, VW, PLAY_H);
+    drawBackdrop();
+    drawTerrain();
+    drawExit();
+    drawEntry();
+    drawLems();
+    P.draw(ctx); FT.draw(ctx);
+    G.endWorld();
+    drawFlowHUD();
+    drawCursor();
+    drawJobBar();
+    drawBanner();
+    G.postFX({ scanAlpha: 0.06, vignetteStrength: 0.4 });
+}
+
+// 洞穴背景。地形本身只是幾條薄薄的岩層，沒有背景的話畫面會空得像沒做完。
+function drawBackdrop() {
+    var i, y;
+    ctx.save();
+    for (i = 0; i < 5; i++) {
+        y = 26 + i * 46;
+        ctx.fillStyle = 'rgba(255,255,255,0.018)';
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        for (var x = 0; x <= VW; x += 48) ctx.lineTo(x, y + Math.sin((x + i * 70) * 0.014) * 9);
+        ctx.lineTo(VW, y + 22); ctx.lineTo(0, y + 22);
+        ctx.closePath(); ctx.fill();
+    }
+    // 岩壁上的微光
+    for (i = 0; i < 34; i++) {
+        var sx = (i * 137) % VW, sy = (i * 71) % PLAY_H;
+        ctx.fillStyle = 'rgba(160,190,255,' + (0.05 + (i % 3) * 0.03) + ')';
+        ctx.fillRect(sx, sy, 2, 2);
+    }
+    ctx.restore();
+}
+
+function drawTerrain() {
+    for (var y = 0; y < GH; y++) {
+        for (var x = 0; x < GW; x++) {
+            if (grid[y * GW + x] !== 1) continue;
+            var px = x * T, py = y * T;
+            if (py > PLAY_H) continue;
+            ctx.fillStyle = '#6a4f34';
+            ctx.fillRect(px, py, T, T);
+            if (!solidT(x, y - 1)) { ctx.fillStyle = '#4f8a4a'; ctx.fillRect(px, py, T, 3); }
+            ctx.fillStyle = 'rgba(0,0,0,0.14)';
+            ctx.fillRect(px, py + T - 2, T, 2);
+            if ((x + y) % 5 === 0) { ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(px + 2, py + 3, 3, 2); }
+            // 自然岩層以 2×2 格低密度覆紋，橋磚則逐格顯示；不改實心格判定。
+            if (builtGrid[y * GW + x]) {
+                drawLemmingAsset('bridge_brick', px + T / 2, py + T / 2, T + 2, T + 2);
+            } else if (x % 4 === 0 && y % 4 === 0 && solidT(x + 1, y) &&
+                       solidT(x, y + 1) && solidT(x + 1, y + 1)) {
+                // 岩紋只當低彩度材質層；過密會把地形誤讀成一排排角色。
+                drawLemmingAsset('earth_tile', px + T * 1.5, py + T * 1.5, T * 3, T * 3, 0.22);
+            }
+            if (!solidT(x, y - 1) && x % 3 === 0) {
+                drawLemmingAsset('moss_top_tile', px + T * 1.5, py + 1, T * 3, T + 4, 0.42);
+            }
+        }
+    }
+}
+
+function drawEntry() {
+    var e = s.L.entry, px = e.x * T, py = e.y * T;
+    if (!drawLemmingAsset('entrance_hatch', px + 8, py + 3, 42, 42)) {
+        ctx.save();
+        ctx.shadowBlur = 12; ctx.shadowColor = 'rgba(201,155,255,0.55)';
+        ctx.fillStyle = '#5f477f';
+        RE.Draw.roundRect(ctx, px - 10, py - 2, 36, 17, 4); ctx.fill();
+        ctx.fillStyle = '#171226';
+        RE.Draw.roundRect(ctx, px - 3, py + 7, 22, 9, 3); ctx.fill();
+        ctx.strokeStyle = '#c99bff'; ctx.lineWidth = 1.5;
+        ctx.strokeRect(px - 7, py + 1, 30, 12);
+        ctx.restore();
+    }
+    RE.Draw.text(ctx, '出生口', px + 8, py - 19, { size: 13, align: 'center', color: '#d9c6ff' });
+}
+
+function drawExit() {
+    var e = s.L.exit, px = e.x * T, py = e.y * T;
+    var gl = 0.5 + Math.sin(Date.now() * 0.005) * 0.25;
+    if (!drawLemmingAsset('rescue_exit', px + 12, py + 2, 44, 44, 0.86 + gl * 0.14)) {
+        ctx.save();
+        ctx.shadowBlur = 16; ctx.shadowColor = 'rgba(120,255,170,' + gl + ')';
+        ctx.fillStyle = '#286c48';
+        RE.Draw.roundRect(ctx, px - 2, py - 8, 28, 24, 5); ctx.fill();
+        ctx.strokeStyle = '#9ff0bc'; ctx.lineWidth = 2;
+        RE.Draw.roundRect(ctx, px + 4, py - 2, 16, 18, 3); ctx.stroke();
+        ctx.fillStyle = '#d9ffe6';
+        ctx.beginPath(); ctx.arc(px + 16, py + 7, 2, 0, RE.TAU); ctx.fill();
+        ctx.restore();
+    }
+    RE.Draw.text(ctx, '救援出口', px + 12, py - 25, { size: 13, align: 'center', color: '#b9f7cf' });
+}
+
+var LEM_COL = { walk: '#dfe6f2', block: '#ffb347', dig: '#8fd0ff', bash: '#8fd0ff',
+                build: '#ffd166', climb: '#c99bff', fall: '#dfe6f2' };
+
+function drawLems() {
+    for (var i = 0; i < s.lems.length; i++) {
+        var l = s.lems[i];
+        if (l.dead > 0) {
+            drawLemmingAsset('worker_splat', l.x, l.y - 4, 24, 20, RE.clamp(l.dead / 0.28, 0.35, 1), l.dir < 0);
+            continue;
+        }
+        var col = LEM_COL[l.state] || '#dfe6f2';
+        var bob = (l.state === 'walk') ? Math.sin(l.anim * 16) * 1 : 0;
+        var asset = l.state === 'dig' ? 'worker_dig' : l.state === 'bash' ? 'worker_bash' :
+            l.state === 'build' ? 'worker_build' : l.state === 'block' ? 'worker_block' :
+            l.state === 'climb' ? 'worker_climb' : l.state === 'fall' && l.floater ? 'worker_float' :
+            l.state === 'fall' ? 'worker_fall' : 'worker_walk';
+        if (!drawLemmingAsset(asset, l.x, l.y - 8 + bob, 22, 22, 1, l.dir < 0)) {
+            ctx.save();
+            ctx.translate(l.x, l.y + bob); ctx.scale(1.45, 1.45);
+            ctx.strokeStyle = 'rgba(7,12,22,0.9)'; ctx.lineWidth = 1.2;
+            ctx.fillStyle = l.floater ? '#8fe8ff' : col;
+            RE.Draw.roundRect(ctx, -3.5, -9, 7, 7, 2); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = '#68d36f'; ctx.fillRect(-3.5, -11, 7, 3);
+            ctx.fillStyle = '#142033'; ctx.fillRect(l.dir > 0 ? 1 : -2.5, -7.5, 1.5, 1.5);
+            ctx.restore();
+        }
+        if (l.assignFx > 0) {
+            drawLemmingAsset('assignment_ring', l.x, l.y - 8, 28, 28, RE.clamp(l.assignFx / 0.25, 0, 0.9));
+        }
+
+        // 非一般行走狀態以短標籤顯示，讓玩家看得出這次指派改變了誰。
+        if (l.state !== 'walk' && l.state !== 'fall') {
+            var stateName = l.state === 'dig' ? '挖' : l.state === 'bash' ? '橫挖' :
+                l.state === 'build' ? '架橋' : l.state === 'block' ? '擋' :
+                l.state === 'climb' ? '爬' : '';
+            if (stateName) RE.Draw.text(ctx, stateName, l.x, l.y - 22,
+                { size: 13, align: 'center', color: col, strokeWidth: 3 });
+        }
+    }
+    for (var j = 0; j < s.saveFx.length; j++) {
+        var fx = s.saveFx[j], progress = 1 - fx.t / fx.max;
+        drawLemmingAsset('worker_saved', fx.x, fx.y - progress * 15, 26, 26,
+            RE.clamp(fx.t / 0.24, 0, 1), fx.dir < 0);
+    }
+}
+
+function drawCursor() {
+    // 原本整條貫穿畫面的黃線比旅鼠本身更醒目；現在保留 x 軸定位，
+    // 同時用括號直接圈出實際會被指派的那一隻。
+    ctx.save();
+    ctx.setLineDash([3, 5]);
+    ctx.strokeStyle = 'rgba(255,209,102,0.28)'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(s.cur.x, 30); ctx.lineTo(s.cur.x, PLAY_H - 4);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    var best = null, bd = 24;
+    for (var i = 0; i < s.lems.length; i++) {
+        var l = s.lems[i];
+        if (l.dead > 0) continue;
+        var d = Math.abs(l.x - s.cur.x);
+        if (d < bd) { bd = d; best = l; }
+    }
+    if (best) {
+        var pulse = 10 + Math.sin(best.anim * 6) * 1.5;
+        ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(best.x, best.y - 6, pulse, 0, RE.TAU); ctx.stroke();
+        RE.Draw.text(ctx, '指派 ' + JOBS[s.job].name, best.x, best.y - 31,
+            { size: 13, align: 'center', color: '#ffe8a3', strokeWidth: 3 });
+    }
+    ctx.fillStyle = 'rgba(255,209,102,0.9)';
+    ctx.beginPath();
+    ctx.moveTo(s.cur.x - 5, 2); ctx.lineTo(s.cur.x + 5, 2); ctx.lineTo(s.cur.x, 9);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+}
+
+function drawFlowHUD() {
+    // 進關橫幅顯示關卡教學時先讓教學獨佔頂部，避免兩層 13px 訊息相互疊字。
+    if (s.bannerT > 0) return;
+    // 把這款遊戲的核心因果鏈留在遊戲畫面內：角色自行出生與前進，
+    // 玩家只在中段介入，最後看整群是否達到救援配額。
+    ctx.save();
+    ctx.fillStyle = 'rgba(8,13,27,0.78)';
+    RE.Draw.roundRect(ctx, 10, 8, VW - 20, 38, 6); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,209,102,0.35)'; ctx.lineWidth = 1;
+    RE.Draw.roundRect(ctx, 10, 8, VW - 20, 38, 6); ctx.stroke();
+    RE.Draw.text(ctx, '自動出生 ' + s.spawned + '/' + s.L.total, 20, 12,
+        { size: 13, color: '#d9c6ff', stroke: false });
+    RE.Draw.text(ctx, '→ 指派「' + JOBS[s.job].name + '」→', VW / 2, 12,
+        { size: 13, align: 'center', color: '#ffd166', stroke: false });
+    RE.Draw.text(ctx, '救援 ' + s.saved + '/' + s.L.need, VW - 20, 12,
+        { size: 13, align: 'right', color: s.saved >= s.L.need ? '#9ff0bc' : '#cfe0ff', stroke: false });
+    RE.Draw.text(ctx, '你不控制旅鼠，只改變牠接下來會遇到的世界', 20, 30,
+        { size: 13, color: 'rgba(225,235,255,0.68)', stroke: false });
+    ctx.restore();
+}
+
+function drawJobBar() {
+    ctx.fillStyle = '#151a2c';
+    ctx.fillRect(0, PLAY_H, VW, VH - PLAY_H);
+    var bx = jobBarX();
+    for (var i = 0; i < JOBS.length; i++) {
+        var x = bx + i * JOB_W, y = PLAY_H + 6;
+        var n = s.skills[JOBS[i].key];
+        var sel = i === s.job;
+        ctx.fillStyle = sel ? 'rgba(255,209,102,0.2)' : (n > 0 ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.02)');
+        RE.Draw.roundRect(ctx, x + 3, y, JOB_W - 6, JOB_H, 4); ctx.fill();
+        if (sel) { ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 2; ctx.stroke(); }
+        RE.Draw.text(ctx, JOBS[i].name, x + JOB_W / 2, y + 5,
+            { size: 14, align: 'center', color: n > 0 ? '#fff' : 'rgba(255,255,255,0.3)' });
+        RE.Draw.text(ctx, '×' + n, x + JOB_W / 2, y + 23,
+            { size: 13, align: 'center', color: n > 0 ? '#ffd166' : 'rgba(255,255,255,0.25)' });
+    }
+    RE.Draw.text(ctx, JOBS[s.job].desc, VW / 2, VH - 11,
+        { size: 13, align: 'center', color: 'rgba(255,255,255,0.5)', stroke: false });
+}
+
+function drawBanner() {
+    if (s.bannerT > 0) {
+        ctx.globalAlpha = Math.min(1, s.bannerT);
+        RE.Draw.text(ctx, s.banner, VW / 2, 14, { size: 15, align: 'center', color: '#ffd166' });
+        RE.Draw.text(ctx, s.L.hint, VW / 2, 34, { size: 13, align: 'center', color: '#cfe0ff' });
+        ctx.globalAlpha = 1;
+    }
+    if (s.over) {
+        ctx.fillStyle = 'rgba(8,12,24,0.8)';
+        ctx.fillRect(0, PLAY_H / 2 - 30, VW, 60);
+        RE.Draw.text(ctx, s.over === 1 ? '過關！' : '救得不夠', VW / 2, PLAY_H / 2 - 22,
+            { size: 20, align: 'center', color: s.over === 1 ? '#7fe6b0' : '#ff8f8f' });
+        RE.Draw.text(ctx, '救出 ' + s.saved + ' / 需要 ' + s.L.need, VW / 2, PLAY_H / 2 + 6,
+            { size: 13, align: 'center', color: '#dbe6f7' });
+    }
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '旅鼠只會自己往前走，撞牆轉身，掉太高會摔死。你不能控制牠們，' +
+          '只能指派職業改變地形：挖穿地板、橫向挖牆、架橋、叫一隻停下來擋路、' +
+          '攀爬、浮空。每種職業的數量有限。把足夠數量送進出口就過關，不必救全部。共五關。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

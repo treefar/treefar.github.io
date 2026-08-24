@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 爆彈迷城</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   爆彈迷城 — 致敬 Bomberman (Hudson Soft, 1985)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. 核心設計：**你的武器同時是你的威脅**。放下炸彈的那一刻，
+      玩家必須立刻規劃逃生路線——攻擊與求生是同一個決定。
+   2. 連鎖引爆：炸彈被火焰波及會提前爆炸，可以做出大範圍連環爆。
+   3. 道具成長曲線：火力↑、炸彈數↑、速度↑、踢炸彈。
+      每個道具都改變戰術，而不只是數值變大。
+   4. 五關遞增：敵人數量、種類與 AI 逐步提升，最後一關出現會追人的敵人。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'bomberman',
+    title: '爆彈迷城',
+    tagline: '你的武器同時是你的死因',
+    original: 'Bomberman (Hudson Soft, 1985)',
+    decade: '80s', year: 1985, platform: 'FC / MSX', genre: '策略動作',
+    developer: 'Hudson Soft', bgm: '80s',
+    width: 480, height: 416,
+    lives: 3,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'stage', label: '關卡', init: 1 },
+        { key: 'power', label: '火力', init: 2 },
+        { key: 'bombs', label: '炸彈', init: 1 }
+    ],
+    touch: 'dpad+ab', labelA: '放炸彈', maxScale: 2,
+    controls: [
+        { keys: ['↑', '↓', '←', '→'], desc: '移動' },
+        { keys: ['空白'], desc: '放置炸彈' }
+    ],
+    howto: '炸掉所有敵人後，走到出口即可過關。<strong>炸彈爆炸範圍會傷害你自己</strong>——' +
+           '放下之後要立刻找掩蔽。炸掉軟磚有機率出現道具：火力、炸彈數量、移動速度。' +
+           '炸彈被其他爆炸波及會連鎖引爆。',
+    lesson: {
+        verb: '在格子迷宮中放下延時炸彈，立刻找掩蔽，再利用十字爆風清路、擊敵與連鎖引爆。',
+        innovation: '把攻擊改成不可立即收回的延時承諾；武器同時封住退路，玩家必須先想像未來的危險格，再決定現在站哪裡。',
+        mission: '第一關先隔著一個轉角炸開軟磚並活下來；接著讓一顆炸彈的爆風碰到另一顆，觀察連鎖如何改變原本預定的逃生時間。',
+        evolution: '《Bomberman》先以單人迷宮建立「放置、避難、爆破」循環；《Super Bomberman》再把同一套規則放進多人競技，讓封路、欺敵與誤傷成為派對戰術。',
+        reflection: '如果炸彈按下按鈕就立刻爆炸，這款遊戲還會保留多少空間預判與自我陷害的樂趣？'
+    },
+    design: '《Bomberman》的關鍵不是爆炸特效，而是「放下後不能反悔」的延時攻擊。' +
+            '火焰沿格線呈十字延伸，硬牆截斷、軟磚被摧毀、相鄰炸彈會提前引爆；因此同一顆炸彈既能打開通路，也可能封死自己的出口。' +
+            '玩家真正操作的是未來兩秒多之後的危險版圖：放置、離開爆風線、利用牆角遮蔽，再回頭收割結果。' +
+            '本站保留這個高風險承諾，並只在引信末段加上不改判定的格線預告，讓現代玩家看懂「危險從哪裡來」，而不是替玩家取消風險。' +
+            '對照本站《Battle City》的即時射擊，延遲正是把反應題改造成預判題的關鍵。',
+    history: 'KONAMI 的系列官方資料把 1985 年《Bomberman》列為奠定系列基礎的作品：玩家在 50 個迷宮關卡中以炸彈擊倒敵人、清除障礙。' +
+             '1991 年《Bomberman II》加入多人玩法，之後《Super Bomberman》系列讓迷宮式爆破與 Battle Mode 成為系列核心辨識。' +
+             '本站選擇復刻早期單人版本的重點，讓學生先理解延時攻擊如何從一顆炸彈長成完整的空間戰術。',
+    sources: [
+        { label: 'KONAMI：《Super Bomberman Collection》初代作品介紹', url: 'https://www.konami.com/games/bomberman/collection/us/en/' },
+        { label: 'KONAMI：系列合輯與 1985、1991 年作品沿革', url: 'https://www.konami.com/games/ca/en/topics/3055/' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(500);
+var FT = new RE.FloatText();
+
+var T = 32;
+var COLS = 15, ROWS = 13;
+var OX = (W - COLS * T) / 2, OY = (H - ROWS * T) / 2;
+
+/* 五關。原本是八關，砍掉的是後三關（混合編隊、高壓區、最深處）。
+   理由是量出來的：熟練版機器人 30 場**一場都通不了八關**（平均停在第 4.3 關），
+   而每一關的期望死亡是 0.6 次、三條命根本不夠走完八關。
+   試過加命——六條命也只有 2/25 通關，因為死亡是持續發生的，
+   多給命只是多推進一兩關而已，換不到「過得了關」。
+   砍到五關則是 10/25。
+   砍掉那三關不損失教學價值：三種敵人（漂浮球、疾走者、獵人）在前五關就全數登場，
+   組合的遞進也走完了一輪，第 6～8 關只是同樣東西的更多份。
+   全站其他款也都是五關。 */
+var STAGES = [
+    { enemies: [['slow', 2]],                  soft: 42, name: '訓練場' },
+    { enemies: [['slow', 3]],                  soft: 46, name: '第二區' },
+    { enemies: [['slow', 2], ['fast', 1]],     soft: 50, name: '快腳出沒' },
+    { enemies: [['slow', 2], ['fast', 2]],     soft: 54, name: '雙面夾擊' },
+    { enemies: [['fast', 3], ['smart', 1]],    soft: 56, name: '獵人登場' }
+];
+
+/* ==========================================================================
+   年代像素圖集
+   --------------------------------------------------------------------------
+   `assets/atlas/80s.png` 是 512×512、16×16 格（每格 32px）的 80 年代圖集。
+   **圖載不到時 draw() 會回 false，下面每一處都保留原本的程式繪製當退路**——
+   這一站在此之前是零圖檔的純程式繪製，那條路不能拆掉：
+   圖檔缺了、路徑錯了、離線了，遊戲照樣玩，只是回到方塊人。
+
+   格位是**逐格切出來看過才填的**，不是照美術工單的格位表——
+   交付的圖集實際內容與工單第 3 節的表完全對不上
+   （工單說第 4 列是地形磚，實際是哥布林），照工單索引會整組畫錯。
+
+   對格時踩到的坑記在這裡：**圖集沒有嚴格對齊 32px 格線**。
+   第 1～2 列那個穿裙子的角色跨了兩格（頭在第 1 列、裙子在第 2 列），
+   一眼掃過去很容易把整疊「帶」數錯一列，於是後面全部偏移。
+   要對格請切「第 0 欄、第 0～9 列」單獨排開來看，不要看整張。
+   ========================================================================== */
+var ATLAS = new RE.Atlas('../../assets/atlas/80s.png', 32);
+var SPR = {
+    hero:    { col: 0, row: 0 },     // 金髮小人，站立
+    heroWalk:{ col: 1, row: 0 },     // 走路第二幀
+    goblin:  { col: 0, row: 4 },     // 哥布林 → 疾走者
+    skull:   { col: 0, row: 5 },     // 骷髏   → 獵人
+    slime:   { col: 0, row: 6 },     // 史萊姆 → 漂浮球
+    barrel:  { col: 2, row: 9 }      // 木桶   → 可破壞的軟磚
+};
+
+var ENEMY_DEF = {
+    slow:  { speed: 42, color: '#ff9ebb', chase: 0,    score: 100, name: '漂浮球', spr: 'slime' },
+    fast:  { speed: 78, color: '#7dd3fc', chase: 0.25, score: 200, name: '疾走者', spr: 'goblin' },
+    smart: { speed: 66, color: '#c084fc', chase: 0.8,  score: 400, name: '獵人',   spr: 'skull' }
+};
+
+var POWERS = ['fire', 'bomb', 'speed'];
+
+var s = {};
+
+/* 初始火力是 2 不是 1。火力 1 的爆風只有一格，意思是「炸得到敵人」
+   等於「站在敵人隔壁」——格心距 32px，而判死距離是 20px，
+   敵人往這邊走半格就撞上了。實測初始火力 1 的通關率 9/30、火力 2 是 13/30，
+   而死因 100% 是撞上敵人、一次都不是被自己的炸彈燒死。
+   火力上限仍是 8，撿道具的成長空間沒有變小，
+   拿掉的只是「開局被規則逼著送頭」的那一段。 */
+var POWER_MIN = 2;
+
+function reset() {
+    s = { stage: 1, lives: 3, score: 0, over: false,
+          power: POWER_MIN, maxBombs: 1, speed: 1 };
+    loadStage(1);
+    G.setStat('score', 0); G.setLives(3);
+}
+
+function loadStage(n) {
+    var cfg = STAGES[Math.min(n - 1, STAGES.length - 1)];
+    s.cfg = cfg;
+    s.stage = n;
+    s.grid = [];
+    for (var y = 0; y < ROWS; y++) {
+        s.grid[y] = [];
+        for (var x = 0; x < COLS; x++) {
+            // 外框與偶數座標交點是硬磚，這是 Bomberman 的標準棋盤
+            var hard = (x === 0 || y === 0 || x === COLS - 1 || y === ROWS - 1 ||
+                        (x % 2 === 0 && y % 2 === 0));
+            s.grid[y][x] = hard ? 2 : 0;
+        }
+    }
+    // 隨機放軟磚，但保留出生角落的三格活動空間
+    var placed = 0, guard = 0;
+    while (placed < cfg.soft && guard++ < 3000) {
+        var x = RE.randInt(1, COLS - 2), y = RE.randInt(1, ROWS - 2);
+        if (s.grid[y][x] !== 0) continue;
+        if (x + y <= 3) continue;
+        s.grid[y][x] = 1;
+        placed++;
+    }
+
+    // 出口與道具藏在軟磚底下
+    var softCells = [];
+    for (var y = 0; y < ROWS; y++) for (var x = 0; x < COLS; x++) if (s.grid[y][x] === 1) softCells.push([x, y]);
+    s.exit = RE.pick(softCells);
+    s.hidden = {};
+    for (var i = 0; i < 5; i++) {
+        var c = RE.pick(softCells);
+        s.hidden[c[0] + ',' + c[1]] = RE.pick(POWERS);
+    }
+
+    s.bombs = [];
+    s.flames = [];
+    s.items = [];
+    s.p = { x: 1.5 * T + OX, y: 1.5 * T + OY, invuln: 1.2, dead: 0, face: 'down', anim: 0 };
+    s.enemies = [];
+    cfg.enemies.forEach(function (pair) {
+        for (var i = 0; i < pair[1]; i++) spawnEnemy(pair[0]);
+    });
+    s.exitOpen = false;
+    s.clearTimer = 0;
+    G.setStat('stage', n);
+    G.setStat('power', s.power);
+    G.setStat('bombs', s.maxBombs);
+}
+
+function spawnEnemy(type) {
+    // 敵人不能生在玩家附近
+    for (var tries = 0; tries < 200; tries++) {
+        var x = RE.randInt(1, COLS - 2), y = RE.randInt(1, ROWS - 2);
+        if (s.grid[y][x] !== 0) continue;
+        if (x + y < 8) continue;
+        s.enemies.push({
+            type: type, def: ENEMY_DEF[type],
+            x: (x + 0.5) * T + OX, y: (y + 0.5) * T + OY,
+            dir: RE.pick(['up', 'down', 'left', 'right']),
+            think: 0, alive: true, dead: 0, anim: 0
+        });
+        return;
+    }
+}
+
+function cellAt(px, py) {
+    return { c: Math.floor((px - OX) / T), r: Math.floor((py - OY) / T) };
+}
+function cellFree(c, r) {
+    if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return false;
+    if (s.grid[r][c] !== 0) return false;
+    for (var i = 0; i < s.bombs.length; i++) if (s.bombs[i].c === c && s.bombs[i].r === r) return false;
+    return true;
+}
+function cx(c) { return (c + 0.5) * T + OX; }
+function cy(r) { return (r + 0.5) * T + OY; }
+
+// ======================================================================
+function update(dt) {
+    if (s.over) return;
+    if (s.clearTimer > 0) {
+        s.clearTimer -= dt;
+        P.update(dt); FT.update(dt);
+        if (s.clearTimer <= 0) nextStage();
+        return;
+    }
+
+    var p = s.p;
+    if (p.dead > 0) {
+        p.dead -= dt;
+        P.update(dt); FT.update(dt);
+        if (p.dead <= 0) afterDeath();
+        return;
+    }
+    if (p.invuln > 0) p.invuln -= dt;
+
+    // ---- 玩家移動：帶「角落吸附」，轉彎不會卡住 ----
+    var ax = RE.Input.axisX(), ay = RE.Input.axisY();
+    var spd = (96 + (s.speed - 1) * 28);
+    if (ax !== 0 || ay !== 0) {
+        p.anim += dt * 8;
+        p.face = ay < 0 ? 'up' : ay > 0 ? 'down' : (ax < 0 ? 'left' : 'right');
+        if (ax !== 0) moveAxis(p, ax * spd * dt, 0);
+        if (ay !== 0) moveAxis(p, 0, ay * spd * dt);
+    }
+
+    // ---- 放炸彈 ----
+    if (RE.Input.pressed('a')) {
+        var cc = cellAt(p.x, p.y);
+        var active = s.bombs.filter(function (b) { return b.owner === 'p'; }).length;
+        if (active < s.maxBombs && s.grid[cc.r][cc.c] === 0 &&
+            !s.bombs.some(function (b) { return b.c === cc.c && b.r === cc.r; })) {
+            /* pass：玩家還沒完全離開這一格之前，這顆炸彈對玩家不是實體。
+               放下的瞬間玩家一定站在上面，所以起始值是 true。 */
+            s.bombs.push({ c: cc.c, r: cc.r, t: 2.4, power: s.power, owner: 'p', pulse: 0, pass: true });
+            RetroAudio.play('drop');
+            RE.juice.shake(0.06);
+        }
+    }
+
+    /* ---- 炸彈的「可穿越」狀態 ----
+       一定要在移動之後、碰撞之前結算：玩家的碰撞盒（半寬 T*0.34）
+       完全離開炸彈那一格之後，這顆炸彈才變回實體。
+       ⚠ 不要改回「玩家中心距炸彈中心 < T*0.5」那種寫法——
+       那個門檻比碰撞盒窄 5.12px，玩家往外走到剛好壓在格線上時，
+       角落還在炸彈格裡（被判定為牆）但豁免已經失效，
+       於是被自己剛放下的炸彈釘在原地，按什麼方向都動不了，直到被炸死。 */
+    var pr = T * 0.34;
+    for (var i = 0; i < s.bombs.length; i++) {
+        var pb = s.bombs[i];
+        if (!pb.pass) continue;
+        if (Math.abs(p.x - cx(pb.c)) >= T * 0.5 + pr ||
+            Math.abs(p.y - cy(pb.r)) >= T * 0.5 + pr) pb.pass = false;
+    }
+
+    // ---- 炸彈計時與連鎖 ----
+    for (var i = s.bombs.length - 1; i >= 0; i--) {
+        var b = s.bombs[i];
+        b.t -= dt;
+        b.pulse += dt * (b.t < 0.7 ? 14 : 6);
+        if (b.t <= 0) { detonate(i); }
+    }
+
+    // ---- 火焰 ----
+    for (var i = s.flames.length - 1; i >= 0; i--) {
+        var f = s.flames[i];
+        f.t -= dt;
+        if (f.t <= 0) { s.flames.splice(i, 1); continue; }
+        // 玩家被燒到
+        if (p.invuln <= 0 && p.dead <= 0 &&
+            Math.abs(p.x - cx(f.c)) < T * 0.42 && Math.abs(p.y - cy(f.r)) < T * 0.42) {
+            die('被自己或敵人的爆炸炸到');
+            return;
+        }
+        // 敵人被燒到
+        for (var j = 0; j < s.enemies.length; j++) {
+            var e = s.enemies[j];
+            if (!e.alive) continue;
+            if (Math.abs(e.x - cx(f.c)) < T * 0.5 && Math.abs(e.y - cy(f.r)) < T * 0.5) killEnemy(e);
+        }
+    }
+
+    // ---- 敵人 ----
+    for (var i = s.enemies.length - 1; i >= 0; i--) {
+        var e = s.enemies[i];
+        if (e.dead > 0) { e.dead -= dt; if (e.dead <= 0) s.enemies.splice(i, 1); continue; }
+        if (!e.alive) continue;
+        updateEnemy(e, dt);
+        if (p.invuln <= 0 && p.dead <= 0 &&
+            Math.abs(e.x - p.x) < T * 0.62 && Math.abs(e.y - p.y) < T * 0.62) {
+            die('撞上 ' + e.def.name);
+            return;
+        }
+    }
+
+    // ---- 道具 ----
+    for (var i = s.items.length - 1; i >= 0; i--) {
+        var it = s.items[i];
+        it.t += dt;
+        if (Math.abs(p.x - cx(it.c)) < T * 0.55 && Math.abs(p.y - cy(it.r)) < T * 0.55) {
+            takeItem(it);
+            s.items.splice(i, 1);
+        }
+    }
+
+    // ---- 出口 ----
+    var aliveEnemies = s.enemies.filter(function (e) { return e.alive; }).length;
+    if (aliveEnemies === 0 && !s.exitOpen && s.grid[s.exit[1]][s.exit[0]] === 0) {
+        s.exitOpen = true;
+        RetroAudio.play('levelUp');
+        FT.add(cx(s.exit[0]), cy(s.exit[1]) - 24, '出口開啟！', { color: '#ffd166', size: 16, life: 2 });
+    }
+    if (s.exitOpen &&
+        Math.abs(p.x - cx(s.exit[0])) < T * 0.4 && Math.abs(p.y - cy(s.exit[1])) < T * 0.4) {
+        clearStage();
+        return;
+    }
+
+    P.update(dt);
+    FT.update(dt);
+}
+
+/** 移動並處理角落吸附：接近通道中線時自動對齊，轉彎才不會卡住 */
+function moveAxis(o, dx, dy) {
+    var nx = o.x + dx, ny = o.y + dy;
+    var r = T * 0.34;
+    var corners = [[nx - r, ny - r], [nx + r, ny - r], [nx - r, ny + r], [nx + r, ny + r]];
+    var blocked = false;
+    for (var i = 0; i < corners.length; i++) {
+        var cc = cellAt(corners[i][0], corners[i][1]);
+        if (!cellFree(cc.c, cc.r)) {
+            // 站在炸彈上時允許離開（原作行為）。狀態由 update() 的 pass 結算，
+            // 這裡不要再自己算距離——距離門檻與碰撞盒對不齊會把玩家卡死。
+            var onBomb = s.bombs.some(function (b) {
+                return b.c === cc.c && b.r === cc.r && b.pass;
+            });
+            if (!onBomb) { blocked = true; break; }
+        }
+    }
+    if (!blocked) { o.x = nx; o.y = ny; return; }
+
+    // 被擋住時嘗試往通道中線吸附，讓轉角操作變得寬容
+    if (dx !== 0) {
+        var cc2 = cellAt(o.x, o.y);
+        var targetY = cy(cc2.r);
+        if (Math.abs(o.y - targetY) > 2) o.y += RE.sign(targetY - o.y) * Math.min(Math.abs(dx) * 1.4, Math.abs(targetY - o.y));
+    } else if (dy !== 0) {
+        var cc3 = cellAt(o.x, o.y);
+        var targetX = cx(cc3.c);
+        if (Math.abs(o.x - targetX) > 2) o.x += RE.sign(targetX - o.x) * Math.min(Math.abs(dy) * 1.4, Math.abs(targetX - o.x));
+    }
+}
+
+function detonate(index) {
+    var b = s.bombs[index];
+    if (!b) return;
+    s.bombs.splice(index, 1);
+
+    RetroAudio.play('explosion');
+    RE.juice.shake(0.28);
+    RE.juice.hitstop(0.035);
+    RE.juice.rumble(0.5, 0.12);
+
+    addFlame(b.c, b.r, 'center');
+    var dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    for (var d = 0; d < 4; d++) {
+        for (var k = 1; k <= b.power; k++) {
+            var c = b.c + dirs[d][0] * k, r = b.r + dirs[d][1] * k;
+            if (r < 0 || r >= ROWS || c < 0 || c >= COLS) break;
+            if (s.grid[r][c] === 2) break;            // 硬磚擋住
+            if (s.grid[r][c] === 1) {                 // 軟磚：炸掉後停止
+                breakSoft(c, r);
+                addFlame(c, r, 'end');
+                break;
+            }
+            addFlame(c, r, k === b.power ? 'end' : (d < 2 ? 'h' : 'v'));
+            // 連鎖引爆
+            for (var m = s.bombs.length - 1; m >= 0; m--) {
+                if (s.bombs[m].c === c && s.bombs[m].r === r) {
+                    s.bombs[m].t = 0.02;
+                    FT.add(cx(c), cy(r) - 18, '連鎖！', { color: '#ffd166', size: 13, life: 0.8 });
+                }
+            }
+        }
+    }
+}
+
+function addFlame(c, r, kind) {
+    s.flames.push({ c: c, r: r, t: 0.42, kind: kind });
+    P.burst(cx(c), cy(r), 6, {
+        colors: ['#ffd166', '#ff9349', '#fff8e7'], speedMin: 40, speedMax: 150,
+        gravity: 0, drag: 0.9, lifeMin: 0.15, lifeMax: 0.4, sizeMax: 5, glow: true
+    });
+}
+
+function breakSoft(c, r) {
+    s.grid[r][c] = 0;
+    addScore(10);
+    P.burst(cx(c), cy(r), 14, {
+        colors: ['#8b6914', '#c9a35b', '#d9c9a8'], speedMin: 50, speedMax: 190,
+        gravity: 420, lifeMin: 0.25, lifeMax: 0.6, sizeMin: 3, sizeMax: 6
+    });
+    var key = c + ',' + r;
+    if (s.hidden[key]) {
+        s.items.push({ c: c, r: r, type: s.hidden[key], t: 0 });
+        delete s.hidden[key];
+    }
+}
+
+function takeItem(it) {
+    RetroAudio.play('powerup');
+    RE.juice.flash('rgba(255,209,102,0.28)', 0.12);
+    addScore(200);
+    var label;
+    if (it.type === 'fire') { s.power = Math.min(s.power + 1, 8); label = '火力 +1'; G.setStat('power', s.power); }
+    else if (it.type === 'bomb') { s.maxBombs = Math.min(s.maxBombs + 1, 8); label = '炸彈 +1'; G.setStat('bombs', s.maxBombs); }
+    else { s.speed = Math.min(s.speed + 1, 4); label = '速度 +1'; }
+    FT.add(cx(it.c), cy(it.r) - 20, label, { color: '#ffd166', size: 15, life: 1.2 });
+    P.ring(cx(it.c), cy(it.r), '#ffd166', 44);
+}
+
+/**
+ * 敵人 AI：
+ * chase 值決定「有多大機率朝玩家方向走」。
+ * 0 = 純隨機遊走，0.8 = 幾乎always追人。
+ * 用一個參數控制整條難度曲線，比寫三種不同 AI 更好調整。
+ */
+function updateEnemy(e, dt) {
+    e.anim += dt * 6;
+    e.think -= dt;
+    var DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+    var d = DIRS[e.dir];
+    var spd = e.def.speed;
+    var nx = e.x + d[0] * spd * dt, ny = e.y + d[1] * spd * dt;
+
+    var cc = cellAt(nx + d[0] * T * 0.35, ny + d[1] * T * 0.35);
+    if (!cellFree(cc.c, cc.r) || e.think <= 0) {
+        // 選新方向
+        var here = cellAt(e.x, e.y);
+        e.x = cx(here.c); e.y = cy(here.r);
+        var opts = [];
+        for (var k in DIRS) {
+            var dd = DIRS[k];
+            if (cellFree(here.c + dd[0], here.r + dd[1])) opts.push(k);
+        }
+        if (opts.length) {
+            if (Math.random() < e.def.chase) {
+                // 朝玩家方向排序
+                var px = s.p.x, py = s.p.y;
+                opts.sort(function (a, b) {
+                    var da = RE.dist(cx(here.c + DIRS[a][0]), cy(here.r + DIRS[a][1]), px, py);
+                    var db = RE.dist(cx(here.c + DIRS[b][0]), cy(here.r + DIRS[b][1]), px, py);
+                    return da - db;
+                });
+                e.dir = opts[0];
+            } else {
+                e.dir = RE.pick(opts);
+            }
+        }
+        e.think = RE.rand(0.5, 1.4);
+        return;
+    }
+    e.x = nx; e.y = ny;
+}
+
+function killEnemy(e) {
+    e.alive = false;
+    e.dead = 0.5;
+    addScore(e.def.score);
+    FT.add(e.x, e.y - 16, '+' + e.def.score, { color: e.def.color, size: 15 });
+    RetroAudio.play('heavyHit');
+    RE.juice.hitstop(0.03);
+    P.burst(e.x, e.y, 18, { colors: [e.def.color, '#fff8e7', '#ffd166'],
+        speedMin: 50, speedMax: 190, gravity: 200, lifeMin: 0.25, lifeMax: 0.6 });
+    P.ring(e.x, e.y, e.def.color, 40);
+}
+
+function die(reason) {
+    var p = s.p;
+    if (p.dead > 0) return;
+    p.dead = 1.3;
+    s.deathReason = reason;
+    s.lives--;
+    G.setLives(s.lives);
+    RE.juice.impact(3);
+    RE.juice.slowmo(0.3, 0.9);
+    RetroAudio.play('gameover');
+    P.burst(p.x, p.y, 26, { colors: ['#ff6b6b', '#ffd166', '#fff8e7'],
+        speedMin: 50, speedMax: 210, gravity: 220, lifeMin: 0.3, lifeMax: 0.8 });
+}
+
+function afterDeath() {
+    if (s.lives <= 0) {
+        s.over = true;
+        G.gameOver({ score: s.score,
+            body: '停在第 ' + s.stage + ' 關「' + s.cfg.name + '」（' + s.deathReason + '）。' +
+                  '放炸彈之前，先想好往哪邊逃。' });
+        return;
+    }
+    // 死亡會失去一級火力，但不會掉到「必須貼身開火」的那一級——懲罰要痛但不能絕望
+    s.power = Math.max(POWER_MIN, s.power - 1);
+    G.setStat('power', s.power);
+    loadStage(s.stage);
+    FT.add(W / 2, 40, '剩餘機會 ' + s.lives + '　火力 -1', { color: '#ffd166', size: 15, life: 1.6 });
+}
+
+function addScore(n) { s.score += n; G.setStat('score', s.score); }
+
+function clearStage() {
+    s.clearTimer = 1.8;
+    addScore(1000 * s.stage);
+    RetroAudio.play('win');
+    RE.juice.flash('rgba(255,209,102,0.32)', 0.18);
+    FT.add(W / 2, H / 2, '過關！', { color: '#ffd166', size: 26, life: 1.8 });
+    P.burst(s.p.x, s.p.y, 36, { colors: ['#ffd166', '#70e4b5', '#ff9ebb'],
+        speedMin: 60, speedMax: 250, gravity: 300, lifeMin: 0.4, lifeMax: 1.1 });
+}
+
+function nextStage() {
+    var n = s.stage + 1;
+    RE.Save.unlockLevel('bomberman', n);
+    if (n > STAGES.length) {
+        s.over = true;
+        G.gameOver({ score: s.score, win: true,
+            body: '五關全數通過。最終火力 ' + s.power + '、炸彈 ' + s.maxBombs + ' 顆。' +
+                  '一個機制同時是武器與威脅——這就是它能撐起四十年的原因。' });
+        return;
+    }
+    loadStage(n);
+    var names = s.cfg.enemies.map(function (p) { return ENEMY_DEF[p[0]].name + '×' + p[1]; }).join('　');
+    G.stageCard(n, s.cfg.name, names);
+}
+
+/**
+ * 只把 detonate() 真正會燒到的格子拿來畫預告，不另造一套較寬鬆的判準。
+ * 第九輪事件採樣發現爆風只存在 0.42 秒，固定畫面幾乎抓不到核心動詞；
+ * 因此在引信最後 0.95 秒顯示格線，不改爆炸時間、傷害或牆面規則。
+ */
+function blastForecastCells(b) {
+    var cells = [{ c: b.c, r: b.r }];
+    var dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    for (var d = 0; d < dirs.length; d++) {
+        for (var k = 1; k <= b.power; k++) {
+            var c = b.c + dirs[d][0] * k, r = b.r + dirs[d][1] * k;
+            if (r < 0 || r >= ROWS || c < 0 || c >= COLS) break;
+            if (s.grid[r][c] === 2) break;
+            cells.push({ c: c, r: r });
+            if (s.grid[r][c] === 1) break;
+        }
+    }
+    return cells;
+}
+
+function drawBlastForecast(b) {
+    if (b.t > 0.95) return;
+    var cells = blastForecastCells(b);
+    var urgency = 1 - RE.clamp(b.t / 0.95, 0, 1);
+    var pulse = 0.42 + Math.sin(b.pulse * 2) * 0.12 + urgency * 0.18;
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,147,73,' + pulse.toFixed(3) + ')';
+    ctx.strokeStyle = urgency > 0.62 ? '#fff1b8' : '#ff9349';
+    ctx.lineWidth = urgency > 0.62 ? 2 : 1;
+    ctx.setLineDash([4, 3]);
+    for (var i = 0; i < cells.length; i++) {
+        var x = OX + cells[i].c * T, y = OY + cells[i].r * T;
+        ctx.fillRect(x + 5, y + 5, T - 10, T - 10);
+        ctx.strokeRect(x + 3.5, y + 3.5, T - 7, T - 7);
+    }
+    ctx.restore();
+}
+
+// ======================================================================
+function render() {
+    G.clear('#0a1014');
+    G.beginWorld();
+
+    // 地板
+    for (var r = 0; r < ROWS; r++) {
+        for (var c = 0; c < COLS; c++) {
+            var x = OX + c * T, y = OY + r * T;
+            ctx.fillStyle = (c + r) % 2 === 0 ? '#16241d' : '#12201a';
+            ctx.fillRect(x, y, T, T);
+        }
+    }
+
+    // 出口
+    if (s.grid[s.exit[1]][s.exit[0]] === 0) {
+        var ex = OX + s.exit[0] * T, ey = OY + s.exit[1] * T;
+        ctx.save();
+        if (s.exitOpen) { ctx.shadowBlur = 16; ctx.shadowColor = '#ffd166'; }
+        ctx.fillStyle = s.exitOpen ? '#ffd166' : '#3d5148';
+        RE.Draw.roundRect(ctx, ex + 4, ey + 4, T - 8, T - 8, 6);
+        ctx.fill();
+        ctx.fillStyle = '#0a1014';
+        RE.Draw.roundRect(ctx, ex + 9, ey + 12, T - 18, T - 16, 4);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // 磚塊
+    for (var r = 0; r < ROWS; r++) {
+        for (var c = 0; c < COLS; c++) {
+            var v = s.grid[r][c];
+            if (!v) continue;
+            var x = OX + c * T, y = OY + r * T;
+            if (v === 2) {
+                ctx.fillStyle = '#4a5a54';
+                ctx.fillRect(x, y, T, T);
+                ctx.fillStyle = '#667870';
+                ctx.fillRect(x + 2, y + 2, T - 4, T - 6);
+                ctx.fillStyle = 'rgba(255,255,255,0.18)';
+                ctx.fillRect(x + 2, y + 2, T - 4, 3);
+            } else if (ATLAS.draw(ctx, SPR.barrel.col, SPR.barrel.row, x, y, T, T)) {
+                /* 軟磚改用木桶圖。畫得出來就跳過底下的程式繪製。 */
+            } else {
+                ctx.fillStyle = '#7a5a2a';
+                ctx.fillRect(x + 1, y + 1, T - 2, T - 2);
+                ctx.fillStyle = '#a8813f';
+                ctx.fillRect(x + 3, y + 3, T - 6, T - 8);
+                ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(x + 3, y + T / 2); ctx.lineTo(x + T - 3, y + T / 2);
+                ctx.stroke();
+            }
+        }
+    }
+
+    // 引信末段才顯示，而且範圍與 detonate() 完全相同；這是可讀性，不是降低難度。
+    for (var i = 0; i < s.bombs.length; i++) drawBlastForecast(s.bombs[i]);
+
+    // 道具
+    for (var i = 0; i < s.items.length; i++) {
+        var it = s.items[i];
+        var bob = Math.sin(it.t * 4) * 3;
+        var col = it.type === 'fire' ? '#ff6b6b' : it.type === 'bomb' ? '#7dd3fc' : '#70e4b5';
+        ctx.save();
+        ctx.shadowBlur = 12; ctx.shadowColor = col;
+        ctx.fillStyle = col;
+        RE.Draw.roundRect(ctx, cx(it.c) - 10, cy(it.r) - 10 + bob, 20, 20, 5);
+        ctx.fill();
+        ctx.restore();
+        RE.Draw.text(ctx, it.type === 'fire' ? '🔥' : it.type === 'bomb' ? '💣' : '⚡',
+            cx(it.c), cy(it.r) - 8 + bob, { size: 13, align: 'center', color: '#12201a', stroke: false });
+    }
+
+    // 炸彈
+    for (var i = 0; i < s.bombs.length; i++) {
+        var b = s.bombs[i];
+        var sc = 1 + Math.sin(b.pulse) * (b.t < 0.7 ? 0.22 : 0.1);
+        ctx.save();
+        ctx.translate(cx(b.c), cy(b.r));
+        ctx.scale(sc, sc);
+        ctx.fillStyle = b.t < 0.7 && Math.floor(b.pulse * 2) % 2 === 0 ? '#ff6b6b' : '#1a1a1a';
+        ctx.beginPath(); ctx.arc(0, 2, 11, 0, RE.TAU); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.beginPath(); ctx.arc(-4, -2, 3.5, 0, RE.TAU); ctx.fill();
+        ctx.strokeStyle = '#c9a35b';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(3, -8); ctx.quadraticCurveTo(9, -14, 6, -18); ctx.stroke();
+        ctx.fillStyle = '#ffd166';
+        ctx.beginPath(); ctx.arc(6, -19, 2.5 + Math.sin(b.pulse * 3), 0, RE.TAU); ctx.fill();
+        ctx.restore();
+    }
+
+    // 火焰
+    for (var i = 0; i < s.flames.length; i++) {
+        var f = s.flames[i];
+        var a = RE.clamp(f.t / 0.42, 0, 1);
+        ctx.save();
+        ctx.globalAlpha = a;
+        ctx.shadowBlur = 18; ctx.shadowColor = '#ff9349';
+        var grd = ctx.createRadialGradient(cx(f.c), cy(f.r), 2, cx(f.c), cy(f.r), T * 0.6);
+        grd.addColorStop(0, '#fff8e7');
+        grd.addColorStop(0.45, '#ffd166');
+        grd.addColorStop(1, 'rgba(255,107,107,0)');
+        ctx.fillStyle = grd;
+        ctx.fillRect(OX + f.c * T - 4, OY + f.r * T - 4, T + 8, T + 8);
+        ctx.restore();
+    }
+
+    // 敵人
+    for (var i = 0; i < s.enemies.length; i++) {
+        var e = s.enemies[i];
+        ctx.save();
+        if (e.dead > 0) { ctx.globalAlpha = e.dead / 0.5; ctx.translate(e.x, e.y); ctx.scale(1 + (1 - e.dead / 0.5), 1 - (1 - e.dead / 0.5) * 0.6); ctx.translate(-e.x, -e.y); }
+        var bob = Math.sin(e.anim) * 2;
+        var sp = SPR[e.def.spr];
+        /* 三種敵人各配一種圖：史萊姆／哥布林／骷髏。
+           保留原本的浮沉（bob）與死亡壓扁動畫——那些是手感，跟畫成什麼無關。
+           圖畫得出來就不畫圓球，畫不出來就照舊。 */
+        if (!(sp && ATLAS.draw(ctx, sp.col, sp.row, e.x - 14, e.y - 16 + bob, 28, 28))) {
+            ctx.shadowBlur = 8; ctx.shadowColor = e.def.color;
+            ctx.fillStyle = e.def.color;
+            ctx.beginPath(); ctx.arc(e.x, e.y + bob, 12, 0, RE.TAU); ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#0a1014';
+            ctx.beginPath(); ctx.arc(e.x - 4, e.y - 2 + bob, 2.6, 0, RE.TAU); ctx.fill();
+            ctx.beginPath(); ctx.arc(e.x + 4, e.y - 2 + bob, 2.6, 0, RE.TAU); ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    // 玩家
+    var p = s.p;
+    if (p.dead <= 0 && (p.invuln <= 0 || Math.floor(p.invuln * 14) % 2 === 0)) {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        var wob = Math.sin(p.anim) * 1.5;
+        /* 玩家改用圖集的角色。走路兩幀靠 p.anim 交替——
+           p.anim 只在移動時累加，站著時停在第一幀，剛好就是站立姿。
+           面向左時水平翻轉：圖集只畫右向，這是工單訂的規則。 */
+        var walk = (Math.floor(p.anim * 3) % 2 === 1) ? SPR.heroWalk : SPR.hero;
+        if (!ATLAS.draw(ctx, walk.col, walk.row, -16, -18 + wob, 32, 32, p.face === 'left')) {
+            ctx.fillStyle = '#e8f4ff';
+            RE.Draw.roundRect(ctx, -10, -13 + wob, 20, 18, 8); ctx.fill();
+            ctx.fillStyle = '#3a6fd8';
+            RE.Draw.roundRect(ctx, -9, 1 + wob, 18, 11, 5); ctx.fill();
+            ctx.fillStyle = '#1a2a3a';
+            var eo = p.face === 'left' ? -3 : p.face === 'right' ? 3 : 0;
+            ctx.fillRect(-5 + eo, -7 + wob, 3, 4);
+            ctx.fillRect(2 + eo, -7 + wob, 3, 4);
+            ctx.fillStyle = '#ffd166';
+            ctx.fillRect(-3, 3 + wob, 6, 3);
+        }
+        ctx.restore();
+    }
+
+    P.draw(ctx);
+    FT.draw(ctx);
+
+    G.endWorld();
+    // 狀態牌留在螢幕座標，不跟爆炸震動一起被推到畫布外。
+    drawBattleStatus();
+    G.postFX({ scanAlpha: 0.07, vignetteStrength: 0.4 });
+}
+
+function drawBattleStatus() {
+    var left = s.enemies.filter(function (e) { return e.alive; }).length;
+    ctx.save();
+    ctx.fillStyle = 'rgba(7,13,12,0.78)';
+    RE.Draw.roundRect(ctx, W / 2 - 68, 4, 136, 23, 5); ctx.fill();
+    ctx.strokeStyle = left > 0 ? 'rgba(255,158,187,0.45)' : 'rgba(255,209,102,0.55)';
+    ctx.lineWidth = 1; ctx.stroke();
+    RE.Draw.text(ctx, left > 0 ? ('剩餘敵人 ' + left) : '出口已開啟！', W / 2, 16,
+        { size: 12, align: 'center', baseline: 'middle', color: left > 0 ? '#ff9ebb' : '#ffd166' });
+    ctx.restore();
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '炸掉所有敵人後走到出口過關。炸彈會傷害你自己——放下之後立刻找掩蔽。共五關。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 字謎每日一題</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   字謎每日一題 — 致敬 Wordle (Josh Wardle, 2021)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. **一天只能玩一次**。這是它最反直覺、也最關鍵的決定：主動限制供給。
+      玩不夠只能等明天，於是每一次猜測都被慎重對待，
+      而且全世界同一天猜的是同一個字——這才有得聊。
+   2. **結果格可以分享，而且不劇透**。🟩🟨⬛ 只透露「你花幾次猜到」，
+      不透露答案。這一格圖案讓它在社群上自我散播，卻不會毀掉別人的遊戲。
+   3. **零介面成本**：沒有帳號、沒有下載、沒有教學，打開網頁就能玩。
+   4. 重複字母的判定要對——那是這款遊戲最常被實作錯的一條規則，
+      本作用「先標綠、再用剩餘字母數配黃」的兩階段演算法處理。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'wordle',
+    title: '字謎每日一題',
+    tagline: '限制供給，是為了讓大家有話可聊',
+    original: 'Wordle (Josh Wardle, 2021)',
+    decade: '20s', year: 2021, platform: '瀏覽器', genre: '文字推理',
+    developer: 'Josh Wardle', bgm: '20s',
+    width: 480, height: 400,
+    hud: [
+        { key: 'stage', label: '題目', init: '1/5' },
+        { key: 'tries', label: '剩餘', init: 6 },
+        { key: 'streak', label: '連過', init: 0 },
+        { key: 'score', label: 'SCORE' }
+    ],
+    lives: 3,
+    touch: 'dpad+ab', labelA: '輸入', labelB: '刪除',
+    controls: [
+        { keys: ['A~Z'], desc: '直接用鍵盤打字' },
+        { keys: ['Enter'], desc: '送出這一列' },
+        { keys: ['←', '↑', '↓', '→'], desc: '在螢幕鍵盤上移動（手機也可直接點）' },
+        { keys: ['A'], desc: '輸入選取的按鍵' },
+        { keys: ['B'], desc: '刪除一個字母' }
+    ],
+    howto: '猜出五個字母的英文單字。每猜一次，每個字母會回饋一種顏色：' +
+           '<strong>綠色</strong>＝字母對、位置也對；' +
+           '<strong>黃色</strong>＝這個字母有，但位置不對；' +
+           '<strong>灰色</strong>＝這個字母完全沒有。' +
+           '可以用實體鍵盤直接打字，或用方向鍵在螢幕鍵盤上移動、按 A 輸入。' +
+           '共五題，題目越後面猜的次數越少，第四題起還會進入' +
+           '<strong>困難模式</strong>（已經確定的線索必須繼續使用）。',
+    lesson: {
+        verb: '用綠、黃、灰回饋縮小字母位置，六次內猜出每日同一個答案。',
+        innovation: '把 Mastermind 式回饋、每日一次的供給限制與無劇透色塊分享組合成社交儀式，讓少玩一點反而維持長期討論。',
+        mission: '完成五個謎題，先用猜測取得資訊再決定是否冒險；比較追求一次猜中與保留字母資訊兩種策略的平均猜測數。',
+        evolution: '承接《Mastermind》與《Minesweeper》的排除推理，演化成 2021 年瀏覽器每日謎題與 2022 年新聞媒體遊戲入口，把答案變成共同日曆事件。',
+        reflection: '你的好猜法是在找答案，還是在最大化下一次的資訊量？請比較一個高頻字母與一個可能答案的取捨？'
+    },
+    design: '《Wordle》解決了「每日單一謎題社交傳播與資訊反饋限制」的儀式感問題。關鍵在於限制與節制：全體玩家每天面對完全相同的同一個五字單字，且一天只能玩一次。綠黃灰三色資訊反饋（Mastermind 猜數字機制）提供精確的排除線索，而無污染的色塊分享圖形解決了社交媒體劇透問題。這套以限制供給建立每日社交話題的設計論點，後來的社交益智作品均延續了這種限制遊玩次數以維持長期樂趣的策略。' + '設計上的關鍵在於：看似簡單的規則背後，隱藏著對玩家心理、空間約束與代價邊界的精確計算，不是隨意拍腦袋而是有著深刻的系統取捨。',
+    history: '2021 年 10 月由 Josh Wardle 為其伴侶 Palak Shah 開發，並於 2022 年 1 月被紐約時報（The New York Times）以七位數美元收購。本作完全無廣告與推播，憑藉極簡網頁與每日一題的社群分享引發全球流行文化現象。參見本站 90 年代《Minesweeper》與 80 年代《Tetris》對資訊排除與極簡 puzzle 的設計脈絡。',
+    sources: [
+        { label: 'Wordle 原始網頁（Josh Wardle）', url: 'https://www.powerlanguage.co.uk/wordle/' },
+        { label: 'New York Times Games 官方 Wordle', url: 'https://www.nytimes.com/games/wordle/index.html' },
+        { label: 'GitHub：Wordle 開源重製與規則說明', url: 'https://github.com/roedie/Wordle' }
+    ],
+});
+
+var ctx = G.ctx, VW = G.width, VH = G.height;
+var P = new RE.Particles(320);
+var FT = new RE.FloatText();
+
+// ======================================================================
+// 難度設定：五題，逐題收緊
+// ======================================================================
+var LEVELS = [
+    { name: '第一題 · 熱身',     tries: 6, hint: true,  hard: false,
+      note: '第一個字母先送你。先用一個母音多的字開場，例如 AUDIO。' },
+    { name: '第二題 · 標準',     tries: 6, hint: false, hard: false,
+      note: '這就是原版的規則：五個字母、六次機會。' },
+    { name: '第三題 · 收緊',     tries: 5, hint: false, hard: false,
+      note: '只剩五次。第一猜要盡量鋪開不同的字母。' },
+    { name: '第四題 · 困難模式', tries: 5, hint: false, hard: true,
+      note: '困難模式：已經確定的線索，接下來每一猜都必須用上。' },
+    // 最後一題原本只給四次猜測，實測（完美推理者跑 300 天）有 2.7% 的日子
+    // 根本猜不完——那不是難，是不公平。改成次數維持五次，
+    // 但答案一定含有重複字母：那才是這款遊戲真正會卡住人的地方。
+    { name: '第五題 · 最後一題', tries: 5, hint: false, hard: true, dup: true,
+      note: '困難模式，而且這一題的答案一定有重複的字母。' }
+];
+
+// ======================================================================
+// 單字表。同時當答案池與合法猜測表——
+// 猜一個不在表裡的字會被退回，這是原版就有的規則。
+// ======================================================================
+var WORDS = ('about above actor acute admit adopt adult after again agent agree ahead alarm album ' +
+'alert alike alive allow alone along alter among anger angle angry ankle apart apple apply arena ' +
+'argue arise armor array arrow aside asset audio audit avoid awake award aware badly baker basic ' +
+'basis beach beard beast began begin begun being below bench birth black blade blame blank blast ' +
+'blaze bleed blend bless blind block blood bloom board boast bonus boost booth bound brain brand ' +
+'brave bread break breed brick bride brief bring broad broke brown brush build built bunch burst ' +
+'cabin cable candy canoe cargo carry carve catch cause chain chair chalk charm chart chase cheap ' +
+'check cheek cheer chess chest chief child china chose civil claim clash class clean clear clerk ' +
+'click cliff climb clock close cloth cloud coach coast could count court cover crack craft crash ' +
+'crazy cream creek crime crisp cross crowd crown crude cruel crush curve cycle daily dance dealt ' +
+'death debut decay delay dense depth devil diary digit dirty ditch dodge doubt draft drain drama ' +
+'drank dream dress dried drift drink drive drove drown dryer eager eagle early earth eight elbow ' +
+'elder elect elite empty enemy enjoy enter entry equal error essay event every exact exist extra ' +
+'faced fairy faith false fancy fatal fault favor feast fence fever fewer fiber field fifth fight ' +
+'final first flame flash fleet flesh flick fling float flood floor flour fluid flush focus force ' +
+'forge forth forty forum found frame fraud fresh front frost fruit fully funny giant given glass ' +
+'globe glory glove going grace grade grain grand grant grape graph grasp grass grave great green ' +
+'greet grief grill grind gross group grown guard guess guest guide guilt habit handy happy harsh ' +
+'haste hatch haunt heart heavy hedge hello hence hobby honey honor horse hotel house human humor ' +
+'hurry ideal image imply index inner input irony issue ivory jelly jewel joint judge juice kneel ' +
+'knife knock known label labor large laser later laugh layer learn lease least leave legal lemon ' +
+'level lever light limit linen liver lobby local lodge logic loose lorry loser lower loyal lucky ' +
+'lunar lunch lyric magic major maker maple march match maybe mayor meant medal media mercy merge ' +
+'merit metal meter midst might minor minus mixed model moist money month moral motor mount mouse ' +
+'mouth movie music naked nasty naval nerve never newly night noble noise north novel nurse ocean ' +
+'offer often olive onion onset opera orbit order organ other ought outer owner paint panel panic ' +
+'paper party pasta patch pause peace peach pearl pedal penny phase phone photo piano piece pilot ' +
+'pinch pitch pixel place plain plane plant plate plaza plead point polar porch pound power press ' +
+'price pride prime print prior prize probe proof proud prove pulse punch pupil purse queen query ' +
+'quest queue quick quiet quilt quite quote radar radio raise rally ranch range rapid ratio reach ' +
+'ready realm rebel refer reign relax relay renew reply rider ridge right rigid rinse rival river ' +
+'roast robot rocky roman rough round route royal rugby ruler rumor rural sadly saint salad sauce ' +
+'scale scare scarf scene scent scoop scope score scout scrap screw sense serve seven shade shaft ' +
+'shake shall shame shape share shark sharp sheep sheer sheet shelf shell shift shine shirt shock ' +
+'shoot shore short shout shown shrug sight silly since siren sixth skill skirt slate sleep slice ' +
+'slide slope small smart smell smile smoke snake sneak solar solid solve sorry sound south space ' +
+'spare spark speak spear speed spell spend spice spike spine spite split spoke spoon sport spray ' +
+'squad stack staff stage stain stake stamp stand stare start state steam steel steep steer stern ' +
+'stick still sting stock stole stone stood stool store storm story stove strap straw strip stuck ' +
+'study stuff style sugar suite sunny super surge sushi swamp sweat sweep sweet swept swift swing ' +
+'sword table taken tally taste teach tempo tenor tense tenth thank theft their theme there thick ' +
+'thief thing think third those three threw throw thumb tiger tight timer tired title toast today ' +
+'token tooth topic torch total touch tough tower toxic trace track trade trail train trait trash ' +
+'treat trend trial tribe trick tried troop truck truly trunk trust truth tulip tumor tutor twice ' +
+'twist ultra uncle under union unite unity until upper upset urban usage usual vague valid value ' +
+'vapor vault venue verse video vigor villa vinyl viral virus visit vital vivid vocal voice vowel ' +
+'wagon waist waste watch water weary weave wedge weigh weird whale wheat wheel where which while ' +
+'white whole whose widen width witch woman world worry worse worth would wound wrist write wrong ' +
+'yield young youth zebra').split(/\s+/).filter(function (w) { return w.length === 5; });
+
+var WORDSET = {};
+for (var wi = 0; wi < WORDS.length; wi++) WORDSET[WORDS[wi]] = 1;
+
+// 含重複字母的字，留給最後一題當答案池
+var DUPWORDS = WORDS.filter(function (w) {
+    for (var i = 0; i < 5; i++) if (w.indexOf(w[i]) !== i) return true;
+    return false;
+});
+
+// ======================================================================
+// 判定：先標綠，再用剩下的字母配黃。
+// 這一段是整款遊戲最容易寫錯的地方——
+// 猜 ALLOY 而答案是 LOYAL 時，猜測裡的兩個 L 只有一個能被標色，
+// 因為答案裡也只有兩個 L，而其中一個已經被綠色用掉了。
+// ======================================================================
+function judge(guess, answer) {
+    var res = ['x', 'x', 'x', 'x', 'x'];
+    var pool = {};
+    var i, c;
+    for (i = 0; i < 5; i++) {
+        if (guess[i] === answer[i]) res[i] = 'g';
+        else { c = answer[i]; pool[c] = (pool[c] || 0) + 1; }
+    }
+    for (i = 0; i < 5; i++) {
+        if (res[i] === 'g') continue;
+        c = guess[i];
+        if (pool[c] > 0) { res[i] = 'y'; pool[c]--; }
+    }
+    return res;
+}
+
+// 困難模式：已經確定的線索必須沿用。回傳錯誤訊息，通過則回傳 null。
+function hardModeError(guess) {
+    var i, j;
+    for (i = 0; i < s.row; i++) {
+        var g = s.rows[i].word, r = s.rows[i].res;
+        for (j = 0; j < 5; j++) {
+            if (r[j] === 'g' && guess[j] !== g[j]) {
+                return '第 ' + (j + 1) + ' 個字母必須是 ' + g[j].toUpperCase();
+            }
+        }
+        for (j = 0; j < 5; j++) {
+            if (r[j] === 'y' && guess.indexOf(g[j]) === -1) {
+                return '這一猜必須用到 ' + g[j].toUpperCase();
+            }
+        }
+    }
+    return null;
+}
+
+// ======================================================================
+// 螢幕鍵盤
+// ======================================================================
+var KEYROWS = [
+    ['q','w','e','r','t','y','u','i','o','p'],
+    ['a','s','d','f','g','h','j','k','l'],
+    ['ENT','z','x','c','v','b','n','m','DEL']
+];
+
+var s = null;
+
+// 32 位元雜湊。原本寫成 seed * 2654435761，但 seed 約兩千萬，
+// 相乘後超過 2^53 會失去精度，不同題號可能抽到同一個字。
+function hash32(n) {
+    n = Math.imul(n ^ 0x9e3779b9, 0x85ebca6b);
+    n ^= n >>> 13;
+    n = Math.imul(n, 0xc2b2ae35);
+    n ^= n >>> 16;
+    return n >>> 0;
+}
+
+function reset() {
+    s = { level: 0, score: 0, streak: 0, results: [], pointerDownSeen: false };
+    // 今天的五個答案一次抽好並去重。逐題各抽一次的話，
+    // 每 80 天左右就會出現「同一輪裡有兩題答案一樣」的情況。
+    var d = new Date();
+    var base = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+    s.answers = [];
+    for (var i = 0, salt = 0; i < LEVELS.length && salt < 500; salt++) {
+        var pool = LEVELS[i].dup ? DUPWORDS : WORDS;
+        var w = pool[hash32(base + salt * 7919) % pool.length];
+        if (s.answers.indexOf(w) !== -1) continue;
+        s.answers.push(w); i++;
+    }
+    P.clear(); FT.clear();
+    G.setStat('score', 0); G.setStat('streak', 0);
+    G.setLives(3);
+    loadLevel(0);
+}
+
+function loadLevel(i) {
+    var L = LEVELS[i];
+    // 答案由日期決定（在 reset 裡一次抽好）：同一天打開拿到的是同一組字，
+    // 這是原作那條「全世界今天猜同一個字」的規則的單機版。
+    s.level = i;
+    s.L = L;
+    s.answer = s.answers[i];
+    s.maxRows = L.tries;
+    s.rows = [];
+    for (var k = 0; k < L.tries; k++) s.rows.push({ word: '', res: null, shake: 0, reveal: -1 });
+    s.row = 0;
+    s.cur = L.hint ? s.answer[0] : '';
+    s.rows[0].word = s.cur;
+    s.keyState = {};
+    s.msg = ''; s.msgT = 0;
+    s.done = 0;
+    s.kx = 0; s.ky = 0;
+    s.revealT = 0; s.revealRow = -1;
+    s.banner = L.name; s.bannerT = 2.4;
+
+    G.setStat('stage', (i + 1) + '/' + LEVELS.length);
+    G.setStat('tries', L.tries);
+}
+
+function setMsg(t) { s.msg = t; s.msgT = 1.8; RetroAudio.play('error'); }
+
+// ======================================================================
+// 輸入
+// ======================================================================
+function typeLetter(c) {
+    if (s.done || s.revealRow >= 0) return;
+    if (s.cur.length >= 5) return;
+    s.cur += c;
+    s.rows[s.row].word = s.cur;
+    RetroAudio.play('blip');
+    P.burst(gridX(s.cur.length - 1) + CELL / 2, gridY(s.row) + CELL / 2, 3, {
+        colors: ['#8fa3c8'], speedMin: 20, speedMax: 60, gravity: 0, lifeMin: 0.12, lifeMax: 0.22 });
+}
+
+function backspace() {
+    if (s.done || s.revealRow >= 0) return;
+    var floor = s.L.hint ? 1 : 0;      // 提示字母不能被刪掉
+    if (s.cur.length <= floor) return;
+    s.cur = s.cur.slice(0, -1);
+    s.rows[s.row].word = s.cur;
+    RetroAudio.play('cancel');
+}
+
+function submit() {
+    if (s.done || s.revealRow >= 0) return;
+    if (s.cur.length < 5) { s.rows[s.row].shake = 0.4; setMsg('還沒填滿五個字母'); return; }
+    if (!WORDSET[s.cur]) { s.rows[s.row].shake = 0.4; setMsg('「' + s.cur.toUpperCase() + '」不在收錄的單字表裡'); return; }
+    if (s.L.hard) {
+        var err = hardModeError(s.cur);
+        if (err) { s.rows[s.row].shake = 0.4; setMsg('困難模式：' + err); return; }
+    }
+    var res = judge(s.cur, s.answer);
+    s.rows[s.row].res = res;
+    s.revealRow = s.row;
+    s.revealT = 0;
+    s.rows[s.row].reveal = -1;
+    RetroAudio.play('select');
+}
+
+function afterReveal() {
+    var res = s.rows[s.row].res, i;
+    for (i = 0; i < 5; i++) {
+        var c = s.cur[i], st = res[i];
+        var old = s.keyState[c];
+        if (st === 'g' || (st === 'y' && old !== 'g') || (!old && st === 'x')) s.keyState[c] = st;
+    }
+    var win = res.join('') === 'ggggg';
+    s.revealRow = -1;
+
+    if (win) {
+        s.done = 1;
+        var left = s.maxRows - s.row - 1;
+        var gain = 800 + left * 400;
+        addScore(gain);
+        s.streak++;
+        G.setStat('streak', s.streak);
+        s.results.push({ level: s.level, rows: s.rows.slice(0, s.row + 1).map(function (r) { return r.res; }), win: true });
+        RetroAudio.play('win');
+        RE.juice.flash('rgba(120,220,140,0.4)', 0.2);
+        RE.juice.shake(0.35);
+        RE.juice.slowmo(0.4, 0.7);
+        P.burst(VW / 2, gridY(s.row) + CELL / 2, 40, {
+            colors: ['#6aaa64', '#c9b458', '#fff3c4'], speedMin: 60, speedMax: 240,
+            gravity: 240, lifeMin: 0.4, lifeMax: 0.9, glow: true });
+        FT.add(VW / 2, gridY(s.row) - 6, '+' + gain, { color: '#8fe0a0', size: 18 });
+        s.doneT = 1.5;
+        return;
+    }
+
+    s.row++;
+    G.setStat('tries', s.maxRows - s.row);
+    if (s.row >= s.maxRows) {
+        s.done = -1;
+        s.streak = 0;
+        G.setStat('streak', 0);
+        s.results.push({ level: s.level, rows: s.rows.map(function (r) { return r.res; }), win: false });
+        RetroAudio.play('gameover');
+        RE.juice.shake(0.4);
+        RE.juice.flash('rgba(220,80,80,0.3)', 0.18);
+        s.doneT = 1.6;
+        return;
+    }
+    s.cur = s.L.hint ? s.answer[0] : '';
+    s.rows[s.row].word = s.cur;
+}
+
+function addScore(n) { s.score += n; G.setStat('score', s.score); }
+
+function nextLevel() {
+    if (s.level >= LEVELS.length - 1) { finish(true); return; }
+    var n = s.level + 1;
+    G.stageCard(n + 1, LEVELS[n].name, LEVELS[n].note, function () { loadLevel(n); });
+}
+
+function afterFail() {
+    G.setLives(G.lives - 1);
+    if (G.lives <= 0) { finish(false); return; }
+    var i = s.level;
+    var shown = s.answer;
+    // 換一個字再來。沿用同一個字的話，答案剛剛才被公布，
+    // 重來就是白送——生命值也就沒有意義了。
+    var pool = LEVELS[i].dup ? DUPWORDS : WORDS;
+    for (var k = 0; k < 200; k++) {
+        var w = pool[Math.floor(Math.random() * pool.length)];
+        if (s.answers.indexOf(w) === -1) { s.answers[i] = w; break; }
+    }
+    G.stageCard(i + 1, LEVELS[i].name, '答案是 ' + shown.toUpperCase() + '。換一個字再來。',
+        function () { loadLevel(i); });
+}
+
+// 可分享而不劇透的結果格：只說明你花了幾次，不說是哪個字
+function shareText() {
+    var lines = ['遊戲時光屋 · 字謎每日一題　' + s.score + ' 分'];
+    for (var i = 0; i < s.results.length; i++) {
+        var r = s.results[i];
+        lines.push('第 ' + (r.level + 1) + ' 題　' + (r.win ? r.rows.length + '/' + LEVELS[r.level].tries : 'X/' + LEVELS[r.level].tries));
+        for (var j = 0; j < r.rows.length; j++) {
+            if (!r.rows[j]) continue;
+            lines.push(r.rows[j].map(function (c) {
+                return c === 'g' ? '🟩' : (c === 'y' ? '🟨' : '⬛');
+            }).join(''));
+        }
+    }
+    return lines.join('\n');
+}
+
+function finish(win) {
+    var body = win
+        ? '五題全破，得分 ' + s.score + '。' +
+          '這款遊戲真正厲害的地方不在猜字，而在它敢限制你一天只能玩一次——' +
+          '稀缺讓每一次猜測值得慎重，也讓所有人今天有同一件事可以聊。'
+        : '這一輪到第 ' + (s.level + 1) + ' 題結束，得分 ' + s.score + '。' +
+          '原版沒有生命值，因為它一天只給你一題——玩不下去的懲罰是「等明天」，' +
+          '而那正是它讓人惦記的原因。';
+    G.gameOver({
+        win: win, score: s.score, body: body,
+        onRestart: null
+    });
+    // 在結算疊層補一顆「複製結果」——這張只有顏色的格子圖，
+    // 就是這款遊戲能在社群自我散播卻不劇透的關鍵
+    setTimeout(function () {
+        var row = G.overlayEl.querySelector('.rs-btn-row');
+        if (!row) return;
+        var btn = document.createElement('button');
+        btn.className = 'rs-btn ghost';
+        btn.textContent = '📋 複製結果格';
+        btn.onclick = function () {
+            var t = shareText();
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(t).then(function () { btn.textContent = '✓ 已複製'; },
+                    function () { btn.textContent = '複製失敗'; });
+            } else btn.textContent = '瀏覽器不支援';
+            RetroAudio.play('confirm');
+        };
+        row.appendChild(btn);
+    }, 60);
+}
+
+// ======================================================================
+// 版面
+// ======================================================================
+// 格子尺寸是算過的：六列 × (36+6) = 252，加上頂端 34 之後底部落在 286，
+// 而鍵盤頂端在 296。第一版用 46px 的格子，六列直接壓到鍵盤上面去。
+var CELL = 36, GAP = 6;
+var GRID_TOP = 34;
+function gridX(col) { return VW / 2 - (5 * CELL + 4 * GAP) / 2 + col * (CELL + GAP); }
+function gridY(row) { return GRID_TOP + row * (CELL + GAP); }
+
+var KEY_W = 36, KEY_H = 28, KEY_GAP = 4;
+function keyBoardTop() { return VH - 3 * (KEY_H + KEY_GAP) - 8; }
+function keyRect(r, c) {
+    var row = KEYROWS[r];
+    var widths = row.map(function (k) { return (k === 'ENT' || k === 'DEL') ? KEY_W * 1.5 : KEY_W; });
+    var total = widths.reduce(function (a, b) { return a + b; }, 0) + (row.length - 1) * KEY_GAP;
+    var x = VW / 2 - total / 2;
+    for (var i = 0; i < c; i++) x += widths[i] + KEY_GAP;
+    return { x: x, y: keyBoardTop() + r * (KEY_H + KEY_GAP), w: widths[c], h: KEY_H };
+}
+
+function pressKeyCell(r, c) {
+    var k = KEYROWS[r][c];
+    if (k === 'ENT') submit();
+    else if (k === 'DEL') backspace();
+    else typeLetter(k);
+}
+
+// ======================================================================
+// 主迴圈
+// ======================================================================
+function update(dt) {
+    if (!s) return;
+    P.update(dt); FT.update(dt);
+    if (s.msgT > 0) s.msgT -= dt;
+    if (s.bannerT > 0) s.bannerT -= dt;
+    for (var i = 0; i < s.rows.length; i++) if (s.rows[i].shake > 0) s.rows[i].shake -= dt;
+
+    // 逐格翻牌
+    if (s.revealRow >= 0) {
+        s.revealT += dt;
+        var want = Math.floor(s.revealT / 0.26);
+        var r = s.rows[s.revealRow];
+        while (r.reveal < want - 1 && r.reveal < 4) {
+            r.reveal++;
+            var st = r.res[r.reveal];
+            var cx = gridX(r.reveal) + CELL / 2, cy = gridY(s.revealRow) + CELL / 2;
+            if (st === 'g') {
+                RetroAudio.play('coin');
+                RE.juice.hitstop(0.05); RE.juice.shake(0.16);
+                P.burst(cx, cy, 12, { colors: ['#6aaa64', '#c7f0c0'], speedMin: 50, speedMax: 160,
+                    gravity: 180, lifeMin: 0.25, lifeMax: 0.5, glow: true });
+            } else if (st === 'y') {
+                RetroAudio.play('blip');
+                RE.juice.hitstop(0.025); RE.juice.shake(0.08);
+                P.burst(cx, cy, 8, { colors: ['#c9b458', '#f0e2a0'], speedMin: 35, speedMax: 110,
+                    gravity: 160, lifeMin: 0.2, lifeMax: 0.4 });
+            } else {
+                RetroAudio.play('step');
+            }
+        }
+        if (want > 5) afterReveal();
+        return;
+    }
+
+    // 過關／失敗的空窗期用自己的計時器倒數，不用 setTimeout。
+    // setTimeout 在分頁被切走或測試台同步跑幀時不會照預期觸發，
+    // 一旦沒觸發，s.done 會讓 update 永遠提早返回，遊戲就定格了。
+    if (s.done) {
+        s.doneT -= dt;
+        if (s.doneT <= 0) {
+            // 先清掉旗標再轉場，否則 doneT 會一路減成負數，
+            // 每一幀都再扣一次命（實測扣到 -209）
+            var d = s.done;
+            s.done = 0;
+            if (d === 1) nextLevel(); else afterFail();
+        }
+        return;
+    }
+
+    // 螢幕鍵盤：方向鍵移動、A 輸入、B 刪除
+    if (RE.Input.pressed('left')) { s.kx = (s.kx + KEYROWS[s.ky].length - 1) % KEYROWS[s.ky].length; RetroAudio.play('blip'); }
+    if (RE.Input.pressed('right')) { s.kx = (s.kx + 1) % KEYROWS[s.ky].length; RetroAudio.play('blip'); }
+    if (RE.Input.pressed('up')) { s.ky = (s.ky + 2) % 3; s.kx = Math.min(s.kx, KEYROWS[s.ky].length - 1); RetroAudio.play('blip'); }
+    if (RE.Input.pressed('down')) { s.ky = (s.ky + 1) % 3; s.kx = Math.min(s.kx, KEYROWS[s.ky].length - 1); RetroAudio.play('blip'); }
+    if (RE.Input.pressed('a')) pressKeyCell(s.ky, s.kx);
+    if (RE.Input.pressed('b')) backspace();
+
+    // 直接點螢幕鍵盤
+    var pt = RE.Input.pointer;
+    if (!pt.down && !pt.pressed) s.pointerDownSeen = false;
+    var freshPointer = pt.pressed || (pt.down && !s.pointerDownSeen);
+    if (freshPointer) {
+        s.pointerDownSeen = true;
+        var px = pt.x, py = pt.y;
+        for (var r2 = 0; r2 < 3; r2++) {
+            for (var c2 = 0; c2 < KEYROWS[r2].length; c2++) {
+                var k = keyRect(r2, c2);
+                if (px >= k.x && px <= k.x + k.w && py >= k.y && py <= k.y + k.h) {
+                    s.ky = r2; s.kx = c2;
+                    pressKeyCell(r2, c2);
+                    return;
+                }
+            }
+        }
+    }
+}
+
+// 實體鍵盤直接打字。
+//
+// 這裡有一個和外殼打架的地方：外殼把 P 當成暫停鍵，
+// 而這款遊戲的 P 是一個要打出來的字母（paper、prize、spend…）。
+// 解法是用捕獲階段先攔一次、記下「這一下是在打字」，
+// 再讓 togglePause 看到旗標就跳過——ESC 與暫停鈕不受影響，仍然能暫停。
+var typingKey = false;
+var baseToggle = Object.getPrototypeOf(G).togglePause;
+G.togglePause = function () {
+    if (typingKey) { typingKey = false; return; }
+    baseToggle.call(G);
+};
+
+window.addEventListener('keydown', function (e) {
+    typingKey = false;
+    if (!s || G.state() !== 'playing') return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (/^[a-zA-Z]$/.test(e.key)) typingKey = true;
+}, true);
+
+window.addEventListener('keydown', function (e) {
+    if (!s || G.state() !== 'playing') return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === 'Enter') { e.preventDefault(); submit(); return; }
+    if (e.key === 'Backspace') { e.preventDefault(); backspace(); return; }
+    if (/^[a-zA-Z]$/.test(e.key)) { e.preventDefault(); typeLetter(e.key.toLowerCase()); }
+});
+
+// ======================================================================
+// 繪製
+// ======================================================================
+var COL = { g: '#6aaa64', y: '#c9b458', x: '#3a3a3c' };
+
+function render() {
+    if (!s) return;
+    G.beginWorld();
+    ctx.fillStyle = '#121316';
+    ctx.fillRect(0, 0, VW, VH);
+    drawGrid();
+    drawKeyboard();
+    P.draw(ctx);
+    FT.draw(ctx);
+    G.endWorld();
+    drawOverlayText();
+    G.postFX({ scanAlpha: 0.05, vignetteStrength: 0.4 });
+}
+
+function drawGrid() {
+    for (var r = 0; r < s.rows.length; r++) {
+        var row = s.rows[r];
+        var sx = row.shake > 0 ? Math.sin(row.shake * 70) * 5 : 0;
+        for (var c = 0; c < 5; c++) {
+            var x = gridX(c) + sx, y = gridY(r);
+            var ch = row.word[c];
+            var revealed = row.res && (r !== s.revealRow || row.reveal >= c);
+            var st = revealed ? row.res[c] : null;
+
+            // 翻牌動畫：用 Y 軸縮放模擬卡片翻面
+            var sc = 1;
+            if (r === s.revealRow && row.reveal === c) {
+                var t = (s.revealT - c * 0.26) / 0.26;
+                sc = Math.abs(Math.cos(Math.min(1, Math.max(0, t)) * Math.PI));
+                sc = Math.max(0.08, sc);
+            }
+            ctx.save();
+            ctx.translate(x + CELL / 2, y + CELL / 2);
+            ctx.scale(1, sc);
+            if (st) {
+                ctx.fillStyle = COL[st];
+                RE.Draw.roundRect(ctx, -CELL / 2, -CELL / 2, CELL, CELL, 4); ctx.fill();
+            } else {
+                ctx.fillStyle = '#121316';
+                RE.Draw.roundRect(ctx, -CELL / 2, -CELL / 2, CELL, CELL, 4); ctx.fill();
+                ctx.strokeStyle = ch ? '#6a6c72' : '#3a3a3c';
+                ctx.lineWidth = 2;
+                RE.Draw.roundRect(ctx, -CELL / 2 + 1, -CELL / 2 + 1, CELL - 2, CELL - 2, 4); ctx.stroke();
+            }
+            if (ch) {
+                RE.Draw.text(ctx, ch.toUpperCase(), 0, -10,
+                    { size: 21, align: 'center', color: '#fff', stroke: false, font: '"Press Start 2P", monospace' });
+            }
+            ctx.restore();
+        }
+    }
+    // 提示字母的標記放在格子左邊，不要擠到鍵盤那一區
+    if (s.L.hint) {
+        RE.Draw.text(ctx, '提示 →', gridX(0) - 8, gridY(0) + CELL / 2 - 6,
+            { size: 10, align: 'right', color: 'rgba(255,255,255,0.4)', stroke: false });
+    }
+}
+
+function drawKeyboard() {
+    for (var r = 0; r < 3; r++) {
+        for (var c = 0; c < KEYROWS[r].length; c++) {
+            var k = KEYROWS[r][c], rc = keyRect(r, c);
+            var st = s.keyState[k];
+            ctx.fillStyle = st ? COL[st] : '#54565c';
+            RE.Draw.roundRect(ctx, rc.x, rc.y, rc.w, rc.h, 4); ctx.fill();
+            if (r === s.ky && c === s.kx) {
+                ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 2;
+                RE.Draw.roundRect(ctx, rc.x - 1, rc.y - 1, rc.w + 2, rc.h + 2, 5); ctx.stroke();
+            }
+            var label = k === 'ENT' ? '送出' : (k === 'DEL' ? '刪除' : k.toUpperCase());
+            RE.Draw.text(ctx, label, rc.x + rc.w / 2, rc.y + rc.h / 2 - 7,
+                { size: k.length > 1 ? 11 : 14, align: 'center', color: '#fff', stroke: false });
+        }
+    }
+}
+
+function drawOverlayText() {
+    if (s.msgT > 0) {
+        ctx.globalAlpha = Math.min(1, s.msgT);
+        ctx.fillStyle = 'rgba(240,240,240,0.95)';
+        var w = s.msg.length * 13 + 24;
+        RE.Draw.roundRect(ctx, VW / 2 - w / 2, 12, w, 24, 5); ctx.fill();
+        RE.Draw.text(ctx, s.msg, VW / 2, 18, { size: 12, align: 'center', color: '#121316', stroke: false });
+        ctx.globalAlpha = 1;
+    } else if (s.bannerT > 0) {
+        ctx.globalAlpha = Math.min(1, s.bannerT);
+        RE.Draw.text(ctx, s.banner, VW / 2, 14, { size: 15, align: 'center', color: '#ffd166' });
+        ctx.globalAlpha = 1;
+    }
+    if (s.done === -1) {
+        ctx.fillStyle = 'rgba(10,10,12,0.82)';
+        RE.Draw.roundRect(ctx, VW / 2 - 130, VH / 2 - 34, 260, 68, 8); ctx.fill();
+        RE.Draw.text(ctx, '答案是 ' + s.answer.toUpperCase(), VW / 2, VH / 2 - 24,
+            { size: 18, align: 'center', color: '#ff8f8f' });
+        RE.Draw.text(ctx, '扣一條命，這一題重來', VW / 2, VH / 2 + 6,
+            { size: 12, align: 'center', color: '#cfd6e4' });
+    }
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '猜出五個字母的英文單字。綠色＝字母與位置都對，黃色＝有這個字母但位置不對，' +
+          '灰色＝沒有這個字母。可以直接用鍵盤打字，或用方向鍵在螢幕鍵盤上移動、按 A 輸入。' +
+          '共五題，後面的題目猜測次數越少。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

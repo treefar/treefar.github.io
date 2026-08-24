@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>遊戲時光屋 ✦ 溪流跳躍者</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../engine/retro-shell.css">
+</head>
+<body>
+<script src="../../engine/retro-core.js"></script>
+<script src="../../engine/retro-audio.js"></script>
+<script src="../../engine/retro-shell.js"></script>
+<script>
+/* ==========================================================================
+   溪流跳躍者 — 致敬 Frogger (Konami, 1981)
+   --------------------------------------------------------------------------
+   復刻重點：
+   1. 這款遊戲的核心不是「移動」，而是「等待」。每條車道速度與間距不同，
+      玩家真正在做的事是讀出節奏、抓住縫隙——把等待變成主動行為，是它的天才之處。
+   2. 上半場是河流：水本身會殺死你，浮木反而是安全區。
+      同一個視覺空間，安全與危險的規則完全相反，玩家必須切換思考模式。
+   3. 五個窩巢必須全部填滿才過關，這讓玩家不能只走最安全的那條路線。
+   4. 難度來自「車道數量、速度、方向」的排列組合，而非數值膨脹。
+   ========================================================================== */
+
+var G = RetroShell.boot({
+    id: 'frogger',
+    title: '溪流跳躍者',
+    tagline: '把「等待」設計成主動技巧',
+    original: 'Frogger (Konami, 1981)',
+    decade: '80s', year: 1981, platform: '大型街機', genre: '動作／時機',
+    developer: 'Konami', bgm: '80s',
+    width: 448, height: 496,
+    lives: 3,
+    hud: [
+        { key: 'score', label: 'SCORE' },
+        { key: 'best', label: 'BEST' },
+        { key: 'level', label: 'LV', init: 1 },
+        { key: 'time', label: 'TIME', init: 45 }
+    ],
+    touch: 'dpad', maxScale: 2,
+    controls: [
+        { keys: ['↑', '↓', '←', '→'], desc: '一次跳一格' }
+    ],
+    howto: '把五隻青蛙都送進最上方的窩巢即可過關。<strong>下半場是馬路，碰到車就死；' +
+           '上半場是河流，碰到水就死、要踩在浮木和烏龜背上</strong>。' +
+           '烏龜會定期潛水，站在上面要注意。每隻青蛙有 45 秒時限。',
+    lesson: {
+        verb: '一次跳一格，在車流的空隙間穿越；抵達河流後改成追上並停留在會移動、甚至會下沉的平台。',
+        innovation: '用同一組四方向輸入串接兩套相反規則：道路上的移動物是威脅，河面上的移動物卻是唯一立足點。',
+        mission: '先在安全帶停下來觀察完整一輪車流與水流；送第一隻青蛙回家時，說出自己何時在「閃避移動物」、何時在「依附移動物」。',
+        evolution: '《Space Invaders》讓玩家在單一水平線閃避；《Frogger》把危險拆成多條不同速度的時間帶，《Crossy Road》再將過街節奏改造成無盡、立體的短局。',
+        reflection: '如果公路與河流都只要避開移動物，或都只要踩著移動物前進，穿越中線時還會產生明顯的思考切換嗎？'
+    },
+    design: '《Frogger》解決的問題是：如何用同一組極簡輸入，迫使玩家連續切換兩套相反的判斷。關卡像一張由多條時間軸疊成的地圖。青蛙一次只跳一格，難度來自每一車道、每一水道都有不同方向、速度、長度與空隙。' +
+            '公路要求等待空格再切入，車輛是致命邊界；河流卻反過來要求追上浮木或烏龜，水面空格才是死亡。' +
+            '玩家跨過中央安全帶時，必須在完全相同的視覺運動中交換「避開」與「依附」兩套判準。' +
+            '本站以五個窩巢、45 秒倒數、會潛水的烏龜和逐關變化的車流／水流保留這種節奏閱讀，並用清楚的格線、落點提示與漂流補正降低畫面誤讀。' +
+            '現代化不是替玩家取消判斷，而是讓每次死亡都能回指到可觀察的速度、路線或等待時機。',
+    history: 'Konami 官方資料記錄《Frogger》是 1981 年推出的大型街機動作遊戲，目標是在時間內引導青蛙穿過車流、鱷魚與蛇出沒的河面回到家。' +
+             'The Strong 的館藏資料補充：作品由日本 Konami 開發，Sega／Gremlin 於 1981 年在美國發行；它刻意偏離當時常見的太空射擊與迷宮追逐題材。' +
+             '玩家要送回五隻青蛙，之後車速與敵人密度提高，並能藉雌蛙與蒼蠅取得額外分數。' +
+             '它的重要性不在「青蛙」造型本身，而在把日常交通轉譯成可反覆辨識的多車道時間系統。',
+    sources: [
+        { label: 'Konami：《Frogger》官方遊戲概要', url: 'https://www.konami.com/games/jp/ja/products/dl_frogger_arcade_c/' },
+        { label: 'The Strong：《Frogger》街機館藏資料', url: 'https://artsandculture.google.com/asset/arcade-game-frogger/VwFdTWvOkRkBdg?hl=en' }
+    ]
+});
+
+var ctx = G.ctx, W = G.width, H = G.height;
+var P = new RE.Particles(360);
+var FT = new RE.FloatText();
+
+var COLS = 14, CELL = 32;
+var ROWS = 15;
+var GRID_X = (W - COLS * CELL) / 2;
+var GRID_Y = 24;
+
+function rowY(r) { return GRID_Y + r * CELL; }
+
+// 每關的車道／河道配置。速度為正往右，負往左。
+var LEVELS = [
+    { time: 45, name: '第一條街',
+      road: [{ r: 12, spd: 62, gap: 150, len: 2 }, { r: 11, spd: -78, gap: 170, len: 1 },
+             { r: 10, spd: 92, gap: 200, len: 1 }, { r: 9, spd: -56, gap: 140, len: 3 }],
+      /* 五列的速度**加起來要接近 0**，不是「有正有負看起來交替」就好。
+         第一版是 +52 −64 +78 −46 +66，方向確實交替，但淨值是 **+86 往右**：
+         青蛙從中央的 col 6～7 出發，一路被往右帶，
+         而窩巢在 col 1／4／7／10／13——最左邊那個離出發點六格又逆著漂流，
+         **實測三場全部填不到**（最終窩巢固定是 01110／00100／00000）。
+         給更多時間也沒用（時限拉到 90 秒反而更差），因為那不是「太慢」
+         而是「到不了」。
+         把最上面那列改成 −20 之後淨值歸零，i=0 三場全部填得到。
+         最上面那列慢一點還有額外好處：那是最接近窩巢的一列，
+         漂得慢才對得準。 */
+      river: [{ r: 6, spd: 52, gap: 170, len: 3, type: 'log' },
+              { r: 5, spd: -64, gap: 150, len: 2, type: 'turtle' },
+              { r: 4, spd: 78, gap: 210, len: 4, type: 'log' },
+              { r: 3, spd: -46, gap: 160, len: 2, type: 'turtle' },
+              { r: 2, spd: -20, gap: 190, len: 3, type: 'log' }] },
+    { time: 42, name: '尖峰時段',
+      road: [{ r: 12, spd: 78, gap: 130, len: 2 }, { r: 11, spd: -96, gap: 150, len: 1 },
+             { r: 10, spd: 112, gap: 175, len: 1 }, { r: 9, spd: -70, gap: 125, len: 3 }],
+      river: [{ r: 6, spd: 64, gap: 150, len: 3, type: 'log' },
+              { r: 5, spd: -80, gap: 135, len: 2, type: 'turtle' },
+              { r: 4, spd: 92, gap: 190, len: 3, type: 'log' },
+              { r: 3, spd: -58, gap: 145, len: 2, type: 'turtle' },
+              { r: 2, spd: -18, gap: 170, len: 2, type: 'log' }] },
+    { time: 40, name: '雨夜',
+      road: [{ r: 12, spd: 92, gap: 120, len: 2 }, { r: 11, spd: -110, gap: 140, len: 1 },
+             { r: 10, spd: 130, gap: 165, len: 1 }, { r: 9, spd: -86, gap: 115, len: 2 }],
+      river: [{ r: 6, spd: 76, gap: 145, len: 2, type: 'log' },
+              { r: 5, spd: -94, gap: 125, len: 2, type: 'turtle' },
+              { r: 4, spd: 106, gap: 180, len: 3, type: 'log' },
+              { r: 3, spd: -68, gap: 135, len: 2, type: 'turtle' },
+              { r: 2, spd: -20, gap: 160, len: 2, type: 'log' }] },
+    { time: 38, name: '深夜幹道',
+      road: [{ r: 12, spd: 106, gap: 112, len: 2 }, { r: 11, spd: -126, gap: 130, len: 1 },
+             { r: 10, spd: 148, gap: 155, len: 1 }, { r: 9, spd: -100, gap: 108, len: 2 }],
+      river: [{ r: 6, spd: 88, gap: 140, len: 2, type: 'log' },
+              { r: 5, spd: -108, gap: 118, len: 2, type: 'turtle' },
+              { r: 4, spd: 120, gap: 172, len: 2, type: 'log' },
+              { r: 3, spd: -80, gap: 128, len: 2, type: 'turtle' },
+              { r: 2, spd: -20, gap: 152, len: 2, type: 'log' }] },
+    { time: 35, name: '最後的歸途',
+      road: [{ r: 12, spd: 120, gap: 105, len: 2 }, { r: 11, spd: -142, gap: 122, len: 1 },
+             { r: 10, spd: 165, gap: 148, len: 1 }, { r: 9, spd: -116, gap: 100, len: 2 }],
+      river: [{ r: 6, spd: 100, gap: 132, len: 2, type: 'log' },
+              { r: 5, spd: -122, gap: 112, len: 1, type: 'turtle' },
+              { r: 4, spd: 136, gap: 165, len: 2, type: 'log' },
+              { r: 3, spd: -92, gap: 120, len: 2, type: 'turtle' },
+              { r: 2, spd: -22, gap: 145, len: 2, type: 'log' }] }
+];
+
+var CAR_COLORS = ['#ff6b6b', '#ffd166', '#c084fc', '#7dd3fc', '#ff9ebb'];
+
+var s = {};
+
+function buildLanes(cfg) {
+    var lanes = [];
+    function make(def, kind) {
+        var items = [];
+        var span = def.gap + def.len * CELL;
+        var count = Math.ceil((W + span * 2) / span);
+        for (var i = 0; i < count; i++) {
+            items.push({
+                x: -span + i * span + RE.rand(-14, 14),
+                len: def.len * CELL,
+                color: CAR_COLORS[(def.r + i) % CAR_COLORS.length],
+                dive: kind === 'river' && def.type === 'turtle' ? RE.rand(0, 6) : -1
+            });
+        }
+        lanes.push({ r: def.r, spd: def.spd, kind: kind, type: def.type || 'car', items: items, span: span });
+    }
+    cfg.road.forEach(function (d) { make(d, 'road'); });
+    cfg.river.forEach(function (d) { make(d, 'river'); });
+    return lanes;
+}
+
+function reset() {
+    s = { level: 1, lives: 3, score: 0, over: false };
+    loadLevel(1);
+    G.setStat('score', 0); G.setLives(3);
+}
+
+function loadLevel(n) {
+    var cfg = LEVELS[Math.min(n - 1, LEVELS.length - 1)];
+    s.cfg = cfg;
+    s.level = n;
+    s.lanes = buildLanes(cfg);
+    s.nests = [false, false, false, false, false];
+    s.clearTimer = 0;
+    respawn();
+    G.setStat('level', n);
+}
+
+function respawn() {
+    s.f = { col: Math.floor(COLS / 2), row: 14, x: 0, y: 0, hop: 0,
+            fromX: 0, fromY: 0, toX: 0, toY: 0, dir: 'up', dead: 0, onLane: null };
+    s.f.x = GRID_X + s.f.col * CELL;
+    s.f.y = rowY(s.f.row);
+    s.time = s.cfg.time;
+    s.maxRow = 14;
+    G.setStat('time', Math.ceil(s.time));
+}
+
+// ======================================================================
+function update(dt) {
+    if (s.over) return;
+
+    if (s.clearTimer > 0) {
+        s.clearTimer -= dt;
+        P.update(dt); FT.update(dt);
+        if (s.clearTimer <= 0) nextLevel();
+        return;
+    }
+
+    // ---- 車道移動 ----
+    for (var i = 0; i < s.lanes.length; i++) {
+        var L = s.lanes[i];
+        for (var k = 0; k < L.items.length; k++) {
+            var it = L.items[k];
+            it.x += L.spd * dt;
+            if (L.spd > 0 && it.x > W + 40) it.x -= L.span * L.items.length;
+            if (L.spd < 0 && it.x + it.len < -40) it.x += L.span * L.items.length;
+            // 烏龜潛水：週期性消失，站在上面會落水
+            if (it.dive >= 0) {
+                it.dive += dt;
+                if (it.dive > 7) it.dive = 0;
+            }
+        }
+    }
+
+    var f = s.f;
+
+    if (f.dead > 0) {
+        f.dead -= dt;
+        P.update(dt); FT.update(dt);
+        if (f.dead <= 0) afterDeath();
+        return;
+    }
+
+    // ---- 計時 ----
+    s.time -= dt;
+    var shown = Math.ceil(s.time);
+    if (shown !== s.lastTime) {
+        s.lastTime = shown;
+        G.setStat('time', Math.max(0, shown));
+        if (shown === 10) { RetroAudio.play('error'); FT.add(f.x + CELL / 2, f.y - 20, '剩 10 秒！', { color: '#ff6b6b', size: 15, life: 1.4 }); }
+    }
+    if (s.time <= 0) { die('時間到'); return; }
+
+    // ---- 跳躍動畫 ----
+    if (f.hop > 0) {
+        f.hop -= dt * 6.5;
+        if (f.hop <= 0) {
+            f.hop = 0;
+            f.x = f.toX; f.y = f.toY;
+        } else {
+            var t = 1 - f.hop;
+            f.x = RE.lerp(f.fromX, f.toX, t);
+            f.y = RE.lerp(f.fromY, f.toY, t);
+        }
+    } else {
+        // ---- 輸入：一次一格 ----
+        var d = null;
+        if (RE.Input.pressed('up')) d = [0, -1, 'up'];
+        else if (RE.Input.pressed('down')) d = [0, 1, 'down'];
+        else if (RE.Input.pressed('left')) d = [-1, 0, 'left'];
+        else if (RE.Input.pressed('right')) d = [1, 0, 'right'];
+
+        if (d) {
+            var nc = f.col + d[0], nr = f.row + d[1];
+            if (nc >= 0 && nc < COLS && nr >= 0 && nr <= 14) {
+                f.fromX = f.x; f.fromY = f.y;
+                f.col = nc; f.row = nr;
+                f.toX = GRID_X + nc * CELL;
+                f.toY = rowY(nr);
+                f.hop = 1;
+                f.dir = d[2];
+                f.onLane = null;
+                RetroAudio.play('jump');
+                RE.juice.shake(0.05);
+                P.burst(f.x + CELL / 2, f.y + CELL - 4, 4, {
+                    colors: ['#a7f3d0'], speedMin: 20, speedMax: 70,
+                    gravity: 180, lifeMin: 0.1, lifeMax: 0.24, sizeMax: 2.5
+                });
+                // 往前推進才給分，避免來回刷分
+                if (nr < s.maxRow) {
+                    s.maxRow = nr;
+                    addScore(10);
+                }
+            }
+        }
+    }
+
+    // ---- 判定所在區域 ----
+    var lane = null;
+    for (var i = 0; i < s.lanes.length; i++) if (s.lanes[i].r === f.row) { lane = s.lanes[i]; break; }
+
+    if (f.hop === 0) {
+        if (f.row === 1) {
+            // 窩巢列
+            checkNest();
+        } else if (lane && lane.kind === 'road') {
+            for (var k = 0; k < lane.items.length; k++) {
+                var it = lane.items[k];
+                if (f.x + 8 < it.x + it.len && f.x + CELL - 8 > it.x) { die('被車撞到'); return; }
+            }
+        } else if (lane && lane.kind === 'river') {
+            var riding = null;
+            for (var k = 0; k < lane.items.length; k++) {
+                var it = lane.items[k];
+                if (it.dive >= 0 && it.dive > 5.2) continue;   // 潛水中不能踩
+                if (f.x + CELL / 2 > it.x && f.x + CELL / 2 < it.x + it.len) { riding = it; break; }
+            }
+            if (!riding) { die('掉進水裡'); return; }
+            // 隨浮木漂移
+            f.x += lane.spd * dt;
+            f.toX = f.x;
+            if (f.x < GRID_X - CELL / 2 || f.x > GRID_X + COLS * CELL - CELL / 2) {
+                die('被沖出畫面'); return;
+            }
+            f.col = Math.round((f.x - GRID_X) / CELL);
+        } else if (f.row === 7 || f.row === 13) {
+            // 安全島，什麼都不做
+        }
+    }
+
+    P.update(dt);
+    FT.update(dt);
+}
+
+function checkNest() {
+    var f = s.f;
+    // 五個窩巢均勻分布
+    for (var i = 0; i < 5; i++) {
+        var nx = GRID_X + (i * 3 + 1) * CELL;
+        if (Math.abs(f.x - nx) < CELL * 0.7) {
+            if (s.nests[i]) { die('窩巢已經有青蛙了'); return; }
+            s.nests[i] = true;
+            var timeBonus = Math.floor(s.time) * 20;
+            addScore(500 + timeBonus);
+            RetroAudio.play('powerup');
+            RE.juice.flash('rgba(112,228,181,0.3)', 0.14);
+            RE.juice.impact(2);
+            FT.add(nx + CELL / 2, rowY(1), '回家了！+' + (500 + timeBonus),
+                { color: '#70e4b5', size: 16, life: 1.4 });
+            P.burst(nx + CELL / 2, rowY(1) + CELL / 2, 20, {
+                colors: ['#70e4b5', '#a7f3d0', '#ffd166'], speedMin: 50, speedMax: 180,
+                gravity: 200, lifeMin: 0.3, lifeMax: 0.7
+            });
+            P.ring(nx + CELL / 2, rowY(1) + CELL / 2, '#70e4b5', 48);
+
+            if (s.nests.every(function (n) { return n; })) { clearLevel(); return; }
+            respawn();
+            return;
+        }
+    }
+    die('撞到窩巢之間的草叢');
+}
+
+function die(reason) {
+    var f = s.f;
+    if (f.dead > 0) return;
+    f.dead = 1.2;
+    s.deathReason = reason;
+    s.lives--;
+    G.setLives(s.lives);
+    RE.juice.impact(3);
+    RE.juice.slowmo(0.35, 0.7);
+    RetroAudio.play('hurt');
+    FT.add(f.x + CELL / 2, f.y - 14, reason, { color: '#ff6b6b', size: 13, life: 1.2 });
+    P.burst(f.x + CELL / 2, f.y + CELL / 2, 20, { colors: ['#70e4b5', '#ff6b6b', '#fff8e7'],
+        speedMin: 45, speedMax: 180, gravity: 260, lifeMin: 0.25, lifeMax: 0.6 });
+}
+
+function afterDeath() {
+    if (s.lives <= 0) {
+        s.over = true;
+        var done = s.nests.filter(function (n) { return n; }).length;
+        G.gameOver({ score: s.score,
+            body: '停在第 ' + s.level + ' 關「' + s.cfg.name + '」，送回 ' + done + ' / 5 隻青蛙。' +
+                  '（' + s.deathReason + '）別急著跳——先站著讀出車道的節奏。' });
+        return;
+    }
+    respawn();
+}
+
+function addScore(n) { s.score += n; G.setStat('score', s.score); }
+
+function clearLevel() {
+    s.clearTimer = 2;
+    addScore(1000 * s.level);
+    RetroAudio.play('win');
+    RE.juice.flash('rgba(255,209,102,0.35)', 0.2);
+    FT.add(W / 2, H / 2, '全員歸巢！', { color: '#ffd166', size: 24, life: 2 });
+    P.burst(W / 2, H / 2, 40, { colors: ['#70e4b5', '#ffd166', '#ff9ebb'],
+        speedMin: 60, speedMax: 250, gravity: 250, lifeMin: 0.5, lifeMax: 1.2 });
+}
+
+function nextLevel() {
+    var n = s.level + 1;
+    RE.Save.unlockLevel('frogger', n);
+    if (n > LEVELS.length) {
+        s.over = true;
+        G.gameOver({ score: s.score, win: true,
+            body: '五關全部歸巢。你已經學會這款遊戲真正的技巧——不是跳得快，而是等得準。' });
+        return;
+    }
+    loadLevel(n);
+    G.stageCard(n, s.cfg.name, '車速提升、間距縮小　✦ 時限 ' + s.cfg.time + ' 秒');
+}
+
+// ======================================================================
+function render() {
+    G.clear('#0a1014');
+    G.beginWorld();
+
+    // 區域底色
+    ctx.fillStyle = '#0e3a2e';                    // 上方草地
+    ctx.fillRect(GRID_X, rowY(0), COLS * CELL, CELL * 2);
+    ctx.fillStyle = '#123a5c';                    // 河流
+    ctx.fillRect(GRID_X, rowY(2), COLS * CELL, CELL * 5);
+    ctx.fillStyle = '#1d4d3a';                    // 中央安全島
+    ctx.fillRect(GRID_X, rowY(7), COLS * CELL, CELL);
+    ctx.fillStyle = '#2a2a2e';                    // 馬路
+    ctx.fillRect(GRID_X, rowY(8), COLS * CELL, CELL * 5);
+    ctx.fillStyle = '#1d4d3a';                    // 起點草地
+    ctx.fillRect(GRID_X, rowY(13), COLS * CELL, CELL * 2);
+
+    // 河面波紋
+    ctx.save();
+    ctx.globalAlpha = 0.16;
+    ctx.strokeStyle = '#7dd3fc';
+    ctx.lineWidth = 1.5;
+    for (var r = 2; r <= 6; r++) {
+        ctx.beginPath();
+        for (var x = 0; x <= COLS * CELL; x += 8) {
+            var yy = rowY(r) + CELL / 2 + Math.sin((x + performance.now() * 0.05 + r * 40) / 22) * 3;
+            if (x === 0) ctx.moveTo(GRID_X + x, yy); else ctx.lineTo(GRID_X + x, yy);
+        }
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // 車道分隔線
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.setLineDash([12, 12]);
+    ctx.lineWidth = 2;
+    for (var r = 9; r <= 12; r++) {
+        ctx.beginPath();
+        ctx.moveTo(GRID_X, rowY(r)); ctx.lineTo(GRID_X + COLS * CELL, rowY(r));
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // 窩巢
+    for (var i = 0; i < 5; i++) {
+        var nx = GRID_X + (i * 3 + 1) * CELL;
+        ctx.fillStyle = s.nests[i] ? '#1d5c44' : '#06251c';
+        RE.Draw.roundRect(ctx, nx, rowY(1) + 3, CELL, CELL - 6, 7);
+        ctx.fill();
+        ctx.strokeStyle = s.nests[i] ? '#70e4b5' : '#2f6b56';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        if (s.nests[i]) drawFrog(nx, rowY(1) + 3, 0.8);
+    }
+    // 窩巢之間的草叢（會擋人）
+    ctx.fillStyle = '#0a2a1e';
+    for (var c = 0; c < COLS; c++) {
+        var isNest = false;
+        for (var i = 0; i < 5; i++) if (c === i * 3 + 1) isNest = true;
+        if (!isNest) ctx.fillRect(GRID_X + c * CELL, rowY(1), CELL, CELL);
+    }
+
+    // 車與浮木
+    for (var i = 0; i < s.lanes.length; i++) {
+        var L = s.lanes[i];
+        for (var k = 0; k < L.items.length; k++) {
+            var it = L.items[k];
+            var y = rowY(L.r);
+            if (L.kind === 'road') drawCar(it, y, L.spd);
+            else if (L.type === 'log') drawLog(it, y);
+            else drawTurtles(it, y);
+        }
+    }
+
+    // 青蛙
+    if (s.f.dead <= 0 || Math.floor(s.f.dead * 12) % 2 === 0) {
+        drawFrog(s.f.x, s.f.y, 1, s.f.dir, s.f.hop);
+    }
+
+    P.draw(ctx);
+    FT.draw(ctx);
+
+    // 時間條
+    var tw = COLS * CELL, ratio = RE.clamp(s.time / s.cfg.time, 0, 1);
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillRect(GRID_X, H - 16, tw, 8);
+    ctx.fillStyle = ratio > 0.4 ? '#70e4b5' : (ratio > 0.18 ? '#ffd166' : '#ff6b6b');
+    ctx.fillRect(GRID_X, H - 16, tw * ratio, 8);
+    RE.Draw.text(ctx, '剩餘窩巢 ' + s.nests.filter(function (n) { return !n; }).length,
+        GRID_X, H - 34, { size: 12, color: '#a7f3d0' });
+
+    G.endWorld();
+    G.postFX({ scanAlpha: 0.08, vignetteStrength: 0.42 });
+}
+
+function drawCar(it, y, spd) {
+    ctx.save();
+    ctx.fillStyle = it.color;
+    RE.Draw.roundRect(ctx, it.x, y + 5, it.len, CELL - 10, 5);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.fillRect(it.x + 5, y + 8, it.len - 10, 5);
+    // 車頭燈方向提示玩家車流方向
+    ctx.fillStyle = '#fff0aa';
+    ctx.fillRect(spd > 0 ? it.x + it.len - 4 : it.x, y + CELL / 2 - 3, 4, 6);
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(it.x + 3, y + CELL - 8, 6, 3);
+    ctx.fillRect(it.x + it.len - 9, y + CELL - 8, 6, 3);
+    ctx.restore();
+}
+
+function drawLog(it, y) {
+    ctx.fillStyle = '#6a3f22';
+    RE.Draw.roundRect(ctx, it.x, y + 6, it.len, CELL - 12, 8);
+    ctx.fill();
+    ctx.strokeStyle = '#4a2a14';
+    ctx.lineWidth = 1.5;
+    for (var x = it.x + 12; x < it.x + it.len - 6; x += 16) {
+        ctx.beginPath();
+        ctx.moveTo(x, y + 8); ctx.lineTo(x, y + CELL - 8);
+        ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.fillRect(it.x + 4, y + 8, it.len - 8, 3);
+}
+
+function drawTurtles(it, y) {
+    var n = Math.round(it.len / CELL);
+    // 潛水階段：先閃爍警告再消失，玩家才有機會反應
+    var diving = it.dive > 5.2;
+    var warning = it.dive > 4.2 && !diving;
+    if (diving) return;
+    for (var i = 0; i < n; i++) {
+        var cx2 = it.x + i * CELL + CELL / 2;
+        ctx.save();
+        if (warning && Math.floor(it.dive * 8) % 2 === 0) ctx.globalAlpha = 0.4;
+        ctx.fillStyle = '#2d7a4a';
+        ctx.beginPath(); ctx.arc(cx2, y + CELL / 2, 12, 0, RE.TAU); ctx.fill();
+        ctx.fillStyle = '#1a5c33';
+        ctx.beginPath(); ctx.arc(cx2, y + CELL / 2, 8, 0, RE.TAU); ctx.fill();
+        ctx.fillStyle = '#5cb87a';
+        ctx.beginPath(); ctx.arc(cx2 - 12, y + CELL / 2, 4, 0, RE.TAU); ctx.fill();
+        ctx.restore();
+    }
+}
+
+function drawFrog(x, y, scale, dir, hop) {
+    ctx.save();
+    ctx.translate(x + CELL / 2, y + CELL / 2);
+    var rot = { up: 0, right: Math.PI / 2, down: Math.PI, left: -Math.PI / 2 }[dir || 'up'];
+    ctx.rotate(rot);
+    // 跳躍中放大，落地時壓扁——squash & stretch 讓移動有生命感
+    var sc = scale * (hop ? 1 + Math.sin((1 - hop) * Math.PI) * 0.25 : 1);
+    ctx.scale(sc, sc);
+    ctx.fillStyle = '#70e4b5';
+    RE.Draw.roundRect(ctx, -9, -8, 18, 16, 6); ctx.fill();
+    ctx.fillStyle = '#4ec49a';
+    RE.Draw.roundRect(ctx, -12, -2, 6, 10, 3); ctx.fill();
+    RE.Draw.roundRect(ctx, 6, -2, 6, 10, 3); ctx.fill();
+    ctx.fillStyle = '#fff8e7';
+    ctx.beginPath(); ctx.arc(-4, -7, 3.5, 0, RE.TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(4, -7, 3.5, 0, RE.TAU); ctx.fill();
+    ctx.fillStyle = '#0a2a1e';
+    ctx.beginPath(); ctx.arc(-4, -8, 1.8, 0, RE.TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(4, -8, 1.8, 0, RE.TAU); ctx.fill();
+    ctx.restore();
+}
+
+// ======================================================================
+G.on('restart', function () { reset(); });
+reset();
+G.run(update, render);
+G.showTitle({
+    body: '把五隻青蛙都送進上方窩巢。下半場碰到車就死，上半場碰到水就死——規則會在中途翻轉。',
+    onStart: function () { reset(); }
+});
+</script>
+</body>
+</html>

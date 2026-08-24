@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "kind": "runtime-integrated-art-candidate",
+  "status": "final-gate-pending",
+  "countedInLedger": false,
+  "game": "suika",
+  "set": "set-11-contemporary-tabletop",
+  "tool": "Codex built-in ImageGen",
+  "model": "ImageGen（服務端版本未揭露）",
+  "generatedAt": "2026-08-24",
+  "prompt": "art-production/final-sweep/set-11-contemporary-tabletop/prompt-v001.md",
+  "source": "art-production/final-sweep/set-11-contemporary-tabletop/source/atlas-v001-imagegen.png",
+  "sourceSha256": "6ce79dcf554f0fd649841a2bbfc63496652a8b688c49f63d5b69d9caad9ea341",
+  "postprocess": "模型 alpha 保留、連通物件裁切、等比例縮放、透明留白與圖集排版；未補畫內容。Set 05 依固定格裁切保留模型背景，實際呈現以圓角裁切避免方形貼紙感。",
+  "atlas": "final-sweep-atlas.png",
+  "atlasSha256": "7e238b20e40388bb367acd67c43241f0f58c80c20c4aaa63cd1e8d0ff001baec",
+  "cellWidth": 128,
+  "cellHeight": 128,
+  "assets": {
+    "fruit_set": {
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "水果套組"
+    },
+    "plum_squash": {
+      "index": 1,
+      "x": 128,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "碰撞幀"
+    },
+    "pear_merge": {
+      "index": 2,
+      "x": 256,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "合併幀"
+    },
+    "basket_corner": {
+      "index": 3,
+      "x": 384,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "label": "容器材質"
+    },
+    "chain_sparkle": {
+      "index": 4,
+      "x": 0,
+      "y": 128,
+      "w": 128,
+      "h": 128,
+      "label": "連鎖演出"
+    },
+    "melon_goal": {
+      "index": 5,
+      "x": 128,
+      "y": 128,
+      "w": 128,
+      "h": 128,
+      "label": "目標插圖"
+    },
+    "retry_puff": {
+      "index": 6,
+      "x": 256,
+      "y": 128,
+      "w": 128,
+      "h": 128,
+      "label": "重試演出"
+    }
+  },
+  "runtimePresentation": "RetroShell 開場的美術圖譜層；正常流程可見，不介入遊戲亂數、碰撞或更新。",
+  "qa": {
+    "assetCount": 7,
+    "edgePixels": 0,
+    "emptyCells": 0,
+    "humanFinalGate": false
+  }
+}
