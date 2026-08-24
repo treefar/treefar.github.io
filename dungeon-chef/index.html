@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>地窖大廚 — 精準切割卡牌迷宮</title>
+<link rel="icon" type="image/png" href="assets/face/idle.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app" class="pal-f1">
+
+  <!-- ============ 左側欄 ============ -->
+  <aside id="sidebar">
+    <div id="zone-row">
+      <div>
+        <div id="zone-name">儲糧地窖</div>
+        <div id="floor-tag">第 1 / 3 層</div>
+      </div>
+      <div class="zone-icons">
+        <span id="btn-deck" title="查看牌組（D）">🃏</span>
+        <span id="btn-menu" title="選單（ESC）">⚙️</span>
+      </div>
+    </div>
+
+    <div id="map-panel">
+      <div id="map-track"></div>
+    </div>
+
+    <div id="portrait-box" data-mood="idle">
+      <img id="portrait-img" src="assets/face/idle.png" alt="哥布林大廚" draggable="false">
+    </div>
+
+    <div id="hp-row">
+      <span class="hp-heart">🍖</span>
+      <div id="hp-bar"><div id="hp-fill"></div><span id="hp-text">72/72</span></div>
+    </div>
+
+    <div id="lunchbox"></div>
+
+    <div id="wallet">
+      <span id="gold-chip">🪙 <b id="gold-num">0</b></span>
+      <span id="parts-chip">🥩 <b id="parts-num">0</b></span>
+    </div>
+  </aside>
+
+  <!-- ============ 主視圖 ============ -->
+  <main id="view">
+    <div id="relic-bar"></div>
+    <div id="toast-box"></div>
+
+    <!-- 偽 3D 走廊 -->
+    <div id="corridor">
+      <div id="corridor-bg"></div>
+      <div class="wall wall-back"></div>
+      <div class="wall wall-left"></div>
+      <div class="wall wall-right"></div>
+      <div class="wall wall-ceil"></div>
+      <div class="wall wall-floor"></div>
+      <div class="torch torch-l">🔥</div>
+      <div class="torch torch-r">🔥</div>
+      <div id="corridor-objects"></div>
+      <div id="player-sprite" aria-hidden="true"></div>
+      <div id="enemy-stage"></div>
+      <div id="dark-veil"></div>
+    </div>
+
+    <!-- 持握的手 -->
+    <div id="hands">
+      <div id="hand-torch"><span class="hand-emoji">🫲</span><span class="torch-flame">🔥</span></div>
+      <div id="hand-knife"><span class="hand-emoji">🫱</span><span class="knife">🔪</span></div>
+    </div>
+
+    <div id="prompt-hint"></div>
+
+    <!-- 戰鬥 UI -->
+    <div id="battle-ui" class="hidden">
+      <div id="energy-orb"><span id="energy-num">3/3</span>⚡</div>
+      <div id="draw-pile" title="抽牌堆">🂠<b id="draw-num">0</b></div>
+      <div id="hand-cards"></div>
+      <div id="discard-pile" title="棄牌堆">🂠<b id="discard-num">0</b></div>
+      <button id="btn-endturn">結束回合 <span class="kbd-mini">SPACE</span></button>
+      <div id="player-status"></div>
+    </div>
+
+    <div id="fx-layer"></div>
+
+    <!-- ====== 覆蓋層 ====== -->
+
+    <!-- 開飯 -->
+    <div id="overlay-eat" class="overlay hidden">
+      <div class="ov-title">開飯再戰？<span class="sub">吃下的料理只在這一場有效</span></div>
+      <div id="eat-meals" class="meal-row"></div>
+      <button class="ov-skip" id="btn-eat-skip">餓著肚子上</button>
+    </div>
+
+    <!-- 營火主選單 -->
+    <div id="overlay-campfire" class="overlay hidden">
+      <div class="camp-panel">
+        <div class="cook-fire">🪵🔥🍳</div>
+        <div class="ov-title">營火<span class="sub">烹飪可用兩次；休息與磨刀共用一次機會</span></div>
+        <div id="campfire-opts" class="camp-row"></div>
+        <button id="btn-campfire-leave" class="ov-skip">離開營火</button>
+      </div>
+    </div>
+
+    <!-- 烹飪 -->
+    <div id="overlay-cook" class="overlay hidden">
+      <div class="cook-panel">
+        <div class="ov-title">下鍋<span id="cook-count"></span></div>
+        <div class="cook-pick">
+          <div><div class="pick-label">怪物部位</div><div id="cook-parts" class="chip-row"></div></div>
+          <div><div class="pick-label">植物香料</div><div id="cook-plants" class="chip-row"></div></div>
+        </div>
+        <div id="recipe-preview"></div>
+        <div id="cook-bar-wrap" class="hidden">
+          <div id="cook-bar">
+            <div class="zone zone-raw">生</div><div class="zone zone-cooked">熟</div>
+            <div class="zone zone-perfect">完美</div><div class="zone zone-charred">焦</div>
+            <div id="cook-needle"></div>
+          </div>
+          <div class="cook-tip">按【空白鍵】或點擊起鍋！</div>
+        </div>
+        <div class="ov-btns">
+          <button id="btn-cook-fire" disabled>下鍋！</button>
+          <button id="btn-cook-leave" class="ov-skip">回到營火</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 柏青哥 -->
+    <div id="overlay-pachinko" class="overlay hidden">
+      <div class="pachinko-panel">
+        <div class="ov-title">部落青哥 <span class="sub">丟進多餘的食材，看它滾！中間大獎最窄</span></div>
+        <div class="pachinko-flex">
+          <canvas id="pachinko-canvas" width="380" height="440"></canvas>
+          <div id="pachinko-parts" class="chip-col"></div>
+        </div>
+        <button id="btn-pachinko-leave" class="ov-skip">離開</button>
+      </div>
+    </div>
+
+    <!-- 商店 -->
+    <div id="overlay-shop" class="overlay hidden">
+      <div class="shop-panel">
+        <div class="shop-head">
+          <div class="ov-title">🛒 廚具商販</div>
+          <div id="shop-gold" class="shop-gold"></div>
+        </div>
+        <div class="shop-body">
+          <div class="shop-sec">卡牌</div>
+          <div id="shop-cards" class="shop-cardrow"></div>
+          <div class="shop-sec">遺物</div>
+          <div id="shop-relics" class="shop-list"></div>
+          <div class="shop-sec">食材</div>
+          <div id="shop-food" class="shop-foodrow"></div>
+          <div class="shop-sec">服務</div>
+          <div id="shop-services" class="shop-list"></div>
+        </div>
+        <button id="btn-shop-leave" class="ov-skip">離開商販</button>
+      </div>
+    </div>
+
+    <!-- 事件 -->
+    <div id="overlay-event" class="overlay hidden">
+      <div class="event-panel">
+        <div id="event-icon" class="event-icon">❓</div>
+        <div id="event-title" class="ov-title"></div>
+        <div id="event-text" class="event-text"></div>
+        <div id="event-choices" class="event-choices"></div>
+        <div id="event-result"></div>
+      </div>
+    </div>
+
+    <!-- 選卡（三選一） -->
+    <div id="overlay-reward" class="overlay hidden">
+      <div id="reward-title" class="ov-title">三選一</div>
+      <div id="reward-cards" class="reward-row"></div>
+      <button class="ov-skip" id="btn-reward-skip">跳過</button>
+    </div>
+
+    <!-- 從牌組挑一張（磨刀／去牌） -->
+    <div id="overlay-pick" class="overlay hidden">
+      <div id="pick-title" class="ov-title">選一張牌</div>
+      <div id="pick-list" class="reward-row wrap"></div>
+      <button class="ov-skip" id="btn-pick-cancel">取消</button>
+    </div>
+
+    <!-- 岔路 -->
+    <div id="overlay-branch" class="overlay hidden">
+      <div class="ov-title">岔路——走哪邊？<span class="sub">選了就回不去</span></div>
+      <div class="branch-row">
+        <div class="branch-door" data-dir="0"><div class="door-icon">🚪</div><div class="door-desc"></div></div>
+        <div class="branch-door" data-dir="1"><div class="door-icon">🚪</div><div class="door-desc"></div></div>
+      </div>
+    </div>
+
+    <!-- 牌組檢視 -->
+    <div id="overlay-deck" class="overlay hidden">
+      <div class="ov-title">目前牌組 <span id="deck-count" class="sub"></span></div>
+      <div id="deck-list" class="reward-row wrap"></div>
+      <button class="ov-skip" id="btn-deck-close">關閉</button>
+    </div>
+
+    <!-- 圖鑑 -->
+    <div id="overlay-codex" class="overlay hidden">
+      <div class="ov-title">📖 大廚手札</div>
+      <div id="codex-body" class="codex-body"></div>
+      <button class="ov-skip" id="btn-codex-close">關閉</button>
+    </div>
+
+    <!-- 操作說明／教學 -->
+    <div id="overlay-help" class="overlay hidden">
+      <div class="help-panel">
+        <div class="ov-title">怎麼玩</div>
+        <div class="help-grid">
+          <div class="help-card">
+            <div class="h-icon">🔪</div>
+            <div class="h-title">精準切割是核心</div>
+            <p>把敵人血量<b>剛好</b>砍到 0 才收得到怪物部位，還能拿金幣、抽牌。
+              連續精準會累積<b>連段</b>，第二次起每次多給 1 點能量。</p>
+          </div>
+          <div class="help-card">
+            <div class="h-icon">⚠️</div>
+            <div class="h-title">打過頭 = 過熟</div>
+            <p>溢出傷害會把肉毀掉、連段歸零，還累積<b>油煙</b>。油煙滿 3 層，
+              下回合就少抽一張牌。留意手牌能不能湊出剛好的數字。</p>
+          </div>
+          <div class="help-card">
+            <div class="h-icon">👁️</div>
+            <div class="h-title">出牌前先看預覽</div>
+            <p>滑鼠停在手牌上，每個敵人的血條會顯示打完<b>剩多少</b>、
+              是<b>精準</b>還是<b>過熟</b>。用「修邊」「骨鋸」「量準斬」微調數字。</p>
+          </div>
+          <div class="help-card">
+            <div class="h-icon">🍱</div>
+            <div class="h-title">部位＋植物 = 便當</div>
+            <p>營火把部位與植物下鍋，計時停針決定品質（半生／熟透／完美／焦了）。
+              便當在<b>戰前開飯</b>才生效，一場一道。</p>
+          </div>
+        </div>
+        <div class="help-keys">
+          <span><kbd>W</kbd>／<kbd>↑</kbd> 前進</span>
+          <span><kbd>S</kbd>／<kbd>↓</kbd> 後退</span>
+          <span><kbd>SPACE</kbd> 互動／結束回合</span>
+          <span><kbd>E</kbd> 生吃植物</span>
+          <span><kbd>1</kbd>-<kbd>9</kbd> 出牌</span>
+          <span><kbd>右鍵</kbd> 取消選目標</span>
+          <span><kbd>D</kbd> 牌組</span>
+          <span><kbd>ESC</kbd> 選單</span>
+          <span><kbd>M</kbd> 靜音</span>
+          <span><kbd>N</kbd> 音樂</span>
+        </div>
+        <div class="help-keys touch-note">
+          <span>📱 觸控：點一下牌看傷害預覽，<b>再點一次</b>才出牌；多個敵人時點牌後直接點要打的那隻。</span>
+        </div>
+        <button id="btn-help-close" class="big-btn">開始下地窖</button>
+      </div>
+    </div>
+
+    <!-- 暫停選單 -->
+    <div id="overlay-pause" class="overlay hidden">
+      <div class="pause-panel">
+        <div class="ov-title">暫停</div>
+        <div id="pause-info" class="title-sub"></div>
+        <button id="btn-pause-resume" class="big-btn">繼續</button>
+        <div class="pause-btns">
+          <button id="btn-pause-help" class="ov-skip">操作說明</button>
+          <button id="btn-pause-mute" class="ov-skip">🔊 音效：開</button>
+          <button id="btn-pause-music" class="ov-skip">🎵 音樂：開</button>
+          <button id="btn-pause-abandon" class="ov-skip danger">放棄這一輪</button>
+        </div>
+        <div class="pause-note">進度會自動存檔，關掉分頁也能從標題「繼續上一輪」。</div>
+      </div>
+    </div>
+
+    <!-- 開場序章 -->
+    <div id="overlay-opening" class="overlay hidden" aria-live="polite">
+      <img id="opening-image" src="assets/cg/CG01_避難城最後一盞燈.png" alt="" draggable="false">
+      <div class="opening-vignette"></div>
+      <div class="opening-topbar">
+        <span id="opening-counter">01 / 20</span>
+        <button id="btn-opening-skip" type="button">長按跳過</button>
+      </div>
+      <div class="opening-caption-wrap">
+        <div id="opening-caption"></div>
+        <div id="opening-progress" aria-hidden="true"></div>
+        <div class="opening-hint">點擊畫面／Space／Enter 繼續</div>
+      </div>
+    </div>
+
+    <!-- 標題 -->
+    <div id="overlay-title" class="overlay">
+      <div class="title-emblem-wrap" role="img" aria-label="地窖大廚">
+        <img class="title-emblem-art" src="assets/title/title-emblem.png" alt="" draggable="false">
+        <div class="title-emblem-text">
+          <span class="title-emblem-kicker">DUNGEON CHEF</span>
+          <span class="title-emblem-name">地窖大廚</span>
+        </div>
+      </div>
+      <div class="title-sub">第一人稱卡牌迷宮 × <b>精準切割</b> × 怪物料理</div>
+
+      <div class="heat-block">
+        <div class="heat-label">爐火等級</div>
+        <div id="heat-row" class="heat-row"></div>
+        <div id="heat-desc" class="heat-desc"></div>
+      </div>
+
+      <div class="title-btns">
+        <button id="btn-start" class="big-btn">開始新的一輪</button>
+        <button id="btn-continue" class="ov-skip hidden">繼續上一輪</button>
+      </div>
+      <div class="title-btns small">
+        <button id="btn-help" class="ov-skip">操作說明</button>
+        <button id="btn-codex" class="ov-skip">大廚手札</button>
+        <button id="btn-replay-opening" class="ov-skip hidden">重播序章</button>
+      </div>
+      <div id="title-stats" class="title-keys"></div>
+    </div>
+
+    <!-- 結算 -->
+    <div id="overlay-end" class="overlay hidden">
+      <div class="end-panel">
+        <div id="end-title" class="title-logo"></div>
+        <div id="end-rank" class="end-rank"></div>
+        <div id="end-stats" class="title-sub"></div>
+        <div id="end-unlocks"></div>
+        <div class="title-btns">
+          <button id="btn-restart" class="big-btn">再來一輪</button>
+          <button id="btn-to-title" class="ov-skip">回到標題</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/state.js"></script>
+<script src="js/art.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/meta.js"></script>
+<script src="js/relics.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/opening.js"></script>
+<script src="js/explore.js"></script>
+<script src="js/battle.js"></script>
+<script src="js/cooking.js"></script>
+<script src="js/partchinko.js"></script>
+<script src="js/shop.js"></script>
+<script src="js/rewards.js"></script>
+<script src="js/game.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
