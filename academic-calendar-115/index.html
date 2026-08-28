@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="樹德科技大學 115 學年度學生行事曆，依重要、中度、參考三色整理，並自動顯示近期注意事項。">
+  <title>115 學年度學生行事曆｜treefar</title>
+  <style>
+    :root {
+      --paper: #f4f1e9;
+      --paper-2: #ebe5d8;
+      --ink: #172c2d;
+      --muted: #657271;
+      --line: #d7d0c2;
+      --teal: #007d79;
+      --teal-deep: #005e5a;
+      --important: #c94645;
+      --important-soft: #f8e8e5;
+      --medium: #b47711;
+      --medium-soft: #f7edcf;
+      --reference: #567681;
+      --reference-soft: #e3ecee;
+      --shadow: 0 18px 50px rgba(25, 45, 43, .10);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 88% 4%, rgba(0, 125, 121, .09), transparent 27rem),
+        linear-gradient(180deg, #f8f6f0 0, var(--paper) 38rem);
+      color: var(--ink);
+      font-family: "Microsoft JhengHei UI", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+      line-height: 1.65;
+    }
+    button, input, select { font: inherit; }
+    a { color: inherit; }
+
+    .shell { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .site-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 24px 0 10px; font-size: 14px;
+    }
+    .brand { color: var(--teal-deep); font-weight: 900; letter-spacing: .08em; text-decoration: none; }
+    .back { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--line); }
+    .back:hover { color: var(--teal-deep); }
+
+    .hero { padding: clamp(54px, 9vw, 112px) 0 70px; }
+    .eyebrow, .section-kicker {
+      margin: 0 0 14px; color: var(--teal); font-size: 12px; font-weight: 900;
+      letter-spacing: .22em; text-transform: uppercase;
+    }
+    .mobile-break { display: none; }
+    h1 {
+      max-width: 900px; margin: 0; font-size: clamp(42px, 7vw, 88px);
+      line-height: 1.02; letter-spacing: -.055em; font-weight: 900;
+    }
+    .hero-copy { max-width: 720px; margin: 28px 0 0; color: var(--muted); font-size: clamp(16px, 2vw, 20px); }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
+    .meta-pill {
+      padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px;
+      background: rgba(255,255,255,.56); color: var(--muted); font-size: 12px;
+    }
+
+    .upcoming-wrap { padding: 0 0 76px; }
+    .upcoming-panel {
+      position: relative; overflow: hidden; padding: clamp(26px, 5vw, 50px);
+      border-radius: 28px; color: #f7ffff;
+      background: linear-gradient(135deg, var(--teal-deep), #073f3e 72%);
+      box-shadow: var(--shadow);
+    }
+    .upcoming-panel::after {
+      content: ""; position: absolute; width: 340px; height: 340px; right: -120px; top: -180px;
+      border: 1px solid rgba(255,255,255,.14); border-radius: 50%; box-shadow: 0 0 0 55px rgba(255,255,255,.035), 0 0 0 110px rgba(255,255,255,.025);
+    }
+    .upcoming-panel .section-kicker { color: #90e6dc; }
+    .section-head { position: relative; z-index: 1; display: flex; gap: 26px; justify-content: space-between; align-items: end; }
+    h2 { margin: 0; font-size: clamp(29px, 4vw, 48px); line-height: 1.15; letter-spacing: -.035em; }
+    .section-note { margin: 0; max-width: 430px; color: rgba(238,255,252,.72); font-size: 13px; }
+    .upcoming-grid { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 28px; }
+    .upcoming-card {
+      min-height: 152px; padding: 16px; border: 1px solid rgba(255,255,255,.16); border-radius: 16px;
+      background: rgba(255,255,255,.08); backdrop-filter: blur(7px);
+    }
+    .upcoming-card .date { color: #98ece3; font-size: 12px; font-weight: 900; letter-spacing: .08em; }
+    .upcoming-card h3 { margin: 9px 0 10px; font-size: 15px; line-height: 1.45; }
+    .upcoming-card p { margin: 0; color: rgba(242,255,253,.68); font-size: 12px; }
+    .upcoming-empty { grid-column: 1 / -1; margin: 0; color: rgba(242,255,253,.75); }
+
+    .legend-section { padding-bottom: 34px; }
+    .legend-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 20px; }
+    .legend-card { padding: 20px; border-radius: 16px; border: 1px solid var(--line); background: rgba(255,255,255,.56); }
+    .legend-card strong { display: flex; align-items: center; gap: 10px; font-size: 15px; }
+    .legend-card p { margin: 8px 0 0 20px; color: var(--muted); font-size: 13px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+    .dot.important { background: var(--important); }
+    .dot.medium { background: var(--medium); }
+    .dot.reference { background: var(--reference); }
+
+    .calendar-section { padding: 42px 0 100px; }
+    .calendar-heading { display: flex; justify-content: space-between; align-items: end; gap: 20px; margin-bottom: 22px; }
+    .calendar-heading p { margin: 7px 0 0; color: var(--muted); }
+    .count { color: var(--teal-deep); font-size: 13px; font-weight: 800; }
+    .toolbar {
+      position: sticky; top: 10px; z-index: 20; display: grid; grid-template-columns: minmax(220px, 1fr) auto auto;
+      gap: 10px; padding: 12px; margin-bottom: 26px; border: 1px solid var(--line); border-radius: 16px;
+      background: rgba(248,246,240,.93); box-shadow: 0 10px 32px rgba(25,45,43,.08); backdrop-filter: blur(12px);
+    }
+    .search, .month-select {
+      min-width: 0; height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 11px;
+      background: #fff; color: var(--ink); outline: none;
+    }
+    .search:focus, .month-select:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(0,125,121,.12); }
+    .level-filters { display: flex; align-items: center; gap: 7px; }
+    .filter-btn {
+      height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px;
+      background: transparent; color: var(--muted); cursor: pointer;
+    }
+    .filter-btn:hover { border-color: #9ca6a3; color: var(--ink); }
+    .filter-btn[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+    .month-block { scroll-margin-top: 92px; margin: 0 0 44px; }
+    .month-title {
+      display: grid; grid-template-columns: 90px 1fr auto; align-items: center; gap: 16px;
+      margin: 0 0 14px; color: var(--teal-deep);
+    }
+    .month-title .month-no { font-size: 13px; font-weight: 900; letter-spacing: .1em; }
+    .month-title::after { content: ""; height: 1px; background: var(--line); }
+    .month-title .month-name { font-size: 24px; font-weight: 900; }
+    .event-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .event-card {
+      position: relative; min-height: 144px; overflow: hidden; padding: 17px 17px 16px 21px;
+      border: 1px solid var(--line); border-radius: 15px; background: rgba(255,255,255,.68);
+    }
+    .event-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; }
+    .event-card[data-level="important"]::before { background: var(--important); }
+    .event-card[data-level="medium"]::before { background: var(--medium); }
+    .event-card[data-level="reference"]::before { background: var(--reference); }
+    .event-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .event-date { color: var(--teal-deep); font-size: 12px; font-weight: 900; letter-spacing: .06em; }
+    .level-badge { padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 900; }
+    .level-badge.important { color: var(--important); background: var(--important-soft); }
+    .level-badge.medium { color: var(--medium); background: var(--medium-soft); }
+    .level-badge.reference { color: var(--reference); background: var(--reference-soft); }
+    .event-card h3 { margin: 13px 0 8px; font-size: 15px; line-height: 1.45; }
+    .event-card p { margin: 0; color: var(--muted); font-size: 12px; }
+    .empty-state { padding: 50px 20px; border: 1px dashed var(--line); border-radius: 16px; text-align: center; color: var(--muted); }
+
+    .source-note {
+      margin-top: 54px; padding: 20px 22px; border-left: 4px solid var(--teal);
+      background: var(--paper-2); color: var(--muted); font-size: 13px;
+    }
+    footer { padding: 26px 0 45px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+
+    @media (max-width: 960px) {
+      .upcoming-grid { grid-template-columns: repeat(2, 1fr); }
+      .event-grid { grid-template-columns: repeat(2, 1fr); }
+      .toolbar { grid-template-columns: 1fr 180px; }
+      .level-filters { grid-column: 1 / -1; flex-wrap: wrap; }
+    }
+    @media (max-width: 680px) {
+      .shell { width: min(100% - 24px, 1180px); }
+      .site-nav { padding-top: 16px; }
+      .hero { padding: 48px 0 52px; }
+      h1 { font-size: clamp(39px, 11vw, 52px); }
+      .mobile-break { display: initial; }
+      .section-head, .calendar-heading { align-items: start; flex-direction: column; }
+      .upcoming-panel { padding: 24px 18px; border-radius: 21px; }
+      .upcoming-grid, .legend-grid, .event-grid { grid-template-columns: 1fr; }
+      .toolbar { position: static; grid-template-columns: 1fr; }
+      .level-filters { grid-column: auto; }
+      .filter-btn { flex: 1; padding-inline: 8px; }
+      .month-title { grid-template-columns: 66px auto 1fr; gap: 10px; }
+      .event-card { min-height: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+  <nav class="site-nav shell" aria-label="網站導覽">
+    <a class="brand" href="/">TREEFAR</a>
+    <a class="back" href="/">回專案首頁</a>
+  </nav>
+
+  <header class="hero shell">
+    <p class="eyebrow">Shu-Te University · 115 學年度</p>
+    <h1>把一整年的校務，<br>整理成<br class="mobile-break">現在該注意的事。</h1>
+    <p class="hero-copy">學生版行事曆三色整理：紅色先處理、黃色排進行程、藍灰色供查閱。日期範圍為 2026 年 8 月至 2027 年 7 月。</p>
+    <div class="hero-meta">
+      <span class="meta-pill">資料版本 2026.04.15</span>
+      <span class="meta-pill" id="todayPill">正在讀取今天日期</span>
+      <span class="meta-pill" id="totalPill">正在統計記事</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="upcoming-wrap shell" aria-labelledby="upcomingTitle">
+      <div class="upcoming-panel">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">近期注意事項</p>
+            <h2 id="upcomingTitle">先看最靠近的紅色期限</h2>
+          </div>
+          <p class="section-note">依臺灣日期自動更新，顯示仍在辦理或即將開始的重要事項；實際規定如有異動，以校方最新公告為準。</p>
+        </div>
+        <div class="upcoming-grid" id="upcomingGrid"></div>
+      </div>
+    </section>
+
+    <section class="legend-section shell" aria-labelledby="legendTitle">
+      <p class="section-kicker">閱讀方式</p>
+      <h2 id="legendTitle">三色不是活動類型，而是處理優先度</h2>
+      <div class="legend-grid">
+        <article class="legend-card"><strong><span class="dot important"></span>重要</strong><p>影響學籍、選課、繳費、考試、住宿或畢業權益，錯過通常有直接後果。</p></article>
+        <article class="legend-card"><strong><span class="dot medium"></span>中度</strong><p>有期限或需提早安排，但只影響特定身分，或仍有後續處理空間。</p></article>
+        <article class="legend-card"><strong><span class="dot reference"></span>參考</strong><p>放假、活動、學期節點與資訊性公告，原則上不要求立即辦理。</p></article>
+      </div>
+    </section>
+
+    <section class="calendar-section shell" aria-labelledby="calendarTitle">
+      <div class="calendar-heading">
+        <div>
+          <p class="section-kicker">全年記事</p>
+          <h2 id="calendarTitle">從現在，查到學年結束</h2>
+          <p>可搜尋「選課」、「宿舍」、「畢業」等關鍵字，也能只看單一月份或色級。</p>
+        </div>
+        <span class="count" id="resultCount" aria-live="polite"></span>
+      </div>
+
+      <div class="toolbar" aria-label="行事曆篩選工具">
+        <input class="search" id="searchInput" type="search" placeholder="搜尋記事，例如：選課、宿舍、畢業" aria-label="搜尋行事曆記事">
+        <select class="month-select" id="monthSelect" aria-label="選擇月份">
+          <option value="all">全部月份</option>
+        </select>
+        <div class="level-filters" id="levelFilters" aria-label="重要性篩選">
+          <button class="filter-btn" type="button" data-level="all" aria-pressed="true">全部</button>
+          <button class="filter-btn" type="button" data-level="important" aria-pressed="false">重要</button>
+          <button class="filter-btn" type="button" data-level="medium" aria-pressed="false">中度</button>
+          <button class="filter-btn" type="button" data-level="reference" aria-pressed="false">參考</button>
+        </div>
+      </div>
+
+      <div id="calendar"></div>
+      <p class="source-note">來源：樹德科技大學「115 學年度行事曆（學生）」，115 年 4 月 15 日經 114 學年度第 2 學期第 3 次行政會議通過。本頁的三色分級是閱讀輔助，不取代校方公告；天然災害、選舉與原住民族歲時祭儀等放假安排，仍依主管機關公告辦理。</p>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell">115 學年度學生行事曆 · treefar.link</div>
+  </footer>
+
+  <script>
+    const EVENTS = [
+      { s:"2026-08-01", t:"115 學年度第一學期開始", l:"reference", a:"全校" },
+      { s:"2026-08-03", e:"2026-09-21", t:"學生申請抵免學分", l:"important", a:"有抵免需求學生" },
+      { s:"2026-08-03", e:"2026-09-21", t:"學生申請超修、減修學分", l:"important", a:"有超修或減修需求學生" },
+      { s:"2026-08-03", e:"2026-10-20", t:"申辦 115 學年度弱勢助學計畫", l:"important", a:"符合資格學生" },
+      { s:"2026-08-03", e:"2026-09-11", t:"申辦第一學期就學貸款", l:"important", a:"在校、復學、轉學、轉系及新生" },
+      { s:"2026-08-03", e:"2026-09-11", t:"申辦第一學期教育部學雜費減免（第二階段）", l:"important", a:"符合資格學生" },
+      { s:"2026-08-04", e:"2026-08-10", t:"初選第二階段", l:"important", a:"復學、轉系、輔系、雙主修及轉學生", n:"8/10 上午 9:00 截止" },
+      { s:"2026-08-11", t:"查詢初選第一、二階段選課結果", l:"important", a:"選課學生" },
+      { s:"2026-08-15", t:"新生聯合服務暨各系說明會", l:"medium", a:"新生" },
+      { s:"2026-08-30", t:"學生宿舍新生開宿日", l:"important", a:"住宿新生", n:"上午 9:00 至下午 5:00" },
+      { s:"2026-08-30", t:"進修部新生始業暨迎新活動", l:"medium", a:"進修部新生" },
+      { s:"2026-08-30", t:"進修部及碩博班新生選課說明會", l:"medium", a:"進修部及碩博班新生" },
+      { s:"2026-08-30", e:"2026-09-02", t:"初選第三階段", l:"important", a:"一年級新生及一年級復學生", n:"9/2 上午 9:00 截止" },
+      { s:"2026-08-31", t:"註冊基準日", l:"important", a:"全校" },
+      { s:"2026-08-31", t:"研究生論文繳交及 114 學年度第二學期畢業離校截止", l:"important", a:"研究生及畢業生" },
+      { s:"2026-08-31", e:"2026-09-03", t:"新生領航營", l:"medium", a:"新生" },
+
+      { s:"2026-09-01", e:"2026-09-07", t:"申辦休退學須繳三分之一學費", l:"important", a:"申辦休學或退學者" },
+      { s:"2026-09-02", t:"四技日間部新生健康檢查", l:"medium", a:"四技日間部新生" },
+      { s:"2026-09-02", t:"四技日間部新生選課說明會", l:"medium", a:"四技日間部新生" },
+      { s:"2026-09-06", t:"學生宿舍舊生開宿日", l:"important", a:"住宿舊生", n:"上午 9:00 至下午 5:00" },
+      { s:"2026-09-07", t:"開學，開始上課", l:"important", a:"全校" },
+      { s:"2026-09-07", e:"2026-09-14", t:"加退選", l:"important", a:"有選課異動需求學生", n:"9/14 上午 9:00 截止" },
+      { s:"2026-09-07", e:"2026-09-14", t:"大學部學生申請選修碩士班課程", l:"important", a:"大學部學生" },
+      { s:"2026-09-07", e:"2026-10-07", t:"學生登記修讀學分學程", l:"medium", a:"有學分學程需求學生" },
+      { s:"2026-09-07", e:"2026-09-22", t:"延修生申辦第一學期就學貸款", l:"important", a:"延修生" },
+      { s:"2026-09-08", e:"2026-10-19", t:"申辦休退學須繳三分之一學雜費", l:"important", a:"申辦休學或退學者" },
+      { s:"2026-09-15", e:"2026-09-16", t:"補加選", l:"important", a:"僅限被關課學生", n:"9/16 上午 9:00 截止" },
+      { s:"2026-09-16", e:"2026-09-22", t:"網路確認選課結果", l:"important", a:"全校學生" },
+      { s:"2026-09-16", t:"捐血活動", l:"reference", a:"自由參加" },
+      { s:"2026-09-17", e:"2026-09-23", t:"延修生註冊繳費", l:"important", a:"延修生" },
+      { s:"2026-09-25", t:"中秋節放假", l:"reference", a:"全校" },
+      { s:"2026-09-28", t:"孔子誕辰紀念日放假", l:"reference", a:"全校" },
+      { s:"2026-09-29", e:"2026-10-08", t:"轉系申請", l:"medium", a:"有轉系需求學生" },
+
+      { s:"2026-10-03", t:"新生健康檢查", l:"medium", a:"進修部及碩博班新生" },
+      { s:"2026-10-09", t:"國慶日遇例假日補假", l:"reference", a:"全校" },
+      { s:"2026-10-10", t:"國慶日放假", l:"reference", a:"全校" },
+      { s:"2026-10-17", t:"第 29 屆校慶暨園遊會暨運動會", l:"reference", a:"全校" },
+      { s:"2026-10-20", e:"2026-11-30", t:"申辦休退學須繳三分之二學雜費", l:"important", a:"申辦休學或退學者" },
+      { s:"2026-10-25", t:"臺灣光復暨金門古寧頭大捷紀念日", l:"reference", a:"全校" },
+      { s:"2026-10-26", t:"臺灣光復暨金門古寧頭大捷紀念日遇例假日補假", l:"reference", a:"全校" },
+      { s:"2026-10-29", e:"2026-11-11", t:"期中教學意見調查", l:"medium", a:"修課學生" },
+
+      { s:"2026-11-01", e:"2026-11-30", t:"十一月原住民文化月", l:"reference", a:"全校" },
+      { s:"2026-11-02", e:"2026-11-08", t:"期中考", l:"important", a:"修課學生" },
+      { s:"2026-11-02", t:"學生查詢期中預警成績開始", l:"medium", a:"修課學生" },
+      { s:"2026-11-18", t:"進修部校園活動祭", l:"reference", a:"進修部" },
+      { s:"2026-11-30", e:"2026-12-11", t:"申辦第二學期教育部學雜費減免（第一階段）", l:"important", a:"符合資格學生" },
+      { s:"2026-11-30", e:"2026-12-06", t:"圖書館週", l:"reference", a:"全校" },
+      { s:"2026-11-30", e:"2026-12-07", t:"棄選", l:"important", a:"有棄選需求學生", n:"12/7 上午 9:00 截止" },
+
+      { s:"2026-12-01", e:"2027-01-04", t:"申辦休退學須繳全額學雜費", l:"important", a:"申辦休學或退學者" },
+      { s:"2026-12-07", e:"2026-12-14", t:"網路確認棄選結果", l:"important", a:"有辦理棄選學生" },
+      { s:"2026-12-09", t:"第一學期畢業生開始辦理離校手續", l:"important", a:"應屆畢業生" },
+      { s:"2026-12-14", e:"2027-01-13", t:"學生申請修讀輔系、雙主修", l:"medium", a:"有輔系或雙主修需求學生" },
+      { s:"2026-12-14", t:"公告第二學期全校課程", l:"medium", a:"全校學生" },
+      { s:"2026-12-15", e:"2027-01-04", t:"期末教學意見調查", l:"medium", a:"修課學生", n:"1/4 上午 9:00 截止" },
+      { s:"2026-12-16", t:"捐血活動", l:"reference", a:"自由參加" },
+      { s:"2026-12-21", e:"2027-01-04", t:"初選第二學期課程（第一階段）", l:"important", a:"選課學生", n:"1/4 上午 9:00 截止" },
+      { s:"2026-12-21", e:"2027-01-13", t:"成績優異學生提前畢業申請", l:"important", a:"符合資格學生" },
+      { s:"2026-12-25", t:"行憲紀念日放假", l:"reference", a:"全校" },
+      { s:"2026-12-28", e:"2027-01-13", t:"應屆畢業生放棄輔系、雙主修資格", l:"medium", a:"應屆畢業生" },
+
+      { s:"2027-01-01", t:"開國紀念日放假", l:"reference", a:"全校" },
+      { s:"2027-01-04", t:"第一學期休退學申辦截止日", l:"important", a:"申辦休學或退學者" },
+      { s:"2027-01-04", e:"2027-01-10", t:"期末考", l:"important", a:"修課學生" },
+      { s:"2027-01-04", t:"學生查詢學期成績", l:"important", a:"全校學生" },
+      { s:"2027-01-04", e:"2027-02-26", t:"申辦第二學期教育部學雜費減免（第二階段）", l:"important", a:"符合資格學生" },
+      { s:"2027-01-11", t:"學生宿舍期末封宿日", l:"important", a:"住宿學生", n:"上午 10:00 前完成離宿" },
+      { s:"2027-01-11", t:"寒假開始", l:"reference", a:"全校" },
+      { s:"2027-01-15", e:"2027-02-22", t:"申辦第二學期就學貸款", l:"important", a:"在校、復學、轉學及轉系生" },
+      { s:"2027-01-31", t:"碩、博士班學生學位考試完畢", l:"important", a:"碩博士生" },
+      { s:"2027-01-31", t:"第一學期結束", l:"reference", a:"全校" },
+
+      { s:"2027-02-01", t:"115 學年度第二學期開始", l:"reference", a:"全校" },
+      { s:"2027-02-01", e:"2027-03-04", t:"學生申請抵免學分", l:"important", a:"有抵免需求學生" },
+      { s:"2027-02-01", e:"2027-03-04", t:"學生申請超修、減修學分", l:"important", a:"有超修或減修需求學生" },
+      { s:"2027-02-01", e:"2027-03-19", t:"申辦第二學期弱勢助學", l:"important", a:"第二學期轉學生及住宿優惠申請者" },
+      { s:"2027-02-02", e:"2027-02-15", t:"初選第二階段", l:"important", a:"復學、轉系、輔系、雙主修、轉學及延修生", n:"2/15 上午 9:00 截止" },
+      { s:"2027-02-04", e:"2027-02-08", t:"春節小年夜至初三放假", l:"reference", a:"全校" },
+      { s:"2027-02-09", e:"2027-02-10", t:"初一及初二遇例假日補假", l:"reference", a:"全校" },
+      { s:"2027-02-11", t:"114 學年畢業典禮遇例假日補假", l:"reference", a:"全校" },
+      { s:"2027-02-12", t:"115 學年校慶遇例假日補假", l:"reference", a:"全校" },
+      { s:"2027-02-15", t:"註冊基準日", l:"important", a:"全校" },
+      { s:"2027-02-15", t:"研究生論文繳交及第一學期畢業離校手續截止", l:"important", a:"研究生及畢業生" },
+      { s:"2027-02-16", e:"2027-02-22", t:"申辦休退學須繳三分之一學費", l:"important", a:"申辦休學或退學者" },
+      { s:"2027-02-16", t:"查詢初選結果", l:"important", a:"選課學生" },
+      { s:"2027-02-21", t:"學生宿舍開宿日", l:"important", a:"全校住宿生", n:"上午 9:00 至下午 5:00" },
+      { s:"2027-02-22", e:"2027-02-26", t:"延修生申辦第二學期就學貸款", l:"important", a:"延修生" },
+      { s:"2027-02-22", t:"開學，開始上課", l:"important", a:"全校" },
+      { s:"2027-02-22", e:"2027-03-02", t:"加退選", l:"important", a:"有選課異動需求學生", n:"3/2 上午 9:00 截止" },
+      { s:"2027-02-22", e:"2027-03-02", t:"大學部學生申請預修碩士班課程", l:"important", a:"大學部學生" },
+      { s:"2027-02-22", e:"2027-03-22", t:"學生登記修讀學分學程", l:"medium", a:"有學分學程需求學生" },
+      { s:"2027-02-23", e:"2027-04-07", t:"申辦休退學須繳三分之一學雜費", l:"important", a:"申辦休學或退學者" },
+      { s:"2027-02-28", t:"和平紀念日放假", l:"reference", a:"全校" },
+
+      { s:"2027-03-01", t:"和平紀念日遇例假日補假", l:"reference", a:"全校" },
+      { s:"2027-03-03", t:"補加選", l:"important", a:"僅限被關課學生" },
+      { s:"2027-03-04", e:"2027-03-10", t:"網路確認選課結果", l:"important", a:"全校學生" },
+      { s:"2027-03-05", e:"2027-03-11", t:"延修生註冊繳費", l:"important", a:"延修生" },
+      { s:"2027-03-15", e:"2027-03-24", t:"轉系申請", l:"medium", a:"有轉系需求學生" },
+      { s:"2027-03-16", e:"2027-04-16", t:"申請 116 學年度國內交換學習", l:"medium", a:"有交換需求學生" },
+      { s:"2027-03-17", t:"捐血活動", l:"reference", a:"自由參加" },
+
+      { s:"2027-04-04", t:"兒童節放假", l:"reference", a:"全校" },
+      { s:"2027-04-05", t:"民族掃墓節放假", l:"reference", a:"全校" },
+      { s:"2027-04-06", t:"兒童節遇例假日補假", l:"reference", a:"全校" },
+      { s:"2027-04-08", e:"2027-05-17", t:"申辦休退學須繳三分之二學雜費", l:"important", a:"申辦休學或退學者" },
+      { s:"2027-04-12", e:"2027-04-25", t:"期中教學意見調查", l:"medium", a:"修課學生" },
+      { s:"2027-04-19", e:"2027-04-25", t:"期中考", l:"important", a:"修課學生" },
+      { s:"2027-04-19", t:"學生查詢期中預警成績", l:"medium", a:"修課學生" },
+      { s:"2027-04-30", t:"勞動節遇例假日補假", l:"reference", a:"全校" },
+
+      { s:"2027-05-01", t:"勞動節放假", l:"reference", a:"全校" },
+      { s:"2027-05-10", t:"第二學期畢業生開始辦理離校", l:"important", a:"應屆畢業生" },
+      { s:"2027-05-12", t:"進修部嘉年華活動", l:"reference", a:"進修部" },
+      { s:"2027-05-17", e:"2027-05-28", t:"申辦 116 學年度第一學期教育部學雜費減免（第一階段）", l:"important", a:"符合資格學生" },
+      { s:"2027-05-18", e:"2027-05-24", t:"棄選", l:"important", a:"有棄選需求學生", n:"5/24 上午 9:00 截止" },
+      { s:"2027-05-18", e:"2027-06-18", t:"申辦休退學須繳全額學雜費", l:"important", a:"申辦休學或退學者" },
+      { s:"2027-05-24", e:"2027-05-30", t:"網路確認棄選階段課表", l:"important", a:"有辦理棄選學生" },
+      { s:"2027-05-31", t:"公告 116 學年度第一學期全校課程", l:"medium", a:"全校學生" },
+      { s:"2027-05-31", e:"2027-06-07", t:"畢業班課程期末教學意見調查", l:"medium", a:"畢業班修課學生", n:"6/7 上午 9:00 截止" },
+      { s:"2027-05-31", e:"2027-06-21", t:"非畢業班課程期末教學意見調查", l:"medium", a:"非畢業班修課學生", n:"6/21 上午 9:00 截止" },
+
+      { s:"2027-06-04", e:"2027-06-21", t:"初選 116 學年度第一學期課程（第一階段）", l:"important", a:"選課學生", n:"6/21 上午 9:00 截止" },
+      { s:"2027-06-07", e:"2027-06-13", t:"畢業班課程期末考", l:"important", a:"畢業班學生", n:"第 17 至 18 週課程依程序於第 15 週結束前完成補課" },
+      { s:"2027-06-07", e:"2027-06-30", t:"輔系、雙主修申請及放棄修讀", l:"medium", a:"有輔系或雙主修需求學生" },
+      { s:"2027-06-09", t:"端午節放假", l:"reference", a:"全校" },
+      { s:"2027-06-12", t:"115 學年度畢業典禮", l:"medium", a:"應屆畢業生" },
+      { s:"2027-06-14", e:"2027-06-30", t:"成績優異提前畢業申請", l:"important", a:"符合資格學生" },
+      { s:"2027-06-16", t:"捐血活動", l:"reference", a:"自由參加" },
+      { s:"2027-06-18", t:"第二學期休退學申辦截止日", l:"important", a:"申辦休學或退學者" },
+      { s:"2027-06-21", e:"2027-06-27", t:"期末考", l:"important", a:"非畢業班學生" },
+      { s:"2027-06-21", t:"查詢學期成績", l:"important", a:"全校學生" },
+      { s:"2027-06-21", t:"公告 115 學年度暑期課程", l:"medium", a:"有暑修需求學生" },
+      { s:"2027-06-28", t:"暑假開始", l:"reference", a:"全校" },
+      { s:"2027-06-28", t:"學生宿舍期末封宿日", l:"important", a:"住宿學生", n:"上午 10:00 前完成離宿" },
+
+      { s:"2027-07-31", t:"研究生論文考試、博士學位候選人資格考核完畢", l:"important", a:"研究生" },
+      { s:"2027-07-31", t:"第二學期結束", l:"reference", a:"全校" }
+    ];
+
+    const LEVELS = {
+      important: { label: "重要" },
+      medium: { label: "中度" },
+      reference: { label: "參考" }
+    };
+    const monthNames = new Intl.DateTimeFormat("zh-TW", { year: "numeric", month: "long", timeZone: "Asia/Taipei" });
+    const shortDate = new Intl.DateTimeFormat("zh-TW", { month: "numeric", day: "numeric", weekday: "short", timeZone: "Asia/Taipei" });
+    const fullDate = new Intl.DateTimeFormat("zh-TW", { year: "numeric", month: "numeric", day: "numeric", weekday: "short", timeZone: "Asia/Taipei" });
+    const toDate = iso => new Date(`${iso}T12:00:00+08:00`);
+    const todayIso = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Taipei" }).format(new Date());
+    const getEnd = event => event.e || event.s;
+    const formatRange = event => {
+      if (!event.e || event.e === event.s) return shortDate.format(toDate(event.s));
+      return `${shortDate.format(toDate(event.s))} – ${shortDate.format(toDate(event.e))}`;
+    };
+    const timingText = event => {
+      if (event.s <= todayIso && getEnd(event) >= todayIso && event.e) return `辦理中 · ${shortDate.format(toDate(event.e))} 截止`;
+      if (event.s === todayIso) return "今天";
+      return event.e ? formatRange(event) : shortDate.format(toDate(event.s));
+    };
+
+    document.getElementById("todayPill").textContent = `今天 ${fullDate.format(toDate(todayIso))}`;
+    document.getElementById("totalPill").textContent = `共 ${EVENTS.length} 項記事`;
+
+    const importantFuture = EVENTS
+      .filter(event => event.l === "important" && getEnd(event) >= todayIso)
+      .sort((a, b) => {
+        const aFocus = a.s > todayIso ? a.s : getEnd(a);
+        const bFocus = b.s > todayIso ? b.s : getEnd(b);
+        return aFocus.localeCompare(bFocus) || a.s.localeCompare(b.s);
+      })
+      .slice(0, 8);
+    const upcomingGrid = document.getElementById("upcomingGrid");
+    if (importantFuture.length) {
+      upcomingGrid.innerHTML = importantFuture.map(event => `
+        <article class="upcoming-card">
+          <div class="date">${timingText(event)}</div>
+          <h3>${event.t}</h3>
+          <p>${event.a}${event.n ? ` · ${event.n}` : ""}</p>
+        </article>`).join("");
+    } else {
+      upcomingGrid.innerHTML = '<p class="upcoming-empty">本學年度已結束，請以校方下一學年度公告為準。</p>';
+    }
+
+    const monthKeys = [...new Set(EVENTS.map(event => event.s.slice(0, 7)))];
+    const monthSelect = document.getElementById("monthSelect");
+    monthKeys.forEach(month => {
+      const option = document.createElement("option");
+      option.value = month;
+      option.textContent = monthNames.format(toDate(`${month}-01`));
+      monthSelect.appendChild(option);
+    });
+
+    let activeLevel = "all";
+    const searchInput = document.getElementById("searchInput");
+    const calendar = document.getElementById("calendar");
+    const resultCount = document.getElementById("resultCount");
+
+    function renderCalendar() {
+      const query = searchInput.value.trim().toLocaleLowerCase("zh-Hant");
+      const activeMonth = monthSelect.value;
+      const visible = EVENTS.filter(event => {
+        const matchesLevel = activeLevel === "all" || event.l === activeLevel;
+        const matchesMonth = activeMonth === "all" || event.s.startsWith(activeMonth);
+        const haystack = `${event.t} ${event.a} ${event.n || ""}`.toLocaleLowerCase("zh-Hant");
+        return matchesLevel && matchesMonth && (!query || haystack.includes(query));
+      });
+
+      resultCount.textContent = `顯示 ${visible.length}／${EVENTS.length} 項`;
+      if (!visible.length) {
+        calendar.innerHTML = '<div class="empty-state">沒有符合條件的記事，請調整月份、色級或搜尋字詞。</div>';
+        return;
+      }
+
+      const grouped = visible.reduce((map, event) => {
+        const month = event.s.slice(0, 7);
+        (map[month] ||= []).push(event);
+        return map;
+      }, {});
+
+      calendar.innerHTML = Object.entries(grouped).map(([month, events]) => `
+        <section class="month-block" id="month-${month}" aria-labelledby="title-${month}">
+          <h3 class="month-title" id="title-${month}">
+            <span class="month-no">${month.replace("-", ".")}</span>
+            <span class="month-name">${monthNames.format(toDate(`${month}-01`)).replace(/\d+年/, "")}</span>
+          </h3>
+          <div class="event-grid">
+            ${events.map(event => `
+              <article class="event-card" data-level="${event.l}">
+                <div class="event-top">
+                  <time class="event-date" datetime="${event.s}">${formatRange(event)}</time>
+                  <span class="level-badge ${event.l}">${LEVELS[event.l].label}</span>
+                </div>
+                <h3>${event.t}</h3>
+                <p>${event.a}${event.n ? ` · ${event.n}` : ""}</p>
+              </article>`).join("")}
+          </div>
+        </section>`).join("");
+    }
+
+    document.getElementById("levelFilters").addEventListener("click", event => {
+      const button = event.target.closest("button[data-level]");
+      if (!button) return;
+      activeLevel = button.dataset.level;
+      document.querySelectorAll("button[data-level]").forEach(item => item.setAttribute("aria-pressed", String(item === button)));
+      renderCalendar();
+    });
+    searchInput.addEventListener("input", renderCalendar);
+    monthSelect.addEventListener("change", renderCalendar);
+    renderCalendar();
+  </script>
+</body>
+</html>

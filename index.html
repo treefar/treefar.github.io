@@ -91,6 +91,19 @@
   .mini .addr { font-size: 11px; color: var(--dim); opacity: .7; font-family: Consolas, monospace; word-break: break-all; }
   .note { font-size: 12px; color: var(--dim); opacity: .8; margin: -6px 0 12px; }
 
+  .notice-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .notice-card {
+    display: flex; flex-direction: column; gap: 6px; min-height: 118px; padding: 15px 16px;
+    border: 1px solid var(--line); border-left: 4px solid var(--c-tool); border-radius: 12px;
+    background: linear-gradient(135deg, rgba(251, 191, 36, .08), var(--panel));
+    color: inherit; text-decoration: none; transition: all .15s;
+  }
+  .notice-card:hover { background: var(--panel-hover); border-color: var(--dim); transform: translateY(-2px); }
+  .notice-card time { color: var(--c-tool); font-size: 11px; font-weight: 700; letter-spacing: 1px; }
+  .notice-card strong { font-size: 14px; line-height: 1.45; }
+  .notice-card p { margin: 0; color: var(--dim); font-size: 12px; line-height: 1.55; }
+  @media (max-width: 760px) { .notice-grid { grid-template-columns: 1fr; } }
+
   .t-game { color: var(--c-game); } .d-game { background: var(--c-game); }
   .t-story { color: var(--c-story); } .d-story { background: var(--c-story); }
   .t-site { color: var(--c-site); } .d-site { background: var(--c-site); }
@@ -161,6 +174,11 @@
   </header>
   <p class="hint"><span class="kbd-only">按數字鍵 1–9 直接開啟對應專案　·　</span>本機工具僅在自己電腦且服務開啟時可用</p>
 
+  <section aria-labelledby="noticeHeading">
+    <h2 class="sec" id="noticeHeading">近期注意事項</h2>
+    <div class="notice-grid" id="homeNotices"></div>
+  </section>
+
   <h2 class="sec">網頁專案</h2>
   <div class="filters" id="filters">
     <button class="chip on" data-f="all">全部</button>
@@ -191,6 +209,9 @@
 
 // 網頁專案：cat 可多值（空白分隔）：game / story / site / tool
 const SITES = [
+  { slug: "academic-calendar-115", title: "115 學年度學生行事曆", cat: "site tool", tag: "REFERENCE × ACADEMIC CALENDAR",
+    image: null, repo: "treefar.github.io",
+    desc: "把 2026 年 8 月至 2027 年 7 月的學生行事曆分成重要、中度、參考三色，依今天自動整理近期期限，並提供月份、色級與關鍵字篩選。" },
   { slug: "retro-game-house", title: "遊戲時光屋｜Retro Game House", cat: "game site", tag: "GAME × INTERACTIVE HISTORY",
     image: "retro-game-house.png", repo: "treefar.github.io",
     desc: "把五十年電子遊戲史做成 57 款可玩的教學復刻。從 Pong 的反彈、Pac-Man 的迷宮追逐到現代卡牌與倖存者玩法，每款都用核心動詞、史料解讀與設計演化線呈現當時的技術限制與創意；保留 CRT、街機像素、Flash、手繪、向量與當代媒材差異。" },
@@ -354,14 +375,48 @@ const LINKS = [
 ];
 
 // ===== 以下為渲染邏輯，一般不用動 =====
+const CALENDAR_NOTICES = [
+  { date: "2026-08-30", title: "新生宿舍開放、初選第三階段開始", desc: "初選至 9/2 上午 9:00；新生宿舍 8/30 上午 9:00 開放。" },
+  { date: "2026-08-31", title: "註冊基準日與研究生畢業離校截止", desc: "研究生請留意論文繳交與 114-2 畢業離校手續。" },
+  { date: "2026-09-07", title: "開學、加退選開始", desc: "加退選至 9/14 上午 9:00；同日開放多項課程申請。" },
+  { date: "2026-09-15", title: "被關課學生補加選", desc: "僅開放被關課學生，9/16 上午 9:00 截止。" },
+  { date: "2026-09-16", title: "網路確認選課結果", desc: "確認期間至 9/22。" },
+  { date: "2026-11-02", title: "第一學期期中考", desc: "考試期間至 11/8，並開放查詢期中預警成績。" },
+  { date: "2026-11-30", title: "學雜費減免第一階段與棄選", desc: "減免至 12/11；棄選至 12/7 上午 9:00。" },
+  { date: "2026-12-21", title: "第二學期課程初選第一階段", desc: "選課至 2027/1/4 上午 9:00。" },
+  { date: "2027-01-04", title: "第一學期期末考", desc: "考試期間至 1/10；同日為休退學申辦截止日。" },
+  { date: "2027-01-11", title: "宿舍期末封宿、寒假開始", desc: "住宿生須在上午 10:00 前完成離宿。" },
+  { date: "2027-02-15", title: "第二學期註冊基準日", desc: "同日為研究生論文繳交及畢業離校手續截止。" },
+  { date: "2027-02-22", title: "第二學期開學、加退選開始", desc: "加退選至 3/2 上午 9:00。" },
+  { date: "2027-03-04", title: "網路確認選課結果", desc: "確認期間至 3/10。" },
+  { date: "2027-04-19", title: "第二學期期中考", desc: "考試期間至 4/25，並開放查詢期中預警成績。" },
+  { date: "2027-05-18", title: "第二學期棄選開始", desc: "棄選至 5/24 上午 9:00。" },
+  { date: "2027-06-04", title: "116 學年度第一學期課程初選", desc: "第一階段至 6/21 上午 9:00。" },
+  { date: "2027-06-07", title: "畢業班課程期末考", desc: "考試期間至 6/13。" },
+  { date: "2027-06-12", title: "115 學年度畢業典禮", desc: "應屆畢業生請依校方通知完成報到。" },
+  { date: "2027-06-21", title: "非畢業班期末考", desc: "考試期間至 6/27，並開放查詢學期成績。" },
+  { date: "2027-06-28", title: "暑假開始、學生宿舍封宿", desc: "住宿生須在上午 10:00 前完成離宿。" },
+];
+const homeToday = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Taipei" }).format(new Date());
+const homeNoticeItems = CALENDAR_NOTICES.filter(item => item.date >= homeToday).slice(0, 3);
+document.getElementById("homeNotices").innerHTML = homeNoticeItems.length
+  ? homeNoticeItems.map(item => `<a class="notice-card" href="/academic-calendar-115/">
+      <time datetime="${item.date}">${item.date.replaceAll("-", ".")}</time>
+      <strong>${item.title}</strong><p>${item.desc}</p></a>`).join("")
+  : `<a class="notice-card" href="/academic-calendar-115/"><time>115 學年度</time>
+      <strong>本學年度行事曆已結束</strong><p>開啟完整頁面查閱歷史記事。</p></a>`;
+
 const grid = document.getElementById("grid");
 SITES.forEach((s, i) => {
   const a = document.createElement("a");
   a.className = "card"; a.dataset.f = s.cat; a.href = s.url || `/${s.slug}/`;
   if (s.url) { a.target = "_blank"; a.rel = "noopener"; }
   const t = s.tag.toLowerCase().includes("story") && !s.cat.includes("game") ? "story" : s.cat.split(" ")[0];
+  const thumb = s.image === null
+    ? `<div class="thumb slide-text-thumb"><span>${s.title}</span>${i < 9 ? '<span class="key">' + (i + 1) + '</span>' : ''}</div>`
+    : `<div class="thumb"><img src="/previews/${s.image || (s.slug + ".jpg")}" alt="${s.title}" width="640" height="360" loading="lazy">${i < 9 ? '<span class="key">' + (i + 1) + '</span>' : ''}</div>`;
   a.innerHTML = `
-    <div class="thumb"><img src="/previews/${s.image || (s.slug + ".jpg")}" alt="${s.title}" width="640" height="360" loading="lazy">${i < 9 ? '<span class="key">' + (i + 1) + '</span>' : ''}</div>
+    ${thumb}
     <div class="body">
       <div class="tag t-${t}">${s.tag}</div>
       <h3>${s.title}</h3>
