@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="從 ChatGPT Classic 舊對話精鍊出的遊戲、設計、研究、AI 工作流與動畫媒體知識摘要。">
+  <meta name="theme-color" content="#4B3FC4">
+  <title>遊戲・設計・研究知識地圖｜treefar</title>
+  <style>
+    :root {
+      --ds-bg:#F6F6F8;--ds-bg2:#EFEFF3;--ds-surface:#FFFFFF;--ds-surface2:#EFEFF3;
+      --ds-ink:#1A1A22;--ds-ink2:#4A4A58;--ds-muted:#75758A;--ds-line:#DCDCE4;
+      --ds-line-strong:#C3C3CF;--ds-accent:#4B3FC4;--ds-accent2:#8A6416;--ds-ok:#2F7D57;
+      --ds-warn:#8A6416;--ds-danger:#A6402D;--ds-info:#5E6270;--ds-on-accent:#FFFFFF;
+      --ds-accent-soft:#E9E7FA;--ds-ok-soft:#E2F1E9;--ds-warn-soft:#F7EEDA;
+      --ds-danger-soft:#F8E5E1;--ds-unk-soft:#E8E9ED;
+      --ds-font-sans:ui-sans-serif,system-ui,'Segoe UI','Noto Sans TC','Microsoft JhengHei',sans-serif;
+      --ds-font-mono:ui-monospace,'Cascadia Mono',Consolas,'SF Mono',monospace;
+      --ds-radius-sm:3px;--ds-radius-md:6px;--ds-radius-pill:99px;
+    }
+    :root[data-theme="dark"] {
+      --ds-bg:#0F1016;--ds-bg2:#1F2230;--ds-surface:#171922;--ds-surface2:#1F2230;
+      --ds-ink:#EDEDF2;--ds-ink2:#B4B6C4;--ds-muted:#82859A;--ds-line:#2B2F3D;
+      --ds-line-strong:#3D4254;--ds-accent:#9A90FF;--ds-accent2:#E0B25C;--ds-ok:#6FCB99;
+      --ds-warn:#E0B25C;--ds-danger:#EC8874;--ds-info:#9599AB;--ds-on-accent:#0F1016;
+      --ds-accent-soft:#262242;--ds-ok-soft:#14291F;--ds-warn-soft:#2C2415;
+      --ds-danger-soft:#2E1A16;--ds-unk-soft:#21242F;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth;background:var(--ds-bg);color:var(--ds-ink);font-family:var(--ds-font-sans);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+    body{margin:0;background:var(--ds-bg)}
+    button,input{font:inherit}
+    button{color:inherit}
+    a{color:var(--ds-accent);text-underline-offset:3px}
+    :focus-visible{outline:2px solid var(--ds-accent);outline-offset:2px}
+    .wrap{width:min(1120px,calc(100% - 28px));margin-inline:auto}
+    .mono{font-family:var(--ds-font-mono);font-variant-numeric:tabular-nums}
+    .eyebrow{margin:0 0 8px;color:var(--ds-muted);font-size:11px;font-weight:650;letter-spacing:.07em;text-transform:uppercase}
+    h1,h2,h3,p{margin-top:0}
+    h1{margin-bottom:8px;font-size:15px;font-weight:650;line-height:1.2;letter-spacing:-.01em}
+    h2{margin-bottom:5px;font-size:14px;font-weight:650;line-height:1.25}
+    h3{margin-bottom:5px;font-size:13.5px;font-weight:650}
+    p{color:var(--ds-ink2)}
+    .topline{border-bottom:1px solid var(--ds-line);background:var(--ds-surface)}
+    .topline .wrap{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:38px}
+    .brand{display:flex;align-items:center;gap:8px;color:var(--ds-ink);font-size:12px;font-weight:650;text-decoration:none}
+    .brand-mark{width:8px;height:8px;background:var(--ds-accent)}
+    .theme-btn,.filter-btn,.search-btn{border:1px solid var(--ds-line);border-radius:var(--ds-radius-md);background:var(--ds-surface);cursor:pointer;font-weight:600}
+    .theme-btn{padding:4px 9px;font-size:11px}
+    .hero{padding:44px 0 30px;border-bottom:1px solid var(--ds-line);background:linear-gradient(var(--ds-bg2),var(--ds-bg))}
+    .hero-core{width:min(780px,100%);margin-inline:auto;text-align:center}
+    .status-pill{display:inline-flex;align-items:center;gap:5px;padding:2px 7px 2px 5px;border-radius:var(--ds-radius-sm);font-size:11px;font-weight:600;white-space:nowrap}
+    .status-pill::before{content:"";width:6px;height:6px;flex:none;background:currentColor}
+    .status-ok{color:var(--ds-ok);background:var(--ds-ok-soft)}
+    .status-ok::before{border-radius:50%}
+    .status-warn{color:var(--ds-warn);background:var(--ds-warn-soft)}
+    .status-warn::before{clip-path:polygon(50% 0,100% 100%,0 100%)}
+    .status-block{color:var(--ds-danger);background:var(--ds-danger-soft)}
+    .status-block::before{clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+    .status-unk{color:var(--ds-info);background:var(--ds-unk-soft)}
+    .status-unk::before{border:1.5px solid currentColor;border-radius:50%;background:none}
+    .hero h1{margin-top:14px}
+    .hero-intro{max-width:650px;margin:0 auto 18px;color:var(--ds-ink2)}
+    .search-shell{display:flex;align-items:center;gap:8px;width:min(690px,100%);margin-inline:auto;padding:7px;border:1px solid var(--ds-line-strong);border-radius:var(--ds-radius-md);background:var(--ds-surface)}
+    .search-shell:focus-within{border-color:var(--ds-accent);outline:2px solid var(--ds-accent-soft)}
+    .search-icon{padding-left:5px;color:var(--ds-muted)}
+    .search-shell input{min-width:0;flex:1;padding:7px 2px;border:0;outline:0;background:transparent;color:var(--ds-ink)}
+    .search-shell kbd{padding:1px 5px;border:1px solid var(--ds-line);border-radius:3px;background:var(--ds-surface2);color:var(--ds-muted);font:11px var(--ds-font-mono)}
+    .search-btn{padding:7px 13px;border-color:var(--ds-accent);background:var(--ds-accent);color:var(--ds-on-accent)}
+    .quick-try{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:10px}
+    .quick-try button{padding:3px 9px;border:1px solid var(--ds-line);border-radius:var(--ds-radius-pill);background:var(--ds-surface);color:var(--ds-ink2);cursor:pointer;font-size:12px}
+    .hero-stats{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;margin-top:18px;color:var(--ds-muted);font-size:11px}
+    .anchor-nav{position:sticky;top:0;z-index:20;border-bottom:1px solid var(--ds-line);background:color-mix(in srgb,var(--ds-surface) 94%,transparent)}
+    .anchor-nav .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:43px}
+    .anchor-links{display:flex;gap:3px;overflow-x:auto;scrollbar-width:thin}
+    .anchor-link{flex:none;padding:5px 8px;border-radius:var(--ds-radius-sm);color:var(--ds-muted);font-size:12px;text-decoration:none}
+    .anchor-link.active{background:var(--ds-accent-soft);color:var(--ds-accent);font-weight:650}
+    .back-home{flex:none;font-size:11px}
+    main section{scroll-margin-top:56px;padding:30px 0;border-bottom:1px solid var(--ds-line)}
+    .section-head{display:flex;align-items:end;justify-content:space-between;gap:14px;margin-bottom:14px}
+    .section-head p{margin:0;color:var(--ds-muted);font-size:12px}
+    .metric-grid,.insight-grid,.decision-grid{display:grid;gap:10px}
+    .metric-grid{grid-template-columns:repeat(4,1fr)}
+    .metric,.card{border:1px solid var(--ds-line);border-left:3px solid var(--edge,var(--ds-line-strong));border-radius:var(--ds-radius-md);background:var(--ds-surface);box-shadow:none}
+    .metric{padding:12px 13px}
+    .metric strong{display:block;margin-bottom:4px;color:var(--ds-ink);font:650 15px var(--ds-font-mono)}
+    .metric span{color:var(--ds-muted);font-size:11px}
+    .insight-grid{grid-template-columns:repeat(5,1fr)}
+    .card{padding:12px 13px}
+    .card p{margin:0;font-size:12.5px}
+    .filters{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+    .filter-btn{padding:4px 11px;border-radius:var(--ds-radius-pill);color:var(--ds-ink2);font-size:12px}
+    .filter-btn[aria-pressed="true"]{border-color:var(--ds-ink);background:var(--ds-ink);color:var(--ds-bg)}
+    .library-toolbar{display:grid;grid-template-columns:minmax(220px,1fr) auto;align-items:end;gap:12px}
+    .library-search label{display:block;margin-bottom:4px;color:var(--ds-muted);font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+    .library-search input{width:100%;padding:8px 10px;border:1px solid var(--ds-line-strong);border-radius:var(--ds-radius-md);background:var(--ds-surface);color:var(--ds-ink)}
+    .result-count{padding-bottom:8px;color:var(--ds-muted);font:11px var(--ds-font-mono);white-space:nowrap}
+    .note-list{border-top:1px solid var(--ds-line)}
+    .note-row{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:12px;align-items:start;padding:13px 8px;border-bottom:1px solid var(--ds-line);border-left:3px solid var(--edge,var(--ds-line-strong));background:var(--ds-surface)}
+    .note-row[hidden]{display:none}
+    .note-id{padding-top:2px;color:var(--ds-muted);font:11px var(--ds-font-mono)}
+    .note-main h3{margin-bottom:3px}
+    .note-main p{margin:0;color:var(--ds-ink2);font-size:12.5px}
+    .note-meta{display:flex;align-items:center;gap:6px}
+    .topic-chip{padding:2px 7px;border:1px solid var(--ds-line);border-radius:var(--ds-radius-pill);color:var(--ds-muted);font-size:11px;white-space:nowrap}
+    .empty{padding:24px;border:1px dashed var(--ds-line-strong);color:var(--ds-muted);text-align:center}
+    .decision-grid{grid-template-columns:repeat(3,1fr)}
+    .decision-card{min-height:200px}
+    .decision-card ul{margin:9px 0 0;padding-left:18px;color:var(--ds-ink2);font-size:12.5px}
+    .decision-card li+li{margin-top:5px}
+    .decision-card .verdict{margin-top:12px;padding-top:9px;border-top:1px solid var(--ds-line)}
+    .decision-card.recommended{--edge:var(--ds-ok)}
+    .decision-card.public{--edge:var(--ds-accent)}
+    .decision-card.no{--edge:var(--ds-warn)}
+    .callout{margin-top:12px;padding:12px 13px;border:1px solid var(--ds-line);border-left:3px solid var(--ds-accent);border-radius:var(--ds-radius-md);background:var(--ds-surface2);color:var(--ds-ink2)}
+    .callout code{font-family:var(--ds-font-mono);font-size:11.5px}
+    .limits{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .limits ul{margin:8px 0 0;padding-left:18px;color:var(--ds-ink2);font-size:12.5px}
+    footer{padding:22px 0 34px;color:var(--ds-muted);font-size:11px}
+    @media(max-width:900px){.metric-grid{grid-template-columns:repeat(2,1fr)}.insight-grid{grid-template-columns:repeat(2,1fr)}.decision-grid{grid-template-columns:1fr}.decision-card{min-height:0}}
+    @media(max-width:640px){.wrap{width:min(100% - 20px,1120px)}.hero{padding-top:30px}.topline .wrap{min-height:44px}.anchor-nav .wrap{align-items:stretch;flex-direction:column;gap:0;padding-top:5px}.back-home{align-self:flex-end;padding:4px 0}.library-toolbar{grid-template-columns:1fr}.result-count{padding-bottom:0}.note-row{grid-template-columns:38px minmax(0,1fr)}.note-meta{grid-column:2;flex-wrap:wrap}.limits,.insight-grid{grid-template-columns:1fr}.search-shell kbd{display:none}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+  </style>
+</head>
+<body>
+  <header class="topline">
+    <div class="wrap">
+      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span>treefar / knowledge-atlas</a>
+      <button class="theme-btn" id="themeToggle" type="button" aria-label="切換深淺色">深色模式</button>
+    </div>
+  </header>
+
+  <section class="hero" aria-labelledby="pageTitle">
+    <div class="wrap hero-core">
+      <span class="status-pill status-ok">已去識別化公開摘要</span>
+      <p class="eyebrow mono">ChatGPT Classic / Curated Archive / 2026-08-28</p>
+      <h1 id="pageTitle">遊戲・設計・研究知識地圖</h1>
+      <p class="hero-intro">把舊對話從「聊天紀錄」轉成可再利用的設計判斷、研究框架、工作流程與專案種子。只納入目前仍存在、可讀且通過複審的 22 份精鍊筆記。</p>
+      <form class="search-shell" id="heroSearchForm" role="search">
+        <span class="search-icon" aria-hidden="true">⌕</span>
+        <input id="heroSearch" type="search" autocomplete="off" placeholder="搜尋主題、方法或應用，例如：復刻、研究、Agent">
+        <kbd aria-hidden="true">/</kbd>
+        <button class="search-btn" type="submit">搜尋</button>
+      </form>
+      <div class="quick-try" aria-label="快速搜尋">
+        <span class="mono" style="color:var(--ds-muted);font-size:11px;padding:4px 0">TRY</span>
+        <button type="button" data-query="復刻">復刻</button>
+        <button type="button" data-query="研究">研究</button>
+        <button type="button" data-query="Agent">Agent</button>
+        <button type="button" data-query="動畫">動畫</button>
+      </div>
+      <div class="hero-stats mono"><span>22 VERIFIED NOTES</span><span>·</span><span>5 TOPIC GROUPS</span><span>·</span><span>NO RAW CHAT EXPOSED</span></div>
+    </div>
+  </section>
+
+  <nav class="anchor-nav" aria-label="頁內導覽">
+    <div class="wrap">
+      <div class="anchor-links">
+        <a class="anchor-link active" href="#overview">總覽</a>
+        <a class="anchor-link" href="#insights">整合洞見</a>
+        <a class="anchor-link" href="#library">筆記索引</a>
+        <a class="anchor-link" href="#decision">Vault／Skill</a>
+        <a class="anchor-link" href="#limits">公開界線</a>
+      </div>
+      <a class="back-home" href="/">回 treefar 首頁</a>
+    </div>
+  </nav>
+
+  <main>
+    <section id="overview">
+      <div class="wrap">
+        <div class="section-head"><div><p class="eyebrow">OVERVIEW</p><h2>從對話清理到知識分層</h2></div><p>數字均以目前實體檔複驗</p></div>
+        <div class="metric-grid">
+          <div class="metric" style="--edge:var(--ds-info)"><strong>45</strong><span>雲端一般對話已處理</span></div>
+          <div class="metric" style="--edge:var(--ds-ok)"><strong>22</strong><span>目前存在且可讀的精鍊筆記</span></div>
+          <div class="metric" style="--edge:var(--ds-accent)"><strong>5</strong><span>跨對話整合主題</span></div>
+          <div class="metric" style="--edge:var(--ds-warn)"><strong>5</strong><span>公開索引分類</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="insights">
+      <div class="wrap">
+        <div class="section-head"><div><p class="eyebrow">SYNTHESIS</p><h2>五條跨主題洞見</h2></div><p>由 22 份筆記交叉整合</p></div>
+        <div class="insight-grid">
+          <article class="card" style="--edge:var(--ds-accent)"><h3>代理重治理，不重數量</h3><p>多 Agent 的價值來自責任、共享狀態、權限、驗證與退回路徑，不是同時開更多模型。</p></article>
+          <article class="card" style="--edge:var(--ds-ok)"><h3>研究要保留不可推論範圍</h3><p>原始資料、可查證主張、外部證據與研究者判讀必須分層；缺資料時，結論就是資料不足。</p></article>
+          <article class="card" style="--edge:var(--ds-warn)"><h3>復刻先定忠實度</h3><p>流程級、文法級與像素級不能混用。沒有量測來源與逐格證據，就只能交灰盒或原創轉譯。</p></article>
+          <article class="card" style="--edge:var(--ds-danger)"><h3>AI 動畫要有控制骨架</h3><p>把 AI 放在局部補幀、風格與變體，核心姿勢、時間、鏡頭與一致性仍需可編輯、可回退。</p></article>
+          <article class="card" style="--edge:var(--ds-info)"><h3>Skill 是成熟流程，不是資料夾</h3><p>內容先進 Vault 累積來源與使用紀錄；只有反覆使用、輸入輸出固定且能判定成功的流程才升級。</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="library">
+      <div class="wrap">
+        <div class="section-head"><div><p class="eyebrow">LIBRARY</p><h2>22 份筆記摘要</h2></div><p>篩選結果會保留在網址參數</p></div>
+        <div class="library-toolbar">
+          <div class="library-search"><label for="librarySearch">全文搜尋</label><input id="librarySearch" type="search" autocomplete="off" placeholder="輸入標題、摘要或分類"></div>
+          <div class="result-count" id="resultCount" aria-live="polite">22 / 22 NOTES</div>
+        </div>
+        <div class="filters" id="filters" aria-label="主題篩選">
+          <button class="filter-btn" type="button" data-topic="all" aria-pressed="true">全部 22</button>
+          <button class="filter-btn" type="button" data-topic="game" aria-pressed="false">遊戲與互動 6</button>
+          <button class="filter-btn" type="button" data-topic="research" aria-pressed="false">研究與教學 4</button>
+          <button class="filter-btn" type="button" data-topic="agent" aria-pressed="false">AI 與代理 7</button>
+          <button class="filter-btn" type="button" data-topic="media" aria-pressed="false">動畫與媒體 3</button>
+          <button class="filter-btn" type="button" data-topic="web" aria-pressed="false">Web 與基礎設施 2</button>
+        </div>
+        <div class="note-list" id="noteList"></div>
+        <p class="empty" id="emptyState" hidden>找不到符合條件的筆記。請縮短關鍵字或改選其他分類。</p>
+        <noscript><p class="empty">此索引需要 JavaScript 才能顯示與篩選 22 份筆記。</p></noscript>
+      </div>
+    </section>
+
+    <section id="decision">
+      <div class="wrap">
+        <div class="section-head"><div><p class="eyebrow">ROUTING DECISION</p><h2>網頁、Vault、Skill 各自負責什麼</h2></div><p>依長期記憶治理與既有 Skill 去重</p></div>
+        <div class="decision-grid">
+          <article class="card decision-card public">
+            <span class="status-pill status-ok">已完成</span><h3 style="margin-top:10px">公開網頁</h3>
+            <p>負責提供跨主題入口與快速搜尋，不承擔完整來源保存。</p>
+            <ul><li>只放去識別化摘要</li><li>呈現五類索引與整合洞見</li><li>不放對話 ID、原始網址、本機路徑</li></ul>
+            <p class="verdict"><strong>判定：</strong>適合公開。</p>
+          </article>
+          <article class="card decision-card recommended">
+            <span class="status-pill status-ok">建議採用</span><h3 style="margin-top:10px">Obsidian Vault</h3>
+            <p>負責保存完整精鍊筆記、來源、查證限制、歷史與後續專案連結。</p>
+            <ul><li>可容納研究脈絡與專案種子</li><li>能標示已驗證、推論與待確認</li><li>適合持續補來源與交叉連結</li></ul>
+            <p class="verdict"><strong>判定：</strong>22 份資料的正式歸宿。</p>
+          </article>
+          <article class="card decision-card no">
+            <span class="status-pill status-warn">暫不新增</span><h3 style="margin-top:10px">新 Skill</h3>
+            <p>Skill 只收成熟、反覆執行且能判定成功或失敗的流程。</p>
+            <ul><li>Herdr 已有 herdr-workflow</li><li>學術合規已有 academic-ai-compliance</li><li>復刻已有 remake-fidelity-pipeline</li></ul>
+            <p class="verdict"><strong>判定：</strong>目前新增會重複治理。</p>
+          </article>
+        </div>
+        <div class="callout"><strong>升級門檻：</strong>某份 Vault 筆記至少經過 <code>3 次真實使用</code>，步驟與輸入輸出已穩定，且現有 Skill 無法涵蓋時，才建立新 Skill。優先觀察候選為「社群貼文查證」；3D 展示器與動態漫畫目前仍屬專案模板／概念，不是 Skill。</div>
+      </div>
+    </section>
+
+    <section id="limits">
+      <div class="wrap">
+        <div class="section-head"><div><p class="eyebrow">PUBLICATION BOUNDARY</p><h2>公開版本的保留與刪減</h2></div><p>發布不是原始備份</p></div>
+        <div class="limits">
+          <article class="card" style="--edge:var(--ds-ok)"><h3>保留</h3><ul><li>可複用的決策框架與設計原則</li><li>主題分類、適用方向與查證狀態</li><li>公開讀者能理解的限制與警示</li></ul></article>
+          <article class="card" style="--edge:var(--ds-danger)"><h3>不公開</h3><ul><li>原對話 ID、來源網址與逐字內容</li><li>本機路徑、帳號資訊與私人工作細節</li><li>未通過實體檔檢查或來源不足的內容</li></ul></article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer><div class="wrap mono">TREEFAR KNOWLEDGE ATLAS · VERIFIED SNAPSHOT 2026-08-28 · PUBLIC SUMMARY, NOT SOURCE ARCHIVE</div></footer>
+
+  <script>
+    const TOPIC = {
+      game:{label:"遊戲與互動",edge:"var(--ds-warn)"},
+      research:{label:"研究與教學",edge:"var(--ds-ok)"},
+      agent:{label:"AI 與代理",edge:"var(--ds-accent)"},
+      media:{label:"動畫與媒體",edge:"var(--ds-danger)"},
+      web:{label:"Web 與基礎設施",edge:"var(--ds-info)"}
+    };
+    const NOTES = [
+      {topic:"agent",title:"多代理工具分層與去留判斷",status:"verify",summary:"用任務性質、模型責任、成本、權限與驗證證據判斷工具是否保留；產品版本與當前能力使用前需重查。"},
+      {topic:"research",title:"精簡學術研究與 AI 合規管線",status:"verify",summary:"把檢索、原文核對、證據表、寫作與 AI 揭露拆成可稽核流程；正式投稿前仍須查目標期刊當期政策。"},
+      {topic:"research",title:"研究成果的投稿與博論整合評估",status:"verify",summary:"以貢獻、方法完整度、資料重疊、作者責任與期刊定位，區分可投稿單元、博論章節與仍需補強的工作。"},
+      {topic:"agent",title:"資料收集與 Agent 判讀分層",status:"ok",summary:"收集層保存原始資料與時間，判讀層負責去重、評分與路由；避免自動收集結果直接變成結論。"},
+      {topic:"game",title:"《槍彈辯駁》風格拆解任務規格",status:"verify",summary:"先拆 UI、鏡頭、節奏、論證與視覺文法，再製作原創灰盒；來源未量測前不宣稱像素級復刻。"},
+      {topic:"media",title:"AI 骨骼動畫工具選型",status:"verify",summary:"以骨架可編輯性、動作輸出、風格一致、授權與 Unity 導入成本評估工具，而不是只看一次生成畫面。"},
+      {topic:"game",title:"動態漫畫框架解謎",status:"concept",summary:"把分鏡、格間時間與閱讀方向轉成可操作謎題；適合先做一章垂直切片，驗證閱讀與互動是否互相增益。"},
+      {topic:"web",title:"搜尋與瀏覽器控制的選用",status:"ok",summary:"公開資訊優先搜尋與直接請求；只有依賴登入狀態、頁面互動或可見內容時才使用瀏覽器控制。"},
+      {topic:"agent",title:"高效 Goal 任務框架",status:"ok",summary:"把目標、成功條件、限制、可用資源、驗證與停止條件寫在同一份任務契約，降低長任務偏移。"},
+      {topic:"agent",title:"網站 Skill 化可行性判斷",status:"ok",summary:"先確認網站有穩定輸入輸出、可重複步驟與合法存取方式；一次性導覽或頻繁改版頁面不值得做成 Skill。"},
+      {topic:"game",title:"可拆解 3D 物件展示器",status:"concept",summary:"以零件樹、爆炸視圖、焦點、標註與狀態回復建立可重用展示模板；目前定位為專案模板，不是通用 Skill。"},
+      {topic:"media",title:"AI 輔助動畫的可控工作流",status:"ok",summary:"人工鎖定關鍵姿勢、鏡頭與節奏，AI 負責局部補幀、變體或風格；每一步都保留可編輯來源與回退點。"},
+      {topic:"media",title:"AI 短劇平台與創作瓶頸",status:"verify",summary:"產能提升不等於敘事成立；真正瓶頸仍是角色一致、鏡頭延續、聲音、版權、節奏與修改成本。"},
+      {topic:"game",title:"像素風格復刻與驗證流程",status:"ok",summary:"先量測角色比例、像素密度、輪廓、色票與動畫節拍，再做同尺度並排；不能用語法正確替代視覺驗收。"},
+      {topic:"web",title:"Cloudflare 導入判斷",status:"verify",summary:"依 DNS、快取、防護、部署與維運責任決定是否導入；費率、產品能力與限制屬易變資訊，實作前重查官方資料。"},
+      {topic:"agent",title:"跨網站自動化與權限邊界",status:"ok",summary:"API 優先、瀏覽器備援、最小權限；登入、付費、發布、刪除與對外訊息保留人工閘門與可追溯紀錄。"},
+      {topic:"agent",title:"Graph Engineering 實務框架",status:"ok",summary:"以 State、Node、Edge 組織依賴、並行、退回與人工批准；產出者和驗證者分離，失敗只重做出錯節點。"},
+      {topic:"agent",title:"Herdr 指揮與治理整合",status:"verify",summary:"Herdr 是多代理執行協調層，不提供額外額度也不取代 Git、規格、測試與人工決策；版本與安裝狀態需重查。"},
+      {topic:"research",title:"社群貼文查證整合流程",status:"ok",summary:"先取得全文、截圖、影片或永久連結，再拆成可查證主張；內容不可讀時，正確結論是資料不足。"},
+      {topic:"game",title:"《世界遊戲 51 大合集》流程與觸感拆解",status:"verify",summary:"提煉短教學、桌面材質、直接操作與立即回饋的共通節奏；完整影片、附件與精確物理參數仍待驗證。"},
+      {topic:"game",title:"Double Dragon 短片來源衝突與灰盒規格",status:"blocked",summary:"同一短片的作品身分出現衝突，因此只保留共同可測的 2.5D 合作清版規格，未查清來源前不選邊。"},
+      {topic:"research",title:"數位學術誠信教材與審查框架",status:"verify",summary:"AI 不承擔作者責任；引用、方法、資料、推論、揭露與保密仍由研究者負責，正式使用前逐項查當期政策。"}
+    ];
+    const STATUS = {
+      ok:{label:"可複用",className:"status-ok"},
+      verify:{label:"需驗證",className:"status-warn"},
+      concept:{label:"概念",className:"status-unk"},
+      blocked:{label:"來源衝突",className:"status-block"}
+    };
+
+    const noteList=document.getElementById("noteList");
+    const emptyState=document.getElementById("emptyState");
+    const resultCount=document.getElementById("resultCount");
+    const librarySearch=document.getElementById("librarySearch");
+    const heroSearch=document.getElementById("heroSearch");
+    const filters=[...document.querySelectorAll(".filter-btn")];
+    let currentTopic="all";
+
+    NOTES.forEach((note,index)=>{
+      const article=document.createElement("article");
+      const status=STATUS[note.status];
+      const topic=TOPIC[note.topic];
+      article.className="note-row";
+      article.dataset.topic=note.topic;
+      article.dataset.search=`${note.title} ${note.summary} ${topic.label}`.toLowerCase();
+      article.style.setProperty("--edge",topic.edge);
+      article.innerHTML=`<div class="note-id">${String(index+1).padStart(2,"0")}</div><div class="note-main"><h3>${note.title}</h3><p>${note.summary}</p></div><div class="note-meta"><span class="topic-chip">${topic.label}</span><span class="status-pill ${status.className}">${status.label}</span></div>`;
+      noteList.appendChild(article);
+    });
+    const rows=[...noteList.children];
+
+    function applyFilters(updateUrl=true){
+      const query=librarySearch.value.trim().toLocaleLowerCase("zh-Hant");
+      let shown=0;
+      rows.forEach(row=>{
+        const topicMatch=currentTopic==="all"||row.dataset.topic===currentTopic;
+        const queryMatch=!query||row.dataset.search.includes(query);
+        const visible=topicMatch&&queryMatch;
+        row.hidden=!visible;
+        if(visible)shown+=1;
+      });
+      filters.forEach(btn=>btn.setAttribute("aria-pressed",String(btn.dataset.topic===currentTopic)));
+      resultCount.textContent=`${shown} / ${NOTES.length} NOTES`;
+      emptyState.hidden=shown!==0;
+      if(updateUrl){
+        const url=new URL(location.href);
+        currentTopic==="all"?url.searchParams.delete("topic"):url.searchParams.set("topic",currentTopic);
+        query?url.searchParams.set("q",librarySearch.value.trim()):url.searchParams.delete("q");
+        history.replaceState(null,"",url);
+      }
+    }
+    filters.forEach(btn=>btn.addEventListener("click",()=>{currentTopic=btn.dataset.topic;applyFilters();}));
+    librarySearch.addEventListener("input",()=>applyFilters());
+    document.getElementById("heroSearchForm").addEventListener("submit",event=>{
+      event.preventDefault();librarySearch.value=heroSearch.value;applyFilters();document.getElementById("library").scrollIntoView({behavior:"smooth"});
+    });
+    document.querySelectorAll("[data-query]").forEach(btn=>btn.addEventListener("click",()=>{
+      heroSearch.value=btn.dataset.query;librarySearch.value=btn.dataset.query;applyFilters();document.getElementById("library").scrollIntoView({behavior:"smooth"});
+    }));
+    addEventListener("keydown",event=>{if(event.key==="/"&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){event.preventDefault();heroSearch.focus();}});
+
+    const params=new URL(location.href).searchParams;
+    const topicParam=params.get("topic");
+    if(topicParam&&["game","research","agent","media","web"].includes(topicParam))currentTopic=topicParam;
+    const queryParam=params.get("q")||"";
+    librarySearch.value=queryParam;heroSearch.value=queryParam;applyFilters(false);
+
+    const anchorLinks=[...document.querySelectorAll(".anchor-link")];
+    const sections=anchorLinks.map(link=>document.querySelector(link.getAttribute("href"))).filter(Boolean);
+    const observer=new IntersectionObserver(entries=>{
+      const visible=entries.filter(entry=>entry.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio)[0];
+      if(!visible)return;
+      anchorLinks.forEach(link=>link.classList.toggle("active",link.getAttribute("href")==="#"+visible.target.id));
+    },{rootMargin:"-18% 0px -68% 0px",threshold:[0,.15,.5]});
+    sections.forEach(section=>observer.observe(section));
+
+    const themeToggle=document.getElementById("themeToggle");
+    function setTheme(theme){document.documentElement.dataset.theme=theme;themeToggle.textContent=theme==="dark"?"淺色模式":"深色模式";themeToggle.setAttribute("aria-pressed",String(theme==="dark"));}
+    const savedTheme=localStorage.getItem("knowledge-atlas-theme");
+    if(savedTheme==="dark"||savedTheme==="light")setTheme(savedTheme);
+    themeToggle.addEventListener("click",()=>{const next=document.documentElement.dataset.theme==="dark"?"light":"dark";setTheme(next);localStorage.setItem("knowledge-atlas-theme",next);});
+  </script>
+</body>
+</html>
