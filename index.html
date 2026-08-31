@@ -30,8 +30,16 @@
   header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 4px; flex-wrap: wrap; }
   h1 { font-size: 26px; letter-spacing: 1px; }
   h1 span { color: var(--dim); font-weight: 400; }
-  .about-link { margin-left: auto; color: var(--dim); text-decoration: none; font-size: 14px; border-bottom: 1px dotted var(--dim); }
+  .header-links { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+  .about-link { color: var(--dim); text-decoration: none; font-size: 14px; border-bottom: 1px dotted var(--dim); }
   .about-link:hover { color: var(--ink); }
+  .private-link {
+    display: inline-flex; align-items: center; align-self: center; gap: 6px;
+    padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px;
+    color: var(--dim); text-decoration: none; font-size: 13px; transition: all .15s;
+  }
+  .private-link:hover { color: var(--ink); border-color: var(--dim); background: var(--panel); }
+  .private-link svg { flex: none; }
   .hint { color: var(--dim); font-size: 13px; margin-bottom: 24px; }
   @media (max-width: 640px) { .hint .kbd-only { display: none; } }
 
@@ -171,7 +179,12 @@
 <div class="wrap">
   <header>
     <h1>treefar <span>／專案導航</span></h1>
-    <a class="about-link" href="/about.html">關於我</a>
+    <div class="header-links">
+      <a class="about-link" href="/about.html">關於我</a>
+      <a class="private-link" href="https://tf-private.pages.dev/" target="_blank" rel="noopener" title="Cloudflare Access 門禁：個人資料、學生查詢、論文網頁、健康記錄">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>私人頁面
+      </a>
+    </div>
   </header>
   <p class="hint"><span class="kbd-only">按數字鍵 1–9 直接開啟對應專案　·　</span>本機工具僅在自己電腦且服務開啟時可用</p>
 
