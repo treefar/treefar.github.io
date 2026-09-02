@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>論證協定Unity移植計畫</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
+<style>
+  :root{
+    --bg:#F4F5F8; --panel:#FFFFFF; --panel2:#EDEFF4; --line:#D6DAE3;
+    --ink:#1B2130; --muted:#5C6575; --blue:#2B55D8; --amber:#9A6200; --teal:#0E8C7F; --red:#B4232A;
+    --hud:"Chakra Petch","Noto Sans TC",sans-serif; --body:"Noto Sans TC",sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0E1117; --panel:#161B24; --panel2:#1D2330; --line:#2C3442;
+      --ink:#E9ECF3; --muted:#99A2B2; --blue:#7A95FF; --amber:#FFB74A; --teal:#4BD3C0; --red:#FF7B7B;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0E1117; --panel:#161B24; --panel2:#1D2330; --line:#2C3442;
+    --ink:#E9ECF3; --muted:#99A2B2; --blue:#7A95FF; --amber:#FFB74A; --teal:#4BD3C0; --red:#FF7B7B;
+  }
+  body{background:var(--bg);color:var(--ink);font:400 16px/1.8 var(--body);}
+  .wrap{max-width:920px;margin:0 auto;padding:40px 20px 80px;}
+  .eyebrow{font:600 12px/1 var(--hud);letter-spacing:.22em;color:var(--blue);text-transform:uppercase;}
+  h1{font:900 32px/1.3 var(--body);margin:10px 0 6px;text-wrap:balance;}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 22px;}
+  h2{font:700 14px/1.3 var(--hud);letter-spacing:.12em;color:var(--blue);margin:44px 0 10px;text-transform:uppercase;border-bottom:2px solid var(--line);padding-bottom:8px;}
+  h3{font:900 17px/1.4 var(--body);margin:20px 0 8px;}
+  p{max-width:72ch;margin:10px 0;}
+  .verdict{border:1px solid var(--line);border-left:4px solid var(--blue);background:var(--panel);padding:16px 20px;margin:20px 0;}
+  .verdict p{margin:6px 0;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;background:var(--panel);margin:14px 0;}
+  th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top;}
+  th{font:600 12px/1.4 var(--hud);letter-spacing:.06em;color:var(--muted);background:var(--panel2);white-space:nowrap;}
+  td b{font-weight:700;}
+  .tbl{overflow-x:auto;}
+  .tag{display:inline-block;font:600 11px/1 var(--hud);letter-spacing:.05em;padding:4px 8px;border:1px solid var(--line);background:var(--panel2);color:var(--muted);white-space:nowrap;}
+  .tag.codex{color:var(--blue);border-color:var(--blue);}
+  .tag.copilot{color:var(--teal);border-color:var(--teal);}
+  .tag.agy{color:var(--amber);border-color:var(--amber);}
+  .tag.main{color:var(--red);border-color:var(--red);}
+  ul,ol{padding-left:22px;max-width:72ch;}
+  li{margin:6px 0;}
+  code{font:500 13px/1.5 var(--hud);color:var(--teal);word-break:break-all;background:var(--panel2);padding:1px 5px;}
+  .risk{border-left:4px solid var(--amber);background:var(--panel);padding:12px 16px;margin:12px 0;font-size:14.5px;}
+  .risk b{color:var(--amber);}
+  .hard{border-left:4px solid var(--red);background:var(--panel);padding:12px 16px;margin:12px 0;font-size:14.5px;}
+  .hard b{color:var(--red);}
+  .mermaid-box{background:var(--panel);border:1px solid var(--line);padding:12px;overflow-x:auto;}
+  footer{margin-top:56px;border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:13px;}
+  .num{font-variant-numeric:tabular-nums;}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+<div class="eyebrow">Argument Protocol → Unity 6</div>
+<h1>Unity 移植計畫</h1>
+<p class="sub">2026-09-02 規畫（Claude 主力設計）｜執行預定交由副戰力：Copilot cloud agent／Codex／agy／DeepSeek｜派工與否由你拍板</p>
+
+<div class="verdict">
+  <p><b>一句話：</b>不從 HTML 反抽任何東西。資產全在 <code>Generated/</code>、敘事資料全在 <code>resolved-story.json</code>、行為真值全被 47 個測試鎖死——移植就是「重寫殼、照搬料、對同一份考卷」。</p>
+  <p><b>為什麼要移：</b>HTML 單檔 156.84 MiB 已超 GitHub 上限，Firefox 記憶體超 1,500 MiB 硬門檻且無降載空間；瀏覽器單檔路線的天花板已到。Unity 沒有這兩個限制，還能一次解掉 BGM 循環、資產串流與發行通路問題。</p>
+</div>
+
+<h2>1. 凍結基線（移植起點）</h2>
+<div class="tbl"><table>
+  <tr><th>HTML 成品</th><td class="num"><code>08_論證協定_全遊戲版.html</code>｜164,457,568 bytes｜SHA-256 <code>C661AE22…CD1DEE</code></td></tr>
+  <tr><th>內容量</th><td class="num">6 案件・13 角色・6 章間・18 組關係題・157 句語音・6 首 OST・84 張正式影像・4 套字型（SIL OFL）</td></tr>
+  <tr><th>驗證狀態</th><td>功能測試全 PASS（50 項回歸、六章純觸控、駐留、音訊）；Firefox 120 秒 FPS 49–52 PASS、RSS 1,613.7 MiB FAIL → 發布 NO-GO</td></tr>
+  <tr><th>Git</th><td>本機 <code>main</code>，無 remote。原始 PNG／WAV／MP3 全部在版控內。</td></tr>
+</table></div>
+
+<h2>2. 三個支點（為什麼移植成本可控）</h2>
+<ol>
+  <li><b>資產不用抽：</b><code>Generated/</code> 保有全部原始檔——84 張 PNG（含切格規則可由樣板推得）、6 首 OST 的 <code>master.wav</code>＋stems、157 句語音 MP3＋口型時間軸（mouthCues）、4 套 WOFF2。</li>
+  <li><b>資料不用寫：</b><code>Generated/resolved-story.json</code>（schema 4）就是完整敘事資料庫：cases／profiles／interludes／interludeChoices／interludePerformances／narrativeArcs／chapterEpilogues，一支匯入器就能進 Unity。</li>
+  <li><b>驗收不用想：</b>47 個 spec 早已把行為鎖成可判定條件（例：探索完成後 <code>routeHistory=0,1,0,2,3</code>、返程成本 5 秒、CASE 00 三題關係語意為 反證/反證/時序）。Unity 版拿同一份考卷來考。</li>
+</ol>
+
+<h2>3. 硬規則（發給任何執行者的工單都要抄進第 0 節）</h2>
+<div class="hard"><b>版本鎖：</b>Unity 一律 <code>6000.5.10f1</code>（四台統一基準，開工先跑 unity-version-guard）；禁止降版、禁止用更新版開啟。</div>
+<div class="hard"><b>範圍鎖：</b>副戰力只做「執行」不做「設計」；一律獨立 branch；同一檔案同一時間只交一個工具；工單必附白名單目錄與 yes/no 驗收條件。</div>
+<div class="hard"><b>美術鎖：</b>只搬運既有 84 張核准影像；任何新美術仍走核准生圖管線（AGY／Codex／ImageGen），程式產生的像素只能當 graybox。264 格章間動畫缺口不因移植消失。</div>
+<div class="hard"><b>音訊鎖：</b>循環音樂一律用 <code>Generated/music/*/master.wav</code>（WAV 無編碼縫隙，Unity <code>AudioSource.loop</code> 天生無縫）；不要拿 master.mp3。</div>
+<div class="hard"><b>權利鎖：</b>157 句語音是 Edge TTS／System.Speech 產物，公開散布權未封板——Unity 版預設「語音功能做好但先關」，權利解決前不得隨遊戲公開發布。</div>
+
+<h2>4. 里程碑</h2>
+<div class="tbl"><table>
+  <tr><th>M1</th><td><b>序章垂直切片</b>：標題 → CASE 00 全流程 → INTERLUDE 00，20 分鐘可玩，Windows build。這是第一個對外可展示點。</td></tr>
+  <tr><th>M2</th><td><b>六章完整</b>：全案件＋章間＋存檔＋全案結算，行為對照表逐項綠。</td></tr>
+  <tr><th>M3</th><td><b>平台驗收</b>：Profiler 效能基準、實機測試、權利封板複查、發行通路決策（Windows 先行，WebGL 另評）。</td></tr>
+</table></div>
+
+<h2>5. 工作包（WP0–WP9）</h2>
+<p>每包都設計成「單一工具、單一 branch、可獨立驗收」。建議執行者只是提議，派給誰由你決定。</p>
+<div class="tbl"><table>
+  <tr><th>編號</th><th>內容</th><th>驗收（yes/no）</th><th>建議執行者</th><th>依賴</th></tr>
+  <tr><td><b>WP0</b></td><td>專案骨架：Unity 6000.5.10f1＋URP 2D＋資料夾規範＋新 repo（Git LFS 收大檔）</td><td>專案開啟 0 error；空場景 Windows build 成功</td><td><span class="tag copilot">Copilot</span></td><td>—</td></tr>
+  <tr><td><b>WP1</b></td><td>資料匯入器：Editor 腳本把 resolved-story.json 轉成 ScriptableObject 資產</td><td>6 案／13 角／6 章間／18 關係題數量斷言＋EditMode 測試 PASS</td><td><span class="tag codex">Codex</span></td><td>WP0</td></tr>
+  <tr><td><b>WP2</b></td><td>素材搬運：84 PNG→Sprite（附切格規格表）、WAV／MP3 音訊、4 字型→TMP</td><td>對帳清單 84／163／4 逐項打勾；匯入設定表核對無壓縮失真</td><td><span class="tag copilot">Copilot</span></td><td>WP0</td></tr>
+  <tr><td><b>WP3</b></td><td>場景流程狀態機：title→briefing→explore→board→debate→logic→rhythm→closing→verdict→interlude 十三態流轉</td><td>用假內容從標題一路走到章間結束（PlayMode 測試）</td><td><span class="tag codex">Codex</span></td><td>WP1</td></tr>
+  <tr><td><b>WP4</b></td><td>探索與雙支線：四區導航、障礙、證物收錄、支線鎖定與 5 秒返程成本</td><td>與 HTML spec 同條件：8 證物、routeHistory <code>0,1,0,2,3</code>、routeCost 5</td><td><span class="tag codex">Codex</span></td><td>WP2, WP3</td></tr>
+  <tr><td><b>WP5</b></td><td>證據板：反證／佐證／時序語意、CHAIN、branchFirst 決定出題順序</td><td>CASE 00 三題判定與 HTML 真值完全一致；錯誤用途不前進</td><td><span class="tag codex">Codex</span></td><td>WP4</td></tr>
+  <tr><td><b>WP6</b></td><td>四個小遊戲（拆四張小工單）：論辯／論理排列／節拍攻防／因果重構</td><td>各自對照 HTML spec 的成功與失敗路徑</td><td><span class="tag codex">Codex</span></td><td>WP3</td></tr>
+  <tr><td><b>WP7</b></td><td>音訊：WAV 無縫循環＋音量階段（musicStage）＋語音播放與 mouthCues 口型驅動（預設關閉，見權利鎖）</td><td>循環接點無斷差；暫停停播、恢復續播行為同 HTML G25／G27</td><td><span class="tag codex">Codex</span></td><td>WP2, WP3</td></tr>
+  <tr><td><b>WP8</b></td><td>章間演出：sprite sheet 逐格播放、轉身／動作 raster、beat 0 路徑回響</td><td>I00 五個 beat 可完整播放；缺 raster 的 beat 明確標 fallback 不冒充</td><td><span class="tag codex">Codex</span></td><td>WP2, WP3</td></tr>
+  <tr><td><b>WP9</b></td><td>QA 對照表：把 47 個 HTML spec 的驗收條件翻成 Unity Test Framework 清單文件</td><td>逐條可判定；主力抽查 10 條無翻譯失真</td><td><span class="tag agy">DeepSeek／agy</span></td><td>WP1</td></tr>
+</table></div>
+
+<h2>6. 依賴關係</h2>
+<div class="mermaid-box"><pre class="mermaid">
+flowchart LR
+  WP0[WP0 骨架] --> WP1[WP1 資料匯入]
+  WP0 --> WP2[WP2 素材搬運]
+  WP1 --> WP3[WP3 流程狀態機]
+  WP1 --> WP9[WP9 QA對照表]
+  WP2 --> WP4[WP4 探索支線]
+  WP3 --> WP4
+  WP4 --> WP5[WP5 證據板]
+  WP3 --> WP6[WP6 四小遊戲]
+  WP2 --> WP7[WP7 音訊]
+  WP3 --> WP7
+  WP2 --> WP8[WP8 章間演出]
+  WP3 --> WP8
+  WP5 --> M1((M1 序章切片))
+  WP6 --> M1
+  WP7 --> M1
+  WP8 --> M1
+</pre></div>
+<p>關鍵路徑是 WP0→WP1→WP3→WP4→WP5；WP2 與 WP9 可完全平行。</p>
+
+<h2>7. 派工原則與角色分工</h2>
+<ul>
+  <li><span class="tag copilot">Copilot cloud agent</span>：機械性、規格明確的搬運與骨架（WP0／WP2），在獨立 branch 上交 PR。</li>
+  <li><span class="tag codex">Codex</span>：主要程式實作（WP1／WP3–WP8）。額度 2026-09-07 才重置，在那之前這些包先不派或改派。</li>
+  <li><span class="tag agy">agy／DeepSeek</span>：文件翻譯、對照表、小工具腳本（WP9）；agy 另供新美術生圖。</li>
+  <li><span class="tag main">Claude（主力，貴）</span>：只做三件事——工單撰寫（含範圍鎖與驗收）、跨包整合、驗收覆核。不寫日常實作碼。</li>
+</ul>
+
+<h2>8. 風險與已知缺口</h2>
+<div class="risk"><b>解析度策略要先定：</b>HTML 版是 canvas 無級縮放；Unity 需定 reference resolution（建議 1280×720）與 390×844 直式安全區。這是 WP3 開工前的設計決策，屬主力工作。</div>
+<div class="risk"><b>座標翻譯是最大陷阱：</b>HTML 的 UI 全是 canvas 座標寫死；照抄數字必錯。工單要求以「比例＋錨點」重寫，驗收看行為不看座標。</div>
+<div class="risk"><b>語音權利未封板：</b>見權利鎖。M1 展示版可用字幕＋音效走完流程。</div>
+<div class="risk"><b>美術 264 格缺口照舊：</b>31 個章間 beat 只有 11 個完整；移植不會讓它變完整，M2 之後仍要回頭補生。</div>
+
+<h2>9. 開工前待你拍板的四題</h2>
+<ol>
+  <li>2D 管線用 <b>URP 2D</b>？（建議是；四台都能跑，之後上特效有 2D 光照）</li>
+  <li>目標平台 <b>Windows 先行</b>、WebGL 之後另評？（建議是；WebGL 會把記憶體問題帶回來）</li>
+  <li>開 <b>新 repo＋Git LFS</b>，與 HTML 版分家？（建議是；現 repo 無 remote，正好一起解備份）</li>
+  <li>語音先關、字幕走完流程？（建議是；權利封板前不隨 build 散布語音檔）</li>
+</ol>
+
+<footer>
+  來源依據：<code>LATEST_HANDOFF.md</code>（2026-09-02 節）・<code>Generated/resolved-story.json</code>（schema 4）・<code>AGPS/priority-board.md</code>・47 個 <code>tests/*.spec</code>。<br>
+  你拍板後，我再依 delegate-to-agy／ai-fleet-handoff 格式逐包產出可直接貼給執行者的完整工單（含範圍鎖第 0 節與失敗路徑）。
+</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true,theme:window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"neutral"});</script>
+</body>
+</html>
