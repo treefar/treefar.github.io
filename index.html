@@ -186,7 +186,7 @@
       </a>
     </div>
   </header>
-  <p class="hint"><span class="kbd-only">按數字鍵 1–9 直接開啟對應專案　·　</span>本機工具僅在自己電腦且服務開啟時可用</p>
+  <p class="hint"><span class="kbd-only">按數字鍵 1–9 直接開啟對應專案</span></p>
 
   <section aria-labelledby="noticeHeading">
     <h2 class="sec" id="noticeHeading">近期注意事項</h2>
@@ -206,10 +206,6 @@
   <h2 class="sec">投影片專區</h2>
   <p class="note">可下載的完整簡報；卡片縮圖是封面，點擊後直接下載 PPTX。</p>
   <div class="grid" id="slides"></div>
-
-  <h2 class="sec">本機工具</h2>
-  <p class="note">這些連結指向 localhost 或本機路徑，只在這台電腦、對應服務開著時有效；路徑卡片點一下即複製。</p>
-  <div class="mini-grid" id="tools"></div>
 
   <h2 class="sec">外部連結</h2>
   <div class="mini-grid" id="links"></div>
@@ -238,12 +234,6 @@ const SITES = [
   { slug: "paddy-wind", title: "風從稻田來｜Where the Paddy Wind Blows", cat: "game story", tag: "GAME × BICYCLE JOURNEY",
     image: "paddy-wind.webp", repo: "treefar.github.io",
     desc: "十五分鐘的南臺灣水田自行車旅程。開場直接說明操作，固定龍頭的雙姿勢踩踏循環更穩定；上坡按 D、下坡主動煞車，並加入高空浮雲、飛鳥、水面倒影與桌機、手機多點觸控。" },
-  { slug: "game-proto-lab", title: "GameProtoLab｜三款遊戲原型決策頁", cat: "game tool", tag: "GAME × PROTOTYPE LAB",
-    image: "game-proto-lab.png", repo: "treefar.github.io",
-    desc: "三款 Unity 原型的玩法定位、完成度與續作決策：Clash 優先、Abathor 次之，Sushiamo 保留技術骨架；附實際建置、畫面、效能與黑箱驗證證據。" },
-  { slug: "storm-ink-lab", title: "雷墨繪卷｜2D × 3D 美術實驗", cat: "game tool", tag: "GAME × ART TECH",
-    image: "storm-ink-lab.png", repo: "treefar.github.io",
-    desc: "以手繪墨線、霧面水粉與和紙肌理，統一 Unity 2D 戰鬥原型與 Three.js 3D 卡通渲染砲塔。含成果圖庫、驗證紀錄、互動關節控制與 GLB 匯出。" },
   { slug: "hold-the-line", title: "請勿掛斷｜Hold the Line", cat: "game story", tag: "GAME × VISUAL NOVEL",
     image: "hold-the-line.jpg",
     desc: "深夜值班時接起一通不該存在的電話。調查異常、拼湊證據，在記憶與真相互相污染前做出選擇，走向 19 種結局的心理懸疑視覺小說。" },
@@ -253,12 +243,6 @@ const SITES = [
   { slug: "bloodguard", title: "Bloodguard", cat: "game", tag: "GAME × ACTION",
     image: "bloodguard.png",
     desc: "選擇勇者守護石化法師，在血月競技場擊退魔物、收集血晶，逐步解除祭壇封印並迎戰血月魔王的繁中像素動作遊戲。" },
-  { slug: "echo-veil", title: "ECHO VEIL｜迴聲帷幕", cat: "game", tag: "GAME × ACTION EXPLORATION",
-    image: "echo-veil.png", repo: "treefar.github.io",
-    desc: "原創 2D 哥德科幻動作探索原型。以 Phase Step 穿越攻擊、近戰迎擊 Choir Sentry，勝負後自動展開新局；提供通過 15 分鐘連續驗證的 Windows Gate 1 版。" },
-  { slug: "tidal-sand", title: "Tidal Sand｜潮汐沙雕", cat: "game", tag: "GAME × SIMULATION",
-    image: "tidal-sand.png", repo: "treefar.github.io",
-    desc: "在桌上型潮汐沙盤裡挖溝、築堤，觀察水流如何改寫地形。自由創作結合三張潮汐工程挑戰卡；Windows 測試版已完成 15 分鐘以上代理操作驗證，真人 Gate 尚待完成。" },
   { slug: "stellar-commander", title: "星域指揮官 STELLAR COMMANDER", cat: "game", tag: "GAME × STRATEGY",
     image: "stellar-commander.jpg",
     desc: "回合制六角格搶地盤，兩軍接觸就切成即時 2D 混戰。桌機鍵盤與手機觸控皆可玩；完成四段作戰目標、培養 R1／R2／ACE 機體，並用工廠維修維持約 15 分鐘的完整戰局。" },
@@ -298,10 +282,6 @@ const SITES = [
     desc: "Three.js 3D 滑雪逃生。雪崩在後，一路閃樹過彎往山下衝。" },
   { slug: "capy-generator", title: "Capy Generator 水豚生成器", cat: "tool", tag: "TOOL",
     desc: "程序化 3D 水豚：捏體型、換毛色、玩玩具、切天氣，生成收藏卡片。" },
-  { slug: "yokai-realm", title: "妖境說", cat: "game story", tag: "GAME × STORY",
-    desc: "水墨山海間重寫一部山海經——視覺小說＋戰鬥原型。" },
-  { slug: "schoolStoryDemo", title: "本校怪異事件處理簿", cat: "story", tag: "STORY",
-    desc: "「系主任不是人」——校園怪談互動故事 Demo。" },
   { slug: "agd-comic-site", title: "動遊系 COMIC EDITION", cat: "site", tag: "SITE",
     desc: "樹德科大動畫與遊戲設計系，漫畫風新形象網站。" },
   { slug: "steam-tag-prompter", title: "Steam 標籤定位工具", cat: "tool", tag: "TOOL",
@@ -309,43 +289,23 @@ const SITES = [
   { slug: "first-principles-navigator", title: "第一性原理｜核心問題導航器", cat: "tool", tag: "TOOL × THINKING",
     image: "first-principles-navigator.webp",
     desc: "把模糊問題拆成事實、假設與最小驗證。提供三種分析深度、案例庫、假設風險矩陣、決策日誌與多格式匯出。" },
-  { slug: "argument-protocol-art", title: "論證協定｜序章美術檢視", cat: "site story", tag: "ART × GAME KEY VISUAL",
-    image: "argument-protocol-art.webp", repo: "treefar.github.io",
-    desc: "原創推理遊戲《論證協定》序章補強的美術成果頁：AI 生成標題主視覺的採用稿與完整提示詞、六項回收檢驗、落選稿與落選原因，以及手機介面修正的實機對照。" },
+
 ];
 
 // 投影片：放在首頁的獨立投影片專區，url 指向 repo 內的可下載檔案
 const SLIDES = [
-  { title: "1001 款不得不玩的遊戲：深入研究簡報", tag: "SLIDES × GAME RESEARCH", image: null,
-    url: "/slides/1001款不得不玩的遊戲_深入研究簡報.pptx",
-    desc: "把經典遊戲清單轉成可拆解、可教學、可研究的設計基因庫，連結遊戲史、設計研究與情感 AI。" },
   { title: "AI Agent Context Engineering 精簡教學版", tag: "SLIDES × AI AGENT", image: null,
     url: "/slides/AI_Agent_Context_Engineering_精簡教學版.pptx",
     desc: "從壓縮、記憶、過濾到任務導向摘要，理解 Agent 如何管理資訊生命週期。" },
   { title: "Hermes × n8n 重點摘要", tag: "SLIDES × AUTOMATION", image: null,
     url: "/slides/Hermes_n8n_重點摘要.pptx",
     desc: "比較 Hermes 與 n8n 的分工，整理先用 Hermes、何時補上 n8n，以及唯讀優先的導入原則。" },
-  { title: "反脆弱：生活工作實踐摘要", tag: "SLIDES × LIFE SYSTEM", image: null,
-    url: "/slides/反脆弱_生活工作實踐摘要.pptx",
-    desc: "從健身、遊戲開發、行政與親子關係，建立可恢復、可累積的生活與工作系統。" },
-  { title: "兩本書重點與個人化建言", tag: "SLIDES × READING", image: "deep-learning-deep-work.png",
-    url: "/slides/兩本書重點與個人化建言_深度學習力與深度工作力_實際情境修正版.pptx",
-    desc: "《深度學習力》×《深度工作力》：完整目錄、各章重點，以及對教學、博論、系務與 AI 工作流的個人化建言。" },
   { title: "管理器、Dashboard 與 Daemon", tag: "SLIDES × AI WORKFLOW", image: "dashboard-system.png",
     url: "/slides/管理器_Dashboard_Daemon_個人化建置方案.pptx",
     desc: "依實際工作情境設計三層 AI 工作系統：Dashboard 前台、管理器調度、Daemon 背景自動化與 90 天建置路線。" },
   { title: "深度專注行動指南｜樹遠老師版", tag: "SLIDES × FOCUS", image: "deep-focus.png",
     url: "/slides/深度專注行動指南_樹遠老師版.pptx",
     desc: "樹遠老師版的深度專注行動指南，加入個人工作節奏與可執行的專注方法。" },
-  { title: "1001 款不得不玩的遊戲｜研究表（2013 版）", tag: "DATA × RESEARCH", kind: "data", image: "github-top100-zh-tw.png",
-    url: "/slides/1001款不得不玩的遊戲_研究表_2013版.xlsx",
-    desc: "遊戲研究資料表（Excel），可下載作為研究、課程與遊戲分析的資料來源。" },
-  { title: "Gary Talks Stuff 主題簡報", tag: "SLIDES × AI SUMMARY", kind: "collection", image: "gary-talks-summary.png",
-    url: "/gary-talks-summary/",
-    desc: "47 支影片依主題整理成 5 份簡報：AI 工作流、工具實作、職涯設計、產業變化與投資觀點。" },
-  { title: "PAPAYA 電腦教室近三個月主題簡報", tag: "SLIDES × AI SUMMARY", kind: "collection", image: "papaya-class-summary.png",
-    url: "/papaya-class-summary/",
-    desc: "近三個月 9 支影片整理成 4 份簡報：AI 助手、知識庫、本機 AI、工作實作與創作技能。" },
   { title: "Higgsfield 開源 AI 電影提示詞", tag: "SLIDES × AI FILM", image: null,
     url: "/slides/Higgsfield_開源AI電影提示詞_重點摘要.pptx",
     desc: "50 萬美元、14 天、15 人做出 95 分鐘 AI 長片，整套提示詞開源。四層提示詞結構、把形容詞換成硬數字、負面表述為何無效，附可照抄的骨架模板。" },
@@ -367,25 +327,7 @@ const SLIDES = [
   { title: "遊戲・設計・研究知識地圖", tag: "REFERENCE × CURATED KNOWLEDGE", kind: "page", image: null,
     url: "/knowledge-atlas/",
     desc: "從 ChatGPT Classic 舊對話精鍊出的 22 份可搜尋摘要，整合遊戲與互動、研究教學、AI 代理、動畫媒體及 Web 基礎設施，並說明哪些內容該進 Vault、何時才值得升級成 Skill。" },
-  { title: "論證協定 Unity 移植計畫", tag: "REFERENCE × UNITY PORT", kind: "page", image: null,
-    url: "/argument-protocol-unity-plan/",
-    desc: "把 156.84 MiB 單檔 HTML 遊戲移進 Unity 6 的完整規畫：三個支點、五條硬規則、WP0–WP9 工作包與依賴圖，設計成可直接派給不同 AI 執行的工單骨架。" },
-];
 
-// 本機工具：有 url 的直接開啟（localhost 服務）；有 path 的點擊複製路徑
-const TOOLS = [
-  { title: "主力 AI 戰情室", url: "http://localhost:4711",
-    desc: "Claude Code 與 Codex 的專案進度與額度儀表板：哪個專案在跑、最後做到哪、5 小時與每週額度剩多少。本機點此直接進；出門在外走 Tailscale，用終端印出的帶 token 網址。" },
-  { title: "招生情報站", url: "http://localhost:5821",
-    desc: "動遊系招生戰情：全台同類系所七年註冊率走勢、政策與產業動態、系內體質與可執行建議。資料源為教育部校務資訊公開平臺。服務沒開時，先到 Desktop\\招生情報站 跑 npm run serve。" },
-  { title: "博論實驗輔助系統", url: "http://localhost:3789",
-    desc: "編劇實務研究的實驗輔助系統，服務開著時點此進入。" },
-  { title: "拼界 Puzzlebound（Unity 專案）", path: "C:\\Users\\USER\\Desktop\\Puzzlebound",
-    desc: "甄妤畢展 VN。點擊複製專案路徑，到檔案總管貼上開啟。" },
-  { title: "風格庫原始碼（20 套）", path: "C:\\Users\\USER\\Desktop\\claude design 風格庫",
-    desc: "要改風格時用這個。改 styles/*.json 後跑 node tools/build.mjs 重建，再 git push 推 style-library repo，線上就更新。含 _source/ 的 Claude Design 匯出原檔與素材 zip（151 MB，不上線）。本機預覽 node tools/serve.mjs → localhost:5811。" },
-  // { title: "範例：本機服務", url: "http://localhost:8080", desc: "說明文字" },
-  // { title: "範例：資料夾捷徑", path: "D:\\某個資料夾", desc: "點擊複製路徑" },
 ];
 
 // 外部連結
@@ -459,21 +401,6 @@ SLIDES.forEach((s) => {
       <div class="foot"><span class="url">${s.kind === "data" ? "下載 Excel" : s.kind === "collection" ? "開啟簡報集" : s.kind === "page" ? "開啟速查頁" : "下載 PPTX"}</span><span class="gh">投影片專區</span></div>
     </div>`;
   slides.appendChild(a);
-});
-
-const tools = document.getElementById("tools");
-TOOLS.forEach(t => {
-  const el = document.createElement(t.url ? "a" : "div");
-  el.className = "mini";
-  if (t.url) el.href = t.url;
-  el.innerHTML = `
-    <h3><span class="dot d-local"></span>${t.title}</h3>
-    <p>${t.desc || ""}</p>
-    <span class="addr">${t.url || t.path}</span>`;
-  if (t.path) el.addEventListener("click", () => {
-    navigator.clipboard.writeText(t.path).then(showToast);
-  });
-  tools.appendChild(el);
 });
 
 const links = document.getElementById("links");
