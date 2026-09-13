@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>第 4 週|生成式AI導論</title>
+<style>
+  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  * { box-sizing: border-box; }
+  #app {
+    position: fixed; inset: 0; overflow: hidden;
+    background: var(--bg);
+    font-family: var(--body);
+    color: var(--ink);
+    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
+    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
+    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
+    --bg: #F5F4EC; --bg2: #EFEEE2;
+    --panel: #FDFCF6; --panel2: #EDECDF;
+    --ink: #232B21; --sub: #67705E;
+    --accent: #2F6B4F; --accent-rgb: 47,107,79;
+    --accent2: #BC4F2C;
+    --line: rgba(35,43,33,.16);
+    --link: #2F6B4F;
+    --r: 4px;
+  }
+  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  #app a:hover { opacity: .85; }
+  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
+  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
+  .slide.active { display: flex; }
+  .slide::before {
+    content: ""; position: absolute; inset: 24px; pointer-events: none;
+    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
+  }
+
+  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
+  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
+  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+
+  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
+  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
+  .sub { color: var(--sub); }
+  .small { font-size: 18px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
+  .cards { display: grid; gap: 18px; }
+  .c2 { grid-template-columns: repeat(2, 1fr); }
+  .c3 { grid-template-columns: repeat(3, 1fr); }
+  .c4 { grid-template-columns: repeat(4, 1fr); }
+  .c5 { grid-template-columns: repeat(5, 1fr); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
+  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
+  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
+  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+
+  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
+  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+
+  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
+
+  .cover, .part { justify-content: center; }
+  .cover .eyebrow { margin-bottom: 26px; }
+  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
+  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
+  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
+  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
+  .part h2 { font-size: 56px; }
+  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+
+  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
+  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
+  .kv dd { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
+  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
+  .lk::after { content: " ↗"; font-size: 12px; }
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
+  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
+  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
+  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
+  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
+  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  .tl { display: flex; flex-direction: column; gap: 18px; }
+  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
+  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
+  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+
+  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
+  .content > .cards,
+  .content > .cols,
+  .content > .flow,
+  .content > .kv,
+  .content > .prob { flex: 1 1 auto; }
+  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .qlist,
+  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .biblio { flex: 0 0 auto; }
+  .cols > .card { justify-content: flex-start; }
+
+  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
+  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
+  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
+  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
+  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  .toc.on { display: block; }
+  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
+  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
+  .toc button:hover { background: var(--panel2); }
+  .toc button.here { color: var(--accent2); font-weight: 700; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
+  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+<div id="app" data-deck="b">
+  <div class="stagewrap"><div class="stage" id="stage">
+
+  <!-- 1 生成式 AI 導論 -->
+<section class="slide cover">
+    <div class="eyebrow">人工智慧與互動媒體特論 · 設計創新與經營研究所</div>
+    <h1>生成式 AI 導論</h1>
+    <p class="cover-sub">大型語言模型與圖像生成原理：從 ChatGPT、Midjourney 到 FLUX，看懂 2026 年 7 月的版圖與它背後不變的原理。</p>
+    <div class="cover-meta"><span>第 4 週</span><span>論文導讀與案例討論</span><span>授課：鄧樹遠</span></div>
+  </section>
+
+  <!-- 2 九十分鐘，五段路 -->
+<section class="slide">
+    <div class="eyebrow">Week 04 · 本週地圖</div>
+    <h2>九十分鐘，五段路</h2>
+    <div class="content">
+      <div class="cards c5">
+        <div class="card"><span class="who">PART 1</span><h3>語言模型原理</h3><p class="sub">一台猜下一個字的機器，為何會寫企劃</p></div>
+        <div class="card"><span class="who">PART 2</span><h3>2026 模型版圖</h3><p class="sub">GPT-5.6、Claude 5、Gemini 3.1 怎麼選</p></div>
+        <div class="card"><span class="who">PART 3</span><h3>圖像生成原理</h3><p class="sub">擴散模型：從雜訊中雕出影像</p></div>
+        <div class="card"><span class="who">PART 4</span><h3>工具與案例</h3><p class="sub">四大平台現況，加一個廣告爭議</p></div>
+        <div class="card"><span class="who">PART 5</span><h3>論文導讀</h3><p class="sub">兩篇文獻，把案例升級成研究</p></div>
+      </div>
+      <div class="take"><b>本週目標</b>建立「原理不變、工具常換」的判斷力：看懂任何一個新模型發布時，它到底新在哪。</div>
+    </div>
+  </section>
+
+  <!-- 3 從「判別」到「生成」 -->
+<section class="slide">
+    <div class="eyebrow">承接第 3 週 · 機器學習基礎</div>
+    <h2>從「判別」到「生成」</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">上週的世界</span>
+          <h3>判別式 AI</h3>
+          <ul>
+            <li>回答「這是什麼」：分類、預測、辨識</li>
+            <li>垃圾郵件過濾、人臉辨識、推薦系統</li>
+            <li>輸出是一個標籤或一個數值</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">本週的世界</span>
+          <h3>生成式 AI</h3>
+          <ul>
+            <li>回答「還可能有什麼」：從機率分布中抽樣出新內容</li>
+            <li>寫文案、畫概念圖、生影片、出 3D 模型</li>
+            <li>輸出是一件「作品」，好壞需要人來判斷</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 五種模態，一張地圖 -->
+<section class="slide">
+    <div class="eyebrow">生成式 AI 家族地圖 · 2026</div>
+    <h2>五種模態，一張地圖</h2>
+    <div class="content">
+      <div class="cards c5">
+        <div class="card"><h3>文字</h3><ul><li>ChatGPT</li><li>Claude</li><li>Gemini</li></ul><p class="sub small">本週 PART 1–2</p></div>
+        <div class="card"><h3>圖像</h3><ul><li>Midjourney</li><li>FLUX</li><li>Nano Banana</li></ul><p class="sub small">本週 PART 3–4</p></div>
+        <div class="card"><h3>影片</h3><ul><li>Sora</li><li>Veo</li><li>Runway</li></ul><p class="sub small">第 12 週深入</p></div>
+        <div class="card"><h3>音訊</h3><ul><li>Suno</li><li>ElevenLabs</li></ul><p class="sub small">案例穿插各週</p></div>
+        <div class="card"><h3>3D</h3><ul><li>Tripo</li><li>Meshy</li></ul><p class="sub small">第 11 週空間設計</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 大型語言模型的原理 -->
+<section class="slide part">
+    <div class="part-num">01</div>
+    <div class="eyebrow">PART 1</div>
+    <h2>大型語言模型的原理</h2>
+    <p class="part-sub">一台永遠在猜「下一個字」的機器，為什麼能寫詩、寫企劃書、寫程式？四個概念：Token、機率、注意力、對齊。</p>
+  </section>
+
+  <!-- 6 Token：語言先被切成積木 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 語言模型原理</div>
+    <h2>Token：語言先被切成積木</h2>
+    <div class="content">
+      <div class="chips">
+        <span class="sub">「互動媒體設計」→</span>
+        <span class="chip">互動</span><span class="chip">媒體</span><span class="chip">設計</span>
+        <span class="sub">（3 個 token，實際切法依模型而異）</span>
+      </div>
+      <ul>
+        <li>模型眼中沒有「字」，只有一串編號；理解與生成都在編號序列上進行</li>
+        <li>中文常被切得比英文碎，同樣語意的 token 數可能更多，直接影響<strong>成本</strong>與<strong>上下文容量</strong></li>
+        <li>脈絡窗口（context window）以 token 計價：它就是模型的工作記憶上限</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 7 下一個字的機率遊戲 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 語言模型原理</div>
+    <h2>下一個字的機率遊戲</h2>
+    <div class="content">
+      <p style="font-size:20px; line-height:1.3; margin:0">「這個展場的動線設計非常＿＿」</p>
+      <div class="prob">
+        <span class="chip hot">流暢</span><div class="bar"><i style="width:46%"></i></div><span class="pv">46%</span>
+        <span class="chip">直覺</span><div class="bar"><i style="width:22%"></i></div><span class="pv">22%</span>
+        <span class="chip">大膽</span><div class="bar"><i style="width:12%"></i></div><span class="pv">12%</span>
+        <span class="chip">香</span><div class="bar"><i style="width:1%"></i></div><span class="pv">&lt;1%</span>
+      </div>
+      <ul>
+        <li>自迴歸（autoregressive）：每次只選一個 token，接回句尾，再猜下一個</li>
+        <li>temperature 是創意旋鈕：調高更常選到低機率的字，驚喜與胡言同步上升</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 8 Transformer：每個字都 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 語言模型原理</div>
+    <h2>Transformer：每個字都在看整句</h2>
+    <div class="content">
+      <div class="att">
+        <span style="--w:.45">這張海報</span><span style="--w:.7">的配色</span><span style="--w:.1">很大膽，</span><span class="q">它</span><span style="--w:.05">讓人想起</span><span style="--w:.2">包浩斯</span>
+      </div>
+      <p class="sub small" style="margin:0">背景越深，代表「它」這個字對該片段的注意力權重越高</p>
+      <ul>
+        <li>注意力機制（attention）：生成每個字時，回頭衡量整句中誰最相關</li>
+        <li>2017 年論文〈<a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">Attention Is All You Need</a>〉是整波生成式 AI 的技術原點</li>
+        <li>平行運算讓「讀很長的脈絡」變得可行，這是 GPU（如教室外那些 RTX）吃重的原因</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 9 從預訓練到對齊：模型的三段養成 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 語言模型原理</div>
+    <h2>從預訓練到對齊：模型的三段養成</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>1. 預訓練</h3><p>吞下網路規模的文本，學會語言結構與世界知識，會接話但不聽話</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>2. 監督微調</h3><p>用人工示範的問答對，學會「聽懂指令、按格式回答」</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>3. 人類回饋強化學習</h3><p>RLHF：由人類偏好排序訓練出「得體」，也決定了模型的個性</p></div>
+      </div>
+      <ul>
+        <li>對齊（alignment）讓模型可用，也正是價值觀與偏見寫入之處</li>
+      </ul>
+      <div class="take"><b>假設情境</b>同一份社團海報需求交給不同模型後，把語氣、構圖與避答內容並排；差異會比單看排行榜清楚。</div>
+    </div>
+  </section>
+
+  <!-- 10 規模法則與湧現能力 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 語言模型原理</div>
+    <h2>規模法則與湧現能力</h2>
+    <div class="content">
+      <div class="cols">
+        <div>
+          <svg viewBox="0 0 460 240" width="460" height="240" role="img" aria-label="能力隨規模上升的示意曲線">
+            <line x1="40" y1="200" x2="440" y2="200" stroke="var(--line)" stroke-width="2"/>
+            <line x1="40" y1="200" x2="40" y2="20" stroke="var(--line)" stroke-width="2"/>
+            <path d="M 40 196 C 160 190, 220 180, 268 150 C 300 128, 330 70, 420 40" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="268" cy="150" r="6" fill="var(--accent2)"/>
+            <text x="252" y="132" fill="var(--accent2)" font-size="15" font-family="inherit">湧現點</text>
+            <text x="330" y="222" fill="var(--sub)" font-size="14">資料 × 參數 × 算力</text>
+            <text x="48" y="34" fill="var(--sub)" font-size="14">任務能力</text>
+          </svg>
+        </div>
+        <ul>
+          <li>規模法則（scaling laws）：投入越大，損失可預測地下降</li>
+          <li>湧現（emergence）：翻譯、推理、寫程式等能力沒有被逐一設計，是規模跨過門檻後「長」出來的</li>
+          <li>所以沒有人能完整列出一個模型「會什麼」，只能靠評測與使用去發現</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 三個內建的坑：幻覺、偏見、知識截 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 語言模型原理</div>
+    <h2>三個內建的坑：幻覺、偏見、知識截止</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><h3>幻覺</h3><p>一本正經地虛構。最危險的形式：看起來完全合格的「假文獻、假數據、假 API」。</p></div>
+        <div class="card"><h3>偏見</h3><p>訓練資料的世界觀會滲進輸出：性別、族群、美感預設。設計輸出尤其要警覺「預設長相」。</p></div>
+        <div class="card"><h3>知識截止</h3><p>模型只知道訓練截止日前的世界，之後的事需要搜尋工具補足，否則自信地過時。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 2026 年 7 月的模型版圖 -->
+<section class="slide part">
+    <div class="part-num">02</div>
+    <div class="eyebrow">PART 2</div>
+    <h2>2026 年 7 月的模型版圖</h2>
+    <p class="part-sub">版本號會持續變動。本節練習讀發布內容的「定位語言」，不要求背誦型號。</p>
+  </section>
+
+  <!-- 13 GPT-5.6：三顆星球的產品線 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 模型版圖 · OpenAI</div>
+    <h2>GPT-5.6：三顆星球的產品線</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>發布</dt><dd class="num">2026 年 7 月 9 日</dd>
+        <dt>家族</dt><dd>Luna（最低成本）／ Terra（前代效能、約半價）／ Sol（旗艦）</dd>
+        <dt>Sol 定位</dt><dd>複雜推理、程式開發、代理式（agentic）工作流的「工作馬」</dd>
+        <dt>ChatGPT 內</dt><dd>付費方案經推理設定使用 Sol；日常對話預設仍是 GPT-5.5 Instant</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://openai.com/index/previewing-gpt-5-6-sol/" target="_blank" rel="noopener">OpenAI 官方介紹</a>
+        <a class="lk" href="https://help.openai.com/en/articles/9624314-model-release-notes" target="_blank" rel="noopener">Model Release Notes</a>
+        <a class="lk" href="https://en.wikipedia.org/wiki/GPT-5.6" target="_blank" rel="noopener">Wikipedia：GPT-5.6</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14 Claude 5 家族與 Gem -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 模型版圖 · 另外兩強</div>
+    <h2>Claude 5 家族與 Gemini 3.1</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">ANTHROPIC</span>
+          <h3>Claude 5 家族</h3>
+          <ul>
+            <li>2026 年首發 Fable 5，開出高於 Opus 的新層級「Mythos 級」；Opus 4.8 仍在線服務</li>
+            <li>以長文寫作、文獻分析與代理式編程（Claude Code）見長</li>
+            <li><a href="https://www.anthropic.com/news/claude-fable-5-mythos-5" target="_blank" rel="noopener">官方發布說明</a></li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">GOOGLE</span>
+          <h3>Gemini 3.1</h3>
+          <ul>
+            <li>Flash 與 Omni Flash 主打速度與原生多模態</li>
+            <li>影像能力＝Nano Banana 2，直接長進搜尋與 Gemini App（PART 4 詳談）</li>
+            <li><a href="https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-omni-flash-nano-banana-2-lite/" target="_blank" rel="noopener">官方發布說明</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 15 設計師的選型思考：情境對模型 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 模型版圖</div>
+    <h2>設計師的選型思考：情境對模型</h2>
+    <div class="content">
+      <dl class="kv" style="grid-template-columns:300px 1fr">
+        <dt>概念發想、廣度探索</dt><dd>任一旗艦皆可，勝負在提示品質與你的判斷力</dd>
+        <dt>長篇文獻導讀與寫作</dt><dd>看長上下文與文風穩定度（Claude 是常見選擇）</dd>
+        <dt>圖文混合、Google 生態</dt><dd>Gemini 3.1：多模態原生，工作區整合最深</dd>
+        <dt>代理工作流、程式輔助</dt><dd>GPT-5.6 Sol 或 Claude：看團隊既有工具鏈</dd>
+        <dt>批次量產、成本敏感</dt><dd>各家輕量版（Luna、Flash、Haiku）先試，夠用就好</dd>
+        <dt>繁體中文品質</dt><dd>沒有公認排行：用自己的任務出 10 題小考，各模型輪流作答</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 16 圖像生成的原理 -->
+<section class="slide part">
+    <div class="part-num">03</div>
+    <div class="eyebrow">PART 3</div>
+    <h2>圖像生成的原理</h2>
+    <p class="part-sub">語言模型在「猜下一個字」，圖像模型在「從雜訊中雕出影像」。三個概念：擴散、文字引導、控制。</p>
+  </section>
+
+  <!-- 17 擴散模型：學會「去噪」這一件事 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 圖像生成原理</div>
+    <h2>擴散模型：學會「去噪」這一件事</h2>
+    <div class="content">
+      <div class="nzrow">
+        <div><div class="nz" style="background:repeating-conic-gradient(from 13deg, #888 0 2%, #333 2% 3.7%, #aaa 3.7% 5%); filter:saturate(0) contrast(.9)"></div><div class="nzlab">t=1000 純雜訊</div></div>
+        <div style="color:var(--accent); font-size:24px">→</div>
+        <div><div class="nz" style="background:repeating-conic-gradient(from 47deg, #b78 0 3%, #567 3% 6%, #ba9 6% 8%); filter:blur(9px)"></div><div class="nzlab">逐步去噪</div></div>
+        <div style="color:var(--accent); font-size:24px">→</div>
+        <div><div class="nz" style="background:linear-gradient(180deg,#f2b56b 0 45%, #c96b4e 45% 62%, #35507a 62%); filter:blur(3px)"></div><div class="nzlab">輪廓浮現</div></div>
+        <div style="color:var(--accent); font-size:24px">→</div>
+        <div><div class="nz" style="background:linear-gradient(180deg,#ffd08a 0 42%, #e2704a 42% 60%, #22436e 60%); box-shadow:inset 0 -52px 40px -30px rgba(0,0,0,.35), inset 0 40px 30px -20px rgba(255,255,255,.25)"></div><div class="nzlab">t=0 成品</div></div>
+      </div>
+      <ul>
+        <li>訓練：把好影像逐步加噪給模型看，讓它學會每一步「怎麼還原」</li>
+        <li>生成：從純雜訊出發，反覆去噪幾十步，就「雕」出一張新影像</li>
+        <li>Stable Diffusion 的關鍵加速：在壓縮的潛在空間（latent space）做，而不是逐像素做</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 18 文字如何引導影像 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 圖像生成原理</div>
+    <h2>文字如何引導影像</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>提示詞</h3><p>「霧中的紅色燈塔，膠片質感」</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>文字編碼器</h3><p>CLIP 類模型把文句變成語意向量：文字與影像住進同一個空間</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>條件化去噪</h3><p>每一步去噪都被向量「拉」向語意方向，guidance 越強拉力越大</p></div>
+      </div>
+      <ul>
+        <li>可以把提示詞理解成<strong>語意空間裡的座標</strong>；需求越具體，座標越清楚</li>
+        <li>guidance 過強會過擬合提示、畫面僵硬；過弱則天馬行空，與 temperature 異曲同工</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 19 控制與客製：從抽卡到導演 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 圖像生成原理</div>
+    <h2>控制與客製：從抽卡到導演</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><h3>ControlNet</h3><p>用線稿、姿勢骨架、深度圖鎖住構圖，把「碰運氣」變成「照規格」。</p></div>
+        <div class="card"><h3>LoRA</h3><p>小成本微調：用幾十張圖教會模型你的角色或風格，檔案只有幾十 MB。</p></div>
+        <div class="card"><h3>參照系統</h3><p>Midjourney 的 Omni Reference、FLUX.2 的多參照編輯：不訓練也能維持角色與產品的一致性。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 20 2026 工具版圖與案例 -->
+<section class="slide part">
+    <div class="part-num">04</div>
+    <div class="eyebrow">PART 4</div>
+    <h2>2026 工具版圖與案例</h2>
+    <p class="part-sub">四個平台的最新現況，外加一個連燒兩年的廣告爭議。所有連結都可以現場點開。</p>
+  </section>
+
+  <!-- 21 Midjourney V8.1： -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 工具版圖 · Midjourney</div>
+    <h2>Midjourney V8.1：快，而且長出了影片</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>現況</dt><dd class="num">V8.1 於 2026/4/30 上線、6/10 起成為預設版本</dd>
+        <dt>速度</dt><dd>標準任務約提速 4 到 5 倍，原生 2K 輸出不需另外放大</dd>
+        <dt>V7 遺產</dt><dd>Draft 快稿模式、預設個人化、Omni Reference 全面參照</dd>
+        <dt>影片</dt><dd>圖生影片：一張靜圖出 5 秒，可延長到 21 秒</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://www.midjourney.com/updates" target="_blank" rel="noopener">官方更新日誌</a>
+        <a class="lk" href="https://docs.midjourney.com/hc/en-us/articles/32199405667853-Version" target="_blank" rel="noopener">版本說明文件</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 22 FLUX.2 與 Stable  -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 工具版圖 · 開源陣營</div>
+    <h2>FLUX.2 與 Stable Diffusion：權重在你手上</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">BLACK FOREST LABS</span>
+          <h3>FLUX.2</h3>
+          <ul>
+            <li>前 Stability 團隊創立；klein 輕量版到 max 旗艦版一字排開</li>
+            <li>多參照編輯、Kontext 編輯模型；獲 Adobe、Microsoft、Mistral 支持</li>
+            <li><a href="https://bfl.ai/" target="_blank" rel="noopener">bfl.ai</a>（附線上 playground）</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">STABILITY AI</span>
+          <h3>Stable Diffusion 3.5 / SDXL</h3>
+          <ul>
+            <li>畫質已非第一，但 SDXL 的 LoRA 與 ControlNet 生態仍最成熟</li>
+            <li>社群模型、工作流資源最豐富，教學成本最低</li>
+            <li><a href="https://stability.ai/stable-image" target="_blank" rel="noopener">stability.ai/stable-image</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 23 Nano Banana 2：長進 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 工具版圖 · Google</div>
+    <h2>Nano Banana 2：長進所有 Google 介面的影像模型</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>本體</dt><dd>Gemini 3.1 Flash Image；Pro 與 Lite 分居上下兩檔</dd>
+        <dt>強項</dt><dd>4K 生成、世界知識、可靠的文字渲染（海報上的中文字終於不糊了）</dd>
+        <dt>普及</dt><dd class="num">2026/6/29 起美區個人化生圖免費，直接內建於搜尋與 Gemini App</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://blog.google/innovation-and-ai/technology/ai/nano-banana-2/" target="_blank" rel="noopener">官方介紹</a>
+        <a class="lk" href="https://deepmind.google/models/gemini-image/" target="_blank" rel="noopener">DeepMind 模型頁</a>
+        <a class="lk" href="https://techcrunch.com/2026/06/29/geminis-personalized-ai-image-generation-is-now-free-for-u-s-users/" target="_blank" rel="noopener">TechCrunch 報導</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 24 Adobe Firefly 20 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 工具版圖 · Adobe</div>
+    <h2>Adobe Firefly 2026：從功能變成同事</h2>
+    <div class="content">
+      <ul>
+        <li>Firefly AI Assistant 公測（2026/4）：用對話指揮的「創意代理」，代理能力延伸進 Photoshop、Illustrator、Premiere</li>
+        <li>無限生成方案（2026/2）＋平台化：站內可直接調用 Nano Banana Pro、GPT Image、Runway、Kling 3.0 等他家模型</li>
+        <li>Custom Models 與 Elements：把自家風格、角色、場景訓成可重複使用的資產</li>
+        <li>主打「商業安全」（commercially safe）：訓練資料授權乾淨，是它對抗對手的核心論述</li>
+      </ul>
+      <div class="linkrow">
+        <a class="lk" href="https://blog.adobe.com/en/publish/2026/04/15/introducing-firefly-ai-assistant-new-way-create-with-our-creative-agent" target="_blank" rel="noopener">AI Assistant 發布文</a>
+        <a class="lk" href="https://blog.adobe.com/en/publish/2026/02/02/create-unlimited-generations-adobe-firefly-all-in-one-creative-ai-studio" target="_blank" rel="noopener">無限生成方案</a>
+        <a class="lk" href="https://www.adobe.com/products/firefly.html" target="_blank" rel="noopener">產品頁</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 25 可口可樂 AI 聖誕廣告：連燒兩 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 案例討論</div>
+    <h2>可口可樂 AI 聖誕廣告：連燒兩年的爭議</h2>
+    <div class="content">
+      <div class="tl">
+        <div class="ev"><b>1995</b><span>經典電視廣告〈Holidays Are Coming〉：紅色車隊駛過雪夜</span></div>
+        <div class="ev"><b>2024/11</b><span>用生成式 AI 重製，社群嘲諷細節穿幫、質疑取代創意工作者</span></div>
+        <div class="ev"><b>2025/11</b><span>再推新版（AI 工作室 Silverside、Secret Level 製作）：卡車輪子「滑行不轉動」再遭放大檢視，抵制聲浪重演</span></div>
+        <div class="ev"><b>持續</b><span>品牌不退場，公開把生成式 AI 定為長期製作策略</span></div>
+      </div>
+      <div class="qlist">
+        <p>罵聲這麼大，為什麼可口可樂還要繼續？算的是哪一筆帳？</p>
+        <p>消費者反感的是「AI」本身，還是「用 AI 省成本卻不夠誠意」？</p>
+      </div>
+      <div class="linkrow">
+        <a class="lk" href="https://www.forbes.com/sites/danidiplacido/2025/11/04/coca-cola-sparks-backlash-with-ai-generated-christmas-ad-again/" target="_blank" rel="noopener">Forbes</a>
+        <a class="lk" href="https://www.nbcnews.com/tech/innovation/coca-cola-causes-controversy-ai-made-ad-rcna180665" target="_blank" rel="noopener">NBC News</a>
+        <a class="lk" href="https://www.marketingdive.com/news/why-coca-cola-keeps-pushing-limits-generative-ai-despite-backlash/804739/" target="_blank" rel="noopener">Marketing Dive 分析</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 26 論文導讀 -->
+<section class="slide part">
+    <div class="part-num">05</div>
+    <div class="eyebrow">PART 5</div>
+    <h2>論文導讀</h2>
+    <p class="part-sub">兩篇文獻，示範怎麼把「今天看到的案例」升級成「可以寫進期中報告的研究」。</p>
+  </section>
+
+  <!-- 27 生成式 AI 在設計流程中的角色 -->
+<section class="slide">
+    <div class="eyebrow">PART 5 · 論文導讀 ①</div>
+    <h2>生成式 AI 在設計流程中的角色：一篇綜述</h2>
+    <div class="content">
+      <div class="biblio">
+        <span class="ti">Artificial intelligence (AI) in the design process: a review and analysis on generative AI perspectives</span>
+        Choudhury, M. M., Eisenbart, B., &amp; Kuys, B.（2025）。<i>Proceedings of the Design Society</i>, 5（ICED25）, 631–640。
+        <a href="https://doi.org/10.1017/pds.2025.10077" target="_blank" rel="noopener">doi.org/10.1017/pds.2025.10077</a>
+      </div>
+      <dl class="kv">
+        <dt>研究問題</dt><dd>生成式 AI 到底被用在設計流程的哪些環節、扮演什麼角色？</dd>
+        <dt>方法</dt><dd>系統性文獻回顧：篩選 2015 年後共 78 篇使用生成式 AI 執行設計任務的研究</dd>
+        <dt>範圍</dt><dd>七個設計領域：產品、家具、藝術、時尚、建築、平面、UX</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 28 發現：四種共通角色，七個領域的溫 -->
+<section class="slide">
+    <div class="eyebrow">PART 5 · 論文導讀 ①</div>
+    <h2>發現：四種共通角色，七個領域的溫差</h2>
+    <div class="content">
+      <div class="cards c2" style="grid-template-columns:repeat(4,1fr)">
+        <div class="card"><h3>概念發想</h3><p class="sub">快速展開方案空間</p></div>
+        <div class="card"><h3>視覺化</h3><p class="sub">想法立即可見、可討論</p></div>
+        <div class="card"><h3>迭代</h3><p class="sub">修改成本趨近於零</p></div>
+        <div class="card"><h3>決策支持</h3><p class="sub">比較方案、輔助取捨</p></div>
+      </div>
+      <ul>
+        <li>四種角色跨領域共通，但滲透深度不一：視覺導向領域（平面、時尚、建築）走得最快</li>
+        <li>作者定位這些工具「在增強創意、構想與決策上具變革性」，同時提醒各領域脈絡差異不可直接移植</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 29 快讀：生成式 AI 進了設計教室 -->
+<section class="slide">
+    <div class="eyebrow">PART 5 · 論文導讀 ②</div>
+    <h2>快讀：生成式 AI 進了設計教室之後</h2>
+    <div class="content">
+      <div class="biblio">
+        <span class="ti">Applications of Generative AI in Architectural Design Education: A Systematic Review and Future Insights</span>
+        Alamasi, R., &amp; Asfour, O. S.（2026）。<i>Digital</i>, 6(1), 6。
+        <a href="https://doi.org/10.3390/digital6010006" target="_blank" rel="noopener">doi.org/10.3390/digital6010006</a>
+      </div>
+      <ul>
+        <li>方法：PRISMA 系統性回顧，按設計階段（前期、概念、深化、產出）盤點建築教育中的生成式 AI 應用</li>
+        <li>發現：應用高度集中在<strong>早期階段</strong>（前期分析與概念生成），後期產出仍以傳統工具為主</li>
+        <li>缺口：生成式 AI 對學生批判思考與問題解決的<strong>長期影響</strong>，目前幾乎沒有實證研究</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 30 把今天的內容變成你的資料 -->
+<section class="slide">
+    <div class="eyebrow">Week 04 · 課堂討論與課後任務</div>
+    <h2>把今天的內容變成你的資料</h2>
+    <div class="content">
+      <div class="qlist">
+        <p>你的母領域（動畫、遊戲、視傳、工設……）在 Choudhury 等人的矩陣裡，哪個角色滲透最深、哪個最淺？為什麼？</p>
+        <p>如果湧現能力無法預測，設計教育該教「工具操作」還是「判斷框架」？今天這門課的配比對嗎？</p>
+        <p>可口可樂若找你當創意總監，2026 年的聖誕廣告你會怎麼處理 AI 的角色與揭露方式？</p>
+      </div>
+      <div class="card">
+        <h3>課後任務（下週開場分享，約 5 分鐘）</h3>
+        <p>用同一段中文提示詞，分別測 2 個文字模型與 2 個圖像模型；把四份輸出並排截圖，寫 300 字觀察：差異出現在哪個層次？是原理，還是對齊？</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 31 所有連結，一頁帶走 -->
+<section class="slide">
+    <div class="eyebrow">Week 04 · 本週資源彙整</div>
+    <h2>所有連結，一頁帶走</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="grp">
+          <h3>語言模型</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://openai.com/index/previewing-gpt-5-6-sol/" target="_blank" rel="noopener">GPT-5.6 官方</a>
+            <a class="lk" href="https://www.anthropic.com/news/claude-fable-5-mythos-5" target="_blank" rel="noopener">Claude 5 官方</a>
+            <a class="lk" href="https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-omni-flash-nano-banana-2-lite/" target="_blank" rel="noopener">Gemini 3.1 官方</a>
+            <a class="lk" href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">Attention 原始論文</a>
+          </div>
+          <h3 style="margin-top:18px">圖像工具</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://www.midjourney.com/updates" target="_blank" rel="noopener">Midjourney</a>
+            <a class="lk" href="https://bfl.ai/" target="_blank" rel="noopener">FLUX / BFL</a>
+            <a class="lk" href="https://stability.ai/stable-image" target="_blank" rel="noopener">Stability AI</a>
+            <a class="lk" href="https://blog.google/innovation-and-ai/technology/ai/nano-banana-2/" target="_blank" rel="noopener">Nano Banana 2</a>
+            <a class="lk" href="https://www.adobe.com/products/firefly.html" target="_blank" rel="noopener">Adobe Firefly</a>
+          </div>
+        </div>
+        <div class="grp">
+          <h3>案例</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://www.forbes.com/sites/danidiplacido/2025/11/04/coca-cola-sparks-backlash-with-ai-generated-christmas-ad-again/" target="_blank" rel="noopener">Forbes：可口可樂</a>
+            <a class="lk" href="https://www.marketingdive.com/news/why-coca-cola-keeps-pushing-limits-generative-ai-despite-backlash/804739/" target="_blank" rel="noopener">Marketing Dive 分析</a>
+          </div>
+          <h3 style="margin-top:18px">本週論文</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://doi.org/10.1017/pds.2025.10077" target="_blank" rel="noopener">論文① ICED25 綜述</a>
+            <a class="lk" href="https://doi.org/10.3390/digital6010006" target="_blank" rel="noopener">論文② 建築教育回顧</a>
+          </div>
+        </div>
+      </div>
+      <div class="take"><b>本週檢核</b>比較兩個模型的同題輸出：差異發生在哪裡？你的驗收條件能否重複使用？</div>
+    </div>
+  </section>
+
+  
+
+  </div></div>
+
+  <div class="ctrl">
+    <button id="prev" aria-label="上一張">‹</button>
+    <span class="cnt" id="cnt">1 / 1</span>
+    <button id="next" aria-label="下一張">›</button>
+    <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+  </div>
+  <div class="prog" id="prog"></div>
+
+  <div class="toc" id="toc">
+    <button class="close" id="tocClose">關閉（Esc）</button>
+    <h2 id="tocTitle">目錄</h2>
+    <div class="tgrid" id="tgrid"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ★ 每週只改這一行 ★ */
+  var WEEK_LABEL = '第 4 週 · 生成式AI導論';
+
+  var stage = document.getElementById('stage');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var cnt = document.getElementById('cnt');
+  var prog = document.getElementById('prog');
+  var toc = document.getElementById('toc');
+  var tgrid = document.getElementById('tgrid');
+  var cur = 0;
+
+  document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
+
+  slides.forEach(function (s, i) {
+    var f = document.createElement('div');
+    f.className = 'foot';
+    f.innerHTML = '<span>人工智慧與互動媒體特論|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    s.appendChild(f);
+  });
+
+  var groups = {};
+  slides.forEach(function (s, i) {
+    var eb = s.querySelector('.eyebrow');
+    var part = '開場';
+    if (eb) {
+      var m = eb.textContent.match(/PART\s*(\d)/i);
+      if (m) part = 'PART ' + m[1];
+      else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
+    }
+    var h = s.querySelector('h1, h2');
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+  });
+  Object.keys(groups).forEach(function (k) {
+    var col = document.createElement('div');
+    var h3 = document.createElement('h3');
+    h3.textContent = k;
+    col.appendChild(h3);
+    groups[k].forEach(function (it) {
+      var b = document.createElement('button');
+      b.textContent = it.t;
+      b.dataset.i = it.i;
+      b.addEventListener('click', function () { toggleToc(false); go(it.i); });
+      col.appendChild(b);
+    });
+    tgrid.appendChild(col);
+  });
+
+  function go(i) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach(function (s, j) { s.classList.toggle('active', j === cur); });
+    cnt.textContent = (cur + 1) + ' / ' + slides.length;
+    prog.style.width = ((cur + 1) / slides.length * 100) + '%';
+    if (history.replaceState) history.replaceState(null, '', '#s' + (cur + 1));
+    tgrid.querySelectorAll('button').forEach(function (b) { b.classList.toggle('here', +b.dataset.i === cur); });
+  }
+  function toggleToc(on) {
+    toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
+  }
+
+  document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
+  document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
+  document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
+  document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { toggleToc(false); return; }
+    if (toc.classList.contains('on')) return;
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'Home': go(0); break;
+      case 'End': go(slides.length - 1); break;
+      case 'm': case 'M': toggleToc(); break;
+    }
+  });
+
+  function fit() {
+    var w = window.innerWidth, h = window.innerHeight;
+    if (!w || !h) { requestAnimationFrame(fit); return; }
+    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('load', fit);
+  fit();
+
+  var m = location.hash.match(/^#s(\d+)$/);
+  go(m ? +m[1] - 1 : 0);
+})();
+</script>
+</body>
+</html>

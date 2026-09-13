@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>第 2 週|團隊組成與合作模式</title>
+<style>
+  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  * { box-sizing: border-box; }
+  #app {
+    position: fixed; inset: 0; overflow: hidden;
+    background: var(--bg);
+    font-family: var(--body);
+    color: var(--ink);
+    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
+    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
+    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
+    --bg: #F5F4EC; --bg2: #EFEEE2;
+    --panel: #FDFCF6; --panel2: #EDECDF;
+    --ink: #232B21; --sub: #67705E;
+    --accent: #2F6B4F; --accent-rgb: 47,107,79;
+    --accent2: #BC4F2C;
+    --line: rgba(35,43,33,.16);
+    --link: #2F6B4F;
+    --r: 4px;
+  }
+  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  #app a:hover { opacity: .85; }
+  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
+  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
+  .slide.active { display: flex; }
+  .slide::before {
+    content: ""; position: absolute; inset: 24px; pointer-events: none;
+    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
+  }
+
+  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
+  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
+  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+
+  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
+  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
+  .sub { color: var(--sub); }
+  .small { font-size: 18px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
+  .cards { display: grid; gap: 18px; }
+  .c2 { grid-template-columns: repeat(2, 1fr); }
+  .c3 { grid-template-columns: repeat(3, 1fr); }
+  .c4 { grid-template-columns: repeat(4, 1fr); }
+  .c5 { grid-template-columns: repeat(5, 1fr); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
+  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
+  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
+  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+
+  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
+  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+
+  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
+
+  .cover, .part { justify-content: center; }
+  .cover .eyebrow { margin-bottom: 26px; }
+  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
+  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
+  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
+  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
+  .part h2 { font-size: 56px; }
+  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+
+  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
+  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
+  .kv dd { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
+  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
+  .lk::after { content: " ↗"; font-size: 12px; }
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
+  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
+  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
+  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
+  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
+  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  .tl { display: flex; flex-direction: column; gap: 18px; }
+  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
+  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
+  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+
+  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
+  .content > .cards,
+  .content > .cols,
+  .content > .flow,
+  .content > .kv,
+  .content > .prob { flex: 1 1 auto; }
+  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .qlist,
+  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .biblio { flex: 0 0 auto; }
+  .cols > .card { justify-content: flex-start; }
+
+  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
+  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
+  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
+  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
+  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  .toc.on { display: block; }
+  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
+  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
+  .toc button:hover { background: var(--panel2); }
+  .toc button.here { color: var(--accent2); font-weight: 700; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
+  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+<div id="app" data-deck="b">
+  <div class="stagewrap"><div class="stage" id="stage">
+
+  <!-- 1 封面 -->
+  <section class="slide cover">
+    <div class="eyebrow">專題企畫 · 動畫與遊戲設計系</div>
+    <h1>組隊，不是找朋友</h1>
+    <p class="cover-sub">三到五個人要一起走十七週。這堂課講怎麼把「一起做」變成一件管得動的事：分工怎麼切、會怎麼開、有人不做事怎麼辦。</p>
+    <div class="cover-meta"><span>第 2 週</span><span>授課：鄧樹遠</span></div>
+  </section>
+
+  <!-- 2 本週地圖 -->
+  <section class="slide">
+    <div class="eyebrow">Week 02 · 本週地圖</div>
+    <h2>九十分鐘，五段路</h2>
+    <div class="content">
+      <div class="cards c5">
+        <div class="card"><span class="who">PART 1</span><h3>為什麼組隊會散</h3><p class="sub">失敗的原因不是能力不夠</p></div>
+        <div class="card"><span class="who">PART 2</span><h3>怎麼分工</h3><p class="sub">四個位置一定要有人主責</p></div>
+        <div class="card"><span class="who">PART 3</span><h3>怎麼開會與同步</h3><p class="sub">每週十五分鐘就夠</p></div>
+        <div class="card"><span class="who">PART 4</span><h3>衝突與退場</h3><p class="sub">先講好才不會撕破臉</p></div>
+        <div class="card"><span class="who">PART 5</span><h3>本週交付</h3><p class="sub">分組定案與合作約定</p></div>
+      </div>
+      <div class="take"><b>本週目標</b>離開教室時，你的組要有一份寫下來的合作約定，不是口頭上的「我們感情很好」。</div>
+    </div>
+  </section>
+
+  <!-- 3 承接上週 -->
+  <section class="slide">
+    <div class="eyebrow">承接第 1 週 · 智財與課程導論</div>
+    <h2>上週你們交了什麼</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">已完成</span>
+          <h3>組隊意向與三個題目</h3>
+          <ul>
+            <li>知道跟誰一組</li>
+            <li>手上有三個方向可以挑</li>
+            <li>素材帳本的四個欄位已經開好</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">還沒做</span>
+          <h3>把合作方式講清楚</h3>
+          <ul>
+            <li>誰能拍板、誰負責什麼</li>
+            <li>多久同步一次、用什麼工具</li>
+            <li>有人做不出來時怎麼處理</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>這週要往哪走</b>題目下週才定。這週先把「怎麼一起工作」定下來，題目才有人能執行。</div>
+    </div>
+  </section>
+
+  <!-- 4 PART 1 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">01</div>
+    <div class="eyebrow">PART 1</div>
+    <h2>為什麼組隊會散</h2>
+    <p class="part-sub">歷年散掉的組，很少是因為技術做不出來。多半是決策卡住、話不說開，最後拖到沒時間。</p>
+  </section>
+
+  <!-- 5 一個人的極限 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 先講清楚</div>
+    <h2>為什麼不乾脆自己做</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">一個人</span>
+          <h3>省下溝通，付出廣度</h3>
+          <ul>
+            <li>決策快，想改就改</li>
+            <li>但企畫、美術、程式、音效都得自己扛</li>
+            <li>任何一項弱，整個作品就卡在那一項</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">一組人</span>
+          <h3>換到廣度，付出溝通</h3>
+          <ul>
+            <li>每個人可以在自己強的地方做深</li>
+            <li>但要花時間對齊方向與進度</li>
+            <li>溝通成本沒被管理，就會吃掉全部好處</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>先算成本</b>組隊會換到專業深度，也會多出溝通成本。把兩者寫進合作約定，才能判斷這個組合是否划算。</div>
+    </div>
+  </section>
+
+  <!-- 6 失敗三原因 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 真正的原因</div>
+    <h2>團隊散掉的三個真原因</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">結構問題</span>
+          <h3>沒有人能拍板</h3>
+          <p>成員完全對等時，意見不合的唯一解法變成拆夥，因為沒人有權做最後決定。</p>
+        </div>
+        <div class="card">
+          <span class="who">溝通問題</span>
+          <h3>質疑被當成攻擊</h3>
+          <p>有人一被問就防衛，其他人就不再問。問題累積到期末才爆開。</p>
+        </div>
+        <div class="card">
+          <span class="who">落差問題</span>
+          <h3>能力差距沒被承認</h3>
+          <p>假裝大家做得一樣多，實際扛的人心裡不平，最後直接停手。</p>
+        </div>
+      </div>
+      <div class="linkrow">
+        <a class="lk" href="https://home.gamer.com.tw/artwork.php?sn=5272041" target="_blank" rel="noopener">獨立團隊失敗原因</a>
+        <a class="lk" href="https://indie-guider.games/post/DCD_LectureNotes01/" target="_blank" rel="noopener">學生團隊怎麼做</a>
+      </div>
+      <div class="take"><b>團隊風險</b>這三件事都跟技術無關，所以「找強的人組隊」沒辦法解決它們。</div>
+    </div>
+  </section>
+
+  <!-- 7 大家一起討論 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 決策成本</div>
+    <h2>「大家一起討論」最貴</h2>
+    <div class="content">
+      <ul>
+        <li>四個人討論一個決定要一小時，一學期做二十個決定就是二十小時。</li>
+        <li>共識決在意見接近時很好用，在意見分歧時會直接卡住。</li>
+        <li>卡住的成本不是那一小時，是後面所有人都在等的那幾天。</li>
+        <li>解法不是不討論，是先講好誰在討論完之後負責拍板。</li>
+      </ul>
+      <div class="card">
+        <span class="who">建議做法</span>
+        <p>設一個專案主責，不是老大，是「討論超過時限時負責做決定」的人。決定錯了整組承擔，不追究他一個人。</p>
+      </div>
+      <div class="take"><b>經驗談</b>拍板的人最需要的不是最強，是願意在資訊不足時做決定並負責。</div>
+    </div>
+  </section>
+
+  <!-- 8 崩壞時程 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 教學現場觀察</div>
+    <h2>組隊崩壞的典型時程</h2>
+    <div class="content">
+      <div class="tl">
+        <div class="ev"><b>第 1–3 週</b><span>熱情期。什麼提議都說好，沒有人想當潑冷水的那個</span></div>
+        <div class="ev"><b>第 4–7 週</b><span>進度開始落後，但沒人願意當催進度的人，改用暗示</span></div>
+        <div class="ev"><b>第 8–11 週</b><span>能力落差浮現，做得多的人開始計較，做得少的人開始迴避</span></div>
+        <div class="ev"><b>第 12 週後</b><span>各做各的，期末把四份不相干的東西拼在一起交出去</span></div>
+      </div>
+      <div class="take"><b>這不是研究數據</b>是我這幾年帶專題看到的重複模式。你們現在在第 2 週，還來得及避開。</div>
+    </div>
+  </section>
+
+  <!-- 9 PART 2 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">02</div>
+    <div class="eyebrow">PART 2</div>
+    <h2>怎麼分工</h2>
+    <p class="part-sub">分工不是把工作平均切成四份，是讓每一件必要的事都有一個人負責到底。</p>
+  </section>
+
+  <!-- 10 四個位置 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 必要位置</div>
+    <h2>四個位置一定要有人</h2>
+    <div class="content">
+      <div class="cards c4">
+        <div class="card"><span class="who">主責一</span><h3>專案與企畫</h3><p class="sub">管方向、管進度、討論卡住時拍板</p></div>
+        <div class="card"><span class="who">主責二</span><h3>美術</h3><p class="sub">管風格一致性、素材規格與授權</p></div>
+        <div class="card"><span class="who">主責三</span><h3>程式或引擎</h3><p class="sub">管雛型能不能跑、管版本</p></div>
+        <div class="card"><span class="who">主責四</span><h3>音效與雜項</h3><p class="sub">管聲音、管文件、管對外聯絡</p></div>
+      </div>
+      <div class="take"><b>三人分工</b>三人組就要有人兼兩個位置，但每個位置仍然只能有一個名字，不能寫「大家」。</div>
+    </div>
+  </section>
+
+  <!-- 11 主責不等於獨佔 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 名詞定義</div>
+    <h2>主責不等於一個人做完</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>主責的意思</dt><dd>這件事沒做完時，我來問你；不是這件事只能你動手</dd>
+        <dt>可以找人幫</dt><dd>主責可以請別人支援，但排程與品質仍由主責負責</dd>
+        <dt>可以換人</dt><dd>發現排錯位置就換，但要在會議上講明並更新分工表</dd>
+        <dt>不可以真空</dt><dd>任何時候都不能出現「這件事沒人主責」的狀態</dd>
+      </dl>
+      <div class="take"><b>主責表用途</b>主責制解決的是「找誰問」，不是「誰做最多」。這兩件事常被混在一起吵。</div>
+    </div>
+  </section>
+
+  <!-- 12 分工要寫下來 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 分工表</div>
+    <h2>分工表要有這四欄</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>誰</dt><dd>真實姓名，不是綽號，也不是「美術組」</dd>
+        <dt>負責什麼</dt><dd>用動詞寫，例如「產出角色三視圖」而不是「負責角色」</dd>
+        <dt>交什麼</dt><dd>看得到的檔案，例如 PNG、Unity 場景、PDF</dd>
+        <dt>什麼時候交</dt><dd>寫到日期，不寫「這兩週」</dd>
+      </dl>
+      <div class="take"><b>陷阱</b>沒有「交什麼」那一欄的分工表，期末沒辦法判斷誰有做、誰沒做。</div>
+    </div>
+  </section>
+
+  <!-- 13 一人多工的現實 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 現實情況</div>
+    <h2>五人以下的實況</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">課本上</span>
+          <h3>理想分工</h3>
+          <ul>
+            <li>製作人、企畫、美術、程式、音效各一</li>
+            <li>每人專注自己那塊做到深</li>
+            <li>介面清楚，交接順暢</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">你們會遇到</span>
+          <h3>真實分工</h3>
+          <ul>
+            <li>會畫的人同時要當美術與 UI</li>
+            <li>會寫程式的人常常也在做關卡</li>
+            <li>音效通常是最後才有人接手</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>建議</b>一人兼兩職可以，但兩職不要都是尖峰期重疊的，例如美術與音效就會撞在期末。</div>
+    </div>
+  </section>
+
+  <!-- 14 PART 3 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">03</div>
+    <div class="eyebrow">PART 3</div>
+    <h2>怎麼開會與同步</h2>
+    <p class="part-sub">會不是開越多越好。目標是用最少的時間，讓每個人知道現在卡在哪、下一步是什麼。</p>
+  </section>
+
+  <!-- 15 每週站立會議 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 會議節奏</div>
+    <h2>每週一次，十五分鐘</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>會前</h3><p>各自把上週做的東西放到共用資料夾。沒東西也要說，不要靜音。</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>會中</h3><p>每人講三句：做完什麼、卡在哪、下週要做什麼。不解決問題，只暴露問題。</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>會後</h3><p>需要深談的兩三個人留下。其他人可以走，不用陪坐。</p></div>
+      </div>
+      <div class="take"><b>為何限時</b>會議一超過三十分鐘就會變成閒聊，下次就有人不想來。十五分鐘大家都願意到。</div>
+    </div>
+  </section>
+
+  <!-- 16 三個問題 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 會議格式</div>
+    <h2>每個人只回答三題</h2>
+    <div class="content">
+      <div class="qlist">
+        <p>上週說要做的，做完了嗎？沒做完的部分是哪一段？</p>
+        <p>現在卡在哪？需要誰幫忙、需要什麼決定？</p>
+        <p>下週你會交出什麼？講得出檔名最好。</p>
+      </div>
+      <div class="card">
+        <span class="who">紀錄</span>
+        <p>一個人負責記，三行就好：誰、卡在哪、下週交什麼。貼在群組裡，不用做成漂亮文件。</p>
+      </div>
+      <div class="take"><b>會議第二題</b>第二題最重要。沒有人講「我卡住了」的團隊，通常不是沒卡住，是不敢講。</div>
+    </div>
+  </section>
+
+  <!-- 17 工具怎麼選 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 工具</div>
+    <h2>三種工具各挑一個就好</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">看板</span>
+          <h3>誰在做什麼</h3>
+          <p>Trello 或 Notion。卡片只要三欄：待辦、進行中、完成。</p>
+        </div>
+        <div class="card">
+          <span class="who">文件</span>
+          <h3>企畫書與設定放哪</h3>
+          <p>Google 文件或 Notion。重點是同一份，不是各存各的。</p>
+        </div>
+        <div class="card">
+          <span class="who">聊天</span>
+          <h3>日常溝通</h3>
+          <p>Discord 或 LINE 群。重要決定要另外貼到看板，不能只留在聊天紀錄。</p>
+        </div>
+      </div>
+      <div class="linkrow">
+        <a class="lk" href="https://trello.com/" target="_blank" rel="noopener">Trello</a>
+        <a class="lk" href="https://www.notion.com/" target="_blank" rel="noopener">Notion</a>
+        <a class="lk" href="https://discord.com/" target="_blank" rel="noopener">Discord</a>
+      </div>
+      <div class="take"><b>陷阱</b>工具開太多就沒人用。三種各一個，全組統一，第 15 週會再深入講專案管理。</div>
+    </div>
+  </section>
+
+  <!-- 18 版本控管最低要求 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 檔案管理</div>
+    <h2>檔案最低要求</h2>
+    <div class="content">
+      <ul>
+        <li>一個雲端資料夾，全組共用，不要用個人硬碟當唯一來源。</li>
+        <li>檔名寫版本與日期，例如 <span class="chip">主角_立繪_v03_20261015</span>。</li>
+        <li>不要用「最終版」「真的最終版」這種命名，期末一定分不出來。</li>
+        <li>程式專案建議用 Git；不會用也沒關係，第 15 週會講，但雲端備份現在就要做。</li>
+      </ul>
+      <div class="linkrow">
+        <a class="lk" href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+      </div>
+      <div class="take"><b>經驗談</b>每年都有組因為電腦壞掉損失兩週進度。備份的成本是五分鐘，不備份的成本是重做。</div>
+    </div>
+  </section>
+
+  <!-- 19 PART 4 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">04</div>
+    <div class="eyebrow">PART 4</div>
+    <h2>衝突與退場</h2>
+    <p class="part-sub">現在講這個不是觸霉頭。是因為事情發生的時候，講好的規則比當下的情緒可靠。</p>
+  </section>
+
+  <!-- 20 先講好四件事 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 合作約定</div>
+    <h2>四件事現在就要講好</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>決策權</dt><dd>意見僵持超過多久，由誰拍板；拍板後其他人照做</dd>
+        <dt>缺席</dt><dd>連續幾次不到、不回訊息，算是什麼狀況，會怎麼處理</dd>
+        <dt>退出</dt><dd>有人中途退出時，他做過的東西能不能留用、怎麼標示</dd>
+        <dt>掛名</dt><dd>作品發表時誰掛什麼職稱，貢獻度差很多時怎麼寫</dd>
+      </dl>
+      <div class="take"><b>為何現在講</b>這四件事在第 2 週講是制度，在第 14 週講就變成針對某個人。</div>
+    </div>
+  </section>
+
+  <!-- 21 有人不做事 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 處理流程</div>
+    <h2>有人不做事怎麼辦</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>第一步：問</h3><p>私下問清楚是不會、沒空，還是不想做。三種的處理方式完全不同。</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>第二步：記</h3><p>在會議紀錄寫下承諾與實際結果。不是為了告狀，是為了有依據。</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>第三步：調</h3><p>連續兩週沒有交付就調整分工，並在課堂上跟我說。不要撐到期末。</p></div>
+      </div>
+      <div class="take"><b>求助時機</b>來找我不是打小報告。愈早講，我愈有辦法幫你們調；期末才講我只能打分數。</div>
+    </div>
+  </section>
+
+  <!-- 22 期末互評 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 成績反映</div>
+    <h2>貢獻度怎麼進成績</h2>
+    <div class="content">
+      <ul>
+        <li>組的成績以作品為準，個人差異透過期末互評調整。</li>
+        <li>互評不是打人情分，要寫具體事實：他交了什麼、什麼時候交。</li>
+        <li>會議紀錄與看板是互評的證據，這就是為什麼要記。</li>
+        <li>沒有紀錄的指控我無法採認，這對雙方都公平。</li>
+      </ul>
+      <div class="take"><b>紀錄用途</b>有寫紀錄的組，期末幾乎不會吵貢獻度，因為事實都在上面，沒得爭。</div>
+    </div>
+  </section>
+
+  <!-- 23 PART 5 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">05</div>
+    <div class="eyebrow">PART 5</div>
+    <h2>本週交付</h2>
+    <p class="part-sub">分組定案，加上一份寫下來的合作約定。這份文件會在期末互評時被拿出來看。</p>
+  </section>
+
+  <!-- 24 交付規格 -->
+  <section class="slide">
+    <div class="eyebrow">PART 5 · 交付規格</div>
+    <h2>這週要交什麼</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>交付物</dt><dd>分組定案表加合作約定書</dd>
+        <dt>格式</dt><dd>兩頁 A4 以內，PDF，檔名為「組別代號_W2_分組定案」</dd>
+        <dt>內容</dt><dd>四個主責位置的人名、分工表四欄、合作約定四項、使用的三種工具</dd>
+        <dt>截止</dt><dd>第 3 週上課前，2026 年 9 月 24 日 08:00</dd>
+      </dl>
+      <div class="take"><b>換組規則</b>交出去之後就是全組的共同承諾。第 3 週起不再受理換組。</div>
+    </div>
+  </section>
+
+  <!-- 25 合作約定要寫什麼 -->
+  <section class="slide">
+    <div class="eyebrow">PART 5 · 內容範本</div>
+    <h2>合作約定寫這幾句</h2>
+    <div class="content">
+      <div class="cards c2">
+        <div class="card">
+          <span class="who">決策與會議</span>
+          <ul>
+            <li>討論超過三十分鐘沒共識，由某某拍板</li>
+            <li>每週某天某時開會，十五分鐘</li>
+            <li>會議紀錄由某某負責，當天貼群組</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">交付與退場</span>
+          <ul>
+            <li>連續兩週無交付，全組討論調整分工</li>
+            <li>中途退出者，已完成部分留用並標示貢獻</li>
+            <li>掛名依實際主責項目撰寫</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>寫法</b>用「某某」填真名，不要寫「視情況而定」。填不下去的那一條，就是你們還沒談好的。</div>
+    </div>
+  </section>
+
+  <!-- 26 檢核與退件 -->
+  <section class="slide">
+    <div class="eyebrow">PART 5 · 檢核標準</div>
+    <h2>什麼樣算過關</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">及格</span>
+          <h3>四個位置都有名字</h3>
+          <p>每個主責位置寫得出一個真實姓名，沒有空缺、沒有「大家」。</p>
+        </div>
+        <div class="card">
+          <span class="who">好</span>
+          <h3>分工表可以驗收</h3>
+          <p>每一列都寫得出交什麼檔案、什麼日期交，我拿著就能對帳。</p>
+        </div>
+        <div class="card">
+          <span class="who">退件</span>
+          <h3>常見的三種</h3>
+          <p>分工欄寫「共同負責」；約定寫「有問題再討論」；日期寫「期中前」。</p>
+        </div>
+      </div>
+      <div class="take"><b>判準</b>能不能驗收，就是能不能在期末拿出來對。對不了的條文，寫了等於沒寫。</div>
+    </div>
+  </section>
+
+  <!-- 27 課堂討論與課後任務 -->
+  <section class="slide">
+    <div class="eyebrow">Week 02 · 收尾</div>
+    <h2>回去談這三件事</h2>
+    <div class="content">
+      <div class="qlist">
+        <p>你們這組意見僵持的時候，誰來拍板？這個人自己知道嗎？</p>
+        <p>如果有人連續兩週交不出東西，你們打算怎麼處理？現在講得出來嗎？</p>
+        <p>三個題目裡，有哪一個是你們現在的分工做不出來的？</p>
+      </div>
+      <div class="card">
+        <span class="who">課後任務</span>
+        <p>開好三種工具的共用空間：看板、文件、聊天各一個，把全組加進去。下週上課會直接看。</p>
+      </div>
+      <div class="take"><b>下週預告</b>主題訂定與提案討論：三個題目怎麼收成一個，以及怎麼用 AI 幫你發散與收斂。</div>
+    </div>
+  </section>
+
+  <!-- 28 資源彙整 -->
+  <section class="slide">
+    <div class="eyebrow">Week 02 · 資源彙整</div>
+    <h2>本週資源</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="grp">
+          <h3>團隊與經驗談</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://home.gamer.com.tw/artwork.php?sn=5272041" target="_blank" rel="noopener">獨立團隊失敗原因</a>
+            <a class="lk" href="https://indie-guider.games/post/DCD_LectureNotes01/" target="_blank" rel="noopener">學生團隊怎麼做</a>
+            <a class="lk" href="https://gnn.gamer.com.tw/detail.php?sn=111455" target="_blank" rel="noopener">獨立團隊生存專訪</a>
+          </div>
+        </div>
+        <div class="grp">
+          <h3>協作工具</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://trello.com/" target="_blank" rel="noopener">Trello</a>
+            <a class="lk" href="https://www.notion.com/" target="_blank" rel="noopener">Notion</a>
+            <a class="lk" href="https://discord.com/" target="_blank" rel="noopener">Discord</a>
+            <a class="lk" href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+          </div>
+        </div>
+      </div>
+      <div class="take"><b>工具選擇</b>工具連結是起點不是規定。全組統一比選哪一個更重要。</div>
+    </div>
+  </section>
+
+  
+
+  </div></div>
+
+  <div class="ctrl">
+    <button id="prev" aria-label="上一張">‹</button>
+    <span class="cnt" id="cnt">1 / 1</span>
+    <button id="next" aria-label="下一張">›</button>
+    <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+  </div>
+  <div class="prog" id="prog"></div>
+
+  <div class="toc" id="toc">
+    <button class="close" id="tocClose">關閉（Esc）</button>
+    <h2 id="tocTitle">目錄</h2>
+    <div class="tgrid" id="tgrid"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ★ 每週只改這一行 ★ */
+  var WEEK_LABEL = '第 2 週 · 團隊組成與合作模式';
+
+  var stage = document.getElementById('stage');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var cnt = document.getElementById('cnt');
+  var prog = document.getElementById('prog');
+  var toc = document.getElementById('toc');
+  var tgrid = document.getElementById('tgrid');
+  var cur = 0;
+
+  document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
+
+  slides.forEach(function (s, i) {
+    var f = document.createElement('div');
+    f.className = 'foot';
+    f.innerHTML = '<span>專題企畫|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    s.appendChild(f);
+  });
+
+  var groups = {};
+  slides.forEach(function (s, i) {
+    var eb = s.querySelector('.eyebrow');
+    var part = '開場';
+    if (eb) {
+      var m = eb.textContent.match(/PART\s*(\d)/i);
+      if (m) part = 'PART ' + m[1];
+      else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
+    }
+    var h = s.querySelector('h1, h2');
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+  });
+  Object.keys(groups).forEach(function (k) {
+    var col = document.createElement('div');
+    var h3 = document.createElement('h3');
+    h3.textContent = k;
+    col.appendChild(h3);
+    groups[k].forEach(function (it) {
+      var b = document.createElement('button');
+      b.textContent = it.t;
+      b.dataset.i = it.i;
+      b.addEventListener('click', function () { toggleToc(false); go(it.i); });
+      col.appendChild(b);
+    });
+    tgrid.appendChild(col);
+  });
+
+  function go(i) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach(function (s, j) { s.classList.toggle('active', j === cur); });
+    cnt.textContent = (cur + 1) + ' / ' + slides.length;
+    prog.style.width = ((cur + 1) / slides.length * 100) + '%';
+    if (history.replaceState) history.replaceState(null, '', '#s' + (cur + 1));
+    tgrid.querySelectorAll('button').forEach(function (b) { b.classList.toggle('here', +b.dataset.i === cur); });
+  }
+  function toggleToc(on) {
+    toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
+  }
+
+  document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
+  document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
+  document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
+  document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { toggleToc(false); return; }
+    if (toc.classList.contains('on')) return;
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'Home': go(0); break;
+      case 'End': go(slides.length - 1); break;
+      case 'm': case 'M': toggleToc(); break;
+    }
+  });
+
+  function fit() {
+    var w = window.innerWidth, h = window.innerHeight;
+    if (!w || !h) { requestAnimationFrame(fit); return; }
+    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('load', fit);
+  fit();
+
+  var m = location.hash.match(/^#s(\d+)$/);
+  go(m ? +m[1] - 1 : 0);
+})();
+</script>
+</body>
+</html>

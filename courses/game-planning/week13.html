@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>第 13 週|行銷與上市策略</title>
+<style>
+  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  * { box-sizing: border-box; }
+  #app {
+    position: fixed; inset: 0; overflow: hidden;
+    background: var(--bg);
+    font-family: var(--body);
+    color: var(--ink);
+    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
+    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
+    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
+    --bg: #F5F4EC; --bg2: #EFEEE2;
+    --panel: #FDFCF6; --panel2: #EDECDF;
+    --ink: #232B21; --sub: #67705E;
+    --accent: #2F6B4F; --accent-rgb: 47,107,79;
+    --accent2: #BC4F2C;
+    --line: rgba(35,43,33,.16);
+    --link: #2F6B4F;
+    --r: 4px;
+  }
+  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  #app a:hover { opacity: .85; }
+  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
+  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
+  .slide.active { display: flex; }
+  .slide::before {
+    content: ""; position: absolute; inset: 24px; pointer-events: none;
+    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
+  }
+
+  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
+  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
+  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+
+  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
+  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
+  .sub { color: var(--sub); }
+  .small { font-size: 18px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
+  .cards { display: grid; gap: 18px; }
+  .c2 { grid-template-columns: repeat(2, 1fr); }
+  .c3 { grid-template-columns: repeat(3, 1fr); }
+  .c4 { grid-template-columns: repeat(4, 1fr); }
+  .c5 { grid-template-columns: repeat(5, 1fr); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
+  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
+  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
+  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+
+  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
+  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+
+  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
+
+  .cover, .part { justify-content: center; }
+  .cover .eyebrow { margin-bottom: 26px; }
+  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
+  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
+  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
+  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
+  .part h2 { font-size: 56px; }
+  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+
+  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
+  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
+  .kv dd { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
+  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
+  .lk::after { content: " ↗"; font-size: 12px; }
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
+  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
+  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
+  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
+  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
+  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  .tl { display: flex; flex-direction: column; gap: 18px; }
+  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
+  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
+  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+
+  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
+  .content > .cards,
+  .content > .cols,
+  .content > .flow,
+  .content > .kv,
+  .content > .prob { flex: 1 1 auto; }
+  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .qlist,
+  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .biblio { flex: 0 0 auto; }
+  .cols > .card { justify-content: flex-start; }
+
+  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
+  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
+  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
+  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
+  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  .toc.on { display: block; }
+  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
+  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
+  .toc button:hover { background: var(--panel2); }
+  .toc button.here { color: var(--accent2); font-weight: 700; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
+  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+ .eyebrow{font-size:18px}.slide h2{font-size:48px}.slide ul{font-size:26px}.slide ul ul{font-size:22px}.small{font-size:18px}.card h3{font-size:26px}.card p,.card li,.card ul{font-size:22px}.card .who{font-size:16px}.take{font-size:22px}.take b{font-size:17px}.foot{font-size:16px}.cover-sub{font-size:30px}.part-sub{font-size:28px}.kv{font-size:24px}.kv dt{font-size:21px}.chip{font-size:23px}.lk{font-size:18px}.flow .step h3{font-size:24px}.flow .step p{font-size:21px}.prob,.biblio{font-size:23px}.biblio .ti{font-size:27px}.qlist p{font-size:26px}.tl .ev{font-size:23px}.grp h3{font-size:20px}
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+<div id="app" data-deck="b">
+  <div class="stagewrap"><div class="stage" id="stage">
+
+  <!-- 1 封面 -->
+  <section class="slide cover">
+    <div class="eyebrow">遊戲企畫 · 動畫與遊戲設計系</div>
+    <h1>做好了沒人知道</h1>
+    <p class="cover-sub">這是獨立作品最常見的死法。行銷不是上市前才開始的事，它從你決定標籤那一刻就開始了。</p>
+    <div class="cover-meta"><span>第 13 週</span><span>授課：鄧樹遠</span></div>
+  </section>
+
+  <!-- 2 本週地圖 -->
+  <section class="slide">
+    <div class="eyebrow">Week 13 · 本週地圖</div>
+    <h2>九十分鐘，五段路</h2>
+    <div class="content">
+      <div class="cards c5">
+        <div class="card"><span class="who">PART 1</span><h3>行銷從哪開始</h3><p class="sub">比你想的早很多</p></div>
+        <div class="card"><span class="who">PART 2</span><h3>商店頁怎麼寫</h3><p class="sub">三秒決定要不要看</p></div>
+        <div class="card"><span class="who">PART 3</span><h3>上市節奏</h3><p class="sub">願望清單怎麼累積</p></div>
+        <div class="card"><span class="who">PART 4</span><h3>小團隊的做法</h3><p class="sub">沒預算怎麼辦</p></div>
+        <div class="card"><span class="who">PART 5</span><h3>本週交付</h3><p class="sub">商店頁草稿與上市計畫</p></div>
+      </div>
+      <div class="take"><b>本週目標</b>離開教室時，你要有一份商店頁草稿，而且它的第一句話能讓人想看下去。</div>
+    </div>
+  </section>
+
+  <!-- 3 承接上週 -->
+  <section class="slide">
+    <div class="eyebrow">承接第 12 週 · 遊戲經濟與營收模式</div>
+    <h2>算得出收入，但賣得出去嗎</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">上週的產出</span>
+          <h3>營收設計與收入推算</h3>
+          <ul>
+            <li>資源流向圖</li>
+            <li>付費點或定價依據</li>
+            <li>用中位數推算的收入</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">今天要補的洞</span>
+          <h3>那個推算有個前提</h3>
+          <ul>
+            <li>前提是有人知道你的遊戲存在</li>
+            <li>沒有曝光，銷量就是零</li>
+            <li>行銷素材與商店頁要排進專案前期工作</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>殘酷的現實</b>平台上每天都有新作品上架。做得好但沒人知道，跟沒做出來的結果一樣。</div>
+    </div>
+  </section>
+
+  <!-- 4 PART 1 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">01</div>
+    <div class="eyebrow">PART 1</div>
+    <h2>行銷從哪開始</h2>
+    <p class="part-sub">不是做完才開始想。有些決定在企畫階段就已經決定了你能不能被找到。</p>
+  </section>
+
+  <!-- 5 三個早就決定的事 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 早期決定</div>
+    <h2>三件事在企畫階段就決定了</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">決定一</span>
+          <h3>標籤</h3>
+          <p>第 4 週選的那五個。它們決定平台把你推薦給誰，做完才改就來不及。</p>
+        </div>
+        <div class="card">
+          <span class="who">決定二</span>
+          <h3>一句話定位</h3>
+          <p>第 7 週寫的那句。它會變成商店頁第一行，也會變成你到處講的那句。</p>
+        </div>
+        <div class="card">
+          <span class="who">決定三</span>
+          <h3>視覺辨識度</h3>
+          <p>畫面截圖能不能在一排縮圖裡被認出來。這是美術方向決定的。</p>
+        </div>
+      </div>
+      <div class="take"><b>回頭檢查</b>這三件你都已經做過了。今天要做的是確認它們互相支撐，不是各說各話。</div>
+    </div>
+  </section>
+
+  <!-- 6 曝光從哪來 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 曝光來源</div>
+    <h2>玩家怎麼發現一款遊戲</h2>
+    <div class="content">
+      <ul>
+        <li>平台推薦：由標籤與早期表現決定，這是最大宗但你控制不了。</li>
+        <li>搜尋：玩家主動找某個標籤或關鍵字。標籤選對就吃得到。</li>
+        <li>朋友或社群推薦：作品本身要有可講的點，也就是你的勾子。</li>
+        <li>媒體與實況主：需要主動聯繫，而且要有可看性。</li>
+      </ul>
+      <div class="take"><b>企畫階段</b>先完成前三項不需付費的準備，再討論要不要投入其他行銷資源。</div>
+    </div>
+  </section>
+
+  <!-- 7 PART 2 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">02</div>
+    <div class="eyebrow">PART 2</div>
+    <h2>商店頁怎麼寫</h2>
+    <p class="part-sub">玩家給你三秒決定要不要往下看。這三秒只有兩個東西在工作：主視覺與第一句話。</p>
+  </section>
+
+  <!-- 8 商店頁四層 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 結構</div>
+    <h2>商店頁的四層資訊</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>第一層</dt><dd>主視覺與一句話。決定他要不要往下看</dd>
+        <dt>第二層</dt><dd>影片或動圖。決定他要不要加願望清單</dd>
+        <dt>第三層</dt><dd>三到五張截圖，各展示一個不同的玩法面向</dd>
+        <dt>第四層</dt><dd>文字說明、系統需求、開發團隊、授權聲明</dd>
+      </dl>
+      <div class="take"><b>順序不能顛倒</b>把世界觀長文放最上面是最常見的錯誤。那是第四層的東西。</div>
+    </div>
+  </section>
+
+  <!-- 9 截圖怎麼挑 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 截圖</div>
+    <h2>每張截圖要各講一件事</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">第一張</span>
+          <h3>核心玩法</h3>
+          <p>玩家在做那個核心動作的瞬間。這張要能單獨說明遊戲在幹嘛。</p>
+        </div>
+        <div class="card">
+          <span class="who">第二張</span>
+          <h3>視覺特色</h3>
+          <p>你美術最強的那個畫面。這張負責吸引點擊。</p>
+        </div>
+        <div class="card">
+          <span class="who">第三張</span>
+          <h3>情境或角色</h3>
+          <p>能讓人好奇「這是什麼故事」的一幕。</p>
+        </div>
+      </div>
+      <div class="take"><b>不要放的</b>選單畫面、設定畫面、空場景。這些每款遊戲都有，講不出你的特色。</div>
+    </div>
+  </section>
+
+  <!-- 10 第一句話 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 文案</div>
+    <h2>第一句話怎麼寫</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">沒人會看下去</span>
+          <h3>這幾種開頭</h3>
+          <ul>
+            <li>「在一個遙遠的王國裡…」</li>
+            <li>「本作是一款結合多種元素的…」</li>
+            <li>「歡迎來到某某的世界」</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">有機會</span>
+          <h3>直接講玩家做什麼</h3>
+          <ul>
+            <li>用第 7 週那句一句話定位</li>
+            <li>有動詞、有限制、三十字內</li>
+            <li>唸出來像在跟人講話</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>檢查方式</b>把第一句話單獨拿出來，問「這句話有沒有讓我想知道更多」。沒有就重寫。</div>
+    </div>
+  </section>
+
+  <!-- 11 PART 3 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">03</div>
+    <div class="eyebrow">PART 3</div>
+    <h2>上市節奏</h2>
+    <p class="part-sub">從現在開始倒排商店頁、素材與公開資訊的準備，上市前才不會同時趕所有事。</p>
+  </section>
+
+  <!-- 12 願望清單 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 願望清單</div>
+    <h2>為什麼要提前累積願望清單</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>它的作用</dt><dd>上市當天會通知所有加入清單的人，形成第一波集中的銷量</dd>
+        <dt>為什麼要集中</dt><dd>首週表現好，平台才會給更多推薦位</dd>
+        <dt>業界的說法</dt><dd>常見的目標是上市前累積到一萬筆，才撐得起首月的能見度</dd>
+        <dt>對學生的意義</dt><dd>你們不會真的上架，但要在企畫書裡寫出這段規劃</dd>
+      </dl>
+      <div class="take"><b>數字來源</b>「一萬」是業界常見說法，並非官方標準；引用時要標明它是經驗值。</div>
+    </div>
+  </section>
+
+  <!-- 13 上市前三個階段 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 時程</div>
+    <h2>上市前的三個階段</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>商店頁先開</h3><p>還沒做完就先開頁面，開始累積願望清單。這一步最多人漏掉。</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>持續露出</h3><p>開發日誌、短影片、參加線上展。讓演算法知道有人在關注。</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>上市週集中</h3><p>把所有能量集中在同一週爆發，不要分散。</p></div>
+      </div>
+      <div class="take"><b>第一步最關鍵</b>做完才開頁面，等於放棄了整段累積期。很多好作品死在這裡。</div>
+    </div>
+  </section>
+
+  <!-- 14 PART 4 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">04</div>
+    <div class="eyebrow">PART 4</div>
+    <h2>小團隊的做法</h2>
+    <p class="part-sub">沒有行銷預算的情況下，你還剩哪些牌可以打。</p>
+  </section>
+
+  <!-- 15 沒預算能做什麼 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 零預算</div>
+    <h2>沒錢也做得到的四件事</h2>
+    <div class="content">
+      <div class="cards c4">
+        <div class="card"><span class="who">做法一</span><h3>把標籤選對</h3><p class="sub">完全免費，效果最直接</p></div>
+        <div class="card"><span class="who">做法二</span><h3>做一段好的短片</h3><p class="sub">三十秒，前三秒最關鍵</p></div>
+        <div class="card"><span class="who">做法三</span><h3>參加線上展</h3><p class="sub">多數免費，有集中流量</p></div>
+        <div class="card"><span class="who">做法四</span><h3>做一件可講的事</h3><p class="sub">怪的設定本身就是話題</p></div>
+      </div>
+      <div class="take"><b>第四項最被低估</b>你的勾子如果夠怪，別人幫你講的效果比你自己買廣告好。</div>
+    </div>
+  </section>
+
+  <!-- 16 短影音 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 短影音</div>
+    <h2>三十秒怎麼分配</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>前三秒</h3><p>最有記憶點的畫面。不要放標題卡、不要放團隊標誌。</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>中間二十秒</h3><p>三到四段實際玩的畫面，每段五秒，展示不同面向。</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>最後七秒</h3><p>遊戲名稱、一句話、哪裡找得到。</p></div>
+      </div>
+      <div class="take"><b>前三秒的鐵律</b>直接進畫面。任何形式的開場動畫都會讓人滑掉。</div>
+    </div>
+  </section>
+
+  <!-- 17 社群要不要經營 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 社群</div>
+    <h2>粉專要不要開</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">值得開</span>
+          <h3>如果會持續更新</h3>
+          <ul>
+            <li>有人願意固定發開發日誌</li>
+            <li>作品會繼續做下去</li>
+            <li>目標是累積關注到上市</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">不必開</span>
+          <h3>如果只是交作業</h3>
+          <ul>
+            <li>課程結束就不再更新</li>
+            <li>開了只發三篇比沒開更糟</li>
+            <li>看的人會覺得專案已經死了</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>企畫書的寫法</b>誠實寫「本階段不經營社群，待作品完成後再啟動」比硬寫一段行銷計畫好。</div>
+    </div>
+  </section>
+
+  <!-- 18 PART 5 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">05</div>
+    <div class="eyebrow">PART 5</div>
+    <h2>本週交付</h2>
+    <p class="part-sub">一份商店頁草稿，加一段上市節奏規劃。</p>
+  </section>
+
+  <!-- 19 交付規格 -->
+  <section class="slide">
+    <div class="eyebrow">PART 5 · 交付規格</div>
+    <h2>這週要交什麼</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>交付物</dt><dd>商店頁草稿，加上市節奏規劃</dd>
+        <dt>格式</dt><dd>兩頁 A4 以內，PDF，檔名為「學號_W13_行銷與上市」</dd>
+        <dt>商店頁</dt><dd>第一句話、五個標籤、三張截圖的內容說明（可用文字描述或草圖）</dd>
+        <dt>上市規劃</dt><dd>三個階段各要做什麼，時間點怎麼排</dd>
+      </dl>
+      <div class="take"><b>沒有實際畫面沒關係</b>用文字描述「第一張截圖要呈現什麼」即可。這門課本來就不做美術。</div>
+    </div>
+  </section>
+
+  <!-- 20 檢核與退件 -->
+  <section class="slide">
+    <div class="eyebrow">PART 5 · 檢核標準</div>
+    <h2>什麼樣算過關</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">及格</span>
+          <h3>四層資訊都有</h3>
+          <p>第一句話、標籤、截圖說明、基本文案，順序正確。</p>
+        </div>
+        <div class="card">
+          <span class="who">好</span>
+          <h3>第一句話抓得住人</h3>
+          <p>單獨拿出來唸，聽的人會想知道更多。</p>
+        </div>
+        <div class="card">
+          <span class="who">退件</span>
+          <h3>常見的三種</h3>
+          <p>第一句是「在一個遙遠的王國」；截圖說明全是選單畫面；上市規劃只寫「做好就上架」。</p>
+        </div>
+      </div>
+      <div class="take"><b>驗收方式</b>我會唸你的第一句話給隔壁同學聽，看他有沒有追問。</div>
+    </div>
+  </section>
+
+  <!-- 21 課堂討論與課後任務 -->
+  <section class="slide">
+    <div class="eyebrow">Week 13 · 收尾</div>
+    <h2>回去做這三件事</h2>
+    <div class="content">
+      <div class="qlist">
+        <p>你的五個標籤，跟你的一句話定位講的是同一件事嗎？</p>
+        <p>你的第一句話，跟第 7 週寫的那句一樣嗎？不一樣的話，哪一句比較好？</p>
+        <p>三張截圖，如果只能留一張，你留哪一張？為什麼？</p>
+      </div>
+      <div class="card">
+        <span class="who">課後任務</span>
+        <p>去看十款遊戲商店頁的第一句話，分辨哪些抓得住你、哪些讓你直接關掉。</p>
+      </div>
+      <div class="take"><b>下週預告</b>風險評估與開發排程：誠實面對做不完這件事，並且寫進企畫書。</div>
+    </div>
+  </section>
+
+  <!-- 22 資源彙整 -->
+  <section class="slide">
+    <div class="eyebrow">Week 13 · 資源彙整</div>
+    <h2>本週資源</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="grp">
+          <h3>商店頁與標籤</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://partner.steamgames.com/doc/store/tags?l=tchinese" target="_blank" rel="noopener">Steam 標籤文件</a>
+            <a class="lk" href="https://store.steampowered.com/" target="_blank" rel="noopener">Steam</a>
+            <a class="lk" href="https://itch.io/" target="_blank" rel="noopener">itch.io</a>
+          </div>
+        </div>
+        <div class="grp">
+          <h3>案例與數據</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://www.incgmedia.com/spotlight/11-taiwan-indie-games-must-play" target="_blank" rel="noopener">台灣獨立遊戲盤點</a>
+            <a class="lk" href="https://www.indiegametw.com/en/" target="_blank" rel="noopener">台灣遊戲資料站</a>
+            <a class="lk" href="https://steamdb.info/" target="_blank" rel="noopener">SteamDB</a>
+          </div>
+        </div>
+      </div>
+      <div class="take"><b>案例選擇</b>優先讀台灣獨立作品的商店頁，先找規模與學生專題接近的做法。</div>
+    </div>
+  </section>
+
+  
+
+  </div></div>
+
+  <div class="ctrl">
+    <button id="prev" aria-label="上一張">‹</button>
+    <span class="cnt" id="cnt">1 / 1</span>
+    <button id="next" aria-label="下一張">›</button>
+    <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+  </div>
+  <div class="prog" id="prog"></div>
+
+  <div class="toc" id="toc">
+    <button class="close" id="tocClose">關閉（Esc）</button>
+    <h2 id="tocTitle">目錄</h2>
+    <div class="tgrid" id="tgrid"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ★ 每週只改這一行 ★ */
+  var WEEK_LABEL = '第 13 週 · 行銷與上市策略';
+
+  var stage = document.getElementById('stage');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var cnt = document.getElementById('cnt');
+  var prog = document.getElementById('prog');
+  var toc = document.getElementById('toc');
+  var tgrid = document.getElementById('tgrid');
+  var cur = 0;
+
+  document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
+
+  slides.forEach(function (s, i) {
+    var f = document.createElement('div');
+    f.className = 'foot';
+    f.innerHTML = '<span>遊戲企畫|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    s.appendChild(f);
+  });
+
+  var groups = {};
+  slides.forEach(function (s, i) {
+    var eb = s.querySelector('.eyebrow');
+    var part = '開場';
+    if (eb) {
+      var m = eb.textContent.match(/PART\s*(\d)/i);
+      if (m) part = 'PART ' + m[1];
+      else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
+    }
+    var h = s.querySelector('h1, h2');
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+  });
+  Object.keys(groups).forEach(function (k) {
+    var col = document.createElement('div');
+    var h3 = document.createElement('h3');
+    h3.textContent = k;
+    col.appendChild(h3);
+    groups[k].forEach(function (it) {
+      var b = document.createElement('button');
+      b.textContent = it.t;
+      b.dataset.i = it.i;
+      b.addEventListener('click', function () { toggleToc(false); go(it.i); });
+      col.appendChild(b);
+    });
+    tgrid.appendChild(col);
+  });
+
+  function go(i) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach(function (s, j) { s.classList.toggle('active', j === cur); });
+    cnt.textContent = (cur + 1) + ' / ' + slides.length;
+    prog.style.width = ((cur + 1) / slides.length * 100) + '%';
+    if (history.replaceState) history.replaceState(null, '', '#s' + (cur + 1));
+    tgrid.querySelectorAll('button').forEach(function (b) { b.classList.toggle('here', +b.dataset.i === cur); });
+  }
+  function toggleToc(on) {
+    toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
+  }
+
+  document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
+  document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
+  document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
+  document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { toggleToc(false); return; }
+    if (toc.classList.contains('on')) return;
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'Home': go(0); break;
+      case 'End': go(slides.length - 1); break;
+      case 'm': case 'M': toggleToc(); break;
+    }
+  });
+
+  function fit() {
+    var w = window.innerWidth, h = window.innerHeight;
+    if (!w || !h) { requestAnimationFrame(fit); return; }
+    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('load', fit);
+  fit();
+
+  var m = location.hash.match(/^#s(\d+)$/);
+  go(m ? +m[1] - 1 : 0);
+})();
+</script>
+</body>
+</html>

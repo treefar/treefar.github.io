@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>第 5 週|目標玩家與使用者輪廓</title>
+<style>
+  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  * { box-sizing: border-box; }
+  #app {
+    position: fixed; inset: 0; overflow: hidden;
+    background: var(--bg);
+    font-family: var(--body);
+    color: var(--ink);
+    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
+    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
+    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
+    --bg: #F5F4EC; --bg2: #EFEEE2;
+    --panel: #FDFCF6; --panel2: #EDECDF;
+    --ink: #232B21; --sub: #67705E;
+    --accent: #2F6B4F; --accent-rgb: 47,107,79;
+    --accent2: #BC4F2C;
+    --line: rgba(35,43,33,.16);
+    --link: #2F6B4F;
+    --r: 4px;
+  }
+  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  #app a:hover { opacity: .85; }
+  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
+  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
+  .slide.active { display: flex; }
+  .slide::before {
+    content: ""; position: absolute; inset: 24px; pointer-events: none;
+    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
+  }
+
+  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
+  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
+  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+
+  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
+  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
+  .sub { color: var(--sub); }
+  .small { font-size: 18px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
+  .cards { display: grid; gap: 18px; }
+  .c2 { grid-template-columns: repeat(2, 1fr); }
+  .c3 { grid-template-columns: repeat(3, 1fr); }
+  .c4 { grid-template-columns: repeat(4, 1fr); }
+  .c5 { grid-template-columns: repeat(5, 1fr); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
+  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
+  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
+  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+
+  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
+  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+
+  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
+
+  .cover, .part { justify-content: center; }
+  .cover .eyebrow { margin-bottom: 26px; }
+  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
+  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
+  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
+  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
+  .part h2 { font-size: 56px; }
+  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+
+  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
+  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
+  .kv dd { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
+  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
+  .lk::after { content: " ↗"; font-size: 12px; }
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
+  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
+  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
+  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
+  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
+  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  .tl { display: flex; flex-direction: column; gap: 18px; }
+  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
+  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
+  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+
+  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
+  .content > .cards,
+  .content > .cols,
+  .content > .flow,
+  .content > .kv,
+  .content > .prob { flex: 1 1 auto; }
+  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .qlist,
+  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .biblio { flex: 0 0 auto; }
+  .cols > .card { justify-content: flex-start; }
+
+  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
+  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
+  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
+  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
+  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  .toc.on { display: block; }
+  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
+  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
+  .toc button:hover { background: var(--panel2); }
+  .toc button.here { color: var(--accent2); font-weight: 700; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
+  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+ .eyebrow{font-size:18px}.slide h2{font-size:48px}.slide ul{font-size:26px}.slide ul ul{font-size:22px}.small{font-size:18px}.card h3{font-size:26px}.card p,.card li,.card ul{font-size:22px}.card .who{font-size:16px}.take{font-size:22px}.take b{font-size:17px}.foot{font-size:16px}.cover-sub{font-size:30px}.part-sub{font-size:28px}.kv{font-size:24px}.kv dt{font-size:21px}.chip{font-size:23px}.lk{font-size:18px}.flow .step h3{font-size:24px}.flow .step p{font-size:21px}.prob,.biblio{font-size:23px}.biblio .ti{font-size:27px}.qlist p{font-size:26px}.tl .ev{font-size:23px}.grp h3{font-size:20px}
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+<div id="app" data-deck="b">
+  <div class="stagewrap"><div class="stage" id="stage">
+
+  <!-- 1 封面 -->
+  <section class="slide cover">
+    <div class="eyebrow">遊戲企畫 · 動畫與遊戲設計系</div>
+    <h1>不能是所有人</h1>
+    <p class="cover-sub">「給喜歡遊戲的人玩」等於沒有設定。這堂課講怎麼把目標玩家縮小到一個你約得出來的具體對象，以及那件事怎麼幫你做決定。</p>
+    <div class="cover-meta"><span>第 5 週</span><span>授課：鄧樹遠</span></div>
+  </section>
+
+  <!-- 2 本週地圖 -->
+  <section class="slide">
+    <div class="eyebrow">Week 05 · 本週地圖</div>
+    <h2>九十分鐘，五段路</h2>
+    <div class="content">
+      <div class="cards c5">
+        <div class="card"><span class="who">PART 1</span><h3>為什麼要界定</h3><p class="sub">它是拿來做決定的</p></div>
+        <div class="card"><span class="who">PART 2</span><h3>玩家動機分類</h3><p class="sub">經典四型與它的限制</p></div>
+        <div class="card"><span class="who">PART 3</span><h3>輪廓怎麼寫</h3><p class="sub">五個必填欄位</p></div>
+        <div class="card"><span class="who">PART 4</span><h3>從需求到設計</h3><p class="sub">怎麼真的用上它</p></div>
+        <div class="card"><span class="who">PART 5</span><h3>本週交付</h3><p class="sub">一份使用者輪廓</p></div>
+      </div>
+      <div class="take"><b>本週目標</b>離開教室時，你的目標玩家要具體到「你想得出班上誰是這種人」。</div>
+    </div>
+  </section>
+
+  <!-- 3 承接上週 -->
+  <section class="slide">
+    <div class="eyebrow">承接第 4 週 · 遊戲類型與競品分析</div>
+    <h2>負評裡的人是誰</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">上週的產出</span>
+          <h3>三款競品與抱怨清單</h3>
+          <ul>
+            <li>找出規模相近的三款對手</li>
+            <li>整理出重複出現的抱怨</li>
+            <li>寫出一段差異化機會</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">今天要問</span>
+          <h3>抱怨的那些人是誰</h3>
+          <ul>
+            <li>他們原本期待什麼</li>
+            <li>他們玩遊戲想得到什麼</li>
+            <li>你的遊戲要服務的就是他們</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>交件檢查</b>把玩家輪廓的每個特徵，連回一則競品評論或可查到的資料。</div>
+    </div>
+  </section>
+
+  <!-- 4 PART 1 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">01</div>
+    <div class="eyebrow">PART 1</div>
+    <h2>為什麼要界定</h2>
+    <p class="part-sub">玩家輪廓要能拿來做取捨：功能想加進來時，先問它是否服務這個人。</p>
+  </section>
+
+  <!-- 5 所有人等於沒有人 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 核心觀念</div>
+    <h2>「所有人」等於沒有人</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">寫「所有人」的後果</span>
+          <h3>每個決定都無法判斷</h3>
+          <ul>
+            <li>難度要調高還是調低？兩邊都有人喜歡</li>
+            <li>要不要加教學？有人需要有人嫌煩</li>
+            <li>永遠有理由不做決定</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">寫得夠具體</span>
+          <h3>取捨變得容易</h3>
+          <ul>
+            <li>「玩過某某但覺得太難的人」</li>
+            <li>難度題目立刻有答案</li>
+            <li>教學題目也立刻有答案</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>判準</b>目標玩家寫得夠好的話，設計爭議會自己減少一半。因為有共同的判斷依據。</div>
+    </div>
+  </section>
+
+  <!-- 6 界定玩家的用途 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 用途</div>
+    <h2>它會用在哪四個地方</h2>
+    <div class="content">
+      <ul>
+        <li>設計取捨：難度、節奏、教學量、內容長度，全部依它決定。</li>
+        <li>美術方向：畫風要對到那群人的審美，不是對到你的審美。</li>
+        <li>行銷：知道要去哪裡找他們、用什麼話講給他們聽。</li>
+        <li>測試：第 14 週要找人測，你得知道要找誰。</li>
+      </ul>
+      <div class="take"><b>最實際的一項</b>是第四項。找不到人來測的目標玩家設定，通常代表設定得太抽象。</div>
+    </div>
+  </section>
+
+  <!-- 7 PART 2 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">02</div>
+    <div class="eyebrow">PART 2</div>
+    <h2>玩家動機分類</h2>
+    <p class="part-sub">有一套經典分類可以當起點。但它是 1996 年提出的，用之前要知道它的限制。</p>
+  </section>
+
+  <!-- 8 Bartle 四型 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 經典分類</div>
+    <h2>Bartle 的四種玩家</h2>
+    <div class="content">
+      <div class="cards c4">
+        <div class="card"><span class="who">Achievers</span><h3>成就者</h3><p class="sub">挑戰越難越有成就感</p></div>
+        <div class="card"><span class="who">Explorers</span><h3>探索者</h3><p class="sub">想摸透世界與機制</p></div>
+        <div class="card"><span class="who">Socializers</span><h3>社交者</h3><p class="sub">享受幫助別人與交流</p></div>
+        <div class="card"><span class="who">Killers</span><h3>殺手</h3><p class="sub">要贏，而且要贏得徹底</p></div>
+      </div>
+      <div class="take"><b>出處</b>Richard Bartle 於 1996 年提出，原本用來分析多人線上遊戲的玩家。</div>
+    </div>
+  </section>
+
+  <!-- 9 象限怎麼看 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 象限模型</div>
+    <h2>四型怎麼被分出來的</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">橫軸</span>
+          <h3>對象是誰</h3>
+          <ul>
+            <li>偏好跟其他玩家互動</li>
+            <li>還是偏好探索世界本身</li>
+            <li>探索者與成就者偏世界那端</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">縱軸</span>
+          <h3>怎麼參與</h3>
+          <ul>
+            <li>偏好互動、有來有往</li>
+            <li>還是偏好單方面採取行動</li>
+            <li>殺手與成就者偏行動那端</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>怎麼用</b>不要拿它貼標籤，拿它當提問工具：我的遊戲主要滿足哪一種動機。</div>
+    </div>
+  </section>
+
+  <!-- 10 分類的限制 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 限制</div>
+    <h2>用之前要知道的三件事</h2>
+    <div class="content">
+      <ul>
+        <li>它是 1996 年為多人線上遊戲設計的。單機遊戲套用時要調整。</li>
+        <li>真實玩家不會只屬於一型。同一個人在不同遊戲裡的行為可能完全不同。</li>
+        <li>它講的是動機，不是族群。不能直接拿來當行銷的目標對象。</li>
+      </ul>
+      <div class="linkrow">
+        <a class="lk" href="https://en.wikipedia.org/wiki/Bartle_taxonomy_of_player_types" target="_blank" rel="noopener">Bartle 分類條目</a>
+        <a class="lk" href="https://www.gameanalytics.com/blog/understanding-your-audience-bartle-player-taxonomy" target="_blank" rel="noopener">分類應用說明</a>
+      </div>
+      <div class="take"><b>我的用法</b>把它當作「我有沒有漏掉某種動機」的檢查表，不要當作玩家的分類依據。</div>
+    </div>
+  </section>
+
+  <!-- 11 PART 3 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">03</div>
+    <div class="eyebrow">PART 3</div>
+    <h2>輪廓怎麼寫</h2>
+    <p class="part-sub">使用者輪廓就是把目標玩家寫成一個具體的人。重點在具體，不在真實。</p>
+  </section>
+
+  <!-- 12 Persona 是什麼 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 定義</div>
+    <h2>使用者輪廓是什麼</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>它是什麼</dt><dd>把一群目標玩家濃縮成一個虛構但具體的人物描述</dd>
+        <dt>為什麼要虛構</dt><dd>因為要能在會議上被指名：「這個功能小陳會用嗎」</dd>
+        <dt>要幾個</dt><dd>學生專題一到兩個就好。超過三個等於沒有重點</dd>
+        <dt>不是什麼</dt><dd>不是市場調查報告，也不是統計上的平均值</dd>
+      </dl>
+      <div class="take"><b>關鍵</b>它的價值在於「可以被指名」。抽象的族群描述沒辦法在爭論時當裁判。</div>
+    </div>
+  </section>
+
+  <!-- 13 五個必填 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 欄位</div>
+    <h2>輪廓要寫這四欄</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>他是誰</dt><dd>年齡、身分、每天可以玩多久。要具體到能想像那個人</dd>
+        <dt>他現在玩什麼</dt><dd>列出兩三款他常玩的遊戲。這是最有用的一欄</dd>
+        <dt>他為什麼不滿</dt><dd>現有作品哪裡不合他意。接上第 4 週的負評整理</dd>
+        <dt>他要什麼</dt><dd>玩遊戲時想得到什麼感受。一句話就好</dd>
+      </dl>
+      <div class="take"><b>第二欄最有用</b>寫得出他現在玩什麼，你就知道你的作品要放在哪個貨架上競爭。</div>
+    </div>
+  </section>
+
+  <!-- 14 假 Persona -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 常見問題</div>
+    <h2>三種寫了沒用的輪廓</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">類型一</span>
+          <h3>寫成人口統計</h3>
+          <p>「18 到 25 歲、男性、學生」。這些資料無法幫你決定任何設計。</p>
+        </div>
+        <div class="card">
+          <span class="who">類型二</span>
+          <h3>寫成理想玩家</h3>
+          <p>「喜歡挑戰、有耐心、願意研究」。那不是玩家，是你的願望。</p>
+        </div>
+        <div class="card">
+          <span class="who">類型三</span>
+          <h3>寫成自己</h3>
+          <p>照著自己的喜好寫。做給自己玩不是不行，但要誠實承認，不要假裝是市場分析。</p>
+        </div>
+      </div>
+      <div class="take"><b>第三種最常見</b>而且最危險，因為它會讓你在測試回饋跟自己想法衝突時，選擇相信自己。</div>
+    </div>
+  </section>
+
+  <!-- 15 PART 4 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">04</div>
+    <div class="eyebrow">PART 4</div>
+    <h2>從需求到設計</h2>
+    <p class="part-sub">輪廓寫完不是就結束了。要能把它翻譯成具體的設計決定，否則就只是一頁裝飾。</p>
+  </section>
+
+  <!-- 16 需求變決定 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 轉化流程</div>
+    <h2>三步把需求變成設計</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>寫出限制</h3><p>他每天只能玩二十分鐘。這是事實，不是偏好。</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>推出需求</h3><p>所以他需要能在二十分鐘內完成一個有成就感的循環。</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>定出設計</h3><p>所以單局長度設在十五分鐘內，而且要能隨時存檔退出。</p></div>
+      </div>
+      <div class="take"><b>檢驗方式</b>每個設計決定都要能往回追到某個需求。追不到的，多半是你自己想加的。</div>
+    </div>
+  </section>
+
+  <!-- 17 一個實例 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 實例</div>
+    <h2>同一個機制，兩種玩家兩種做法</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">目標是成就型玩家</span>
+          <h3>死亡懲罰要重</h3>
+          <ul>
+            <li>失敗要付出代價，成功才有價值</li>
+            <li>提供更難的挑戰模式</li>
+            <li>成就系統要記錄困難紀錄</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">目標是時間有限的人</span>
+          <h3>死亡懲罰要輕</h3>
+          <ul>
+            <li>重來要快，不能罰時間</li>
+            <li>進度隨時保留</li>
+            <li>挫折要換成學到東西的感覺</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>沒有對錯</b>只有「跟你的目標玩家合不合」。兩種都做，就是兩邊都不討好。</div>
+    </div>
+  </section>
+
+  <!-- 18 不要服務過頭 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 平衡</div>
+    <h2>但也不要被輪廓綁死</h2>
+    <div class="content">
+      <ul>
+        <li>輪廓是你推論出來的，不是真理。第 14 週實際測試後可能要改。</li>
+        <li>玩家說不出自己要什麼。輪廓幫你猜得準一點，但仍然是猜。</li>
+        <li>如果每個設計都要問「小陳會喜歡嗎」，作品會變得沒有個性。</li>
+        <li>正確用法是拿它解決爭議，不是拿它取代判斷。</li>
+      </ul>
+      <div class="take"><b>比例</b>大約八成的決定用輪廓判斷，剩下兩成留給你自己的堅持。那兩成通常是作品的靈魂。</div>
+    </div>
+  </section>
+
+  <!-- 19 PART 5 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">05</div>
+    <div class="eyebrow">PART 5</div>
+    <h2>本週交付</h2>
+    <p class="part-sub">一份使用者輪廓，加三個從它推出來的設計決定。</p>
+  </section>
+
+  <!-- 20 交付規格 -->
+  <section class="slide">
+    <div class="eyebrow">PART 5 · 交付規格</div>
+    <h2>這週要交什麼</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>交付物</dt><dd>一份使用者輪廓，加三個設計決定</dd>
+        <dt>格式</dt><dd>一頁 A4，PDF，檔名為「學號_W5_使用者輪廓」</dd>
+        <dt>輪廓四欄</dt><dd>他是誰、現在玩什麼、為什麼不滿、他要什麼</dd>
+        <dt>設計決定</dt><dd>三條，每條都要能往回追到輪廓裡的某一句話</dd>
+      </dl>
+      <div class="take"><b>加分項</b>如果你能講出班上或身邊誰接近這個輪廓，那代表你設定得夠具體。</div>
+    </div>
+  </section>
+
+  <!-- 21 檢核與退件 -->
+  <section class="slide">
+    <div class="eyebrow">PART 5 · 檢核標準</div>
+    <h2>什麼樣算過關</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">及格</span>
+          <h3>四欄都寫得出來</h3>
+          <p>特別是「現在玩什麼」要有具體作品名稱。</p>
+        </div>
+        <div class="card">
+          <span class="who">好</span>
+          <h3>設計決定追得回去</h3>
+          <p>三條決定各對應輪廓裡的哪一句，標得出來。</p>
+        </div>
+        <div class="card">
+          <span class="who">退件</span>
+          <h3>常見的三種</h3>
+          <p>寫成人口統計；「現在玩什麼」空白；設計決定跟輪廓完全無關。</p>
+        </div>
+      </div>
+      <div class="take"><b>驗收方式</b>我會挑一條設計決定問「這是從哪一句推出來的」。答不出來就是硬湊的。</div>
+    </div>
+  </section>
+
+  <!-- 22 課堂討論與課後任務 -->
+  <section class="slide">
+    <div class="eyebrow">Week 05 · 收尾</div>
+    <h2>回去做這三件事</h2>
+    <div class="content">
+      <div class="qlist">
+        <p>你的輪廓，身邊找得到接近的人嗎？找不到的話是設定太抽象還是太理想？</p>
+        <p>你的三條設計決定，換一個目標玩家的話會不會全部推翻？</p>
+        <p>你寫的輪廓，有沒有其實就是你自己？</p>
+      </div>
+      <div class="card">
+        <span class="who">課後任務</span>
+        <p>找一個接近你輪廓的人聊十分鐘，問他最近玩什麼、為什麼玩、哪裡覺得煩。</p>
+      </div>
+      <div class="take"><b>下週預告</b>創意發想與企畫主題定位：從一堆點子收斂成一個能做的主軸。</div>
+    </div>
+  </section>
+
+  <!-- 23 資源彙整 -->
+  <section class="slide">
+    <div class="eyebrow">Week 05 · 資源彙整</div>
+    <h2>本週資源</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="grp">
+          <h3>玩家分類</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://en.wikipedia.org/wiki/Bartle_taxonomy_of_player_types" target="_blank" rel="noopener">Bartle 分類條目</a>
+            <a class="lk" href="https://www.gameanalytics.com/blog/understanding-your-audience-bartle-player-taxonomy" target="_blank" rel="noopener">分類應用說明</a>
+          </div>
+        </div>
+        <div class="grp">
+          <h3>找玩家與資料</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://store.steampowered.com/" target="_blank" rel="noopener">Steam</a>
+            <a class="lk" href="https://steamdb.info/" target="_blank" rel="noopener">SteamDB</a>
+            <a class="lk" href="https://itch.io/" target="_blank" rel="noopener">itch.io</a>
+            <a class="lk" href="https://www.indiegametw.com/en/" target="_blank" rel="noopener">台灣遊戲資料站</a>
+          </div>
+        </div>
+      </div>
+      <div class="take"><b>引用方式</b>Bartle 分類出自 1996 年；引用時要標明年份與原本的適用範圍。</div>
+    </div>
+  </section>
+
+  
+
+  </div></div>
+
+  <div class="ctrl">
+    <button id="prev" aria-label="上一張">‹</button>
+    <span class="cnt" id="cnt">1 / 1</span>
+    <button id="next" aria-label="下一張">›</button>
+    <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+  </div>
+  <div class="prog" id="prog"></div>
+
+  <div class="toc" id="toc">
+    <button class="close" id="tocClose">關閉（Esc）</button>
+    <h2 id="tocTitle">目錄</h2>
+    <div class="tgrid" id="tgrid"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ★ 每週只改這一行 ★ */
+  var WEEK_LABEL = '第 5 週 · 目標玩家與使用者輪廓';
+
+  var stage = document.getElementById('stage');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var cnt = document.getElementById('cnt');
+  var prog = document.getElementById('prog');
+  var toc = document.getElementById('toc');
+  var tgrid = document.getElementById('tgrid');
+  var cur = 0;
+
+  document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
+
+  slides.forEach(function (s, i) {
+    var f = document.createElement('div');
+    f.className = 'foot';
+    f.innerHTML = '<span>遊戲企畫|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    s.appendChild(f);
+  });
+
+  var groups = {};
+  slides.forEach(function (s, i) {
+    var eb = s.querySelector('.eyebrow');
+    var part = '開場';
+    if (eb) {
+      var m = eb.textContent.match(/PART\s*(\d)/i);
+      if (m) part = 'PART ' + m[1];
+      else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
+    }
+    var h = s.querySelector('h1, h2');
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+  });
+  Object.keys(groups).forEach(function (k) {
+    var col = document.createElement('div');
+    var h3 = document.createElement('h3');
+    h3.textContent = k;
+    col.appendChild(h3);
+    groups[k].forEach(function (it) {
+      var b = document.createElement('button');
+      b.textContent = it.t;
+      b.dataset.i = it.i;
+      b.addEventListener('click', function () { toggleToc(false); go(it.i); });
+      col.appendChild(b);
+    });
+    tgrid.appendChild(col);
+  });
+
+  function go(i) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach(function (s, j) { s.classList.toggle('active', j === cur); });
+    cnt.textContent = (cur + 1) + ' / ' + slides.length;
+    prog.style.width = ((cur + 1) / slides.length * 100) + '%';
+    if (history.replaceState) history.replaceState(null, '', '#s' + (cur + 1));
+    tgrid.querySelectorAll('button').forEach(function (b) { b.classList.toggle('here', +b.dataset.i === cur); });
+  }
+  function toggleToc(on) {
+    toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
+  }
+
+  document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
+  document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
+  document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
+  document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { toggleToc(false); return; }
+    if (toc.classList.contains('on')) return;
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'Home': go(0); break;
+      case 'End': go(slides.length - 1); break;
+      case 'm': case 'M': toggleToc(); break;
+    }
+  });
+
+  function fit() {
+    var w = window.innerWidth, h = window.innerHeight;
+    if (!w || !h) { requestAnimationFrame(fit); return; }
+    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('load', fit);
+  fit();
+
+  var m = location.hash.match(/^#s(\d+)$/);
+  go(m ? +m[1] - 1 : 0);
+})();
+</script>
+</body>
+</html>

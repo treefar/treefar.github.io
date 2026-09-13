@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>第 6 週|AI工具使用</title>
+<style>
+  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  * { box-sizing: border-box; }
+  #app {
+    position: fixed; inset: 0; overflow: hidden;
+    background: var(--bg);
+    font-family: var(--body);
+    color: var(--ink);
+    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
+    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
+    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
+    --bg: #F5F4EC; --bg2: #EFEEE2;
+    --panel: #FDFCF6; --panel2: #EDECDF;
+    --ink: #232B21; --sub: #67705E;
+    --accent: #2F6B4F; --accent-rgb: 47,107,79;
+    --accent2: #BC4F2C;
+    --line: rgba(35,43,33,.16);
+    --link: #2F6B4F;
+    --r: 4px;
+  }
+  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  #app a:hover { opacity: .85; }
+  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
+  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
+  .slide.active { display: flex; }
+  .slide::before {
+    content: ""; position: absolute; inset: 24px; pointer-events: none;
+    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
+  }
+
+  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
+  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
+  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+
+  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
+  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
+  .sub { color: var(--sub); }
+  .small { font-size: 18px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
+  .cards { display: grid; gap: 18px; }
+  .c2 { grid-template-columns: repeat(2, 1fr); }
+  .c3 { grid-template-columns: repeat(3, 1fr); }
+  .c4 { grid-template-columns: repeat(4, 1fr); }
+  .c5 { grid-template-columns: repeat(5, 1fr); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
+  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
+  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
+  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+
+  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
+  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+
+  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
+
+  .cover, .part { justify-content: center; }
+  .cover .eyebrow { margin-bottom: 26px; }
+  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
+  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
+  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
+  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
+  .part h2 { font-size: 56px; }
+  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+
+  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
+  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
+  .kv dd { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
+  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
+  .lk::after { content: " ↗"; font-size: 12px; }
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
+  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
+  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
+  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
+  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
+  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  .tl { display: flex; flex-direction: column; gap: 18px; }
+  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
+  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
+  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+
+  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
+  .content > .cards,
+  .content > .cols,
+  .content > .flow,
+  .content > .kv,
+  .content > .prob { flex: 1 1 auto; }
+  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .qlist,
+  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .biblio { flex: 0 0 auto; }
+  .cols > .card { justify-content: flex-start; }
+
+  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
+  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
+  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
+  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
+  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  .toc.on { display: block; }
+  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
+  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
+  .toc button:hover { background: var(--panel2); }
+  .toc button.here { color: var(--accent2); font-weight: 700; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
+  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+<div id="app" data-deck="b">
+  <div class="stagewrap"><div class="stage" id="stage">
+
+  <!-- 1 封面 -->
+  <section class="slide cover">
+    <div class="eyebrow">專題企畫 · 動畫與遊戲設計系</div>
+    <h1>工具會換，判斷不會</h1>
+    <p class="cover-sub">今天講的每一個工具名字，一年後可能都改了。所以重點不是教你按哪個鍵，是教你判斷什麼時候該用、什麼時候不該用。</p>
+    <div class="cover-meta"><span>第 6 週</span><span>授課：鄧樹遠</span></div>
+  </section>
+
+  <!-- 2 本週地圖 -->
+  <section class="slide">
+    <div class="eyebrow">Week 06 · 本週地圖</div>
+    <h2>九十分鐘，五段路</h2>
+    <div class="content">
+      <div class="cards c5">
+        <div class="card"><span class="who">PART 1</span><h3>先講判斷</h3><p class="sub">什麼時候不該用 AI</p></div>
+        <div class="card"><span class="who">PART 2</span><h3>文字與程式</h3><p class="sub">對話型與代理型</p></div>
+        <div class="card"><span class="who">PART 3</span><h3>影像與 3D</h3><p class="sub">生出來還要能用</p></div>
+        <div class="card"><span class="who">PART 4</span><h3>我踩過的雷</h3><p class="sub">四種會賠掉時間的用法</p></div>
+        <div class="card"><span class="who">PART 5</span><h3>本週交付</h3><p class="sub">AI 使用紀錄表</p></div>
+      </div>
+      <div class="take"><b>本週目標</b>離開教室時，你要能講出「這件事我為什麼不交給 AI 做」，而不是只會列工具名。</div>
+    </div>
+  </section>
+
+  <!-- 3 承接上週 -->
+  <section class="slide">
+    <div class="eyebrow">承接第 5 週 · 劇本與腳本撰寫</div>
+    <h2>接下來要開始產東西了</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">已完成</span>
+          <h3>前五週的規格</h3>
+          <ul>
+            <li>題目、風格板、世界觀與角色</li>
+            <li>該定的方向都定了</li>
+            <li>下週開始寫企畫書</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">今天要做</span>
+          <h3>把工具鏈接起來</h3>
+          <ul>
+            <li>哪些工作要用 AI、哪些不要</li>
+            <li>額度怎麼分配才不會期末沒得用</li>
+            <li>怎麼記錄才交得出使用說明</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>操作順序</b>先定題目與規格，再挑工具。反過來容易把作業做成工具示範。</div>
+    </div>
+  </section>
+
+  <!-- 4 PART 1 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">01</div>
+    <div class="eyebrow">PART 1</div>
+    <h2>先講判斷</h2>
+    <p class="part-sub">工具清單網路上都查得到。真正難的是知道什麼時候該關掉它，自己動手比較快。</p>
+  </section>
+
+  <!-- 5 三個問題 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 判斷標準</div>
+    <h2>用之前先問三題</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">第一題</span>
+          <h3>我驗得出來嗎</h3>
+          <p>如果它給錯我看不出來，就不該交給它。你不懂的領域，AI 最容易騙過你。</p>
+        </div>
+        <div class="card">
+          <span class="who">第二題</span>
+          <h3>改比重做快嗎</h3>
+          <p>生成品要花的後製時間，比自己做還久的話，那就自己做。</p>
+        </div>
+        <div class="card">
+          <span class="who">第三題</span>
+          <h3>這件事需要品味嗎</h3>
+          <p>需要判斷好不好、美不美的，AI 只能給你候選，決定權不能交出去。</p>
+        </div>
+      </div>
+      <div class="take"><b>核心判準</b>三題有一題答不出來，就先自己動手。用不對地方的 AI 會偷走你的時間。</div>
+    </div>
+  </section>
+
+  <!-- 6 幫得上與幫不上 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 能力邊界</div>
+    <h2>它幫得上什麼</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">很划算</span>
+          <h3>量大、規則明確、可丟棄</h3>
+          <ul>
+            <li>把會議錄音整理成待辦清單</li>
+            <li>寫重複性高的程式與資料轉換</li>
+            <li>大量產概念方向讓你挑</li>
+            <li>幫你找出企畫書裡自相矛盾的地方</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">不划算</span>
+          <h3>要負責、要品味、要精準</h3>
+          <ul>
+            <li>決定遊戲好不好玩</li>
+            <li>需要精確引用的資料與數字</li>
+            <li>最終成品的美術與音樂</li>
+            <li>你完全不懂的技術決策</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>分工判斷</b>左邊那些做完，你會多出很多時間。右邊那些交出去，你會在期末付出代價。</div>
+    </div>
+  </section>
+
+  <!-- 7 額度是資源 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 資源管理</div>
+    <h2>額度是有限資源</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>先分配</dt><dd>把額度想成預算。哪幾週最需要，先留給那幾週</dd>
+        <dt>尖峰在哪</dt><dd>第 13 週雛型開發與第 16 到 17 週收尾最吃額度</dd>
+        <dt>省的方法</dt><dd>把要問的問題一次整理好再問，不要邊想邊聊</dd>
+        <dt>備援</dt><dd>主力用完時有沒有第二條線可以接，先想好</dd>
+      </dl>
+      <div class="take"><b>經驗談</b>額度在第 10 週就燒完的組，通常不是用得多，是每次都從零開始重講一遍脈絡。</div>
+    </div>
+  </section>
+
+  <!-- 8 PART 2 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">02</div>
+    <div class="eyebrow">PART 2</div>
+    <h2>文字與程式</h2>
+    <p class="part-sub">這一類最成熟，也最容易被誤用。差別在於你是把它當搜尋引擎，還是當共同工作者。</p>
+  </section>
+
+  <!-- 9 對話型與代理型 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 兩種模式</div>
+    <h2>對話型與代理型</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">對話型</span>
+          <h3>你問它答</h3>
+          <ul>
+            <li>網頁介面貼問題、拿答案</li>
+            <li>它看不到你的檔案，只看得到你貼的</li>
+            <li>適合發想、解釋概念、改文字</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">代理型</span>
+          <h3>它能自己動手</h3>
+          <ul>
+            <li>裝在終端機或編輯器裡</li>
+            <li>能讀你的專案檔案、能直接改檔</li>
+            <li>適合改程式、批次處理、跨檔案的工作</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>差別很大</b>代理型能自己動手，所以要在版本控管之下用。沒備份就讓它改檔，出事沒得救。</div>
+    </div>
+  </section>
+
+  <!-- 10 三條線 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 我實際的配置</div>
+    <h2>我桌上的分工</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">主力</span>
+          <h3>Claude Code</h3>
+          <p>代理型。跑長工作、讀整個專案、寫規格文件。專題的企畫書結構整理我都用這條。</p>
+        </div>
+        <div class="card">
+          <span class="who">第二意見</span>
+          <h3>Codex CLI</h3>
+          <p>換一套模型看同一份東西。兩邊講法不同的地方，就是要自己再想一次的地方。</p>
+        </div>
+        <div class="card">
+          <span class="who">第三條線</span>
+          <h3>Antigravity CLI</h3>
+          <p>Google 這條。2026 年 5 月從 Gemini CLI 轉過來，舊版 6 月 18 日停止服務。</p>
+        </div>
+      </div>
+      <div class="linkrow">
+        <a class="lk" href="https://claude.com/" target="_blank" rel="noopener">Claude</a>
+        <a class="lk" href="https://openai.com/" target="_blank" rel="noopener">OpenAI</a>
+        <a class="lk" href="https://antigravity.google/" target="_blank" rel="noopener">Antigravity</a>
+      </div>
+      <div class="take"><b>你們不用學我</b>三條線是因為我每天在用。你們一條用熟，比三條都不熟有用得多。</div>
+    </div>
+  </section>
+
+  <!-- 11 怎麼問 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 提問方式</div>
+    <h2>問得好比問得多重要</h2>
+    <div class="content">
+      <ul>
+        <li>先給脈絡：你在做什麼專題、什麼類型、什麼限制。沒脈絡就會拿到罐頭答案。</li>
+        <li>指定角色：「以嚴格的專題審查老師身分」比「請給建議」有用十倍。</li>
+        <li>要求格式：講清楚你要條列、要表格、要幾個字，省下來回。</li>
+        <li>限制範圍：一次問一件事。一次丟五個問題，回答會每個都很淺。</li>
+      </ul>
+      <div class="take"><b>提問格式</b>問題品質決定答案品質。花三分鐘寫清楚問題，省下三十分鐘來回。</div>
+    </div>
+  </section>
+
+  <!-- 12 交叉驗證 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 驗證方法</div>
+    <h2>重要的事問兩家</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>同題兩問</h3><p>同一個問題，原封不動丟給兩個不同的模型。不要改寫問題。</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>比對差異</h3><p>兩邊講一樣的，可信度高一點。兩邊講不同的，那裡就是要自己查的。</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>自己下判斷</h3><p>兩邊都可能錯。最後拍板的是你，不是票數多的那一邊。</p></div>
+      </div>
+      <div class="take"><b>用在哪</b>技術選型、授權判斷、市場數字這幾種會影響決策的，值得花兩倍時間問。</div>
+    </div>
+  </section>
+
+  <!-- 13 PART 3 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">03</div>
+    <div class="eyebrow">PART 3</div>
+    <h2>影像與 3D</h2>
+    <p class="part-sub">這一類最容易讓人興奮，也最容易讓人低估後製成本。生得出來跟能用，中間差很遠。</p>
+  </section>
+
+  <!-- 14 生圖派工 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 生圖</div>
+    <h2>生圖的三個階段</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">階段一</span>
+          <h3>派工</h3>
+          <p>同一份需求給兩個管線跑。回收後逐張比對風格一致性，擇優採用，落選稿留底。</p>
+        </div>
+        <div class="card">
+          <span class="who">階段二</span>
+          <h3>後製</h3>
+          <p>裁切、去背、尺寸、格式、圖集排版、命名。這些用程式做，但不能用程式畫內容。</p>
+        </div>
+        <div class="card">
+          <span class="who">階段三</span>
+          <h3>驗收</h3>
+          <p>對照第 4 週的三個錨：輪廓線、色階、光源。對不上就重跑，不要將就。</p>
+        </div>
+      </div>
+      <div class="take"><b>本課硬規則重申</b>正式美術的像素必須由生圖模型或人畫出。程式算出來的圖只能當 placeholder。</div>
+    </div>
+  </section>
+
+  <!-- 15 Tripo3D -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 3D 模型</div>
+    <h2>3D 用 Tripo3D 起手</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>能做什麼</dt><dd>文字或圖片轉 3D 模型，帶貼圖，可輸出 GLB、FBX、OBJ 等格式</dd>
+        <dt>速度</dt><dd>單件生成約十秒等級，適合大量試方向</dd>
+        <dt>2026 年進展</dt><dd>三月 GDC 發表 H3.1 原生 3D 擴散模型，強調引擎內即時迭代</dd>
+        <dt>計費</dt><dd>點數制，網頁工作區與 API 各自計算，要先規劃用量</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://www.tripo3d.ai/" target="_blank" rel="noopener">Tripo AI</a>
+        <a class="lk" href="https://studio.tripo3d.ai/" target="_blank" rel="noopener">Tripo Studio</a>
+      </div>
+      <div class="take"><b>匯入前檢查</b>生出來只是第一步。下一頁那六項不檢查，模型進引擎就是一團亂。</div>
+    </div>
+  </section>
+
+  <!-- 16 落地檢查 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 落地檢查</div>
+    <h2>模型進引擎前檢查六項</h2>
+    <div class="content">
+      <ul>
+        <li>單位：一單位等於一公尺嗎？角色比場景大十倍是最常見的問題。</li>
+        <li>朝向與樞紐：正面朝哪、原點在腳底還是身體中心，全專案要統一。</li>
+        <li>材質：貼圖有沒有正確連上，管線對不對，霧霧的多半是這裡出錯。</li>
+        <li>面數：生成模型常常面數過高，要先減面再進引擎。</li>
+        <li>授權紀錄：生成入口、日期、提示詞，一律記進素材帳本。</li>
+      </ul>
+      <div class="take"><b>經驗談</b>這六項第一次做很花時間，做成檢查表之後每個模型只要三分鐘。</div>
+    </div>
+  </section>
+
+  <!-- 17 PART 4 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">04</div>
+    <div class="eyebrow">PART 4</div>
+    <h2>我踩過的雷</h2>
+    <p class="part-sub">這幾個不是理論，是實際賠掉時間換來的。你們可以直接跳過這幾坑。</p>
+  </section>
+
+  <!-- 18 幻覺 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 雷一</div>
+    <h2>它講得愈流利，錯得愈自然</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">會發生什麼</span>
+          <h3>編出看起來很真的東西</h3>
+          <ul>
+            <li>不存在的函式名稱與參數</li>
+            <li>拼出來的網址，點進去是 404</li>
+            <li>看起來很像真的論文與銷量數字</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">怎麼防</span>
+          <h3>凡是名字都要查</h3>
+          <ul>
+            <li>API 名稱去官方文件對</li>
+            <li>網址一定要點過</li>
+            <li>數字要找得到原始出處</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>判準</b>它愈肯定的地方，你愈要查。真正不確定的事，它反而常常會提醒你。</div>
+    </div>
+  </section>
+
+  <!-- 19 一次改太多 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 雷二</div>
+    <h2>一次讓它改太多</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">錯誤做法</span>
+          <h3>一句話丟一整包需求</h3>
+          <ul>
+            <li>「把整個系統重構一下」</li>
+            <li>它改了二十個檔，你看不完</li>
+            <li>出事了不知道是哪一步壞的</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">正確做法</span>
+          <h3>小步走，每步能驗</h3>
+          <ul>
+            <li>一次一個明確的小改動</li>
+            <li>改完馬上跑起來看</li>
+            <li>有問題就退回上一步</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>前提</b>這條的前提是你有備份或版本控管。沒有的話，第一次出事就會賠掉一整週。</div>
+    </div>
+  </section>
+
+  <!-- 20 當成結論 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 雷三與雷四</div>
+    <h2>另外兩個會扣分的用法</h2>
+    <div class="content">
+      <ul>
+        <li>把 AI 的第一版當成結論交出去。它給的是草稿，不是成品，中間那段加工才是你的分數。</li>
+        <li>整組四個人各自問 AI，得到四種說法，然後在會議上吵。決定要人來做，不是模型投票。</li>
+        <li>用 AI 生的圖直接當正式美術，不做風格對齊，成品會像四款不同遊戲拼起來。</li>
+        <li>沒有記錄用了什麼，期末交不出 AI 使用說明，這一項直接影響評分。</li>
+      </ul>
+      <div class="take"><b>我的標準</b>用 AI 不扣分，用完不說、不驗、不加工才扣分。這句話這學期我會講很多次。</div>
+    </div>
+  </section>
+
+  <!-- 21 PART 5 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">05</div>
+    <div class="eyebrow">PART 5</div>
+    <h2>本週交付</h2>
+    <p class="part-sub">一份 AI 使用紀錄表，加上你們組的工具分工。這份表會一路填到期末，直接進期末報告。</p>
+  </section>
+
+  <!-- 22 交付規格 -->
+  <section class="slide">
+    <div class="eyebrow">PART 5 · 交付規格</div>
+    <h2>這週要交什麼</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>交付物</dt><dd>AI 使用紀錄表的表頭與前三筆實際紀錄，加工具分工說明</dd>
+        <dt>格式</dt><dd>試算表或表格式文件，共用連結，檔名為「組別代號_W6_AI使用紀錄」</dd>
+        <dt>內容</dt><dd>五個欄位的表頭、三筆已經發生的實際使用紀錄、各主責用什麼工具</dd>
+        <dt>截止</dt><dd>第 7 週上課前，2026 年 10 月 22 日 08:00</dd>
+      </dl>
+      <div class="take"><b>為何現在就開</b>期末補記錄是補不出來的。從這週開始填，到第 18 週它自己就完成了。</div>
+    </div>
+  </section>
+
+  <!-- 23 紀錄表欄位 -->
+  <section class="slide">
+    <div class="eyebrow">PART 5 · 表格規格</div>
+    <h2>紀錄表要有這五欄</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">前兩欄</span>
+          <h3>日期與工具</h3>
+          <p>什麼時候用的、用了哪一個工具，工具名要寫版本或方案。</p>
+        </div>
+        <div class="card">
+          <span class="who">中間兩欄</span>
+          <h3>用途與提示詞</h3>
+          <p>拿來做什麼、關鍵提示詞。生成類的要留完整提示詞。</p>
+        </div>
+        <div class="card">
+          <span class="who">最後一欄</span>
+          <h3>你做了什麼加工</h3>
+          <p>採用多少、改了什麼。這一欄是你的貢獻證明，最重要。</p>
+        </div>
+      </div>
+      <div class="take"><b>紀錄最後一欄</b>最後一欄空白的紀錄，等於承認你原封不動照抄。填得出來才是你的工作。</div>
+    </div>
+  </section>
+
+  <!-- 24 檢核與退件 -->
+  <section class="slide">
+    <div class="eyebrow">PART 5 · 檢核標準</div>
+    <h2>什麼樣算過關</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">及格</span>
+          <h3>五欄齊全有三筆</h3>
+          <p>表頭正確，而且已經有三筆真實發生過的紀錄，不是假資料。</p>
+        </div>
+        <div class="card">
+          <span class="who">好</span>
+          <h3>加工欄寫得具體</h3>
+          <p>寫得出「採用構圖但重畫線稿」這種程度，不是只寫「有修改」。</p>
+        </div>
+        <div class="card">
+          <span class="who">退件</span>
+          <h3>常見的三種</h3>
+          <p>三筆紀錄是為了交作業現編的；提示詞欄空白；工具只寫「AI」。</p>
+        </div>
+      </div>
+      <div class="take"><b>驗收方式</b>我會挑一筆問你當時為什麼那樣下提示詞。答不出來的紀錄就是假的。</div>
+    </div>
+  </section>
+
+  <!-- 25 課堂討論與課後任務 -->
+  <section class="slide">
+    <div class="eyebrow">Week 06 · 收尾</div>
+    <h2>回去做這三件事</h2>
+    <div class="content">
+      <div class="qlist">
+        <p>你們組現在最想交給 AI 的那件事，通得過本週的三個問題嗎？</p>
+        <p>如果主力工具下週額度用完，你們的備援是什麼？</p>
+        <p>有沒有哪件事，其實自己做比較快，但你們因為手邊有 AI 就一直在調它？</p>
+      </div>
+      <div class="card">
+        <span class="who">課後任務</span>
+        <p>把紀錄表建在共用空間，全組都要有編輯權。每次用完當下就填，不要留到週末補。</p>
+      </div>
+      <div class="take"><b>下週預告</b>企畫書撰寫與提案架構：把前六週的交付組裝成一份完整的企畫書。</div>
+    </div>
+  </section>
+
+  <!-- 26 資源彙整 -->
+  <section class="slide">
+    <div class="eyebrow">Week 06 · 資源彙整</div>
+    <h2>本週資源</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="grp">
+          <h3>文字與程式</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://claude.com/" target="_blank" rel="noopener">Claude</a>
+            <a class="lk" href="https://openai.com/" target="_blank" rel="noopener">OpenAI</a>
+            <a class="lk" href="https://antigravity.google/" target="_blank" rel="noopener">Antigravity</a>
+            <a class="lk" href="https://github.com/features/copilot" target="_blank" rel="noopener">GitHub Copilot</a>
+          </div>
+        </div>
+        <div class="grp">
+          <h3>影像與 3D</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://www.tripo3d.ai/" target="_blank" rel="noopener">Tripo AI</a>
+            <a class="lk" href="https://studio.tripo3d.ai/" target="_blank" rel="noopener">Tripo Studio</a>
+            <a class="lk" href="https://developers.tripo3d.ai/" target="_blank" rel="noopener">Tripo API</a>
+          </div>
+        </div>
+      </div>
+      <div class="take"><b>連結失效時</b>這頁的連結有效期大概三個月。點不開就是換網址了，課堂上提出來一起更新。</div>
+    </div>
+  </section>
+
+  
+
+  </div></div>
+
+  <div class="ctrl">
+    <button id="prev" aria-label="上一張">‹</button>
+    <span class="cnt" id="cnt">1 / 1</span>
+    <button id="next" aria-label="下一張">›</button>
+    <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+  </div>
+  <div class="prog" id="prog"></div>
+
+  <div class="toc" id="toc">
+    <button class="close" id="tocClose">關閉（Esc）</button>
+    <h2 id="tocTitle">目錄</h2>
+    <div class="tgrid" id="tgrid"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ★ 每週只改這一行 ★ */
+  var WEEK_LABEL = '第 6 週 · AI工具使用';
+
+  var stage = document.getElementById('stage');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var cnt = document.getElementById('cnt');
+  var prog = document.getElementById('prog');
+  var toc = document.getElementById('toc');
+  var tgrid = document.getElementById('tgrid');
+  var cur = 0;
+
+  document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
+
+  slides.forEach(function (s, i) {
+    var f = document.createElement('div');
+    f.className = 'foot';
+    f.innerHTML = '<span>專題企畫|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    s.appendChild(f);
+  });
+
+  var groups = {};
+  slides.forEach(function (s, i) {
+    var eb = s.querySelector('.eyebrow');
+    var part = '開場';
+    if (eb) {
+      var m = eb.textContent.match(/PART\s*(\d)/i);
+      if (m) part = 'PART ' + m[1];
+      else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
+    }
+    var h = s.querySelector('h1, h2');
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+  });
+  Object.keys(groups).forEach(function (k) {
+    var col = document.createElement('div');
+    var h3 = document.createElement('h3');
+    h3.textContent = k;
+    col.appendChild(h3);
+    groups[k].forEach(function (it) {
+      var b = document.createElement('button');
+      b.textContent = it.t;
+      b.dataset.i = it.i;
+      b.addEventListener('click', function () { toggleToc(false); go(it.i); });
+      col.appendChild(b);
+    });
+    tgrid.appendChild(col);
+  });
+
+  function go(i) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach(function (s, j) { s.classList.toggle('active', j === cur); });
+    cnt.textContent = (cur + 1) + ' / ' + slides.length;
+    prog.style.width = ((cur + 1) / slides.length * 100) + '%';
+    if (history.replaceState) history.replaceState(null, '', '#s' + (cur + 1));
+    tgrid.querySelectorAll('button').forEach(function (b) { b.classList.toggle('here', +b.dataset.i === cur); });
+  }
+  function toggleToc(on) {
+    toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
+  }
+
+  document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
+  document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
+  document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
+  document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { toggleToc(false); return; }
+    if (toc.classList.contains('on')) return;
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'Home': go(0); break;
+      case 'End': go(slides.length - 1); break;
+      case 'm': case 'M': toggleToc(); break;
+    }
+  });
+
+  function fit() {
+    var w = window.innerWidth, h = window.innerHeight;
+    if (!w || !h) { requestAnimationFrame(fit); return; }
+    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('load', fit);
+  fit();
+
+  var m = location.hash.match(/^#s(\d+)$/);
+  go(m ? +m[1] - 1 : 0);
+})();
+</script>
+</body>
+</html>

@@ -1,5 +1,6 @@
-<!doctype html>
-<html lang="zh-Hant"><head>
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
 <meta charset="utf-8">
 <title>第 2 週|AI與互動媒體概論</title>
 <style>
@@ -35,15 +36,15 @@
     border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
   }
 
-  .eyebrow { font-size: 16px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
+  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
   h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
-  h2 { font-family: var(--disp); font-size: 46px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
+  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
   .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
 
-  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 24px; line-height: 1.55; }
-  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 20px; color: var(--sub); }
+  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
+  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
   .sub { color: var(--sub); }
-  .small { font-size: 16px; }
+  .small { font-size: 18px; }
   .num { font-variant-numeric: tabular-nums; }
 
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
@@ -53,52 +54,52 @@
   .c4 { grid-template-columns: repeat(4, 1fr); }
   .c5 { grid-template-columns: repeat(5, 1fr); }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .card h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 12px; font-weight: 700; }
-  .card p, .card li { font-size: 20px; line-height: 1.55; margin: 0; }
-  .card ul { padding-left: 1.15em; gap: 9px; font-size: 20px; }
-  .card .who { display: block; font-size: 15px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
+  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
+  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
+  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
 
-  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 21px; line-height: 1.5; }
-  .take b { color: var(--accent2); font-size: 16px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
+  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
 
-  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 14px; letter-spacing: .06em; color: var(--sub); }
+  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
 
   .cover, .part { justify-content: center; }
   .cover .eyebrow { margin-bottom: 26px; }
-  .cover-sub { font-size: 28px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
+  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
   .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
   .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
   .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
   .part h2 { font-size: 56px; }
-  .part-sub { font-size: 26px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
 
-  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 23px; line-height: 1.5; align-content: space-evenly; }
-  .kv dt { color: var(--accent); font-weight: 700; font-size: 20px; letter-spacing: .04em; }
+  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
+  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
   .kv dd { margin: 0; }
   .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 22px; }
+  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
   .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
   .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
-  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 17px; text-decoration: none; }
+  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
   .lk::after { content: " ↗"; font-size: 12px; }
   .flow { display: flex; align-items: stretch; gap: 0; }
   .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .flow .step h3 { font-family: var(--disp); font-size: 23px; margin: 0 0 10px; font-weight: 700; }
-  .flow .step p { font-size: 19px; line-height: 1.55; margin: 0; color: var(--sub); }
+  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
   .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
   .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
   .bar i { display: block; height: 100%; background: var(--accent); }
-  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 22px; align-content: space-evenly; }
+  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
   .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
-  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 22px; line-height: 1.7; }
-  .biblio .ti { font-family: var(--disp); font-size: 26px; line-height: 1.4; display: block; margin-bottom: 10px; }
+  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
+  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
   .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
-  .qlist p { counter-increment: q; margin: 0; font-size: 24px; line-height: 1.55; display: flex; gap: 16px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
   .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
   .tl { display: flex; flex-direction: column; gap: 18px; }
-  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 22px; line-height: 1.5; }
+  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
   .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
-  .grp h3 { font-family: var(--disp); font-size: 19px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
 
   /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
   .content > .cards,
@@ -132,15 +133,15 @@
 </head>
 <body>
 <div id="app" data-deck="b">
-  <div class="stagewrap"><div class="stage" id="stage" style="transform: scale(0.727848);">
+  <div class="stagewrap"><div class="stage" id="stage">
 
   <!-- 1 AI 與互動媒體概論 -->
-<section class="slide cover active">
+<section class="slide cover">
     <div class="eyebrow">人工智慧與互動媒體特論 · 設計創新與經營研究所</div>
     <h1>AI 與互動媒體概論</h1>
     <p class="cover-sub">發展脈絡與設計領域應用地圖：從 1956 年達特茅斯會議走到 2026 年的沉浸式展演與 AI 客製化，先看清七十年的路，再標出自己的位置。</p>
     <div class="cover-meta"><span>第 2 週</span><span>論文導讀與案例討論</span><span>授課：鄧樹遠</span></div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">1 / 29</span></div></section>
+  </section>
 
   <!-- 2 九十分鐘，五段路 -->
 <section class="slide">
@@ -150,13 +151,13 @@
       <div class="cards c5">
         <div class="card"><span class="who">PART 1</span><h3>發展脈絡</h3><p class="sub">七十年、三次躍遷，一條時間軸</p></div>
         <div class="card"><span class="who">PART 2</span><h3>應用地圖</h3><p class="sub">五大設計領域的 AI 座標</p></div>
-        <div class="card"><span class="who">PART 3</span><h3>teamLab</h3><p class="sub">互動媒體的教科書案例</p></div>
+        <div class="card"><span class="who">PART 3</span><h3>teamLab</h3><p class="sub">用感測、運算與回饋拆解案例</p></div>
         <div class="card"><span class="who">PART 4</span><h3>Nike 客製化</h3><p class="sub">從選項到生成的光譜</p></div>
         <div class="card"><span class="who">PART 5</span><h3>論文導讀</h3><p class="sub">地圖背後的研究證據</p></div>
       </div>
       <div class="take"><b>本週目標</b>離開教室時，手上有一張「年表 × 領域」的地圖，之後每週的內容都能釘在上面。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">2 / 29</span></div></section>
+  </section>
 
   <!-- 3 從「規則」到「地圖」 -->
 <section class="slide">
@@ -183,17 +184,16 @@
           </ul>
         </div>
       </div>
-      <div class="take"><b>提醒</b>今天是俯瞰週：每一格都會在之後的週次降落細看，先記位置、不急著記細節。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">3 / 29</span></div></section>
+  </section>
 
   <!-- 4 發展脈絡：七十年三次躍遷 -->
 <section class="slide part">
     <div class="part-num">01</div>
     <div class="eyebrow">PART 1</div>
     <h2>發展脈絡：七十年三次躍遷</h2>
-    <p class="part-sub">從達特茅斯會議的一個暑期研討會，到生成式 AI 滲透過半人口。年表不是背誦用的，是用來看出規律的。</p>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">4 / 29</span></div></section>
+    <p class="part-sub">從達特茅斯會議的一個暑期研討會，到生成式 AI 滲透過半人口。沿著年表找方法與應用的轉折，不要求背誦年份。</p>
+  </section>
 
   <!-- 5 1950–1990：誕生與寒冬 -->
 <section class="slide">
@@ -207,9 +207,8 @@
         <div class="ev"><b>1970s</b><span>第一次 AI 寒冬：承諾跳票、經費凍結</span></div>
         <div class="ev"><b>1980s</b><span>專家系統短暫復興，隨後跌入第二次寒冬</span></div>
       </div>
-      <div class="take"><b>觀察</b>互動媒體的祖先就在這裡：ELIZA 證明「對話感」不需要真正的理解，設計好錯覺就夠了。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">5 / 29</span></div></section>
+  </section>
 
   <!-- 6 1997–2016：機器開始學習 -->
 <section class="slide">
@@ -223,9 +222,8 @@
         <div class="ev"><b>2014</b><span>GAN 問世：機器第一次學會「無中生有」</span></div>
         <div class="ev"><b>2016</b><span>AlphaGo 擊敗李世乭：連「直覺」型任務也被攻破</span></div>
       </div>
-      <div class="take"><b>設計視角</b>2014 年的 GAN 是設計領域的轉捩點：AI 從「辨識圖像」跨進「生成圖像」。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">6 / 29</span></div></section>
+  </section>
 
   <!-- 7 2017–2022：生成式引爆點 -->
 <section class="slide">
@@ -239,9 +237,8 @@
         <div class="ev"><b>2022/8</b><span>Stable Diffusion 開源：生成能力全面下放到個人電腦</span></div>
         <div class="ev"><b>2022/11</b><span>ChatGPT 上線，兩個月破億使用者：AI 成為日常動詞</span></div>
       </div>
-      <div class="take"><b>觀察</b>這五年走完前六十年沒走完的距離；「生成式」從此成為 AI 的公眾同義詞。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">7 / 29</span></div></section>
+  </section>
 
   <!-- 8 2023–2026：多模態與代理 -->
 <section class="slide">
@@ -258,9 +255,8 @@
       <div class="linkrow">
         <a class="lk" href="https://hai.stanford.edu/ai-index/2026-ai-index-report" target="_blank" rel="noopener">AI Index 報告</a>
       </div>
-      <div class="take"><b>提醒</b>年表最後一格永遠是暫時的：這頁投影片的有效期限，大概只有一學期。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">8 / 29</span></div></section>
+  </section>
 
   <!-- 9 讀年表的三個規律 -->
 <section class="slide">
@@ -272,9 +268,8 @@
         <div class="card"><h3>三要素合流</h3><p>資料 × 算力 × 演算法，缺一不可。2012 年後三者同時到位，躍遷才真正發生。</p></div>
         <div class="card"><h3>工具箱改寫</h3><p>每次躍遷都重寫一次設計工具箱：辨識帶來推薦與感測，這一次輪到「生成」。</p></div>
       </div>
-      <div class="take"><b>設計視角</b>與其追最新模型，不如認出「現在處於循環的哪一段」——這決定你該投資什麼能力。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">9 / 29</span></div></section>
+  </section>
 
   <!-- 10 設計領域應用地圖 -->
 <section class="slide part">
@@ -282,7 +277,7 @@
     <div class="eyebrow">PART 2</div>
     <h2>設計領域應用地圖</h2>
     <p class="part-sub">把時間軸轉九十度：2026 年的 AI 落在哪些設計領域、以什麼角色出現？這張地圖同時是本課後半學期的目錄。</p>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">10 / 29</span></div></section>
+  </section>
 
   <!-- 11 五大設計領域，一張地圖 -->
 <section class="slide">
@@ -296,9 +291,9 @@
         <div class="card"><span class="who">第 10–11 週</span><h3>沉浸媒體</h3><p class="sub">XR、空間運算、數位孿生</p></div>
         <div class="card"><span class="who">第 12 週</span><h3>動態影像</h3><p class="sub">影片生成、自動剪輯</p></div>
       </div>
-      <div class="take"><b>觀察</b>這張地圖就是本課的目錄：今天先俯瞰全局，之後每週降落一格細看。</div>
+      <div class="take"><b>假設情境</b>下次在 Steam 商店或展覽網站看到 AI 案例，先把它放進本週地圖的一格，再說明你為什麼這樣分。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">11 / 29</span></div></section>
+  </section>
 
   <!-- 12 AI 在設計流程中的位置 -->
 <section class="slide">
@@ -316,9 +311,8 @@
         <li>滲透深度不均：越靠近「視覺產出」的環節走得越快</li>
         <li>領域之間也有溫差：視覺導向領域最快，重製造與法規的領域最慢</li>
       </ul>
-      <div class="take"><b>設計視角</b>找研究題目時，往「滲透最淺」的環節看：擁擠的地方做應用，空曠的地方做研究。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">12 / 29</span></div></section>
+  </section>
 
   <!-- 13 互動媒體：作品是一個迴圈 -->
 <section class="slide">
@@ -336,9 +330,8 @@
         <li>傳統媒體單向播放；互動媒體把觀眾行為變成作品的一部分</li>
         <li>AI 的加入讓「運算」從查表式規則升級為即時理解與生成</li>
       </ul>
-      <div class="take"><b>類比</b>互動媒體像一場對話：感測是聽、運算是想、回饋是說；AI 讓「想」這一步有了彈性。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">13 / 29</span></div></section>
+  </section>
 
   <!-- 14 工具、夥伴、媒材 -->
 <section class="slide">
@@ -353,17 +346,16 @@
       <ul>
         <li>同一個模型可以是三種身分，差別在設計者把它放在流程的哪個位置</li>
       </ul>
-      <div class="take"><b>為何選它</b>接下來兩個案例正好分據光譜兩端：teamLab 把 AI 當媒材，Nike 從工具走向夥伴。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">14 / 29</span></div></section>
+  </section>
 
   <!-- 15 案例一：teamLab -->
 <section class="slide part">
     <div class="part-num">03</div>
     <div class="eyebrow">PART 3</div>
     <h2>案例一：teamLab</h2>
-    <p class="part-sub">互動媒體的教科書案例：作品沒有邊界、觀眾就是輸入。本週只做概論級的「它做了什麼」，技術深度留給第 8 週。</p>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">15 / 29</span></div></section>
+    <p class="part-sub">用 teamLab 練習觀察作品邊界與觀眾輸入。本週先說明「它做了什麼」，技術架構留到第 8 週。</p>
+  </section>
 
   <!-- 16 teamLab 是誰 -->
 <section class="slide">
@@ -379,9 +371,8 @@
       <div class="linkrow">
         <a class="lk" href="https://www.teamlab.art/e/" target="_blank" rel="noopener">teamLab 官方</a>
       </div>
-      <div class="take"><b>觀察</b>它不是「藝術家用了科技」，而是把跨域團隊本身當成創作方法——組織結構就是作品的一部分。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">16 / 29</span></div></section>
+  </section>
 
   <!-- 17 2025–2026：全球擴張中 -->
 <section class="slide">
@@ -401,9 +392,8 @@
         <a class="lk" href="https://www.designboom.com/art/ubs-digital-art-museum-2026-europe-largest-teamlab-show-hamburg-06-20-2025/" target="_blank" rel="noopener">漢堡新館報導</a>
         <a class="lk" href="https://mymodernmet.com/teamlab-chicago-exhibition-infinite-continuity/" target="_blank" rel="noopener">芝加哥特展報導</a>
       </div>
-      <div class="take"><b>觀察</b>沉浸式展演已從「東京現象」變成全球文化基礎建設：中東與歐美正在爭相蓋館。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">17 / 29</span></div></section>
+  </section>
 
   <!-- 18 為何是互動媒體教科書 -->
 <section class="slide">
@@ -416,9 +406,8 @@
         <li>集體共創：他人的存在改變你看到的畫面，作品永不重播</li>
         <li>商業驗證：售票制常設館證明互動藝術可以規模化經營</li>
       </ul>
-      <div class="take"><b>提醒</b>本週只談「它做了什麼」；即時運算與感測架構的「怎麼做到」，第 8 週拆開來講。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">18 / 29</span></div></section>
+  </section>
 
   <!-- 19 案例二：Nike 客製化設計 -->
 <section class="slide part">
@@ -426,7 +415,7 @@
     <div class="eyebrow">PART 4</div>
     <h2>案例二：Nike 客製化設計</h2>
     <p class="part-sub">從 1999 年的選色配料，到 2025 年的文字提示生成球鞋：一條完整的「客製化光譜」，正好量出 AI 改變了什麼。</p>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">19 / 29</span></div></section>
+  </section>
 
   <!-- 20 Nike By You：客製化基 -->
 <section class="slide">
@@ -443,9 +432,8 @@
         <a class="lk" href="https://www.nike.com/nike-by-you" target="_blank" rel="noopener">Nike By You</a>
         <a class="lk" href="https://about.nike.com/en/newsroom/releases/nike-and-bts-introduce-bts-world-tour-arirang-merch-and-nike-by-you-customization-experience" target="_blank" rel="noopener">BTS 合作新聞稿</a>
       </div>
-      <div class="take"><b>設計視角</b>選項式客製 25 年前就解決了製造問題；AI 要挑戰的是「誰來畫框」。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">20 / 29</span></div></section>
+  </section>
 
   <!-- 21 A.I.R.：AI 進入產品設計 -->
 <section class="slide">
@@ -462,9 +450,8 @@
         <a class="lk" href="https://about.nike.com/en/magazine/nike-design-athlete-imagined-revolution" target="_blank" rel="noopener">Nike 官方特寫</a>
         <a class="lk" href="https://www.designboom.com/design/nike-air-3d-printed-sneakers-ai-math-algorithms-interview-john-hoke-04-13-2024/" target="_blank" rel="noopener">designboom 專訪</a>
       </div>
-      <div class="take"><b>觀察</b>AI 在這裡不是取代設計師，而是把「傾聽運動員」放大成數百個可討論的視覺假設。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">21 / 29</span></div></section>
+  </section>
 
   <!-- 22 Air Imagination： -->
 <section class="slide">
@@ -480,9 +467,8 @@
       <div class="linkrow">
         <a class="lk" href="https://sneakernews.com/2025/03/26/nike-air-imagination-ai-platform/" target="_blank" rel="noopener">生成平台報導</a>
       </div>
-      <div class="take"><b>設計視角</b>品牌把生成工具交給粉絲，卻守住量產閘門：參與感歸你，品牌識別歸它。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">22 / 29</span></div></section>
+  </section>
 
   <!-- 23 從 NIKEiD 到 AI：客製 -->
 <section class="slide">
@@ -500,9 +486,8 @@
         <p>從「挑選」到「生成」，消費者得到的是創作權，還是更精緻的參與感？</p>
         <p>一週 150 萬件粉絲設計，對品牌是資產還是噪音？設計部門該怎麼接住它？</p>
       </div>
-      <div class="take"><b>設計視角</b>客製化的真正戰場不是技術，是「品牌控制」與「使用者作者性」之間的拉鋸。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">23 / 29</span></div></section>
+  </section>
 
   <!-- 24 論文導讀 -->
 <section class="slide part">
@@ -510,7 +495,7 @@
     <div class="eyebrow">PART 5</div>
     <h2>論文導讀</h2>
     <p class="part-sub">兩篇文獻：一篇給你「AI × 創意產業」的學術版應用地圖，一篇示範怎麼把沉浸式展演的「哇」變成可測量的變項。</p>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">24 / 29</span></div></section>
+  </section>
 
   <!-- 25 AI 在創意產業：總地圖 -->
 <section class="slide">
@@ -527,9 +512,8 @@
         <dt>方法</dt><dd>大規模文獻綜述：從 CNN、GAN、RNN 到深度強化學習，統整 409 篇文獻</dd>
         <dt>範圍</dt><dd>影視、音樂、遊戲、設計、新聞等創意部門</dd>
       </dl>
-      <div class="take"><b>為何選它</b>「AI × 創意」最常被引用的地圖型綜述，正好是本週應用地圖的學術底稿。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">25 / 29</span></div></section>
+  </section>
 
   <!-- 26 發現：五種應用、一個結論 -->
 <section class="slide">
@@ -547,9 +531,8 @@
         <li>「內容創作」聲量最大，但後製、萃取、壓縮這些隱形環節同樣是 AI 的主場</li>
         <li>作者結論：現階段 AI 的最大價值是「增強」人類創意，原創核心仍由人主導</li>
       </ul>
-      <div class="take"><b>期中報告可借用</b>用這五分類盤點你的母領域：填得滿的是應用題，填不滿的就是研究缺口。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">26 / 29</span></div></section>
+  </section>
 
   <!-- 27 快讀：Science 為這場變革 -->
 <section class="slide">
@@ -566,9 +549,8 @@
         <li>論點：生成式 AI 是如攝影術般的「文化技術」，爭點集中在美學、法律、勞動與媒體生態四個層面</li>
         <li>啟示：工具會一直換，但「作者是誰、創作勞動如何重組」的問題會貫穿整個學期</li>
       </ul>
-      <div class="take"><b>為何選它</b>兩頁短文就是進入本課所有爭論的最短路徑，也適合當文獻回顧的開場引用。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">27 / 29</span></div></section>
+  </section>
 
   <!-- 28 把今天的地圖變成你的 -->
 <section class="slide">
@@ -584,9 +566,8 @@
         <h3>課後任務（下週開場分享，約 3 分鐘）</h3>
         <p>選一個你熟悉的設計產品或展演，畫出它的「感測 → 運算 → 回饋」迴圈圖，標出 AI 可以介入的位置，附 200 字說明。</p>
       </div>
-      <div class="take"><b>下週預告</b>第 3 週進入 AI 基礎概念：機器學習、深度學習與神經網路的設計視角導讀。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">28 / 29</span></div></section>
+  </section>
 
   <!-- 29 所有連結，一頁帶走 -->
 <section class="slide">
@@ -625,9 +606,9 @@
           </div>
         </div>
       </div>
-      <div class="take"><b>提醒</b>展覽與產品的現況一季一變：發現連結失效請回報，換你來更新這張地圖。</div>
+      <div class="take"><b>本週檢核</b>任選一個 AI 互動案例：它落在應用地圖哪一格？你的分類依據是什麼？</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 2 週 · AI與互動媒體概論</span><span class="num">29 / 29</span></div></section>
+  </section>
 
   
 
@@ -635,16 +616,16 @@
 
   <div class="ctrl">
     <button id="prev" aria-label="上一張">‹</button>
-    <span class="cnt" id="cnt">1 / 29</span>
+    <span class="cnt" id="cnt">1 / 1</span>
     <button id="next" aria-label="下一張">›</button>
     <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
   </div>
-  <div class="prog" id="prog" style="width: 3.44828%;"></div>
+  <div class="prog" id="prog"></div>
 
   <div class="toc" id="toc">
     <button class="close" id="tocClose">關閉（Esc）</button>
-    <h2 id="tocTitle">目錄：第 2 週 · AI與互動媒體概論</h2>
-    <div class="tgrid" id="tgrid"><div><h3>開場</h3><button data-i="0" class="here">1. AI 與互動媒體概論</button><button data-i="1">2. 九十分鐘，五段路</button><button data-i="2">3. 從「規則」到「地圖」</button></div><div><h3>PART 1</h3><button data-i="3">4. 發展脈絡：七十年三次躍遷</button><button data-i="4">5. 1950–1990：誕生與寒冬</button><button data-i="5">6. 1997–2016：機器開始學習</button><button data-i="6">7. 2017–2022：生成式引爆點</button><button data-i="7">8. 2023–2026：多模態與代理</button><button data-i="8">9. 讀年表的三個規律</button></div><div><h3>PART 2</h3><button data-i="9">10. 設計領域應用地圖</button><button data-i="10">11. 五大設計領域，一張地圖</button><button data-i="11">12. AI 在設計流程中的位置</button><button data-i="12">13. 互動媒體：作品是一個迴圈</button><button data-i="13">14. 工具、夥伴、媒材</button></div><div><h3>PART 3</h3><button data-i="14">15. 案例一：teamLab</button><button data-i="15">16. teamLab 是誰</button><button data-i="16">17. 2025–2026：全球擴張中</button><button data-i="17">18. 為何是互動媒體教科書</button></div><div><h3>PART 4</h3><button data-i="18">19. 案例二：Nike 客製化設計</button><button data-i="19">20. Nike By You：客製化基礎盤</button><button data-i="20">21. A.I.R.：AI 進入產品設計</button><button data-i="21">22. Air Imagination：生成權下放</button><button data-i="22">23. 從 NIKEiD 到 AI：客製光譜</button></div><div><h3>PART 5</h3><button data-i="23">24. 論文導讀</button><button data-i="24">25. AI 在創意產業：總地圖</button><button data-i="25">26. 發現：五種應用、一個結論</button><button data-i="26">27. 快讀：Science 為這場變革定調</button></div><div><h3>收尾</h3><button data-i="27">28. 把今天的地圖變成你的</button><button data-i="28">29. 所有連結，一頁帶走</button></div></div>
+    <h2 id="tocTitle">目錄</h2>
+    <div class="tgrid" id="tgrid"></div>
   </div>
 </div>
 
@@ -739,6 +720,5 @@
   go(m ? +m[1] - 1 : 0);
 })();
 </script>
-
-
-</body></html>
+</body>
+</html>

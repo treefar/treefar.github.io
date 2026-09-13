@@ -1,5 +1,6 @@
-<!doctype html>
-<html lang="zh-Hant"><head>
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
 <meta charset="utf-8">
 <title>第 1 週|智財與課程導論</title>
 <style>
@@ -35,15 +36,15 @@
     border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
   }
 
-  .eyebrow { font-size: 16px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
+  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
   h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
-  h2 { font-family: var(--disp); font-size: 46px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
+  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
   .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
 
-  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 24px; line-height: 1.55; }
-  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 20px; color: var(--sub); }
+  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
+  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
   .sub { color: var(--sub); }
-  .small { font-size: 16px; }
+  .small { font-size: 18px; }
   .num { font-variant-numeric: tabular-nums; }
 
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
@@ -53,52 +54,52 @@
   .c4 { grid-template-columns: repeat(4, 1fr); }
   .c5 { grid-template-columns: repeat(5, 1fr); }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .card h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 12px; font-weight: 700; }
-  .card p, .card li { font-size: 20px; line-height: 1.55; margin: 0; }
-  .card ul { padding-left: 1.15em; gap: 9px; font-size: 20px; }
-  .card .who { display: block; font-size: 15px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
+  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
+  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
+  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
 
-  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 21px; line-height: 1.5; }
-  .take b { color: var(--accent2); font-size: 16px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
+  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
 
-  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 14px; letter-spacing: .06em; color: var(--sub); }
+  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
 
   .cover, .part { justify-content: center; }
   .cover .eyebrow { margin-bottom: 26px; }
-  .cover-sub { font-size: 28px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
+  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
   .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
   .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
   .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
   .part h2 { font-size: 56px; }
-  .part-sub { font-size: 26px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
 
-  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 23px; line-height: 1.5; align-content: space-evenly; }
-  .kv dt { color: var(--accent); font-weight: 700; font-size: 20px; letter-spacing: .04em; }
+  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
+  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
   .kv dd { margin: 0; }
   .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 22px; }
+  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
   .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
   .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
-  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 17px; text-decoration: none; }
+  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
   .lk::after { content: " ↗"; font-size: 12px; }
   .flow { display: flex; align-items: stretch; gap: 0; }
   .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .flow .step h3 { font-family: var(--disp); font-size: 23px; margin: 0 0 10px; font-weight: 700; }
-  .flow .step p { font-size: 19px; line-height: 1.55; margin: 0; color: var(--sub); }
+  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
   .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
   .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
   .bar i { display: block; height: 100%; background: var(--accent); }
-  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 22px; align-content: space-evenly; }
+  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
   .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
-  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 22px; line-height: 1.7; }
-  .biblio .ti { font-family: var(--disp); font-size: 26px; line-height: 1.4; display: block; margin-bottom: 10px; }
+  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
+  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
   .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
-  .qlist p { counter-increment: q; margin: 0; font-size: 24px; line-height: 1.55; display: flex; gap: 16px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
   .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
   .tl { display: flex; flex-direction: column; gap: 18px; }
-  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 22px; line-height: 1.5; }
+  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
   .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
-  .grp h3 { font-family: var(--disp); font-size: 19px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
 
   /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
   .content > .cards,
@@ -132,15 +133,15 @@
 </head>
 <body>
 <div id="app" data-deck="b">
-  <div class="stagewrap"><div class="stage" id="stage" style="transform: scale(0.727848);">
+  <div class="stagewrap"><div class="stage" id="stage">
 
   <!-- 1 智財與課程導論 -->
-<section class="slide cover active">
+<section class="slide cover">
     <div class="eyebrow">人工智慧與互動媒體特論 · 設計創新與經營研究所</div>
     <h1>智財與課程導論</h1>
     <p class="cover-sub">在開始用 AI 做設計之前，先弄清楚兩件事：你用 AI 生成的東西是誰的，以及這十八週我們要一起走到哪裡。</p>
     <div class="cover-meta"><span>第 1 週</span><span>論文導讀與案例討論</span><span>授課：鄧樹遠</span></div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 1 週 · 智財與課程導論</span><span class="num">1 / 25</span></div></section>
+  </section>
 
   <!-- 2 九十分鐘，四段路 -->
 <section class="slide">
@@ -155,7 +156,7 @@
       </div>
       <div class="take"><b>本週目標</b>離開教室時能回答兩題：我用 AI 做的東西權利歸誰；這門課十八週後我要交出什麼。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 1 週 · 智財與課程導論</span><span class="num">2 / 25</span></div></section>
+  </section>
 
   <!-- 3 為什麼第一堂課先談著作權 -->
 <section class="slide">
@@ -168,9 +169,8 @@
         <li>2026 年的現實：訴訟未定、法規剛上路，創作者就站在規則成形的現場</li>
         <li>上半場看台灣與國際的智財現況，下半場把課程規則一次講清楚</li>
       </ul>
-      <div class="take"><b>觀察</b>智財課不是防弊宣導，是設計專業的裝備檢查：懂規則的人，才有本錢談突破。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 1 週 · 智財與課程導論</span><span class="num">3 / 25</span></div></section>
+  </section>
 
   <!-- 4 台灣的智財座標 -->
 <section class="slide part">
@@ -178,7 +178,7 @@
     <div class="eyebrow">PART 1</div>
     <h2>台灣的智財座標</h2>
     <p class="part-sub">著作權的基本觀念三十秒複習，然後直接回答大家最關心的問題：用 Midjourney 生出來的圖，在台灣是誰的？</p>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 1 週 · 智財與課程導論</span><span class="num">4 / 25</span></div></section>
+  </section>
 
   <!-- 5 著作權的四個基本觀念 -->
 <section class="slide">
@@ -191,9 +191,8 @@
         <dt>作者的資格</dt><dd>台灣實務以「人類精神創作」為前提；機器自動產出的內容不具作者資格</dd>
         <dt>常見的誤解</dt><dd>「網路找得到」不等於「可以拿來用」；合理使用有要件，不是免死金牌</dd>
       </dl>
-      <div class="take"><b>提醒</b>研究所的每份報告都同時是「你的著作」與「他人著作的引用者」，權利意識是雙向的。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 1 週 · 智財與課程導論</span><span class="num">5 / 25</span></div></section>
+  </section>
 
   <!-- 6 智慧局怎麼看 AI 生成物 -->
 <section class="slide">
@@ -212,9 +211,8 @@
         <a class="lk" href="https://www.leetsai.com/%E8%87%BA%E7%81%A3%E6%99%BA%E6%85%A7%E8%B2%A1%E7%94%A2%E5%B1%80%E9%A0%92%E5%B8%83%E5%87%BD%E9%87%8B%E8%AA%AA%E6%98%8E%E7%94%9F%E6%88%90%E5%BC%8Fai%E4%B9%8B%E8%91%97%E4%BD%9C%E6%AC%8A%E7%88%AD%E8%AD%B0?lang=zh-TW" target="_blank" rel="noopener">理慈函釋評析</a>
         <a class="lk" href="https://www.copyrightnote.org/ArticleContent.aspx?ID=3&amp;aid=3141" target="_blank" rel="noopener">著作權筆記 Q&amp;A</a>
       </div>
-      <div class="take"><b>設計視角</b>你的參與程度決定作品歸屬：保留草稿與迭代紀錄，既是證據，也是創作履歷。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 1 週 · 智財與課程導論</span><span class="num">6 / 25</span></div></section>
+  </section>
 
   <!-- 7 AI 基本法：台灣的治理新框架 -->
 <section class="slide">
@@ -231,9 +229,8 @@
         <a class="lk" href="https://moda.gov.tw/press/press-releases/18316" target="_blank" rel="noopener">數位部新聞稿</a>
         <a class="lk" href="https://www.cna.com.tw/news/aipl/202512230036.aspx" target="_blank" rel="noopener">中央社報導</a>
       </div>
-      <div class="take"><b>觀察</b>基本法管「怎麼用得安全」，著作權法管「作品是誰的」；做設計的人兩套都會碰到。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 1 週 · 智財與課程導論</span><span class="num">7 / 25</span></div></section>
+  </section>
 
   <!-- 8 國際訴訟與政策概覽 -->
 <section class="slide part">
@@ -241,7 +238,7 @@
     <div class="eyebrow">PART 2</div>
     <h2>國際訴訟與政策概覽</h2>
     <p class="part-sub">一份官方報告、一個定讞判決、一場跨國訴訟、三種訴訟結局。本節只畫地圖，逐案深讀留給第 14 週。</p>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 1 週 · 智財與課程導論</span><span class="num">8 / 25</span></div></section>
+  </section>
 
   <!-- 9 美國著作權局的三部曲報告 -->
 <section class="slide">
@@ -258,9 +255,8 @@
         <a class="lk" href="https://www.copyright.gov/ai/" target="_blank" rel="noopener">USCO AI 專頁</a>
         <a class="lk" href="https://www.copyright.gov/ai/Copyright-and-Artificial-Intelligence-Part-3-Generative-AI-Training-Report-Pre-Publication-Version.pdf" target="_blank" rel="noopener">第三部報告 PDF</a>
       </div>
-      <div class="take"><b>觀察</b>主管機關報告沒有判決效力，卻是法院與國會之外最有份量的第三種聲音。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 1 週 · 智財與課程導論</span><span class="num">9 / 25</span></div></section>
+  </section>
 
   <!-- 10 Thaler 案：機器不能當作者 -->
 <section class="slide">
@@ -277,9 +273,8 @@
         <a class="lk" href="https://media.cadc.uscourts.gov/opinions/docs/2025/03/23-5233.pdf" target="_blank" rel="noopener">判決全文 PDF</a>
         <a class="lk" href="https://www.skadden.com/insights/publications/2025/03/appellate-court-affirms-human-authorship" target="_blank" rel="noopener">Skadden 解析</a>
       </div>
-      <div class="take"><b>提醒</b>這條線畫的是「純 AI」；人機協作的邊界怎麼認定，才是接下來十年的主戰場。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 1 週 · 智財與課程導論</span><span class="num">10 / 25</span></div></section>
+  </section>
 
   <!-- 11 Getty 告 Stabilit -->
 <section class="slide">
@@ -296,9 +291,8 @@
         <p>法院說權重不是複製品，創作者說作品被拿走了：技術事實與權利感受的落差，該由誰來補？</p>
         <p>若你是圖庫或素材平台的主管，這個判決之後，你會調整授權策略，還是繼續打官司？</p>
       </div>
-      <div class="take"><b>觀察</b>Getty 輸在管轄與舉證，不是輸在原則：跨國 AI 服務讓「行為發生地」成了關鍵戰場。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 1 週 · 智財與課程導論</span><span class="num">11 / 25</span></div></section>
+  </section>
 
   <!-- 12 2026 年中：三種訴訟結局並存 -->
 <section class="slide">
@@ -313,9 +307,8 @@
       <div class="linkrow">
         <a class="lk" href="https://www.nortonrosefulbright.com/en/knowledge/publications/ce8eaa5f/ai-in-litigation-series-an-update-on-ai-copyright-cases-in-2026" target="_blank" rel="noopener">2026 訴訟總覽</a>
       </div>
-      <div class="take"><b>提醒</b>這一頁每季都會改寫；第 14 週會帶最新進度逐案深讀，今天先記住三種局面。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 1 週 · 智財與課程導論</span><span class="num">12 / 25</span></div></section>
+  </section>
 
   <!-- 13 這門課怎麼上 -->
 <section class="slide part">
@@ -323,7 +316,7 @@
     <div class="eyebrow">PART 3</div>
     <h2>這門課怎麼上</h2>
     <p class="part-sub">十八週地圖、五個關鍵節點、評量配比、AI 使用與揭露政策，以及學期結束時要帶走的四種能力。</p>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 1 週 · 智財與課程導論</span><span class="num">13 / 25</span></div></section>
+  </section>
 
   <!-- 14 十八週的路線圖 -->
 <section class="slide">
@@ -336,9 +329,8 @@
         <div class="card"><span class="who">W9–W13</span><h3>練方法</h3><p class="sub">期中評量、沉浸媒體、建築環境、動態影像、提示工程</p></div>
         <div class="card"><span class="who">W14–W18</span><h3>看未來</h3><p class="sub">倫理與智財深讀、趨勢、提案、個別指導、期末評量</p></div>
       </div>
-      <div class="take"><b>提醒</b>每週開場都會回到這張地圖對位一次：知道自己在哪裡，內容才不會變成零散的資訊。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 1 週 · 智財與課程導論</span><span class="num">14 / 25</span></div></section>
+  </section>
 
   <!-- 15 學期五個關鍵節點 -->
 <section class="slide">
@@ -352,9 +344,9 @@
         <div class="ev"><b>W17 門診</b><span>個別指導週：帶著半成品與問題來，一對一解決</span></div>
         <div class="ev"><b>W18 期末</b><span>專題報告繳交與發表，對照課程能力指標做學期回顧</span></div>
       </div>
-      <div class="take"><b>提醒</b>現在就把 W9 與 W16 寫進行事曆；研究所的時間災難，都是從「還早」開始的。</div>
+      <div class="take"><b>假設情境</b>如果同一週還要趕小組簡報，W9 與 W16 很容易被群組訊息淹沒；現在就把兩週寫進行事曆。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 1 週 · 智財與課程導論</span><span class="num">15 / 25</span></div></section>
+  </section>
 
   <!-- 16 評量方式：30、30、40 -->
 <section class="slide">
@@ -369,9 +361,8 @@
       <ul>
         <li>評分看重查證品質與你自己的觀點，不是 AI 產出的華麗程度</li>
       </ul>
-      <div class="take"><b>提醒</b>所有繳交物一律附上 AI 使用揭露頁，格式在後面兩頁，整學期通用。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 1 週 · 智財與課程導論</span><span class="num">16 / 25</span></div></section>
+  </section>
 
   <!-- 17 本課 AI 政策：三個區域 -->
 <section class="slide">
@@ -383,9 +374,8 @@
         <div class="card"><span class="who">黃區 · 須揭露</span><h3>用了要說</h3><p>凡進入繳交物的 AI 產出：文字、圖像、翻譯、資料整理，都要註明工具與用途。</p></div>
         <div class="card"><span class="who">紅區 · 禁止</span><h3>不可越線</h3><p>AI 代寫整份報告、未查證就引用 AI 給的文獻、拿 AI 產出冒充實際調查資料。</p></div>
       </div>
-      <div class="take"><b>提醒</b>政策的精神只有一句：可以請 AI 幫忙做，但你要能為交出去的每一句話負責。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 1 週 · 智財與課程導論</span><span class="num">17 / 25</span></div></section>
+  </section>
 
   <!-- 18 AI 使用揭露：照這個格式寫 -->
 <section class="slide">
@@ -398,9 +388,8 @@
         <dt>提示概要</dt><dd>關鍵提示詞或工作流摘述，讓讀者能想像你怎麼用，不必逐字全貼</dd>
         <dt>人工處理</dt><dd>你查證了什麼、改寫了多少、哪些判斷是你自己下的</dd>
       </dl>
-      <div class="take"><b>設計視角</b>揭露不是自首，是方法論的一部分：揭露寫得清楚的人，報告通常也做得紮實。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 1 週 · 智財與課程導論</span><span class="num">18 / 25</span></div></section>
+  </section>
 
   <!-- 19 這門課要帶走的四種能力 -->
 <section class="slide">
@@ -416,9 +405,8 @@
       <ul>
         <li>對應關係：指標一、二看期中報告；指標三看全部繳交物；指標四看期末專題</li>
       </ul>
-      <div class="take"><b>提醒</b>W18 的學期回顧會回到這四格自評；現在先拍照存檔，十八週後對照成長。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 1 週 · 智財與課程導論</span><span class="num">19 / 25</span></div></section>
+  </section>
 
   <!-- 20 論文導讀 -->
 <section class="slide part">
@@ -426,7 +414,7 @@
     <div class="eyebrow">PART 4</div>
     <h2>論文導讀</h2>
     <p class="part-sub">一長一短兩篇文獻：一篇是 2023 年寫下的問題清單，一篇是 2025 年的權威短評。今天同時示範文獻查證的標準動作。</p>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 1 週 · 智財與課程導論</span><span class="num">20 / 25</span></div></section>
+  </section>
 
   <!-- 21 Science 上的著作權課 -->
 <section class="slide">
@@ -443,9 +431,8 @@
         <dt>研究問題</dt><dd>生成式 AI 的訓練與產出，對著作權體系丟出哪些還沒有答案的法律問題</dd>
         <dt>文章性質</dt><dd>Policy Forum 政策論壇：為科學社群系統性整理訴訟爭點與可能走向</dd>
       </dl>
-      <div class="take"><b>為何選它</b>2023 年寫下的問題清單，正是 2025 到 2026 年每一個判決在作答的考卷。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 1 週 · 智財與課程導論</span><span class="num">21 / 25</span></div></section>
+  </section>
 
   <!-- 22 三年後回看：問題有了答案 -->
 <section class="slide">
@@ -458,9 +445,8 @@
         <li>2026 對照：Bartz 和解、Getty 判決與官方報告逐題作答，但尚未定於一尊</li>
         <li>對設計的啟示：選 AI 工具時，把「訓練資料乾淨度」與「商用授權條款」寫進評估規格</li>
       </ul>
-      <div class="take"><b>期中報告可借用</b>「2023 問題清單對照 2026 現況」這個寫法，本身就是文獻回顧的合格骨架。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 1 週 · 智財與課程導論</span><span class="num">22 / 25</span></div></section>
+  </section>
 
   <!-- 23 快讀：權威怎麼評官方報告 -->
 <section class="slide">
@@ -477,9 +463,8 @@
         <li>內容：評美國著作權局第三部報告，聚焦訓練輸入端的合理使用四因素分析</li>
         <li>讀法示範：進入上百頁官方報告之前，先用權威學者的兩頁短評當地圖</li>
       </ul>
-      <div class="take"><b>示範</b>讀不動大部頭文件時，先找專家短評定位重點，這是文獻檢索的實戰技巧。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 1 週 · 智財與課程導論</span><span class="num">23 / 25</span></div></section>
+  </section>
 
   <!-- 24 把今天的規則變成你的判斷 -->
 <section class="slide">
@@ -495,9 +480,8 @@
         <h3>課後任務（下週開場分享，約 5 分鐘）</h3>
         <p>讀 Samuelson（2023）全文四頁，挑一個她當年提出的未決問題，寫 200 字說明：到 2026 年，這一題被回答了沒有？證據是哪個判決或報告？</p>
       </div>
-      <div class="take"><b>下週預告</b>第 2 週 AI 與互動媒體概論：從達特茅斯會議到 2026 的發展年表與設計應用地圖。</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 1 週 · 智財與課程導論</span><span class="num">24 / 25</span></div></section>
+  </section>
 
   <!-- 25 所有連結，一頁帶走 -->
 <section class="slide">
@@ -536,9 +520,9 @@
           </div>
         </div>
       </div>
-      <div class="take"><b>提醒</b>訴訟與法規每季都在變動，引用前記得確認最新進度；發現連結失效請回報。</div>
+      <div class="take"><b>本週檢核</b>任選本週一個案例：你能指出資料來源、目前狀態，以及引用前還要再查哪一項嗎？</div>
     </div>
-  <div class="foot"><span>人工智慧與互動媒體特論|第 1 週 · 智財與課程導論</span><span class="num">25 / 25</span></div></section>
+  </section>
 
   
 
@@ -546,16 +530,16 @@
 
   <div class="ctrl">
     <button id="prev" aria-label="上一張">‹</button>
-    <span class="cnt" id="cnt">1 / 25</span>
+    <span class="cnt" id="cnt">1 / 1</span>
     <button id="next" aria-label="下一張">›</button>
     <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
   </div>
-  <div class="prog" id="prog" style="width: 4%;"></div>
+  <div class="prog" id="prog"></div>
 
   <div class="toc" id="toc">
     <button class="close" id="tocClose">關閉（Esc）</button>
-    <h2 id="tocTitle">目錄：第 1 週 · 智財與課程導論</h2>
-    <div class="tgrid" id="tgrid"><div><h3>開場</h3><button data-i="0" class="here">1. 智財與課程導論</button><button data-i="1">2. 九十分鐘，四段路</button><button data-i="2">3. 為什麼第一堂課先談著作權</button></div><div><h3>PART 1</h3><button data-i="3">4. 台灣的智財座標</button><button data-i="4">5. 著作權的四個基本觀念</button><button data-i="5">6. 智慧局怎麼看 AI 生成物</button><button data-i="6">7. AI 基本法：台灣的治理新框架</button></div><div><h3>PART 2</h3><button data-i="7">8. 國際訴訟與政策概覽</button><button data-i="8">9. 美國著作權局的三部曲報告</button><button data-i="9">10. Thaler 案：機器不能當作者</button><button data-i="10">11. Getty 告 Stability：英國終局</button><button data-i="11">12. 2026 年中：三種訴訟結局並存</button></div><div><h3>PART 3</h3><button data-i="12">13. 這門課怎麼上</button><button data-i="13">14. 十八週的路線圖</button><button data-i="14">15. 學期五個關鍵節點</button><button data-i="15">16. 評量方式：30、30、40</button><button data-i="16">17. 本課 AI 政策：三個區域</button><button data-i="17">18. AI 使用揭露：照這個格式寫</button><button data-i="18">19. 這門課要帶走的四種能力</button></div><div><h3>PART 4</h3><button data-i="19">20. 論文導讀</button><button data-i="20">21. Science 上的著作權課</button><button data-i="21">22. 三年後回看：問題有了答案</button><button data-i="22">23. 快讀：權威怎麼評官方報告</button></div><div><h3>收尾</h3><button data-i="23">24. 把今天的規則變成你的判斷</button><button data-i="24">25. 所有連結，一頁帶走</button></div></div>
+    <h2 id="tocTitle">目錄</h2>
+    <div class="tgrid" id="tgrid"></div>
   </div>
 </div>
 
@@ -650,6 +634,5 @@
   go(m ? +m[1] - 1 : 0);
 })();
 </script>
-
-
-</body></html>
+</body>
+</html>

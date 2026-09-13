@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>第 16 週|敏捷式開發</title>
+<style>
+  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  * { box-sizing: border-box; }
+  #app {
+    position: fixed; inset: 0; overflow: hidden;
+    background: var(--bg);
+    font-family: var(--body);
+    color: var(--ink);
+    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
+    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
+    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
+    --bg: #F5F4EC; --bg2: #EFEEE2;
+    --panel: #FDFCF6; --panel2: #EDECDF;
+    --ink: #232B21; --sub: #67705E;
+    --accent: #2F6B4F; --accent-rgb: 47,107,79;
+    --accent2: #BC4F2C;
+    --line: rgba(35,43,33,.16);
+    --link: #2F6B4F;
+    --r: 4px;
+  }
+  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  #app a:hover { opacity: .85; }
+  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
+  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
+  .slide.active { display: flex; }
+  .slide::before {
+    content: ""; position: absolute; inset: 24px; pointer-events: none;
+    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
+  }
+
+  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
+  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
+  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+
+  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
+  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
+  .sub { color: var(--sub); }
+  .small { font-size: 18px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
+  .cards { display: grid; gap: 18px; }
+  .c2 { grid-template-columns: repeat(2, 1fr); }
+  .c3 { grid-template-columns: repeat(3, 1fr); }
+  .c4 { grid-template-columns: repeat(4, 1fr); }
+  .c5 { grid-template-columns: repeat(5, 1fr); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
+  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
+  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
+  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+
+  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
+  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+
+  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
+
+  .cover, .part { justify-content: center; }
+  .cover .eyebrow { margin-bottom: 26px; }
+  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
+  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
+  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
+  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
+  .part h2 { font-size: 56px; }
+  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+
+  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
+  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
+  .kv dd { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
+  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
+  .lk::after { content: " ↗"; font-size: 12px; }
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
+  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
+  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
+  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
+  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
+  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  .tl { display: flex; flex-direction: column; gap: 18px; }
+  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
+  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
+  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+
+  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
+  .content > .cards,
+  .content > .cols,
+  .content > .flow,
+  .content > .kv,
+  .content > .prob { flex: 1 1 auto; }
+  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .qlist,
+  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .biblio { flex: 0 0 auto; }
+  .cols > .card { justify-content: flex-start; }
+
+  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
+  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
+  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
+  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
+  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  .toc.on { display: block; }
+  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
+  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
+  .toc button:hover { background: var(--panel2); }
+  .toc button.here { color: var(--accent2); font-weight: 700; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
+  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+<div id="app" data-deck="b">
+  <div class="stagewrap"><div class="stage" id="stage">
+
+  <!-- 1 封面 -->
+  <section class="slide cover">
+    <div class="eyebrow">專題企畫 · 動畫與遊戲設計系</div>
+    <h1>小步走，隨時能停</h1>
+    <p class="cover-sub">剩兩週。這堂課講怎麼讓每一次改動都建立在能跑的版本上，這樣任何一天被迫停下來，手上都有東西可以交。</p>
+    <div class="cover-meta"><span>第 16 週</span><span>授課：鄧樹遠</span></div>
+  </section>
+
+  <!-- 2 本週地圖 -->
+  <section class="slide">
+    <div class="eyebrow">Week 16 · 本週地圖</div>
+    <h2>九十分鐘，五段路</h2>
+    <div class="content">
+      <div class="cards c5">
+        <div class="card"><span class="who">PART 1</span><h3>敏捷是什麼</h3><p class="sub">不是沒有計畫</p></div>
+        <div class="card"><span class="who">PART 2</span><h3>短週期迭代</h3><p class="sub">剩兩週怎麼切</p></div>
+        <div class="card"><span class="who">PART 3</span><h3>隨時可交付</h3><p class="sub">版本與整合</p></div>
+        <div class="card"><span class="who">PART 4</span><h3>收尾的紀律</h3><p class="sub">封版之後只做三件事</p></div>
+        <div class="card"><span class="who">PART 5</span><h3>本週交付</h3><p class="sub">可交付版本與封版計畫</p></div>
+      </div>
+      <div class="take"><b>本週目標</b>離開教室時，你們手上要有一個「現在就能交」的版本，不是「快好了」的版本。</div>
+    </div>
+  </section>
+
+  <!-- 3 承接上週 -->
+  <section class="slide">
+    <div class="eyebrow">承接第 15 週 · 專案管理實務</div>
+    <h2>排程有了，怎麼執行</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">已完成</span>
+          <h3>排到期末的表</h3>
+          <ul>
+            <li>三個里程碑與封版日</li>
+            <li>砍掉的項目與理由</li>
+            <li>集中留了緩衝</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">今天要做</span>
+          <h3>執行的方法</h3>
+          <ul>
+            <li>怎麼切成小週期</li>
+            <li>怎麼確保每一版都能跑</li>
+            <li>封版之後的紀律</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>提醒</b>第 16 週末是第一個里程碑：必改清單全部完成。今天是最後衝刺的起點。</div>
+    </div>
+  </section>
+
+  <!-- 4 PART 1 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">01</div>
+    <div class="eyebrow">PART 1</div>
+    <h2>敏捷是什麼</h2>
+    <p class="part-sub">最常見的誤解是「敏捷等於不做計畫」。剛好相反，它是把計畫切成很多小段，每段都要驗收。</p>
+  </section>
+
+  <!-- 5 瀑布與敏捷 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 兩種做法</div>
+    <h2>一次做完與分段做完</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">瀑布式</span>
+          <h3>一階段做完換下一階段</h3>
+          <ul>
+            <li>先做完全部企畫，再全部美術，再全部程式</li>
+            <li>好處是分工清楚</li>
+            <li>壞處是最後才知道接不接得起來</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">敏捷式</span>
+          <h3>每段都做出能跑的東西</h3>
+          <ul>
+            <li>每一到兩週產出一個可玩版本</li>
+            <li>好處是隨時知道真實進度</li>
+            <li>壞處是要一直整合，比較累</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>對專題的意義</b>你們前十二週其實是瀑布式，接下來兩週必須轉成敏捷，否則來不及驗證。</div>
+    </div>
+  </section>
+
+  <!-- 6 為什麼適合 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 適用性</div>
+    <h2>為什麼收尾期一定要敏捷</h2>
+    <div class="content">
+      <ul>
+        <li>剩兩週，任何一次「做到一半發現不行」都會直接毀掉期末。</li>
+        <li>短週期讓你每兩三天就知道一次真實進度，而不是靠感覺。</li>
+        <li>每個版本都能跑，代表任何一天被迫停下來，你都有東西可以交。</li>
+        <li>整合提早做，最後一週才不會爆出「合不起來」的災難。</li>
+      </ul>
+      <div class="take"><b>核心價值</b>敏捷買的是「確定性」。你隨時知道自己站在哪裡，不會到最後才發現差很遠。</div>
+    </div>
+  </section>
+
+  <!-- 7 不是沒有計畫 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 常見誤解</div>
+    <h2>敏捷不是想到哪做到哪</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">誤解</span>
+          <h3>以為敏捷是自由</h3>
+          <ul>
+            <li>「反正可以隨時改，先做再說」</li>
+            <li>沒有目標，每天做想做的部分</li>
+            <li>結果什麼都做一點，什麼都沒完成</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">實際上</span>
+          <h3>紀律比瀑布式更嚴</h3>
+          <ul>
+            <li>每個週期開始前先講好要交什麼</li>
+            <li>週期內不加新東西</li>
+            <li>週期結束一定要驗收</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>本輪怎麼調</b>死線不動；本輪做不完就減少範圍，留下能完整跑一次的版本。</div>
+    </div>
+  </section>
+
+  <!-- 8 PART 2 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">02</div>
+    <div class="eyebrow">PART 2</div>
+    <h2>短週期迭代</h2>
+    <p class="part-sub">剩下的時間切成三段，每段結束都要有一個能玩的版本。</p>
+  </section>
+
+  <!-- 9 一個迭代 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 迭代結構</div>
+    <h2>一個週期要有這四件事</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>開始時</dt><dd>從看板挑出這個週期要做完的卡片，講清楚做完長什麼樣</dd>
+        <dt>進行中</dt><dd>不加新卡片。有新想法先放待辦，下個週期再談</dd>
+        <dt>結束時</dt><dd>整合起來實際跑一次，確認能從頭玩到尾</dd>
+        <dt>回顧</dt><dd>花五分鐘問：哪裡卡住、下個週期要改什麼做法</dd>
+      </dl>
+      <div class="take"><b>第二項最難守</b>週期中途冒出來的好點子，記在待辦就好。當下插隊會讓這個週期什麼都做不完。</div>
+    </div>
+  </section>
+
+  <!-- 10 剩兩週怎麼切 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 時程</div>
+    <h2>剩下的時間切成三段</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>第 16 週</h3><p>修完必改清單。結束時要有一個別人玩不會卡住的版本。</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>第 17 週前半</h3><p>換掉佔位素材，補上音效。結束時封版，之後不加功能。</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>第 17 週後半</h3><p>只修錯誤，做簡報，走過兩次發表流程。</p></div>
+      </div>
+      <div class="take"><b>每段結束都要跑一次</b>不是「應該可以跑」，是真的打開來從頭玩到尾一次。</div>
+    </div>
+  </section>
+
+  <!-- 11 每次都要能跑 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 硬規則</div>
+    <h2>每天結束時都要能跑</h2>
+    <div class="content">
+      <ul>
+        <li>不要留下「明天再接完」的半成品。今天做不完的功能，今天先關掉。</li>
+        <li>寧可功能少但能跑，不要功能多但打不開。</li>
+        <li>每天收工前實際執行一次，確認沒有壞掉。</li>
+        <li>壞掉就當場修，或退回昨天的版本。不要帶著壞掉的版本過夜。</li>
+      </ul>
+      <div class="take"><b>為什麼這麼嚴</b>剩兩週，一個「壞了三天才發現」的錯誤，就足以讓你們交不出東西。</div>
+    </div>
+  </section>
+
+  <!-- 12 回顧 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 回顧</div>
+    <h2>每段結束問三個問題</h2>
+    <div class="content">
+      <div class="qlist">
+        <p>這段我們原本說要做完什麼？實際做完了幾成？</p>
+        <p>沒做完的那部分，是估錯時間還是遇到沒想到的問題？</p>
+        <p>下一段要改什麼做法，才不會再發生同一件事？</p>
+      </div>
+      <div class="card">
+        <span class="who">重點</span>
+        <p>回顧不是檢討誰的錯，是調整做法。五分鐘就好，講不出具體調整就散會。</p>
+      </div>
+      <div class="take"><b>最有價值的答案</b>「我們一直低估整合時間」這種發現，會直接改善下一段的排程。</div>
+    </div>
+  </section>
+
+  <!-- 13 PART 3 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">03</div>
+    <div class="eyebrow">PART 3</div>
+    <h2>隨時可交付</h2>
+    <p class="part-sub">「可交付」的意思是：現在把電腦收走，你交出去的東西不會讓人看不懂。</p>
+  </section>
+
+  <!-- 14 什麼叫可交付 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 定義</div>
+    <h2>可交付要滿足三件事</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">第一</span>
+          <h3>打得開</h3>
+          <p>在別人的電腦上打得開，不是只有你的機器跑得動。</p>
+        </div>
+        <div class="card">
+          <span class="who">第二</span>
+          <h3>玩得完</h3>
+          <p>從開始到結束有一條完整的路，不會卡在中間出不來。</p>
+        </div>
+        <div class="card">
+          <span class="who">第三</span>
+          <h3>看得懂</h3>
+          <p>不用你在旁邊解釋，別人知道要按什麼、目標是什麼。</p>
+        </div>
+      </div>
+      <div class="take"><b>檢查方式</b>把檔案傳給隔壁組，請他們在自己的電腦上打開玩一次。這是最有效的驗證。</div>
+    </div>
+  </section>
+
+  <!-- 15 版本與備份 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 版本</div>
+    <h2>版本要留幾個</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>最新可跑版</dt><dd>隨時保持一份確定能跑的，這是你的保命符</dd>
+        <dt>每日備份</dt><dd>每天收工前存一份到雲端，檔名帶日期</dd>
+        <dt>里程碑版</dt><dd>每個週期結束存一個，之後不再動它</dd>
+        <dt>展示版</dt><dd>期末發表要用的那一份，跟開發中的分開放</dd>
+      </dl>
+      <div class="take"><b>最後一項很重要</b>發表前一天還在改開發版是常態，但展示版必須是已經測過的那一份。</div>
+    </div>
+  </section>
+
+  <!-- 16 分支與整合 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 整合</div>
+    <h2>各做各的怎麼合起來</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">會出事的做法</span>
+          <h3>各做各的到最後才合</h3>
+          <ul>
+            <li>兩個人改到同一個檔案</li>
+            <li>合併時互相覆蓋，有人的工作消失</li>
+            <li>合完跑不起來，也不知道是誰造成的</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">安全的做法</span>
+          <h3>頻繁小量整合</h3>
+          <ul>
+            <li>講好誰負責哪些檔案，不要重疊</li>
+            <li>每兩天合一次，量小才找得出問題</li>
+            <li>合完當場跑一次確認沒壞</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>沒用版本控管的組</b>更要嚴格分工檔案。用雲端資料夾直接改，覆蓋掉就救不回來了。</div>
+    </div>
+  </section>
+
+  <!-- 17 展示版分開 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 展示準備</div>
+    <h2>展示版要提早準備</h2>
+    <div class="content">
+      <ul>
+        <li>發表前三天就把展示版包好，之後開發版怎麼改都不動它。</li>
+        <li>在實際要用的那台電腦上測過，不是只在自己的機器上測。</li>
+        <li>準備一份錄影備援。現場出問題時直接播影片，不要在台上除錯。</li>
+        <li>存檔進度也要準備好。展示時不可能從頭玩，要能直接跳到精彩段落。</li>
+      </ul>
+      <div class="take"><b>每年都有的災難</b>發表當天早上改了一行，結果現場打不開。這就是為什麼要提早封版。</div>
+    </div>
+  </section>
+
+  <!-- 18 PART 4 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">04</div>
+    <div class="eyebrow">PART 4</div>
+    <h2>收尾的紀律</h2>
+    <p class="part-sub">收尾期最大的敵人不是時間不夠，是忍不住想再加一點東西。</p>
+  </section>
+
+  <!-- 19 封版後只做三件事 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 封版</div>
+    <h2>封版之後只做三件事</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">可以做</span>
+          <h3>修會當掉的錯誤</h3>
+          <p>玩不下去的那種。修完一定要重新測整條流程。</p>
+        </div>
+        <div class="card">
+          <span class="who">可以做</span>
+          <h3>換素材檔案</h3>
+          <p>圖換成更好的版本，不改任何程式與流程。風險最低。</p>
+        </div>
+        <div class="card">
+          <span class="who">可以做</span>
+          <h3>調數值</h3>
+          <p>難度、速度這種參數微調。改完要再玩一次確認。</p>
+        </div>
+      </div>
+      <div class="take"><b>不可以做的</b>加新功能、改流程、重構程式。這三件在封版後做，等於重新開始測試。</div>
+    </div>
+  </section>
+
+  <!-- 20 錯誤排優先 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 除錯</div>
+    <h2>錯誤怎麼排優先順序</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>第一優先</dt><dd>會當掉、會卡死、會讓人玩不下去的</dd>
+        <dt>第二優先</dt><dd>展示時一定會被看到的畫面問題</dd>
+        <dt>第三優先</dt><dd>要特定操作才會出現的小問題</dd>
+        <dt>不修</dt><dd>只有你自己知道的瑕疵。剩兩週，別人根本不會發現</dd>
+      </dl>
+      <div class="take"><b>時間分配</b>八成的時間修第一優先，其他順著來。追求完美是這階段最貴的習慣。</div>
+    </div>
+  </section>
+
+  <!-- 21 不要最後加功能 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 最後的誘惑</div>
+    <h2>最後一週想加東西的時候</h2>
+    <div class="content">
+      <ul>
+        <li>你會覺得「再加這個一定更好」。每一組每一年都會有這個念頭。</li>
+        <li>加新東西的成本不是寫它的時間，是重新測試整條流程的時間。</li>
+        <li>新功能沒測過就上台，出問題的機率比你想的高很多。</li>
+        <li>把那個想法寫進期末報告的「未來規劃」，比硬塞進去有價值。</li>
+      </ul>
+      <div class="take"><b>我的建議</b>最後一週的時間，拿去把已經有的東西打磨到穩，比多一個沒測過的功能好。</div>
+    </div>
+  </section>
+
+  <!-- 22 PART 5 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">05</div>
+    <div class="eyebrow">PART 5</div>
+    <h2>本週交付</h2>
+    <p class="part-sub">一個現在就能交的版本，加一份封版計畫。下週就是最後一次調整機會。</p>
+  </section>
+
+  <!-- 23 交付規格 -->
+  <section class="slide">
+    <div class="eyebrow">PART 5 · 交付規格</div>
+    <h2>這週要交什麼</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>交付物</dt><dd>可交付版本，加封版計畫</dd>
+        <dt>版本要求</dt><dd>別人的電腦打得開、能從頭玩到尾、不用解釋就看得懂</dd>
+        <dt>封版計畫</dt><dd>哪一天封版、封版前要完成什麼、封版後誰負責什麼</dd>
+        <dt>截止</dt><dd>第 17 週上課前，2026 年 12 月 31 日 08:00</dd>
+      </dl>
+      <div class="take"><b>驗收方式</b>我會請隔壁組在他們的電腦上打開你們的版本。打不開就是不及格。</div>
+    </div>
+  </section>
+
+  <!-- 24 檢核與退件 -->
+  <section class="slide">
+    <div class="eyebrow">PART 5 · 檢核標準</div>
+    <h2>什麼樣算過關</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">及格</span>
+          <h3>三件事都做到</h3>
+          <p>打得開、玩得完、看得懂。必改清單也全部修完了。</p>
+        </div>
+        <div class="card">
+          <span class="who">好</span>
+          <h3>已經在打磨了</h3>
+          <p>素材換得差不多、音效進去了、封版計畫寫得出具體日期。</p>
+        </div>
+        <div class="card">
+          <span class="who">退件</span>
+          <h3>常見的三種</h3>
+          <p>只在自己電腦跑得動；要口頭解釋才知道怎麼玩；還在加新功能。</p>
+        </div>
+      </div>
+      <div class="take"><b>提醒</b>這週不及格的組，等於只剩一週能補救，而那一週還要準備發表。</div>
+    </div>
+  </section>
+
+  <!-- 25 課堂討論與課後任務 -->
+  <section class="slide">
+    <div class="eyebrow">Week 16 · 收尾</div>
+    <h2>回去做這三件事</h2>
+    <div class="content">
+      <div class="qlist">
+        <p>如果今天就要交，你們手上的版本能交嗎？差在哪一件？</p>
+        <p>有沒有哪個功能是「快好了」但一直沒好？考慮直接關掉它。</p>
+        <p>你們的封版日是哪天？那天之後誰還有權限改檔案？</p>
+      </div>
+      <div class="card">
+        <span class="who">課後任務</span>
+        <p>把版本傳給隔壁組，請他們在自己電腦上玩一次。打不開的問題這週就要解決。</p>
+      </div>
+      <div class="take"><b>下週預告</b>推廣、發表與媒體規劃：怎麼把作品講給沒玩過的人聽，以及短影音怎麼做。</div>
+    </div>
+  </section>
+
+  <!-- 26 資源彙整 -->
+  <section class="slide">
+    <div class="eyebrow">Week 16 · 資源彙整</div>
+    <h2>本週資源</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="grp">
+          <h3>版本與協作</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+            <a class="lk" href="https://trello.com/" target="_blank" rel="noopener">Trello</a>
+            <a class="lk" href="https://www.notion.com/" target="_blank" rel="noopener">Notion</a>
+          </div>
+        </div>
+        <div class="grp">
+          <h3>發布與測試</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://itch.io/" target="_blank" rel="noopener">itch.io</a>
+            <a class="lk" href="https://unity.com/" target="_blank" rel="noopener">Unity</a>
+            <a class="lk" href="https://godotengine.org/" target="_blank" rel="noopener">Godot</a>
+          </div>
+        </div>
+      </div>
+      <div class="take"><b>提醒</b>itch.io 可以傳私人版本給指定的人測試。剩兩週要互測的話這是最方便的方式。</div>
+    </div>
+  </section>
+
+  
+
+  </div></div>
+
+  <div class="ctrl">
+    <button id="prev" aria-label="上一張">‹</button>
+    <span class="cnt" id="cnt">1 / 1</span>
+    <button id="next" aria-label="下一張">›</button>
+    <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+  </div>
+  <div class="prog" id="prog"></div>
+
+  <div class="toc" id="toc">
+    <button class="close" id="tocClose">關閉（Esc）</button>
+    <h2 id="tocTitle">目錄</h2>
+    <div class="tgrid" id="tgrid"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ★ 每週只改這一行 ★ */
+  var WEEK_LABEL = '第 16 週 · 敏捷式開發';
+
+  var stage = document.getElementById('stage');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var cnt = document.getElementById('cnt');
+  var prog = document.getElementById('prog');
+  var toc = document.getElementById('toc');
+  var tgrid = document.getElementById('tgrid');
+  var cur = 0;
+
+  document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
+
+  slides.forEach(function (s, i) {
+    var f = document.createElement('div');
+    f.className = 'foot';
+    f.innerHTML = '<span>專題企畫|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    s.appendChild(f);
+  });
+
+  var groups = {};
+  slides.forEach(function (s, i) {
+    var eb = s.querySelector('.eyebrow');
+    var part = '開場';
+    if (eb) {
+      var m = eb.textContent.match(/PART\s*(\d)/i);
+      if (m) part = 'PART ' + m[1];
+      else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
+    }
+    var h = s.querySelector('h1, h2');
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+  });
+  Object.keys(groups).forEach(function (k) {
+    var col = document.createElement('div');
+    var h3 = document.createElement('h3');
+    h3.textContent = k;
+    col.appendChild(h3);
+    groups[k].forEach(function (it) {
+      var b = document.createElement('button');
+      b.textContent = it.t;
+      b.dataset.i = it.i;
+      b.addEventListener('click', function () { toggleToc(false); go(it.i); });
+      col.appendChild(b);
+    });
+    tgrid.appendChild(col);
+  });
+
+  function go(i) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach(function (s, j) { s.classList.toggle('active', j === cur); });
+    cnt.textContent = (cur + 1) + ' / ' + slides.length;
+    prog.style.width = ((cur + 1) / slides.length * 100) + '%';
+    if (history.replaceState) history.replaceState(null, '', '#s' + (cur + 1));
+    tgrid.querySelectorAll('button').forEach(function (b) { b.classList.toggle('here', +b.dataset.i === cur); });
+  }
+  function toggleToc(on) {
+    toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
+  }
+
+  document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
+  document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
+  document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
+  document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { toggleToc(false); return; }
+    if (toc.classList.contains('on')) return;
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'Home': go(0); break;
+      case 'End': go(slides.length - 1); break;
+      case 'm': case 'M': toggleToc(); break;
+    }
+  });
+
+  function fit() {
+    var w = window.innerWidth, h = window.innerHeight;
+    if (!w || !h) { requestAnimationFrame(fit); return; }
+    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('load', fit);
+  fit();
+
+  var m = location.hash.match(/^#s(\d+)$/);
+  go(m ? +m[1] - 1 : 0);
+})();
+</script>
+</body>
+</html>

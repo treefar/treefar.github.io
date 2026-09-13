@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>第 6 週|產品與工業設計</title>
+<style>
+  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  * { box-sizing: border-box; }
+  #app {
+    position: fixed; inset: 0; overflow: hidden;
+    background: var(--bg);
+    font-family: var(--body);
+    color: var(--ink);
+    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
+    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
+    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
+    --bg: #F5F4EC; --bg2: #EFEEE2;
+    --panel: #FDFCF6; --panel2: #EDECDF;
+    --ink: #232B21; --sub: #67705E;
+    --accent: #2F6B4F; --accent-rgb: 47,107,79;
+    --accent2: #BC4F2C;
+    --line: rgba(35,43,33,.16);
+    --link: #2F6B4F;
+    --r: 4px;
+  }
+  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  #app a:hover { opacity: .85; }
+  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
+  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
+  .slide.active { display: flex; }
+  .slide::before {
+    content: ""; position: absolute; inset: 24px; pointer-events: none;
+    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
+  }
+
+  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
+  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
+  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+
+  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
+  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
+  .sub { color: var(--sub); }
+  .small { font-size: 18px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
+  .cards { display: grid; gap: 18px; }
+  .c2 { grid-template-columns: repeat(2, 1fr); }
+  .c3 { grid-template-columns: repeat(3, 1fr); }
+  .c4 { grid-template-columns: repeat(4, 1fr); }
+  .c5 { grid-template-columns: repeat(5, 1fr); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
+  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
+  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
+  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+
+  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
+  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+
+  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
+
+  .cover, .part { justify-content: center; }
+  .cover .eyebrow { margin-bottom: 26px; }
+  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
+  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
+  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
+  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
+  .part h2 { font-size: 56px; }
+  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+
+  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
+  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
+  .kv dd { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
+  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
+  .lk::after { content: " ↗"; font-size: 12px; }
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
+  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
+  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
+  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
+  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
+  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  .tl { display: flex; flex-direction: column; gap: 18px; }
+  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
+  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
+  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+
+  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
+  .content > .cards,
+  .content > .cols,
+  .content > .flow,
+  .content > .kv,
+  .content > .prob { flex: 1 1 auto; }
+  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .qlist,
+  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .biblio { flex: 0 0 auto; }
+  .cols > .card { justify-content: flex-start; }
+
+  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
+  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
+  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
+  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
+  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  .toc.on { display: block; }
+  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
+  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
+  .toc button:hover { background: var(--panel2); }
+  .toc button.here { color: var(--accent2); font-weight: 700; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
+  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+<div id="app" data-deck="b">
+  <div class="stagewrap"><div class="stage" id="stage">
+
+  <!-- 1 AI 與產品工業設計 -->
+<section class="slide cover">
+    <div class="eyebrow">人工智慧與互動媒體特論 · 設計創新與經營研究所</div>
+    <h1>AI 與產品工業設計</h1>
+    <p class="cover-sub">生成式設計與參數化造型：當演算法開始畫工程圖，從 Autodesk Fusion 到 adidas 印出來的鞋，設計師該站在哪裡。</p>
+    <div class="cover-meta"><span>第 6 週</span><span>論文導讀與案例討論</span><span>授課：鄧樹遠</span></div>
+  </section>
+
+  <!-- 2 九十分鐘，五段路 -->
+<section class="slide">
+    <div class="eyebrow">Week 06 · 本週地圖</div>
+    <h2>九十分鐘，五段路</h2>
+    <div class="content">
+      <div class="cards c5">
+        <div class="card"><span class="who">PART 1</span><h3>生成式設計原理</h3><p class="sub">目標與約束驅動的方案探索</p></div>
+        <div class="card"><span class="who">PART 2</span><h3>參數化與晶格</h3><p class="sub">把造型寫成規則與數學式</p></div>
+        <div class="card"><span class="who">PART 3</span><h3>兩個案例</h3><p class="sub">Autodesk 工具化、adidas 量產化</p></div>
+        <div class="card"><span class="who">PART 4</span><h3>AI 輔助 CAD</h3><p class="sub">2026 現況與概念到 3D 管線</p></div>
+        <div class="card"><span class="who">PART 5</span><h3>論文導讀</h3><p class="sub">一篇合流起點，一篇前沿</p></div>
+      </div>
+      <div class="take"><b>本週目標</b>分清「AI 生圖」與「AI 生零件」：後者要通過物理與製造的考驗，這正是設計專業的新戰場。</div>
+    </div>
+  </section>
+
+  <!-- 3 從「像素」到「原子」 -->
+<section class="slide">
+    <div class="eyebrow">承接第 5 週 · 視覺傳達與平面設計</div>
+    <h2>從「像素」到「原子」</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">上週的世界</span>
+          <h3>平面設計的 AI</h3>
+          <ul>
+            <li>生成的是圖像，對錯由眼睛與品牌語言判斷</li>
+            <li>不滿意就重抽，迭代成本趨近於零</li>
+            <li>產物留在螢幕裡，錯了隨時可改</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">本週的世界</span>
+          <h3>產品設計的 AI</h3>
+          <ul>
+            <li>生成的是幾何與結構，要受力、要能製造</li>
+            <li>方案必須通過模擬驗證：強度、重量、製程</li>
+            <li>產物走進物理世界，開模與斷裂都是真金白銀</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 生成式設計的原理 -->
+<section class="slide part">
+    <div class="part-num">01</div>
+    <div class="eyebrow">PART 1</div>
+    <h2>生成式設計的原理</h2>
+    <p class="part-sub">設計師不再直接畫形狀，而是定義問題：目標、約束、材料與製程。形狀，是演算法在解空間裡搜出來的答案。</p>
+  </section>
+
+  <!-- 5 生成式設計不是生成式 AI -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 名詞校正</div>
+    <h2>生成式設計不是生成式 AI</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">最佳化家族</span>
+          <h3>生成式設計 Generative Design</h3>
+          <ul>
+            <li>輸入目標與工程約束，演算法搜索出上百個可行方案</li>
+            <li>每個方案都跑過模擬：強度、重量、製造性</li>
+            <li>2000 年代已在 CAD 界萌芽，比這波生成式 AI 更早</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">機率家族</span>
+          <h3>生成式 AI Generative AI</h3>
+          <ul>
+            <li>從資料分布學習後抽樣，產出「統計上合理」的內容</li>
+            <li>不保證物理可行：好看的支架可能一夾就斷</li>
+            <li>2019 年起兩者開始合流，本週論文①就是起點</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 先把設計問題寫成輸入 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 生成式設計原理</div>
+    <h2>先把設計問題寫成輸入</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>目標 Objectives</dt><dd>最小化重量、最大化剛性、控制成本，可多目標同時成立</dd>
+        <dt>約束 Constraints</dt><dd>保留幾何（鎖孔、接合面）、障礙幾何（要避開的空間）、安全係數</dd>
+        <dt>材料 Materials</dt><dd>鋁合金、鈦、複合材料，每種材料一套物性參數</dd>
+        <dt>製程 Manufacturing</dt><dd>積層製造、CNC、鑄造：製程不同，長出的形狀就不同</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 7 一個問題，一朵方案雲 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 生成式設計原理</div>
+    <h2>一個問題，一朵方案雲</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>1. 定義問題</h3><p>設計師輸入目標、約束、材料與製程的組合</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>2. 生成與驗證</h3><p>雲端平行演化出數十到數百個方案，每個都跑模擬</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>3. 探索與收斂</h3><p>以重量、剛性、成本篩選方案雲，人挑出要深化的解</p></div>
+      </div>
+      <ul>
+        <li>結果會形成可篩選、比較的方案空間，不只輸出單一答案</li>
+        <li>設計師的角色從造型者變成策展人：訂題目、設邊界、做取捨</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 8 拓撲最佳化：把材料放在力流上 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 生成式設計原理</div>
+    <h2>拓撲最佳化：把材料放在力流上</h2>
+    <div class="content">
+      <div class="cols">
+        <div>
+          <svg viewBox="0 0 460 240" width="460" height="240" role="img" aria-label="拓撲最佳化示意：設計空間內只在力流路徑上保留材料">
+            <rect x="72" y="34" width="330" height="150" fill="none" stroke="var(--line)" stroke-width="2" stroke-dasharray="7 6"/>
+            <line x1="72" y1="26" x2="72" y2="192" stroke="var(--sub)" stroke-width="5"/>
+            <line x1="72" y1="40" x2="58" y2="54" stroke="var(--sub)" stroke-width="2"/>
+            <line x1="72" y1="80" x2="58" y2="94" stroke="var(--sub)" stroke-width="2"/>
+            <line x1="72" y1="120" x2="58" y2="134" stroke="var(--sub)" stroke-width="2"/>
+            <line x1="72" y1="160" x2="58" y2="174" stroke="var(--sub)" stroke-width="2"/>
+            <path d="M 74 56 C 170 60, 260 84, 380 106" fill="none" stroke="var(--accent)" stroke-width="11" stroke-linecap="round"/>
+            <path d="M 74 110 C 180 108, 280 108, 380 110" fill="none" stroke="var(--accent)" stroke-width="14" stroke-linecap="round"/>
+            <path d="M 74 164 C 170 160, 260 136, 380 114" fill="none" stroke="var(--accent)" stroke-width="11" stroke-linecap="round"/>
+            <path d="M 150 62 C 165 78, 165 94, 152 108" fill="none" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>
+            <path d="M 150 158 C 165 142, 165 126, 152 112" fill="none" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>
+            <path d="M 250 84 C 262 92, 262 100, 252 108" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round"/>
+            <path d="M 250 134 C 262 126, 262 118, 252 112" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="388" cy="110" r="9" fill="none" stroke="var(--accent)" stroke-width="4"/>
+            <line x1="388" y1="128" x2="388" y2="168" stroke="var(--accent2)" stroke-width="4"/>
+            <polygon points="388,180 380,164 396,164" fill="var(--accent2)"/>
+            <text x="406" y="158" fill="var(--accent2)" font-size="15">載荷</text>
+            <text x="14" y="110" fill="var(--sub)" font-size="14">固定端</text>
+            <text x="160" y="26" fill="var(--sub)" font-size="14">設計空間（虛線）</text>
+            <text x="150" y="216" fill="var(--sub)" font-size="14">收斂後：材料只留在力流經過的地方</text>
+          </svg>
+        </div>
+        <ul>
+          <li>反覆迭代：受力小處移除材料，受力大處保留，直到收斂</li>
+          <li>經典法 SIMP：把設計空間切成小元素，逐格問「這裡需要材料嗎」</li>
+          <li>產物常呈現有機的骨骼狀結構，形狀主要來自力學條件</li>
+          <li>它一次收斂到一個解；生成式設計是它的多方案、多製程擴充版</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 它擅長什麼，不擅長什麼 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 生成式設計原理</div>
+    <h2>它擅長什麼，不擅長什麼</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><h3>擅長</h3><p>結構件、支架、輕量化與散熱：目標寫得成數字的零件，它探索得比人快也比人廣。</p></div>
+        <div class="card"><h3>不擅長</h3><p>外觀面、CMF 與品牌語言：美感與語意難以寫成約束條件，硬塞反而扭曲問題。</p></div>
+        <div class="card"><h3>常見誤解</h3><p>不是一鍵完工：選出的方案仍要經過工程驗證、細部修整與認證流程。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 參數化造型與晶格 -->
+<section class="slide part">
+    <div class="part-num">02</div>
+    <div class="eyebrow">PART 2</div>
+    <h2>參數化造型與晶格</h2>
+    <p class="part-sub">另一條路線是把造型寫成規則。參數一動、全形跟著動，而積層製造讓這些形狀第一次做得出來。</p>
+  </section>
+
+  <!-- 11 參數化造型：形狀是規則的輸出 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 參數化造型</div>
+    <h2>參數化造型：形狀是規則的輸出</h2>
+    <div class="content">
+      <ul>
+        <li>造型＝規則（參數）：改參數不改邏輯，整個模型自動更新</li>
+        <li>譜系：Rhino 的 Grasshopper 節點式編程，建築與產品圈的共通語言</li>
+        <li>從 Zaha Hadid 的曲面建築到球鞋中底，同一套思維、不同尺度</li>
+        <li>與生成式設計互補：參數化是人寫規則，生成式是演算法搜規則外的解</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 12 晶格：印表機才做得出的材料 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 晶格結構</div>
+    <h2>晶格：印表機才做得出的材料</h2>
+    <div class="content">
+      <ul>
+        <li>用微小胞元填滿體積：同一種材料，靠幾何調出軟硬、透氣與吸能</li>
+        <li>模具做不出內部中空的三維網格，晶格天生屬於積層製造</li>
+        <li>梯度晶格：同一件物體不同區域不同密度，adidas 中底的原理</li>
+        <li>TPMS（如 gyroid）連續曲面晶格：散熱器與骨植入物的常客</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 13 nTop：把形狀寫成數學式 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 工具現況</div>
+    <h2>nTop：把形狀寫成數學式</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>定位</dt><dd>工程用計算設計平台：晶格、拓撲最佳化與積層製造設計的業界要角</dd>
+        <dt>核心技術</dt><dd>隱式建模（implicit modeling）：形狀是空間中的數學場，不是面片集合</dd>
+        <dt>為何而生</dt><dd>傳統 CAD 搬不動百萬胞元的晶格；隱式運算即時且不會破面</dd>
+        <dt>2026 現況</dt><dd>已進入 nTop 5 世代，主打與模擬、製造工作流的互通性</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://www.ntop.com/software/capabilities/modeling/" target="_blank" rel="noopener">nTop 隱式建模</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14 案例：Autodesk 與 ad -->
+<section class="slide part">
+    <div class="part-num">03</div>
+    <div class="eyebrow">PART 3</div>
+    <h2>案例：Autodesk 與 adidas</h2>
+    <p class="part-sub">一家把生成式設計做成雲端日常工具的軟體巨頭，一雙從 2017 年一路印到今天的鞋。看原理走出實驗室之後的樣子。</p>
+  </section>
+
+  <!-- 15 Fusion 的生成式設計服務 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 案例 · Autodesk</div>
+    <h2>Fusion 的生成式設計服務</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>型態</dt><dd>內建於 Fusion 的雲端服務：定義問題後上雲運算，結果回到 CAD 直接編修</dd>
+        <dt>輸入</dt><dd>保留與障礙幾何、載荷、安全係數，材料與製程可多組並行探索</dd>
+        <dt>輸出</dt><dd>依製程分組的方案集：積層、CNC、鑄造各長出不同形狀</dd>
+        <dt>AI 加值</dt><dd>方案聚類、最佳化與推薦引擎，協助設計師在方案雲中導航</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://www.autodesk.com/solutions/generative-design-ai-software" target="_blank" rel="noopener">Fusion 生成式設計</a>
+        <a class="lk" href="https://www.autodesk.com/products/fusion-360/ai-automation" target="_blank" rel="noopener">Fusion AI 功能</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 16 2026 的 Autodesk： -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 案例 · Autodesk</div>
+    <h2>2026 的 Autodesk：AI 進駐全管線</h2>
+    <div class="content">
+      <ul>
+        <li>Autodesk Assistant 深入 Fusion：「提示到 API」可操作幾乎所有功能</li>
+        <li>示範：輸入「現代風氣炸鍋」一句話，直接產生可編修的 3D 幾何</li>
+        <li>生成式渲染上線：對話生成擬真渲染圖，商業訂閱每月 20 張</li>
+        <li>Fusion MCP 伺服器：讓外部 AI 代理連進 CAD，自動化多步驟工程流程</li>
+        <li>研究原型 Project Bernini：以千萬個 3D 形狀訓練，文字、草圖、點雲皆可生形</li>
+      </ul>
+      <div class="linkrow">
+        <a class="lk" href="https://adsknews.autodesk.com/en/news/new-investments-in-fusion-bring-ai-powered-transformation-to-manufacturing/" target="_blank" rel="noopener">Autodesk 新聞稿</a>
+        <a class="lk" href="https://www.research.autodesk.com/projects/project-bernini/" target="_blank" rel="noopener">Project Bernini</a>
+        <a class="lk" href="https://www.engineering.com/autodesk-announces-fusion-mcp-servers-and-more-ai-updates/" target="_blank" rel="noopener">產業報導</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 17 adidas 4D：用光印出來的 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 案例 · adidas 4D</div>
+    <h2>adidas 4D：用光印出來的中底</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>起點</dt><dd class="num">2017 年 4 月發表 Futurecraft 4D，與矽谷 Carbon 公司合作</dd>
+        <dt>製程</dt><dd>數位光合成（DLS）：光把液態樹脂固化成晶格，再以熱定型</dd>
+        <dt>資料驅動</dt><dd>以 17 年運動員資料，從 500 萬種晶格變體中調校出中底</dd>
+        <dt>意義</dt><dd>積層製造從概念展示走進量產球鞋產品線</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://news.adidas.com/futurecraft/adidas-unveils-industry-s-first-application-of-digital-light-synthesis-with-futurecraft-4d/s/20b2ff0a-4c7d-47a2-9beb-3373f6a5dad7" target="_blank" rel="noopener">2017 發表稿</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 18 從 Futurecraft 印到 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 深度案例討論</div>
+    <h2>從 Futurecraft 印到 Climacool</h2>
+    <div class="content">
+      <div class="tl">
+        <div class="ev"><b>2017/4</b><span>Futurecraft 4D 發表：DLS 印製晶格中底，首批 300 雙</span></div>
+        <div class="ev"><b>2021/5</b><span>4DFWD 上市：FWD CELL 晶格把垂直衝擊轉成前進動力</span></div>
+        <div class="ev"><b>2025/5</b><span>Climacool 全 3D 列印懶人鞋全球開賣：整鞋單件成形</span></div>
+        <div class="ev"><b>2025/7</b><span>CLIMACOOL LACED 開賣：單件印製，比前代輕 15%，一雙印約 24 小時</span></div>
+        <div class="ev"><b>2026</b><span>4D 與 Climacool 產品線常態販售，3D 列印從實驗變成日常商品</span></div>
+      </div>
+      <div class="qlist">
+        <p>一雙鞋要印約 24 小時，量產效率遠輸射出成型：adidas 用它換到的價值是什麼？</p>
+        <p>當性能由晶格幾何決定、幾何由資料調校，鞋的設計權在設計師、演算法還是資料手上？</p>
+      </div>
+      <div class="linkrow">
+        <a class="lk" href="https://news.adidas.com/innovations/the-future-now--adidas-reveals-the-climacool-laced/s/f4cd96a9-a4e0-474c-a9cb-465b0dafa159" target="_blank" rel="noopener">LACED 發表稿</a>
+        <a class="lk" href="https://3dprint.com/317290/adidas-launches-3d-printed-climacool-slip-on-globally-today/" target="_blank" rel="noopener">開賣報導</a>
+        <a class="lk" href="https://www.adidas.com/us/4d" target="_blank" rel="noopener">adidas 4D 系列</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 19 兩個案例，一個共同的教訓 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 案例收束</div>
+    <h2>兩個案例，一個共同的教訓</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">AUTODESK</span>
+          <h3>工具端的啟示</h3>
+          <ul>
+            <li>生成式設計的價值不在單一方案多好，而在探索成本暴跌</li>
+            <li>工具民主化之後，稀缺的是定義問題與做取捨的判斷力</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">ADIDAS</span>
+          <h3>產品端的啟示</h3>
+          <ul>
+            <li>落地要翻過製造、成本、供應鏈三座山，爬了近十年才成常備線</li>
+            <li>硬體世界沒有一夜顛覆，只有一代一代的迭代</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 20 AI 輔助 CAD 與 3D 管 -->
+<section class="slide part">
+    <div class="part-num">04</div>
+    <div class="eyebrow">PART 4</div>
+    <h2>AI 輔助 CAD 與 3D 管線</h2>
+    <p class="part-sub">生成式 AI 正從圖像跨進幾何。2026 年要追問的是：生成的 3D 能否通過後續工程與製造流程？</p>
+  </section>
+
+  <!-- 21 文字生 CAD：2026 年走到 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · AI 輔助 CAD</div>
+    <h2>文字生 CAD：2026 年走到哪裡</h2>
+    <div class="content">
+      <ul>
+        <li>Zoo：開源 text-to-CAD 先行者，「六孔法蘭」一句話生出可編修幾何</li>
+        <li>Backflip：影像與文字轉 3D 可列印零件，獲 3,000 萬美元投資</li>
+        <li>Autodesk 路線：自家製造基礎模型，目標從提示直接生成可編修 BREP</li>
+        <li>共同瓶頸：高品質 CAD 資料稀缺，圖像界「吃網路長大」的路在此行不通</li>
+      </ul>
+      <div class="linkrow">
+        <a class="lk" href="https://3dprintingindustry.com/news/open-source-ai-text-to-cad-software-by-zoo-unlocks-accessible-3d-design-236964/" target="_blank" rel="noopener">Zoo 報導</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 22 從概念圖到 3D 的管線 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 概念到 3D 管線</div>
+    <h2>從概念圖到 3D 的管線</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>1. 概念階段</h3><p>文字或草圖生概念圖：上週的擴散模型，快速對齊方向</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>2. 成形階段</h3><p>影像轉 3D：Tripo、Meshy 等秒級出網格並附材質</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>3. 工程階段</h3><p>網格重建為 CAD 實體或直接文字生 CAD，接模擬與製造</p></div>
+      </div>
+      <ul>
+        <li>三段的產物不同：圖像是意象、網格是外形、CAD 是可製造的定義</li>
+        <li>目前斷點在二到三段之間：網格轉可編修實體，多半仍靠人工重建</li>
+      </ul>
+      <div class="linkrow">
+        <a class="lk" href="https://www.tripo3d.ai/" target="_blank" rel="noopener">Tripo</a>
+        <a class="lk" href="https://www.meshy.ai/" target="_blank" rel="noopener">Meshy</a>
+      </div>
+      <div class="take"><b>假設情境</b>如果同組只交出漂亮網格，卻無法轉成可製造的實體，問題出在管線銜接；驗收時要連輸出格式一起看。</div>
+    </div>
+  </section>
+
+  <!-- 23 網格與實體：一字之差的鴻溝 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 關鍵觀念</div>
+    <h2>網格與實體：一字之差的鴻溝</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">MESH</span>
+          <h3>網格模型</h3>
+          <ul>
+            <li>三角面片近似表面：遊戲、動畫、視覺化的通用貨幣</li>
+            <li>Tripo、Meshy 的輸出；能看能印，但難以標尺寸與精修</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">BREP</span>
+          <h3>參數化實體</h3>
+          <ul>
+            <li>精確幾何加特徵歷史：CAD、模具與認證的語言</li>
+            <li>可改參數、可出工程圖；Text2CAD 與 Bernini 想直接生它</li>
+          </ul>
+        </div>
+      </div>
+      <ul>
+        <li>評估任何 AI 3D 工具的第一個問題：它輸出的是哪一種？</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 24 論文導讀 -->
+<section class="slide part">
+    <div class="part-num">05</div>
+    <div class="eyebrow">PART 5</div>
+    <h2>論文導讀</h2>
+    <p class="part-sub">一篇 2019 年的合流起點：拓撲最佳化遇上生成模型；一篇 2024 年的前沿：語言模型開始寫 CAD。</p>
+  </section>
+
+  <!-- 25 當拓撲最佳化遇上生成模型 -->
+<section class="slide">
+    <div class="eyebrow">PART 5 · 論文導讀 ①</div>
+    <h2>當拓撲最佳化遇上生成模型</h2>
+    <div class="content">
+      <div class="biblio">
+        <span class="ti">Deep Generative Design: Integration of Topology Optimization and Generative Models</span>
+        Oh, S., Jung, Y., Kim, S., Lee, I., &amp; Kang, N.（2019）。<i>Journal of Mechanical Design</i>, 141(11), 111405。
+        <a href="https://doi.org/10.1115/1.4044229" target="_blank" rel="noopener">doi.org/10.1115/1.4044229</a>
+      </div>
+      <dl class="kv">
+        <dt>研究問題</dt><dd>拓撲最佳化解太少、生成模型不懂工程：能否結合兩者，量產「新且可行」的設計？</dd>
+        <dt>方法</dt><dd>迭代框架：拓撲最佳化產生種子設計，GAN 學習後生成新設計，再回圈篩選精煉</dd>
+        <dt>案例</dt><dd>2D 車輪輪圈：以真實市售輪圈資料出發，兼顧結構性能與造型多樣性</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 26 發現：多樣性與可行性兼得 -->
+<section class="slide">
+    <div class="eyebrow">PART 5 · 論文導讀 ①</div>
+    <h2>發現：多樣性與可行性兼得</h2>
+    <div class="content">
+      <ul>
+        <li>產出數千個輪圈設計：既滿足工程指標，造型又彼此不同</li>
+        <li>迭代越多代，設計空間越豐富：生成模型成了「設計放大器」</li>
+        <li>美學上接近市售輪圈，而結構性能始終由拓撲最佳化把關</li>
+        <li>侷限：從 2D 案例起步，泛化到複雜 3D 產品是後續研究的戰場</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 27 快讀：會寫 CAD 的語言模型 -->
+<section class="slide">
+    <div class="eyebrow">PART 5 · 論文導讀 ②</div>
+    <h2>快讀：會寫 CAD 的語言模型</h2>
+    <div class="content">
+      <div class="biblio">
+        <span class="ti">Text2CAD: Generating Sequential CAD Models from Beginner-to-Expert Level Text Prompts</span>
+        Khan, M. S., Sinha, S., Sheikh, T. U., Stricker, D., Ali, S. A., &amp; Afzal, M. Z.（2024）。<i>NeurIPS 2024</i>（Spotlight）。
+        <a href="https://arxiv.org/abs/2409.17106" target="_blank" rel="noopener">arxiv.org/abs/2409.17106</a>
+      </div>
+      <ul>
+        <li>首個把自然語言轉成「參數化 CAD 建模序列」的框架：輸出可編修步驟，不是網格</li>
+        <li>自建約 17 萬個模型、66 萬筆由粗到細的文字標註，以 Transformer 自迴歸生成</li>
+        <li>啟示：AI 學習「建模的動作」，正對準前一節的 BREP 缺口</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 28 把今天的框架帶回你的題目 -->
+<section class="slide">
+    <div class="eyebrow">Week 06 · 課堂討論與課後任務</div>
+    <h2>把今天的框架帶回你的題目</h2>
+    <div class="content">
+      <div class="qlist">
+        <p>你的畢製或研究裡，哪個物件的目標寫得成數字？試著把它寫成一組目標與約束。</p>
+        <p>生成式設計讓「探索方案」趨近免費，設計教育該把省下的時間拿去教什麼？</p>
+        <p>adidas 用近十年把 3D 列印鞋變成常備產品線：換成台灣的自行車或家具產業，這條路會更快還是更慢？</p>
+      </div>
+      <div class="card">
+        <h3>課後任務（下週開場分享，約 5 分鐘）</h3>
+        <p>選一件手邊的日常產品，用本週框架拆解它的目標、約束、材料與製程；再用任一影像轉 3D 工具把它的照片轉成 3D 模型，寫 300 字記錄哪一段最順、哪一段斷掉。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 29 所有連結，一頁帶走 -->
+<section class="slide">
+    <div class="eyebrow">Week 06 · 本週資源彙整</div>
+    <h2>所有連結，一頁帶走</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="grp">
+          <h3>生成式設計與工具</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://www.autodesk.com/solutions/generative-design-ai-software" target="_blank" rel="noopener">Fusion 生成式設計</a>
+            <a class="lk" href="https://www.autodesk.com/products/fusion-360/ai-automation" target="_blank" rel="noopener">Fusion AI 功能</a>
+            <a class="lk" href="https://adsknews.autodesk.com/en/news/new-investments-in-fusion-bring-ai-powered-transformation-to-manufacturing/" target="_blank" rel="noopener">Autodesk 新聞稿</a>
+            <a class="lk" href="https://www.ntop.com/software/capabilities/modeling/" target="_blank" rel="noopener">nTop 隱式建模</a>
+            <a class="lk" href="https://www.engineering.com/autodesk-announces-fusion-mcp-servers-and-more-ai-updates/" target="_blank" rel="noopener">產業報導</a>
+          </div>
+          <h3 style="margin-top:18px">AI 輔助 CAD 與 3D 生成</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://www.research.autodesk.com/projects/project-bernini/" target="_blank" rel="noopener">Project Bernini</a>
+            <a class="lk" href="https://3dprintingindustry.com/news/open-source-ai-text-to-cad-software-by-zoo-unlocks-accessible-3d-design-236964/" target="_blank" rel="noopener">Zoo 報導</a>
+            <a class="lk" href="https://www.tripo3d.ai/" target="_blank" rel="noopener">Tripo</a>
+            <a class="lk" href="https://www.meshy.ai/" target="_blank" rel="noopener">Meshy</a>
+          </div>
+        </div>
+        <div class="grp">
+          <h3>案例：adidas 4D</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://news.adidas.com/futurecraft/adidas-unveils-industry-s-first-application-of-digital-light-synthesis-with-futurecraft-4d/s/20b2ff0a-4c7d-47a2-9beb-3373f6a5dad7" target="_blank" rel="noopener">2017 發表稿</a>
+            <a class="lk" href="https://news.adidas.com/innovations/the-future-now--adidas-reveals-the-climacool-laced/s/f4cd96a9-a4e0-474c-a9cb-465b0dafa159" target="_blank" rel="noopener">LACED 發表稿</a>
+            <a class="lk" href="https://3dprint.com/317290/adidas-launches-3d-printed-climacool-slip-on-globally-today/" target="_blank" rel="noopener">開賣報導</a>
+            <a class="lk" href="https://www.adidas.com/us/4d" target="_blank" rel="noopener">adidas 4D 系列</a>
+          </div>
+          <h3 style="margin-top:18px">本週論文</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://doi.org/10.1115/1.4044229" target="_blank" rel="noopener">論文① 輪圈設計</a>
+            <a class="lk" href="https://arxiv.org/abs/2409.17106" target="_blank" rel="noopener">論文② Text2CAD</a>
+          </div>
+        </div>
+      </div>
+      <div class="take"><b>本週檢核</b>你的生成結果能否進入下一個製造步驟？若不能，卡在格式、結構還是驗證？</div>
+    </div>
+  </section>
+
+  
+
+  </div></div>
+
+  <div class="ctrl">
+    <button id="prev" aria-label="上一張">‹</button>
+    <span class="cnt" id="cnt">1 / 1</span>
+    <button id="next" aria-label="下一張">›</button>
+    <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+  </div>
+  <div class="prog" id="prog"></div>
+
+  <div class="toc" id="toc">
+    <button class="close" id="tocClose">關閉（Esc）</button>
+    <h2 id="tocTitle">目錄</h2>
+    <div class="tgrid" id="tgrid"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ★ 每週只改這一行 ★ */
+  var WEEK_LABEL = '第 6 週 · 產品與工業設計';
+
+  var stage = document.getElementById('stage');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var cnt = document.getElementById('cnt');
+  var prog = document.getElementById('prog');
+  var toc = document.getElementById('toc');
+  var tgrid = document.getElementById('tgrid');
+  var cur = 0;
+
+  document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
+
+  slides.forEach(function (s, i) {
+    var f = document.createElement('div');
+    f.className = 'foot';
+    f.innerHTML = '<span>人工智慧與互動媒體特論|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    s.appendChild(f);
+  });
+
+  var groups = {};
+  slides.forEach(function (s, i) {
+    var eb = s.querySelector('.eyebrow');
+    var part = '開場';
+    if (eb) {
+      var m = eb.textContent.match(/PART\s*(\d)/i);
+      if (m) part = 'PART ' + m[1];
+      else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
+    }
+    var h = s.querySelector('h1, h2');
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+  });
+  Object.keys(groups).forEach(function (k) {
+    var col = document.createElement('div');
+    var h3 = document.createElement('h3');
+    h3.textContent = k;
+    col.appendChild(h3);
+    groups[k].forEach(function (it) {
+      var b = document.createElement('button');
+      b.textContent = it.t;
+      b.dataset.i = it.i;
+      b.addEventListener('click', function () { toggleToc(false); go(it.i); });
+      col.appendChild(b);
+    });
+    tgrid.appendChild(col);
+  });
+
+  function go(i) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach(function (s, j) { s.classList.toggle('active', j === cur); });
+    cnt.textContent = (cur + 1) + ' / ' + slides.length;
+    prog.style.width = ((cur + 1) / slides.length * 100) + '%';
+    if (history.replaceState) history.replaceState(null, '', '#s' + (cur + 1));
+    tgrid.querySelectorAll('button').forEach(function (b) { b.classList.toggle('here', +b.dataset.i === cur); });
+  }
+  function toggleToc(on) {
+    toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
+  }
+
+  document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
+  document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
+  document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
+  document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { toggleToc(false); return; }
+    if (toc.classList.contains('on')) return;
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'Home': go(0); break;
+      case 'End': go(slides.length - 1); break;
+      case 'm': case 'M': toggleToc(); break;
+    }
+  });
+
+  function fit() {
+    var w = window.innerWidth, h = window.innerHeight;
+    if (!w || !h) { requestAnimationFrame(fit); return; }
+    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('load', fit);
+  fit();
+
+  var m = location.hash.match(/^#s(\d+)$/);
+  go(m ? +m[1] - 1 : 0);
+})();
+</script>
+</body>
+</html>

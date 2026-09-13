@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>第 5 週|視覺傳達與平面設計</title>
+<style>
+  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  * { box-sizing: border-box; }
+  #app {
+    position: fixed; inset: 0; overflow: hidden;
+    background: var(--bg);
+    font-family: var(--body);
+    color: var(--ink);
+    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
+    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
+    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
+    --bg: #F5F4EC; --bg2: #EFEEE2;
+    --panel: #FDFCF6; --panel2: #EDECDF;
+    --ink: #232B21; --sub: #67705E;
+    --accent: #2F6B4F; --accent-rgb: 47,107,79;
+    --accent2: #BC4F2C;
+    --line: rgba(35,43,33,.16);
+    --link: #2F6B4F;
+    --r: 4px;
+  }
+  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  #app a:hover { opacity: .85; }
+  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
+  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
+  .slide.active { display: flex; }
+  .slide::before {
+    content: ""; position: absolute; inset: 24px; pointer-events: none;
+    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
+  }
+
+  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
+  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
+  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+
+  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
+  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
+  .sub { color: var(--sub); }
+  .small { font-size: 18px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
+  .cards { display: grid; gap: 18px; }
+  .c2 { grid-template-columns: repeat(2, 1fr); }
+  .c3 { grid-template-columns: repeat(3, 1fr); }
+  .c4 { grid-template-columns: repeat(4, 1fr); }
+  .c5 { grid-template-columns: repeat(5, 1fr); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
+  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
+  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
+  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+
+  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
+  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+
+  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
+
+  .cover, .part { justify-content: center; }
+  .cover .eyebrow { margin-bottom: 26px; }
+  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
+  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
+  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
+  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
+  .part h2 { font-size: 56px; }
+  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+
+  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
+  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
+  .kv dd { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
+  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
+  .lk::after { content: " ↗"; font-size: 12px; }
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
+  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
+  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
+  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
+  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
+  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  .tl { display: flex; flex-direction: column; gap: 18px; }
+  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
+  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
+  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+
+  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
+  .content > .cards,
+  .content > .cols,
+  .content > .flow,
+  .content > .kv,
+  .content > .prob { flex: 1 1 auto; }
+  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .qlist,
+  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .biblio { flex: 0 0 auto; }
+  .cols > .card { justify-content: flex-start; }
+
+  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
+  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
+  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
+  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
+  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  .toc.on { display: block; }
+  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
+  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
+  .toc button:hover { background: var(--panel2); }
+  .toc button.here { color: var(--accent2); font-weight: 700; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
+  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+<div id="app" data-deck="b">
+  <div class="stagewrap"><div class="stage" id="stage">
+
+  <!-- 1 AI 與視覺傳達設計 -->
+<section class="slide cover">
+    <div class="eyebrow">人工智慧與互動媒體特論 · 設計創新與經營研究所</div>
+    <h1>AI 與視覺傳達設計</h1>
+    <p class="cover-sub">品牌識別、字體、版面與圖像庫：當生成式 AI 走出示範影片、進入平面設計的日常工作流，設計師的位置移到了哪裡？</p>
+    <div class="cover-meta"><span>第 5 週</span><span>論文導讀與案例討論</span><span>授課：鄧樹遠</span></div>
+  </section>
+
+  <!-- 2 九十分鐘，五段路 -->
+<section class="slide">
+    <div class="eyebrow">Week 05 · 本週地圖</div>
+    <h2>九十分鐘，五段路</h2>
+    <div class="content">
+      <div class="cards c5">
+        <div class="card"><span class="who">PART 1</span><h3>品牌識別自動化</h3><p class="sub">從生 logo 到「會自己長資產」的系統</p></div>
+        <div class="card"><span class="who">PART 2</span><h3>字體與版面</h3><p class="sub">找字、配字、排版：四大平台現況</p></div>
+        <div class="card"><span class="who">PART 3</span><h3>插畫與圖像庫</h3><p class="sub">供給端重組，授權變成賣點</p></div>
+        <div class="card"><span class="who">PART 4</span><h3>深度案例</h3><p class="sub">Pentagram 的 1,500 顆 icon 與工作流</p></div>
+        <div class="card"><span class="who">PART 5</span><h3>論文導讀</h3><p class="sub">一質一量，看設計師與 AI 的關係</p></div>
+      </div>
+      <div class="take"><b>本週目標</b>看懂「應用層」的遊戲規則：工具會換、案例會舊，但工作流與角色的變化邏輯可以帶著走。</div>
+    </div>
+  </section>
+
+  <!-- 3 從「會生成」到「進工作流」 -->
+<section class="slide">
+    <div class="eyebrow">承接第 4 週 · 生成式 AI 導論</div>
+    <h2>從「會生成」到「進工作流」</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">上週的問題</span>
+          <h3>原理與工具</h3>
+          <ul>
+            <li>擴散模型怎麼從雜訊雕出影像</li>
+            <li>ControlNet、LoRA、參照系統怎麼「鎖」住風格</li>
+            <li>2026 年的模型與平台版圖</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">本週的問題</span>
+          <h3>應用與工作流</h3>
+          <ul>
+            <li>這些能力進了設計公司之後，誰在用、怎麼用</li>
+            <li>哪些環節被壓縮、哪些環節變貴</li>
+            <li>設計師的職稱與責任怎麼改寫</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 四個滲透點，一張全景 -->
+<section class="slide">
+    <div class="eyebrow">視覺傳達 × AI · 2026 全景</div>
+    <h2>四個滲透點，一張全景</h2>
+    <div class="content">
+      <div class="cards c4">
+        <div class="card"><span class="who">滲透點 1</span><h3>品牌識別</h3><p class="sub">從 logo 草案到全通路資產量產</p><p class="sub small">關鍵詞：一致性</p></div>
+        <div class="card"><span class="who">滲透點 2</span><h3>字體設計</h3><p class="sub">找字與配字已 AI 化，造字仍在實驗</p><p class="sub small">關鍵詞：授權庫</p></div>
+        <div class="card"><span class="who">滲透點 3</span><h3>版面編排</h3><p class="sub">對話式代理接管重複操作</p><p class="sub small">關鍵詞：結構理解</p></div>
+        <div class="card"><span class="who">滲透點 4</span><h3>插畫與圖像庫</h3><p class="sub">供給端重組，訓練資料成為資產</p><p class="sub small">關鍵詞：商業安全</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 品牌識別自動化 -->
+<section class="slide part">
+    <div class="part-num">01</div>
+    <div class="eyebrow">PART 1</div>
+    <h2>品牌識別自動化</h2>
+    <p class="part-sub">品牌識別要的是「每次都長一樣」，生成模型的本性是「每次都不一樣」。這一段看產業如何馴服這個矛盾，把識別變成會自己長資產的系統。</p>
+  </section>
+
+  <!-- 6 品牌自動化的三個層次 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 品牌識別自動化</div>
+    <h2>品牌自動化的三個層次</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>1. 單件生成</h3><p>logo 提案、icon、主視覺草案：一次生一件，人挑人改，AI 是快手</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>2. 規範套用</h3><p>品牌套件與模板：把色彩、字體、語氣寫成規則，每次生成自動遵守</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>3. 系統代理</h3><p>品牌模型自動產出全通路資產，人只審關鍵樣張與例外狀況</p></div>
+      </div>
+      <ul>
+        <li>2026 年三個層次同時存在；越往右，設計師越像「規則的作者」而非「檔案的作者」</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 7 Deloitte：90 秒一件品 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 案例</div>
+    <h2>Deloitte：90 秒一件品牌資產</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>背景</dt><dd>Deloitte Digital 以生成式 AI 重整全球品牌系統（2024/3 對外發表）</dd>
+        <dt>做法</dt><dd>以品牌核心元素「orb」為基底，用 Adobe Firefly 量產網頁、email、社群模板資產</dd>
+        <dt>成果</dt><dd class="num">單件資產從逾兩個月的流程壓到 90 秒內；展會攤位視覺一週完成</dd>
+        <dt>機制</dt><dd>「Orb Foundry」：AI 生成加上人工守門，顧品牌一致性與智財風險</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://www.deloittedigital.com/us/en/insights/perspective/genai-rebrand.html" target="_blank" rel="noopener">Deloitte 官方說明</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 「每次都一樣」對上「每次都不一樣 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 品牌識別自動化</div>
+    <h2>「每次都一樣」對上「每次都不一樣」</h2>
+    <div class="content">
+      <ul>
+        <li>品牌識別的天條是重複與一致；生成模型的本質是抽樣，天生愛變（上週的機率遊戲）</li>
+        <li>解法承接上週的控制技術：LoRA、參照系統把品牌資產「鎖」進生成流程</li>
+        <li>工具內建化：Canva 品牌套件與品牌智慧、Adobe Firefly 的 Custom Models（第 4 週介紹過）</li>
+        <li>新風險：品牌資產變成模型的訓練資料，治理、外流與授權邊界成為合約新條款</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 9 字體與版面的 AI 現況 -->
+<section class="slide part">
+    <div class="part-num">02</div>
+    <div class="eyebrow">PART 2</div>
+    <h2>字體與版面的 AI 現況</h2>
+    <p class="part-sub">字體與版面是平面設計的骨架。這一段盤點 2025 到 2026 年 Monotype、Adobe、Canva、Figma 四家的實際出牌，看骨架被自動化到哪裡了。</p>
+  </section>
+
+  <!-- 10 字體：Monotype 的三步棋 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 字體設計</div>
+    <h2>字體：Monotype 的三步棋</h2>
+    <div class="content">
+      <div class="tl">
+        <div class="ev"><b>2025/5</b><span>Human Types and AI 計畫：Blaze Type 創辦人 Salvaggio 用 beta AI 造字工具共創六款限定字型，結論是「協作而非取代」</span></div>
+        <div class="ev"><b>2026/2</b><span>AI Search 上線：用自然語言描述情緒、品牌個性與用途找字體，先開放 MyFonts 美英市場</span></div>
+        <div class="ev"><b>2026/6</b><span>與 Typogram 合作：7,000 多款授權字型進入 AI 網頁設計平台，內建 MCP 介面</span></div>
+      </div>
+      <div class="linkrow">
+        <a class="lk" href="https://www.monotype.com/company/press-release/monotype-unveils-human-types-and-ai-project" target="_blank" rel="noopener">Human Types and AI</a>
+        <a class="lk" href="https://www.monotype.com/company/press-release/monotype-launches-ai-search-transforming-font-search-and-discovery-conversational-ai" target="_blank" rel="noopener">AI Search 發布</a>
+        <a class="lk" href="https://www.monotype.com/company/press-release/monotype-partners-typogram-bring-over-7000-premium-font-styles-typography" target="_blank" rel="noopener">Typogram 合作</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 版面：Adobe 把編排變成對話 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 版面編排</div>
+    <h2>版面：Adobe 把編排變成對話</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>發布</dt><dd class="num">2025 年 10 月 Adobe MAX</dd>
+        <dt>Express</dt><dd>AI Assistant（beta）：對話式創作與編修，理解圖層與設計語意，可只改單一圖層</dd>
+        <dt>InDesign</dt><dd>AI Assistant：用一句話設定格線、邊界、頁碼與對齊，長文件的重複操作交給代理</dd>
+        <dt>商業模式</dt><dd>正式版將走 Firefly 生成點數制，自動化本身開始計價</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://news.adobe.com/news/2025/10/adobe-max-2025-express-ai-assistant" target="_blank" rel="noopener">Adobe MAX 2025 發布</a>
+        <a class="lk" href="https://helpx.adobe.com/indesign/using/ai-assistant-overview.html" target="_blank" rel="noopener">InDesign AI 官方文件</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 Canva：從工具變成設計模型 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 版面編排</div>
+    <h2>Canva：從工具變成設計模型</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>發布</dt><dd class="num">2026 年 4 月 Canva Create（洛杉磯）：Canva AI 2.0 以研究預覽登場</dd>
+        <dt>核心</dt><dd>Canva Design Model：號稱首個理解結構、圖層、階層與品牌邏輯的設計基礎模型</dd>
+        <dt>輸出</dt><dd>一句提示生成「可編輯的分層設計」，而不是一張壓平的圖</dd>
+        <dt>品牌智慧</dt><dd>初稿即自動套用品牌規範；並與 Anthropic 合作 HTML 匯入編輯</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://www.canva.com/newsroom/news/canva-create-2026-ai/" target="_blank" rel="noopener">Canva AI 2.0 官方發布</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13 Figma：AI 進入 UI 工 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 版面編排</div>
+    <h2>Figma：AI 進入 UI 工作流</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>Figma Make</dt><dd>用自然語言描述行為，直接生成可互動的原型與邏輯</dd>
+        <dt>First Draft</dt><dd>發想期一次給 3 到 4 個粗版面方向，取代空白畫布</dd>
+        <dt>內建編修</dt><dd>向量化、去背、物件擦除、擴圖，不必再跳出工具</dd>
+        <dt>定位轉變</dt><dd>從「畫版面的工具」變成「描述意圖的工具」；採用數據留到第 13 週的協作專題再看</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://www.figma.com/blog/config-2026-recap/" target="_blank" rel="noopener">Config 2026 官方回顧</a>
+        <a class="lk" href="https://blog.logrocket.com/ux-design/figma-ai-2026-quick-overview/" target="_blank" rel="noopener">LogRocket 現況盤點</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14 插畫與圖像庫 -->
+<section class="slide part">
+    <div class="part-num">03</div>
+    <div class="eyebrow">PART 3</div>
+    <h2>插畫與圖像庫</h2>
+    <p class="part-sub">最先被生成式圖像衝擊的市場。三年之內，圖像庫從被告席走到談判桌，把「訓練資料乾淨」變成了新的商品。</p>
+  </section>
+
+  <!-- 15 iStock：把「授權乾淨」當賣 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 圖像庫</div>
+    <h2>iStock：把「授權乾淨」當賣點</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>產品</dt><dd>Generative AI by iStock：面向中小企業與行銷人員的「商業安全」生成服務</dd>
+        <dt>訓練資料</dt><dd>只用自家已授權內容，宣示不含網路爬取資料</dd>
+        <dt>法律保障</dt><dd class="num">每張生成圖附一萬美元自動法律保障</dd>
+        <dt>上線</dt><dd class="num">2024 年初發表，2026 年仍為主力產品線</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://newsroom.gettyimages.com/en/istock/getty-images-launches-generative-ai-by-istock-for-small-businesses-designers-and-marketers" target="_blank" rel="noopener">Getty 官方新聞稿</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 16 圖像庫三年：從互告到互授 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 圖像庫</div>
+    <h2>圖像庫三年：從互告到互授</h2>
+    <div class="content">
+      <div class="tl">
+        <div class="ev"><b>2023/1</b><span>Getty 控告 Stability AI：訓練資料侵權訴訟開打（訴訟細節第 14 週深講）</span></div>
+        <div class="ev"><b>2024 年初</b><span>Generative AI by iStock 上線：用自家授權庫訓練，附法律保障</span></div>
+        <div class="ev"><b>2025</b><span>Getty 與 Shutterstock 宣布 37 億美元對等合併；至 2026 年中仍在進行</span></div>
+        <div class="ev"><b>2026/6</b><span>Getty 與 OpenAI 達成顯示合作：ChatGPT 搜尋顯示授權圖並附署名，不含模型訓練授權</span></div>
+      </div>
+      <div class="linkrow">
+        <a class="lk" href="https://newsroom.gettyimages.com/en/getty-images/getty-images-announces-display-partnership-with-openai" target="_blank" rel="noopener">Getty × OpenAI 新聞稿</a>
+        <a class="lk" href="https://theweek.com/business/getty-shutterstock-merge-ai" target="_blank" rel="noopener">The Week：合併分析</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 17 2025：反挫之年的三個案例 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 案例</div>
+    <h2>2025：反挫之年的三個案例</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><span class="who">GUESS × VOGUE · 2025/8</span><h3>AI 模特兒上大刊</h3><p>AI 生成模特兒登上時尚雜誌廣告，揭露藏在小字，輿論質疑審美標準與模特兒、攝影師的工作權。</p></div>
+        <div class="card"><span class="who">VALENTINO · 2025</span><h3>奢侈品牌翻車</h3><p>手袋系列 AI 形象片被批「廉價、不適」，超現實風格與奢侈品牌的工藝敘事互斥。</p></div>
+        <div class="card"><span class="who">可口可樂 · 2025/11</span><h3>連兩年的爭議</h3><p>AI 聖誕廣告第二年續推（第 4 週已詳談），罵聲中宣示生成式 AI 為長期策略。</p></div>
+      </div>
+      <div class="linkrow">
+        <a class="lk" href="https://news.designrush.com/7-worst-ai-advertising-backfires-2025" target="_blank" rel="noopener">DesignRush 反挫盤點</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 18 深度案例：Pentagram -->
+<section class="slide part">
+    <div class="part-num">04</div>
+    <div class="eyebrow">PART 4</div>
+    <h2>深度案例：Pentagram</h2>
+    <p class="part-sub">全球最大獨立設計顧問公司，公開用 Midjourney 為美國聯邦網站做出 1,500 顆 icon，然後正面迎接整個設計圈的怒火。這個案例值得慢讀。</p>
+  </section>
+
+  <!-- 19 1,500 顆 icon 的聯邦 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 深度案例</div>
+    <h2>1,500 顆 icon 的聯邦網站</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>委託</dt><dd>美國聯邦網站 performance.gov 改版，2024 年 11 月上線</dd>
+        <dt>規模</dt><dd class="num">超過 1,500 顆 icon，開放各機關長期自行取用</dd>
+        <dt>做法</dt><dd>以手繪顏料與剪紙為輸入，讓 Midjourney 學會這套美學，再批次生成</dd>
+        <dt>主事者</dt><dd>Pentagram 合夥人 Paula Scher：「這不是插畫委託案，系統要能自我維運」</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://www.creativebloq.com/design/pentagrams-controversial-website-design-marks-a-new-era-in-the-ai-art-debate" target="_blank" rel="noopener">Creative Bloq 報導</a>
+        <a class="lk" href="https://www.fastcompany.com/91240809/pentagram-partner-paula-scher-unapologetically-defends-using-generative-ai" target="_blank" rel="noopener">Fast Company 專訪</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 20 深度討論：揭露了，然後呢 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 深度案例討論</div>
+    <h2>深度討論：揭露了，然後呢</h2>
+    <div class="content">
+      <div class="tl">
+        <div class="ev"><b>2024/11</b><span>網站上線，AI 的參與方式被公開說明，未隱瞞</span></div>
+        <div class="ev"><b>2024/11</b><span>設計社群強烈反彈：從「品質不佳」升級到「搶插畫家工作」與「竊取美學」的指控</span></div>
+        <div class="ev"><b>2024/12</b><span>Scher 於媒體專訪堅持立場：手作輸入、系統自維運、非插畫委託案</span></div>
+        <div class="ev"><b>2025–26</b><span>案例進入教科書層級：爭點從「能不能用」轉向「如何揭露、如何計價」</span></div>
+      </div>
+      <div class="qlist">
+        <p>1,500 顆 icon 若全數外包插畫家，公共預算與時程是多少？站在納稅人立場你怎麼選？</p>
+        <p>主動揭露的 Pentagram 與把揭露藏進小字的 Guess 都挨罵：罵點差在哪？揭露是義務、策略，還是風險？</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 21 沙漏型工作流 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 工作流變化</div>
+    <h2>沙漏型工作流</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>1. 人工定調</h3><p>手作輸入、美學基準、品牌規範：決定「什麼是對的」</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>2. 模型量產</h3><p>訓練或參照之後批次生成變體，速度與數量交給機器</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>3. 人工守門</h3><p>篩選、精修、一致性與授權檢核：簽名的人負最終責任</p></div>
+      </div>
+      <ul>
+        <li>Deloitte 的 90 秒與 Pentagram 的 1,500 顆 icon，是同一個形狀：兩端是人，中間是機器</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 22 設計師的三個新職稱 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 設計師角色</div>
+    <h2>設計師的三個新職稱</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><h3>策展人</h3><p>從畫出一張好圖，變成從一百張裡挑出對的那張，而且說得出為什麼。</p></div>
+        <div class="card"><h3>系統設計者</h3><p>交付包含規則、模板與模型，之後才能持續產出一致的資產。</p></div>
+        <div class="card"><h3>品質守門人</h3><p>一致性、授權、揭露：量產時代，掛名者承擔的責任更重而非更輕。</p></div>
+      </div>
+      <ul>
+        <li>三個角色的共同點：判斷取代操作，語言（brief、提示詞、規範文件）成為主要工具</li>
+      </ul>
+      <div class="take"><b>假設情境</b>如果面試時被問「AI 做了哪些、你決定了哪些」，作品集要能用草稿與取捨紀錄回答。</div>
+    </div>
+  </section>
+
+  <!-- 23 論文導讀 -->
+<section class="slide part">
+    <div class="part-num">05</div>
+    <div class="eyebrow">PART 5</div>
+    <h2>論文導讀</h2>
+    <p class="part-sub">一篇質性、一篇量化：前者看設計師與圖像生成器怎麼一起發想，後者用 394 份問卷量測設計師為什麼用、為什麼怕。</p>
+  </section>
+
+  <!-- 24 與圖像生成器共同發想 -->
+<section class="slide">
+    <div class="eyebrow">PART 5 · 論文導讀 ①</div>
+    <h2>與圖像生成器共同發想</h2>
+    <div class="content">
+      <div class="biblio">
+        <span class="ti">Designing with AI: An Exploration of Co-Ideation with Image Generators</span>
+        Chiou, L.-Y. 等（2023）。<i>ACM DIS '23</i>, 1941–1954。
+        <a href="https://doi.org/10.1145/3563657.3596001" target="_blank" rel="noopener">doi.org/10.1145/3563657.3596001</a>
+      </div>
+      <dl class="kv">
+        <dt>研究問題</dt><dd>設計師與圖像生成器「共同發想」時，AI 實際扮演什麼角色、在哪類設計影像上最有用？</dd>
+        <dt>方法</dt><dd>研究通過設計（RTD）：6 位設計師蒐集案例、建立作品集、與生成器共創，佐以半結構訪談</dd>
+        <dt>出處</dt><dd>ACM DIS 2023 pictorial；四位作者皆來自台灣科技大學設計系</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 25 發現：AI 擅長發散，人負責收斂 -->
+<section class="slide">
+    <div class="eyebrow">PART 5 · 論文導讀 ①</div>
+    <h2>發現：AI 擅長發散，人負責收斂</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><h3>概念 Concept</h3><p class="sub">快速鋪開方案空間；抽象提示詞反而助長發散</p></div>
+        <div class="card"><h3>情境 Scenario</h3><p class="sub">最能傳達物件、使用者與環境之間的互動關係</p></div>
+        <div class="card"><h3>造形 Form</h3><p class="sub">給造形靈感，但細節與可行性仍需人工收斂</p></div>
+      </div>
+      <ul>
+        <li>人與 AI 的組合帶來新的自我表達與溝通形式；AI 的「歪讀」有時是禮物而非錯誤</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 26 快讀：394 位設計師的焦慮 -->
+<section class="slide">
+    <div class="eyebrow">PART 5 · 論文導讀 ②</div>
+    <h2>快讀：394 位設計師的焦慮</h2>
+    <div class="content">
+      <div class="biblio">
+        <span class="ti">Understanding graphic designers' usage behavior of generative artificial intelligence tools</span>
+        Qiu, T., Yang, D., Zeng, H., &amp; Chen, X.（2026）。<i>Kybernetes</i>, 55(2), 871–894。（2024 年 11 月線上先行出版）
+        <a href="https://doi.org/10.1108/K-05-2024-1159" target="_blank" rel="noopener">doi.org/10.1108/K-05-2024-1159</a>
+      </div>
+      <ul>
+        <li>方法：整合 UTAUT2 與創新擴散理論（IDT），394 位平面設計師問卷，PLS-SEM 分析</li>
+        <li>發現：兩大理論的多數因素正向影響採用；「AI 焦慮」顯著影響實際使用行為</li>
+        <li>啟示：導入 AI 不只是能力與成本問題，更是情緒與職業認同問題，呼應今天的角色轉變</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 27 把今天的內容變成你的判斷 -->
+<section class="slide">
+    <div class="eyebrow">Week 05 · 課堂討論與課後任務</div>
+    <h2>把今天的內容變成你的判斷</h2>
+    <div class="content">
+      <div class="qlist">
+        <p>Pentagram 與 Deloitte 各自「省下了誰的工時」？省下的價值流向誰？你的母領域下一個被壓縮的環節是什麼？</p>
+        <p>反挫案例中，觀眾的怒點是 AI 本身，還是揭露方式？品牌該不該把「AI 使用揭露」寫進識別規範？</p>
+        <p>如果論文②的「AI 焦慮」出現在你身上，它比較接近工具焦慮還是身分焦慮？兩者的對策有何不同？</p>
+      </div>
+      <div class="card">
+        <h3>課後任務（下週開場分享，約 5 分鐘）</h3>
+        <p>挑一個你熟悉的品牌，用任一 AI 工具產出 3 款延伸資產（社群模板或活動視覺），記錄哪個環節 AI 可靠、哪個必須人工接手；對照「沙漏工作流」，寫 300 字說明你在兩端各花了多少時間。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 28 所有連結，一頁帶走 -->
+<section class="slide">
+    <div class="eyebrow">Week 05 · 本週資源彙整</div>
+    <h2>所有連結，一頁帶走</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="grp">
+          <h3>品牌與版面工具</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://www.deloittedigital.com/us/en/insights/perspective/genai-rebrand.html" target="_blank" rel="noopener">Deloitte 品牌案</a>
+            <a class="lk" href="https://www.canva.com/newsroom/news/canva-create-2026-ai/" target="_blank" rel="noopener">Canva AI 2.0</a>
+            <a class="lk" href="https://news.adobe.com/news/2025/10/adobe-max-2025-express-ai-assistant" target="_blank" rel="noopener">Adobe MAX 2025</a>
+            <a class="lk" href="https://helpx.adobe.com/indesign/using/ai-assistant-overview.html" target="_blank" rel="noopener">InDesign AI 文件</a>
+            <a class="lk" href="https://www.figma.com/blog/config-2026-recap/" target="_blank" rel="noopener">Figma Config 2026</a>
+          </div>
+          <h3 style="margin-top:18px">字體與圖像庫</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://www.monotype.com/company/press-release/monotype-launches-ai-search-transforming-font-search-and-discovery-conversational-ai" target="_blank" rel="noopener">Monotype AI Search</a>
+            <a class="lk" href="https://www.monotype.com/company/press-release/monotype-unveils-human-types-and-ai-project" target="_blank" rel="noopener">Human Types and AI</a>
+            <a class="lk" href="https://newsroom.gettyimages.com/en/istock/getty-images-launches-generative-ai-by-istock-for-small-businesses-designers-and-marketers" target="_blank" rel="noopener">iStock 生成式 AI</a>
+            <a class="lk" href="https://newsroom.gettyimages.com/en/getty-images/getty-images-announces-display-partnership-with-openai" target="_blank" rel="noopener">Getty × OpenAI</a>
+          </div>
+        </div>
+        <div class="grp">
+          <h3>案例</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://www.creativebloq.com/design/pentagrams-controversial-website-design-marks-a-new-era-in-the-ai-art-debate" target="_blank" rel="noopener">Pentagram 爭議</a>
+            <a class="lk" href="https://www.fastcompany.com/91240809/pentagram-partner-paula-scher-unapologetically-defends-using-generative-ai" target="_blank" rel="noopener">Paula Scher 專訪</a>
+            <a class="lk" href="https://news.designrush.com/7-worst-ai-advertising-backfires-2025" target="_blank" rel="noopener">2025 反挫盤點</a>
+            <a class="lk" href="https://theweek.com/business/getty-shutterstock-merge-ai" target="_blank" rel="noopener">Getty 合併分析</a>
+          </div>
+          <h3 style="margin-top:18px">本週論文</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://doi.org/10.1145/3563657.3596001" target="_blank" rel="noopener">論文① DIS 2023</a>
+            <a class="lk" href="https://doi.org/10.1108/K-05-2024-1159" target="_blank" rel="noopener">論文② Kybernetes</a>
+          </div>
+        </div>
+      </div>
+      <div class="take"><b>本週檢核</b>你的案例分析能否指出 AI 插入工作流的位置、保留的人為判斷，以及責任歸屬？</div>
+    </div>
+  </section>
+
+  
+
+  </div></div>
+
+  <div class="ctrl">
+    <button id="prev" aria-label="上一張">‹</button>
+    <span class="cnt" id="cnt">1 / 1</span>
+    <button id="next" aria-label="下一張">›</button>
+    <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+  </div>
+  <div class="prog" id="prog"></div>
+
+  <div class="toc" id="toc">
+    <button class="close" id="tocClose">關閉（Esc）</button>
+    <h2 id="tocTitle">目錄</h2>
+    <div class="tgrid" id="tgrid"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ★ 每週只改這一行 ★ */
+  var WEEK_LABEL = '第 5 週 · 視覺傳達與平面設計';
+
+  var stage = document.getElementById('stage');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var cnt = document.getElementById('cnt');
+  var prog = document.getElementById('prog');
+  var toc = document.getElementById('toc');
+  var tgrid = document.getElementById('tgrid');
+  var cur = 0;
+
+  document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
+
+  slides.forEach(function (s, i) {
+    var f = document.createElement('div');
+    f.className = 'foot';
+    f.innerHTML = '<span>人工智慧與互動媒體特論|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    s.appendChild(f);
+  });
+
+  var groups = {};
+  slides.forEach(function (s, i) {
+    var eb = s.querySelector('.eyebrow');
+    var part = '開場';
+    if (eb) {
+      var m = eb.textContent.match(/PART\s*(\d)/i);
+      if (m) part = 'PART ' + m[1];
+      else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
+    }
+    var h = s.querySelector('h1, h2');
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+  });
+  Object.keys(groups).forEach(function (k) {
+    var col = document.createElement('div');
+    var h3 = document.createElement('h3');
+    h3.textContent = k;
+    col.appendChild(h3);
+    groups[k].forEach(function (it) {
+      var b = document.createElement('button');
+      b.textContent = it.t;
+      b.dataset.i = it.i;
+      b.addEventListener('click', function () { toggleToc(false); go(it.i); });
+      col.appendChild(b);
+    });
+    tgrid.appendChild(col);
+  });
+
+  function go(i) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach(function (s, j) { s.classList.toggle('active', j === cur); });
+    cnt.textContent = (cur + 1) + ' / ' + slides.length;
+    prog.style.width = ((cur + 1) / slides.length * 100) + '%';
+    if (history.replaceState) history.replaceState(null, '', '#s' + (cur + 1));
+    tgrid.querySelectorAll('button').forEach(function (b) { b.classList.toggle('here', +b.dataset.i === cur); });
+  }
+  function toggleToc(on) {
+    toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
+  }
+
+  document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
+  document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
+  document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
+  document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { toggleToc(false); return; }
+    if (toc.classList.contains('on')) return;
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'Home': go(0); break;
+      case 'End': go(slides.length - 1); break;
+      case 'm': case 'M': toggleToc(); break;
+    }
+  });
+
+  function fit() {
+    var w = window.innerWidth, h = window.innerHeight;
+    if (!w || !h) { requestAnimationFrame(fit); return; }
+    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('load', fit);
+  fit();
+
+  var m = location.hash.match(/^#s(\d+)$/);
+  go(m ? +m[1] - 1 : 0);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>第 3 週|遊戲產業與商業模式</title>
+<style>
+  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  * { box-sizing: border-box; }
+  #app {
+    position: fixed; inset: 0; overflow: hidden;
+    background: var(--bg);
+    font-family: var(--body);
+    color: var(--ink);
+    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
+    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
+    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
+    --bg: #F5F4EC; --bg2: #EFEEE2;
+    --panel: #FDFCF6; --panel2: #EDECDF;
+    --ink: #232B21; --sub: #67705E;
+    --accent: #2F6B4F; --accent-rgb: 47,107,79;
+    --accent2: #BC4F2C;
+    --line: rgba(35,43,33,.16);
+    --link: #2F6B4F;
+    --r: 4px;
+  }
+  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  #app a:hover { opacity: .85; }
+  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
+  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
+  .slide.active { display: flex; }
+  .slide::before {
+    content: ""; position: absolute; inset: 24px; pointer-events: none;
+    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
+  }
+
+  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
+  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
+  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+
+  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
+  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
+  .sub { color: var(--sub); }
+  .small { font-size: 18px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
+  .cards { display: grid; gap: 18px; }
+  .c2 { grid-template-columns: repeat(2, 1fr); }
+  .c3 { grid-template-columns: repeat(3, 1fr); }
+  .c4 { grid-template-columns: repeat(4, 1fr); }
+  .c5 { grid-template-columns: repeat(5, 1fr); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
+  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
+  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
+  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+
+  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
+  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+
+  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
+
+  .cover, .part { justify-content: center; }
+  .cover .eyebrow { margin-bottom: 26px; }
+  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
+  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
+  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
+  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
+  .part h2 { font-size: 56px; }
+  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+
+  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
+  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
+  .kv dd { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
+  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
+  .lk::after { content: " ↗"; font-size: 12px; }
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
+  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
+  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
+  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
+  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
+  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  .tl { display: flex; flex-direction: column; gap: 18px; }
+  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
+  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
+  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+
+  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
+  .content > .cards,
+  .content > .cols,
+  .content > .flow,
+  .content > .kv,
+  .content > .prob { flex: 1 1 auto; }
+  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .qlist,
+  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .biblio { flex: 0 0 auto; }
+  .cols > .card { justify-content: flex-start; }
+
+  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
+  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
+  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
+  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
+  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  .toc.on { display: block; }
+  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
+  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
+  .toc button:hover { background: var(--panel2); }
+  .toc button.here { color: var(--accent2); font-weight: 700; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
+  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+ .eyebrow{font-size:18px}.slide h2{font-size:48px}.slide ul{font-size:26px}.slide ul ul{font-size:22px}.small{font-size:18px}.card h3{font-size:26px}.card p,.card li,.card ul{font-size:22px}.card .who{font-size:16px}.take{font-size:22px}.take b{font-size:17px}.foot{font-size:16px}.cover-sub{font-size:30px}.part-sub{font-size:28px}.kv{font-size:24px}.kv dt{font-size:21px}.chip{font-size:23px}.lk{font-size:18px}.flow .step h3{font-size:24px}.flow .step p{font-size:21px}.prob,.biblio{font-size:23px}.biblio .ti{font-size:27px}.qlist p{font-size:26px}.tl .ev{font-size:23px}.grp h3{font-size:20px}
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+<div id="app" data-deck="b">
+  <div class="stagewrap"><div class="stage" id="stage">
+
+  <!-- 1 封面 -->
+  <section class="slide cover">
+    <div class="eyebrow">遊戲企畫 · 動畫與遊戲設計系</div>
+    <h1>錢從哪裡來</h1>
+    <p class="cover-sub">商業模式不是行銷的事，它會直接決定你的遊戲怎麼設計。這堂課講產業裡的錢怎麼流，以及市場數字該怎麼讀。</p>
+    <div class="cover-meta"><span>第 3 週</span><span>授課：鄧樹遠</span></div>
+  </section>
+
+  <!-- 2 本週地圖 -->
+  <section class="slide">
+    <div class="eyebrow">Week 03 · 本週地圖</div>
+    <h2>九十分鐘，五段路</h2>
+    <div class="content">
+      <div class="cards c5">
+        <div class="card"><span class="who">PART 1</span><h3>產業有哪些角色</h3><p class="sub">開發商、發行商、平台</p></div>
+        <div class="card"><span class="who">PART 2</span><h3>四種商業模式</h3><p class="sub">模式會決定設計</p></div>
+        <div class="card"><span class="who">PART 3</span><h3>數字怎麼讀</h3><p class="sub">為什麼各家差一倍</p></div>
+        <div class="card"><span class="who">PART 4</span><h3>對企畫有什麼用</h3><p class="sub">選平台就是選對手</p></div>
+        <div class="card"><span class="who">PART 5</span><h3>本週交付</h3><p class="sub">你那款的商業模式拆解</p></div>
+      </div>
+      <div class="take"><b>本週目標</b>離開教室時，你要能講出你選的那款遊戲靠什麼賺錢，以及那件事怎麼影響它的設計。</div>
+    </div>
+  </section>
+
+  <!-- 3 承接上週 -->
+  <section class="slide">
+    <div class="eyebrow">承接第 2 週 · 遊戲企畫概論與職能</div>
+    <h2>上週講到查證</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">上週的重點</span>
+          <h3>查證是最被低估的能力</h3>
+          <ul>
+            <li>每個數字都要有出處</li>
+            <li>「市場很大」不是論證</li>
+            <li>查不到就誠實寫查不到</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">今天實地練</span>
+          <h3>市場數字最容易出事</h3>
+          <ul>
+            <li>同一個市場，各家統計差快一倍</li>
+            <li>差異來自定義不同，不是誰造假</li>
+            <li>不懂差在哪就會引錯</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>引用原則</b>市場數字要連同來源、日期與統計範圍寫下來；缺一項就不要當成結論。</div>
+    </div>
+  </section>
+
+  <!-- 4 PART 1 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">01</div>
+    <div class="eyebrow">PART 1</div>
+    <h2>產業有哪些角色</h2>
+    <p class="part-sub">一款遊戲從做出來到玩家手上，中間至少經過三種角色。錢在這中間被分掉。</p>
+  </section>
+
+  <!-- 5 三種角色 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 角色</div>
+    <h2>三種角色，三種收入</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">開發商</span>
+          <h3>做出遊戲的人</h3>
+          <p>負責設計與製作。可能是三個人的團隊，也可能是三百人的公司。</p>
+        </div>
+        <div class="card">
+          <span class="who">發行商</span>
+          <h3>把遊戲賣出去的人</h3>
+          <p>出資、行銷、談通路、處理在地化與客服。抽成換取這些服務。</p>
+        </div>
+        <div class="card">
+          <span class="who">平台</span>
+          <h3>玩家買東西的地方</h3>
+          <p>Steam、各家主機商店、手機商店。提供流量與金流，收平台費。</p>
+        </div>
+      </div>
+      <div class="take"><b>小團隊的現實</b>你們畢業後最可能是「自己開發、自己發行、直接上平台」，只被平台抽一手。</div>
+    </div>
+  </section>
+
+  <!-- 6 錢怎麼分 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 分潤</div>
+    <h2>玩家付的錢怎麼被分掉</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>平台先抽</h3><p>各大平台的分潤比例不同，一般落在兩成到三成。這是進門票。</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>發行商再抽</h3><p>有簽發行商才有這一段。比例依合約差很多，也影響版權歸屬。</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>剩下才是開發商</h3><p>還要扣掉稅、退款、金流手續費。實拿常常比想像中少很多。</p></div>
+      </div>
+      <div class="take"><b>寫企畫時要注意</b>算收入不能拿定價乘以銷量。那個數字是玩家付的錢，不是你拿到的錢。</div>
+    </div>
+  </section>
+
+  <!-- 7 為什麼要懂 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 為什麼企畫要懂</div>
+    <h2>這跟設計有什麼關係</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">不懂的後果</span>
+          <h3>設計跟商業對不上</h3>
+          <ul>
+            <li>做免費遊戲卻沒設計付費點</li>
+            <li>做買斷制卻把內容切成小塊賣</li>
+            <li>企畫書算收入時漏掉平台抽成</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">懂了之後</span>
+          <h3>設計有依據</h3>
+          <ul>
+            <li>知道哪些設計會傷害收入</li>
+            <li>知道自己的規模適合哪條路</li>
+            <li>企畫書的數字站得住</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>核心觀念</b>商業模式選定的那一刻，遊戲設計就被限制住一半了。這是設計問題不是行銷問題。</div>
+    </div>
+  </section>
+
+  <!-- 8 PART 2 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">02</div>
+    <div class="eyebrow">PART 2</div>
+    <h2>四種商業模式</h2>
+    <p class="part-sub">每一種都對應完全不同的設計思路。選錯了，遊戲會很分裂。</p>
+  </section>
+
+  <!-- 9 四種模式 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 模式</div>
+    <h2>四種收費方式</h2>
+    <div class="content">
+      <div class="cards c4">
+        <div class="card"><span class="who">買斷</span><h3>付一次玩到飽</h3><p class="sub">PC 與主機的主流</p></div>
+        <div class="card"><span class="who">免費加內購</span><h3>先玩再花錢</h3><p class="sub">手遊營收的主場</p></div>
+        <div class="card"><span class="who">訂閱</span><h3>按月吃到飽</h3><p class="sub">平台方主導的模式</p></div>
+        <div class="card"><span class="who">廣告</span><h3>看廣告換內容</h3><p class="sub">休閒手遊常用</p></div>
+      </div>
+      <div class="take"><b>混用是常態</b>免費加內購再加廣告是手遊標配。但學生專題建議只選一種，講清楚就好。</div>
+    </div>
+  </section>
+
+  <!-- 10 模式決定設計 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 影響</div>
+    <h2>同一個遊戲，兩種模式兩種做法</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">買斷制</span>
+          <h3>設計目標是「值回票價」</h3>
+          <ul>
+            <li>前兩小時要抓住人，避免退款</li>
+            <li>不用設計挫折點逼玩家付錢</li>
+            <li>內容量與體驗完整度是重點</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">免費加內購</span>
+          <h3>設計目標是「留下來」</h3>
+          <ul>
+            <li>前五分鐘要讓人不想關掉</li>
+            <li>要設計持續回訪的理由</li>
+            <li>付費點要自然，不能像收過路費</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>判準</b>買斷制賣的是「一段完整體驗」，免費制賣的是「持續回來的理由」。完全不同。</div>
+    </div>
+  </section>
+
+  <!-- 11 選錯模式 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 常見錯誤</div>
+    <h2>選錯模式會怎樣</h2>
+    <div class="content">
+      <ul>
+        <li>單機劇情遊戲做成免費加內購：玩家玩完就走，沒有回訪就沒有收入。</li>
+        <li>多人競技做成買斷制：人數不夠配不到對手，遊戲就死了。</li>
+        <li>免費遊戲卻沒有付費點：下載量很好看，收入是零。</li>
+        <li>買斷制卻把主線切成 DLC 賣：評論區會炸開。</li>
+      </ul>
+      <div class="take"><b>決策時點</b>商業模式要在企畫初期定下來；做到一半才改，系統與內容都得回頭調整。</div>
+    </div>
+  </section>
+
+  <!-- 12 PART 3 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">03</div>
+    <div class="eyebrow">PART 3</div>
+    <h2>數字怎麼讀</h2>
+    <p class="part-sub">這一段是本學期最重要的查證訓練。同一個市場，不同機構的數字可以差快一倍。</p>
+  </section>
+
+  <!-- 13 數字會打架 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 實例</div>
+    <h2>同一年，兩個差很多的數字</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">來源 A</span>
+          <h3>約 4,077 億美元</h3>
+          <ul>
+            <li>某市場研究機構的 2026 年估算</li>
+            <li>統計範圍含硬體、周邊、電競</li>
+            <li>數字看起來很驚人</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">來源 B</span>
+          <h3>約 2,139 億美元</h3>
+          <ul>
+            <li>另一家機構 2026 年 8 月的預測</li>
+            <li>只算手遊、主機、PC 的遊戲收入</li>
+            <li>差了將近一倍</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>兩個都不是造假</b>差別在「什麼算遊戲市場」。引用時沒說清楚範圍，就等於在誤導讀者。</div>
+    </div>
+  </section>
+
+  <!-- 14 三個要問的問題 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 查證方法</div>
+    <h2>看到數字先問三題</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">第一題</span>
+          <h3>誰統計的</h3>
+          <p>市場研究公司、平台官方、還是媒體轉述。轉述的要往回找原始來源。</p>
+        </div>
+        <div class="card">
+          <span class="who">第二題</span>
+          <h3>範圍是什麼</h3>
+          <p>含不含硬體、周邊、電競、廣告收入。範圍不同，數字就不能比。</p>
+        </div>
+        <div class="card">
+          <span class="who">第三題</span>
+          <h3>什麼時候的</h3>
+          <p>是實際數字還是預測。預測值要標明是誰在什麼時候預測的。</p>
+        </div>
+      </div>
+      <div class="take"><b>寫進企畫書的格式</b>「依某某機構某年某月報告，某範圍的市場規模約為某數字」。缺一項都不算完整。</div>
+    </div>
+  </section>
+
+  <!-- 15 幾個數字 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 現況參考</div>
+    <h2>幾個 2026 年的參考數字</h2>
+    <div class="content">
+      <div class="tl">
+        <div class="ev"><b>下載端</b><span>行動端佔全球遊戲下載量約 95.6%，PC 與主機合計約 4.4%</span></div>
+        <div class="ev"><b>營收端</b><span>手遊內購與 PC 主機買斷合計突破 1,100 億美元，其中手遊內購約 809 億</span></div>
+        <div class="ev"><b>地區</b><span>亞太地區在 2025 年約佔全球市場的 46%</span></div>
+        <div class="ev"><b>注意</b><span>以上為第三方機構統計，統計期間與範圍各不相同，引用時要一併註明</span></div>
+      </div>
+      <div class="take"><b>最值得記住的一組</b>下載量行動端壓倒性領先，但營收沒有那麼懸殊。付費效率完全不同。</div>
+    </div>
+  </section>
+
+  <!-- 16 行動與 PC 主機 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 平台差異</div>
+    <h2>下載多不等於賺得多</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">行動端</span>
+          <h3>量大，單價低</h3>
+          <ul>
+            <li>下載門檻低，多數人先免費玩</li>
+            <li>靠少數重度付費者撐起收入</li>
+            <li>競爭極度激烈，曝光最貴</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">PC 與主機</span>
+          <h3>量小，單價高</h3>
+          <ul>
+            <li>玩家習慣付費買斷</li>
+            <li>付費轉換率高很多</li>
+            <li>對品質與完成度的要求也高</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>對學生專題的建議</b>PC 平台比較適合，因為它容許「內容不多但做得完整」的作品。</div>
+    </div>
+  </section>
+
+  <!-- 17 PART 4 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">04</div>
+    <div class="eyebrow">PART 4</div>
+    <h2>對企畫有什麼用</h2>
+    <p class="part-sub">產業知識不是拿來寫在企畫書開頭湊頁數的，它應該直接影響你的設計決定。</p>
+  </section>
+
+  <!-- 18 選平台就是選對手 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 平台選擇</div>
+    <h2>選平台就是選對手</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">選手機</span>
+          <h3>你的對手是所有免費遊戲</h3>
+          <ul>
+            <li>玩家隨時可以換一個玩</li>
+            <li>要在幾分鐘內證明自己值得留下</li>
+            <li>行銷預算是主要門檻</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">選 PC</span>
+          <h3>你的對手是同標籤的作品</h3>
+          <ul>
+            <li>玩家是主動搜尋進來的</li>
+            <li>標籤與商店頁決定曝光</li>
+            <li>小眾但精準的題材有機會</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>第 4 週會接著講</b>怎麼用標籤找出你真正的競爭對手，那比「市場很大」有用一百倍。</div>
+    </div>
+  </section>
+
+  <!-- 19 學生誤判 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 常見誤判</div>
+    <h2>三個最常見的誤判</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">誤判一</span>
+          <h3>市場大就有機會</h3>
+          <p>市場越大競爭越激烈。四千億美元裡有你的位置嗎，那才是問題。</p>
+        </div>
+        <div class="card">
+          <span class="who">誤判二</span>
+          <h3>免費比較容易被玩</h3>
+          <p>免費遊戲的競爭對手是全世界所有免費遊戲，曝光成本反而最高。</p>
+        </div>
+        <div class="card">
+          <span class="who">誤判三</span>
+          <h3>先做再想怎麼賺</h3>
+          <p>商業模式會反過來決定設計。想清楚再做，比做完再想省很多。</p>
+        </div>
+      </div>
+      <div class="take"><b>寫進企畫書</b>市場數字後面要接回你的題目：它支持哪個平台、玩家或定價判斷？</div>
+    </div>
+  </section>
+
+  <!-- 20 PART 5 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">05</div>
+    <div class="eyebrow">PART 5</div>
+    <h2>本週交付</h2>
+    <p class="part-sub">拆解你選的那款遊戲的商業模式，並指出那個模式怎麼影響了它的設計。</p>
+  </section>
+
+  <!-- 21 交付規格 -->
+  <section class="slide">
+    <div class="eyebrow">PART 5 · 交付規格</div>
+    <h2>這週要交什麼</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>交付物</dt><dd>你那款遊戲的商業模式拆解</dd>
+        <dt>格式</dt><dd>一頁 A4，PDF，檔名為「學號_W3_商業模式」</dd>
+        <dt>內容</dt><dd>用哪種模式、定價或付費點、平台與抽成、模式怎麼影響它的設計</dd>
+        <dt>截止</dt><dd>下週上課前</dd>
+      </dl>
+      <div class="take"><b>最後一項是重點</b>前三項查得到，第四項要你自己判斷。那一段才是這份作業的分數所在。</div>
+    </div>
+  </section>
+
+  <!-- 22 檢核與退件 -->
+  <section class="slide">
+    <div class="eyebrow">PART 5 · 檢核標準</div>
+    <h2>什麼樣算過關</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">及格</span>
+          <h3>模式與付費點寫得出來</h3>
+          <p>講得出它怎麼收錢、在哪裡收、收多少。</p>
+        </div>
+        <div class="card">
+          <span class="who">好</span>
+          <h3>指得出設計上的痕跡</h3>
+          <p>例如「因為是買斷制，所以前兩小時特別緊湊」這種具體觀察。</p>
+        </div>
+        <div class="card">
+          <span class="who">退件</span>
+          <h3>常見的三種</h3>
+          <p>只寫「買斷制」三個字；引用數字沒寫來源；第四項寫「沒什麼影響」。</p>
+        </div>
+      </div>
+      <div class="take"><b>驗收方式</b>我會問「如果它改成另一種模式，哪個設計要跟著改」。答得出來就是真的懂了。</div>
+    </div>
+  </section>
+
+  <!-- 23 課堂討論與課後任務 -->
+  <section class="slide">
+    <div class="eyebrow">Week 03 · 收尾</div>
+    <h2>回去做這三件事</h2>
+    <div class="content">
+      <div class="qlist">
+        <p>你那款遊戲如果從買斷改成免費加內購，哪三個設計一定要跟著改？</p>
+        <p>你查到的市場數字，講得出統計範圍嗎？含不含硬體？</p>
+        <p>如果你要做一款遊戲，你會選哪個平台？你的對手是誰？</p>
+      </div>
+      <div class="card">
+        <span class="who">課後任務</span>
+        <p>找一份公開的市場報告，看它第一頁怎麼定義統計範圍。那段文字通常沒人看，但最關鍵。</p>
+      </div>
+      <div class="take"><b>下週預告</b>遊戲類型與競品市場分析：怎麼用標籤找出你真正的對手，並看懂它們的表現。</div>
+    </div>
+  </section>
+
+  <!-- 24 資源彙整 -->
+  <section class="slide">
+    <div class="eyebrow">Week 03 · 資源彙整</div>
+    <h2>本週資源</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="grp">
+          <h3>市場報告</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://www.gii.tw/report/imarc1660976-gaming-market-report-by-device-type-platform.html" target="_blank" rel="noopener">遊戲市場報告</a>
+            <a class="lk" href="https://www.fortunebusinessinsights.com/gaming-market-105730" target="_blank" rel="noopener">市場規模分析</a>
+            <a class="lk" href="https://straitsresearch.com/report/video-game-market" target="_blank" rel="noopener">產業研究報告</a>
+          </div>
+        </div>
+        <div class="grp">
+          <h3>平台資料</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://steamdb.info/" target="_blank" rel="noopener">SteamDB</a>
+            <a class="lk" href="https://steamspy.com/" target="_blank" rel="noopener">SteamSpy</a>
+            <a class="lk" href="https://store.steampowered.com/" target="_blank" rel="noopener">Steam</a>
+          </div>
+        </div>
+      </div>
+      <div class="take"><b>資料範圍</b>市場報告常只公開摘要；引用摘要時，清楚寫出自己實際看得到的範圍。</div>
+    </div>
+  </section>
+
+  
+
+  </div></div>
+
+  <div class="ctrl">
+    <button id="prev" aria-label="上一張">‹</button>
+    <span class="cnt" id="cnt">1 / 1</span>
+    <button id="next" aria-label="下一張">›</button>
+    <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+  </div>
+  <div class="prog" id="prog"></div>
+
+  <div class="toc" id="toc">
+    <button class="close" id="tocClose">關閉（Esc）</button>
+    <h2 id="tocTitle">目錄</h2>
+    <div class="tgrid" id="tgrid"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ★ 每週只改這一行 ★ */
+  var WEEK_LABEL = '第 3 週 · 遊戲產業與商業模式';
+
+  var stage = document.getElementById('stage');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var cnt = document.getElementById('cnt');
+  var prog = document.getElementById('prog');
+  var toc = document.getElementById('toc');
+  var tgrid = document.getElementById('tgrid');
+  var cur = 0;
+
+  document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
+
+  slides.forEach(function (s, i) {
+    var f = document.createElement('div');
+    f.className = 'foot';
+    f.innerHTML = '<span>遊戲企畫|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    s.appendChild(f);
+  });
+
+  var groups = {};
+  slides.forEach(function (s, i) {
+    var eb = s.querySelector('.eyebrow');
+    var part = '開場';
+    if (eb) {
+      var m = eb.textContent.match(/PART\s*(\d)/i);
+      if (m) part = 'PART ' + m[1];
+      else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
+    }
+    var h = s.querySelector('h1, h2');
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+  });
+  Object.keys(groups).forEach(function (k) {
+    var col = document.createElement('div');
+    var h3 = document.createElement('h3');
+    h3.textContent = k;
+    col.appendChild(h3);
+    groups[k].forEach(function (it) {
+      var b = document.createElement('button');
+      b.textContent = it.t;
+      b.dataset.i = it.i;
+      b.addEventListener('click', function () { toggleToc(false); go(it.i); });
+      col.appendChild(b);
+    });
+    tgrid.appendChild(col);
+  });
+
+  function go(i) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach(function (s, j) { s.classList.toggle('active', j === cur); });
+    cnt.textContent = (cur + 1) + ' / ' + slides.length;
+    prog.style.width = ((cur + 1) / slides.length * 100) + '%';
+    if (history.replaceState) history.replaceState(null, '', '#s' + (cur + 1));
+    tgrid.querySelectorAll('button').forEach(function (b) { b.classList.toggle('here', +b.dataset.i === cur); });
+  }
+  function toggleToc(on) {
+    toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
+  }
+
+  document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
+  document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
+  document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
+  document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { toggleToc(false); return; }
+    if (toc.classList.contains('on')) return;
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'Home': go(0); break;
+      case 'End': go(slides.length - 1); break;
+      case 'm': case 'M': toggleToc(); break;
+    }
+  });
+
+  function fit() {
+    var w = window.innerWidth, h = window.innerHeight;
+    if (!w || !h) { requestAnimationFrame(fit); return; }
+    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('load', fit);
+  fit();
+
+  var m = location.hash.match(/^#s(\d+)$/);
+  go(m ? +m[1] - 1 : 0);
+})();
+</script>
+</body>
+</html>

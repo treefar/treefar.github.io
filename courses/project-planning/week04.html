@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>第 4 週|風格提案與美術參考</title>
+<style>
+  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  * { box-sizing: border-box; }
+  #app {
+    position: fixed; inset: 0; overflow: hidden;
+    background: var(--bg);
+    font-family: var(--body);
+    color: var(--ink);
+    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
+    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
+    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
+    --bg: #F5F4EC; --bg2: #EFEEE2;
+    --panel: #FDFCF6; --panel2: #EDECDF;
+    --ink: #232B21; --sub: #67705E;
+    --accent: #2F6B4F; --accent-rgb: 47,107,79;
+    --accent2: #BC4F2C;
+    --line: rgba(35,43,33,.16);
+    --link: #2F6B4F;
+    --r: 4px;
+  }
+  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  #app a:hover { opacity: .85; }
+  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
+  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
+  .slide.active { display: flex; }
+  .slide::before {
+    content: ""; position: absolute; inset: 24px; pointer-events: none;
+    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
+  }
+
+  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
+  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
+  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+
+  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
+  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
+  .sub { color: var(--sub); }
+  .small { font-size: 18px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
+  .cards { display: grid; gap: 18px; }
+  .c2 { grid-template-columns: repeat(2, 1fr); }
+  .c3 { grid-template-columns: repeat(3, 1fr); }
+  .c4 { grid-template-columns: repeat(4, 1fr); }
+  .c5 { grid-template-columns: repeat(5, 1fr); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
+  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
+  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
+  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+
+  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
+  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+
+  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
+
+  .cover, .part { justify-content: center; }
+  .cover .eyebrow { margin-bottom: 26px; }
+  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
+  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
+  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
+  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
+  .part h2 { font-size: 56px; }
+  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+
+  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
+  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
+  .kv dd { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
+  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
+  .lk::after { content: " ↗"; font-size: 12px; }
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
+  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
+  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
+  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
+  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
+  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  .tl { display: flex; flex-direction: column; gap: 18px; }
+  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
+  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
+  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+
+  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
+  .content > .cards,
+  .content > .cols,
+  .content > .flow,
+  .content > .kv,
+  .content > .prob { flex: 1 1 auto; }
+  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .qlist,
+  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .biblio { flex: 0 0 auto; }
+  .cols > .card { justify-content: flex-start; }
+
+  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
+  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
+  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
+  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
+  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  .toc.on { display: block; }
+  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
+  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
+  .toc button:hover { background: var(--panel2); }
+  .toc button.here { color: var(--accent2); font-weight: 700; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
+  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+<div id="app" data-deck="b">
+  <div class="stagewrap"><div class="stage" id="stage">
+
+  <!-- 1 封面 -->
+  <section class="slide cover">
+    <div class="eyebrow">專題企畫 · 動畫與遊戲設計系</div>
+    <h1>好看，不是規格</h1>
+    <p class="cover-sub">「我想要那種很有質感的風格」對美術組來說等於沒說。這堂課講怎麼把感覺翻譯成可以執行、可以驗收的美術規格。</p>
+    <div class="cover-meta"><span>第 4 週</span><span>授課：鄧樹遠</span></div>
+  </section>
+
+  <!-- 2 本週地圖 -->
+  <section class="slide">
+    <div class="eyebrow">Week 04 · 本週地圖</div>
+    <h2>九十分鐘，五段路</h2>
+    <div class="content">
+      <div class="cards c5">
+        <div class="card"><span class="who">PART 1</span><h3>把好看翻成規格</h3><p class="sub">四個必須決定的參數</p></div>
+        <div class="card"><span class="who">PART 2</span><h3>參考圖怎麼拆</h3><p class="sub">看出可執行的部分</p></div>
+        <div class="card"><span class="who">PART 3</span><h3>AIGC 怎麼導入</h3><p class="sub">生得出來與撐得住是兩回事</p></div>
+        <div class="card"><span class="who">PART 4</span><h3>先查庫再生成</h3><p class="sub">你們手上已經有很多</p></div>
+        <div class="card"><span class="who">PART 5</span><h3>本週交付</h3><p class="sub">一頁風格板</p></div>
+      </div>
+      <div class="take"><b>本週目標</b>離開教室時，你們組要有一份美術組拿了就能開工的風格規格，不是一堆好看的圖。</div>
+    </div>
+  </section>
+
+  <!-- 3 承接上週 -->
+  <section class="slide">
+    <div class="eyebrow">承接第 3 週 · 主題訂定與提案</div>
+    <h2>題目定了，長什麼樣子</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">已完成</span>
+          <h3>一頁提案</h3>
+          <ul>
+            <li>一句話定位與核心玩法</li>
+            <li>目標玩家與預期規模</li>
+            <li>三款同類作品當對照組</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">今天要做</span>
+          <h3>把它變成看得見的</h3>
+          <ul>
+            <li>視覺風格要能對應玩法</li>
+            <li>要能被美術組執行</li>
+            <li>要能被三個人畫出一致的東西</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>課前材料</b>上週找的三款對照組，今天就要拿出來當風格參考的起點，不要重新從零找。</div>
+    </div>
+  </section>
+
+  <!-- 4 PART 1 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">01</div>
+    <div class="eyebrow">PART 1</div>
+    <h2>把好看翻成規格</h2>
+    <p class="part-sub">形容詞不能執行。要把「溫暖」「有質感」「賽博龐克」拆成可以量的參數。</p>
+  </section>
+
+  <!-- 5 四個參數 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 必要參數</div>
+    <h2>四件事必須先決定</h2>
+    <div class="content">
+      <div class="cards c4">
+        <div class="card"><span class="who">參數一</span><h3>視角與維度</h3><p class="sub">2D 側視、俯視、等角、3D 第三人稱</p></div>
+        <div class="card"><span class="who">參數二</span><h3>造型密度</h3><p class="sub">簡化到幾何，還是保留細節</p></div>
+        <div class="card"><span class="who">參數三</span><h3>色彩策略</h3><p class="sub">幾個主色、彩度高低、有無限制色盤</p></div>
+        <div class="card"><span class="who">參數四</span><h3>材質與筆觸</h3><p class="sub">平塗、賽璐璐、厚塗、像素</p></div>
+      </div>
+      <div class="take"><b>為何是這四個</b>這四個決定了美術的工時。改任何一個，之前畫的都要重來。</div>
+    </div>
+  </section>
+
+  <!-- 6 用參考圖說話 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 溝通方式</div>
+    <h2>用圖講，不要用形容詞</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">會出事</span>
+          <h3>口頭描述</h3>
+          <ul>
+            <li>「我要那種日式清新感」</li>
+            <li>「畫風可愛一點但不要太幼稚」</li>
+            <li>每個人腦中的畫面都不一樣</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">可執行</span>
+          <h3>參考圖加註解</h3>
+          <ul>
+            <li>「這張的輪廓線粗細，我們要」</li>
+            <li>「這張的配色，但彩度降一階」</li>
+            <li>指到具體的部分，不是整張都要</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>交給美術前</b>把圖丟進小組群組時，標出要的輪廓、色階或材質；只貼圖不能當規格。</div>
+    </div>
+  </section>
+
+  <!-- 7 參考圖板 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 工作方法</div>
+    <h2>參考圖板怎麼做</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>收集</h3><p>大量抓，不要挑。三十張以上再開始篩，太早篩會被第一印象綁住。</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>分組</h3><p>按四個參數分堆：視角一堆、造型一堆、色彩一堆、材質一堆。</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>註解</h3><p>每堆挑一到兩張當基準，寫清楚要它的哪一點。其他的刪掉。</p></div>
+      </div>
+      <div class="linkrow">
+        <a class="lk" href="https://www.pureref.com/" target="_blank" rel="noopener">PureRef</a>
+        <a class="lk" href="https://www.artstation.com/" target="_blank" rel="noopener">ArtStation</a>
+      </div>
+      <div class="take"><b>陷阱</b>圖板做得漂亮沒有用。它的價值在於三個人看完會畫出接近的東西。</div>
+    </div>
+  </section>
+
+  <!-- 8 PART 2 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">02</div>
+    <div class="eyebrow">PART 2</div>
+    <h2>參考圖怎麼拆</h2>
+    <p class="part-sub">會看的人從一張圖看出五條規格，不會看的人只看到「這張好看」。</p>
+  </section>
+
+  <!-- 9 拆解一張圖 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 拆解方法</div>
+    <h2>一張參考圖要拆出四項</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>輪廓</dt><dd>有沒有描邊、線的粗細是否隨距離變化、線的顏色是黑還是深色調</dd>
+        <dt>色階</dt><dd>一個物體用幾階明暗、有沒有中間調、陰影是不是同色系</dd>
+        <dt>光源</dt><dd>主光從哪來、有沒有補光、環境光的顏色偏冷還偏暖</dd>
+        <dt>細節密度</dt><dd>哪些地方畫滿、哪些地方留空、視覺重心怎麼被引導</dd>
+      </dl>
+      <div class="take"><b>用法</b>這四項寫下來就是規格。美術組照著畫，三個人的東西會長得像同一款遊戲。</div>
+    </div>
+  </section>
+
+  <!-- 10 可執行的規格 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 可執行性</div>
+    <h2>你們畫得出來嗎</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">要問自己</span>
+          <h3>執行成本</h3>
+          <ul>
+            <li>這個風格畫一個角色要多久</li>
+            <li>組裡誰畫得出來、誰畫不出來</li>
+            <li>需要幾個角色、幾張場景</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">常見誤判</span>
+          <h3>選了做不完的風格</h3>
+          <ul>
+            <li>厚塗寫實：一張場景吃掉兩週</li>
+            <li>高幀數逐格動畫：角色數量會被壓到剩一個</li>
+            <li>像素風看起來省，其實動畫最花時間</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>經驗談</b>風格選錯的組，通常在第 12 週把角色從六個砍到兩個，遊戲就空了。</div>
+    </div>
+  </section>
+
+  <!-- 11 一致性三個錨 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 一致性</div>
+    <h2>三個人畫得像的三個錨</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">錨一</span>
+          <h3>輪廓線規則</h3>
+          <p>粗細幾像素、什麼顏色、哪些地方不描邊。這一條最容易對齊，也最容易看出不一致。</p>
+        </div>
+        <div class="card">
+          <span class="who">錨二</span>
+          <h3>色盤鎖定</h3>
+          <p>做一個固定色票檔，全組共用。不在色票裡的顏色一律不用。</p>
+        </div>
+        <div class="card">
+          <span class="who">錨三</span>
+          <h3>光源方向</h3>
+          <p>全作品統一，例如「主光一律左上四十五度」。這條不統一，拼在同一個畫面就會歪。</p>
+        </div>
+      </div>
+      <div class="take"><b>三個錨</b>三個錨定下來，即使畫功有落差，整體看起來仍然像同一款遊戲。</div>
+    </div>
+  </section>
+
+  <!-- 12 PART 3 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">03</div>
+    <div class="eyebrow">PART 3</div>
+    <h2>AIGC 怎麼導入</h2>
+    <p class="part-sub">生一張好看的圖很容易。生五十張風格一致、能拼進同一個畫面的圖，是另一回事。</p>
+  </section>
+
+  <!-- 13 生圖能與不能 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 能力邊界</div>
+    <h2>生圖現在能做到哪</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">做得好</span>
+          <h3>發散與提案</h3>
+          <ul>
+            <li>一天跑幾十張概念方向</li>
+            <li>同一個場景試不同色調</li>
+            <li>做風格提案的候選圖</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">還是難</span>
+          <h3>一致與可用</h3>
+          <ul>
+            <li>同一個角色的多角度不走樣</li>
+            <li>符合規格的透明去背與切圖</li>
+            <li>能直接進引擎的尺寸與命名</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>判準</b>用來探索方向很划算，用來當最終素材，後製時間常常比重畫還久。</div>
+    </div>
+  </section>
+
+  <!-- 14 派工方式 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 我實際的做法</div>
+    <h2>同一張圖我會派給兩家</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">派工</span>
+          <h3>同題兩家跑</h3>
+          <p>同一份需求分別給兩個管線，回收後比對，擇優採用。落選稿留底不刪。</p>
+        </div>
+        <div class="card">
+          <span class="who">後製</span>
+          <h3>程式只做技術處理</h3>
+          <p>裁切、去背、尺寸、格式、圖集排版、命名。內容的像素必須來自生圖模型。</p>
+        </div>
+        <div class="card">
+          <span class="who">記帳</span>
+          <h3>留生成紀錄</h3>
+          <p>入口、日期、提示詞、後製步驟都要留。期末要交 AI 使用說明。</p>
+        </div>
+      </div>
+      <div class="take"><b>為何兩家</b>兩邊都畫歪的地方，通常是你的提示詞沒講清楚，不是模型不行。</div>
+    </div>
+  </section>
+
+  <!-- 15 提示詞五件事 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 提示詞</div>
+    <h2>提示詞要寫的五件事</h2>
+    <div class="content">
+      <ul>
+        <li>主體：畫什麼，用名詞加動作，不要只寫「一個角色」。</li>
+        <li>風格參數：對應本週的四個參數，視角、造型密度、色彩、材質。</li>
+        <li>構圖：全身或半身、角色佔畫面幾成、留白在哪。</li>
+        <li>技術規格：背景透明、正方形、什麼解析度。</li>
+        <li>負向：不要什麼。這一項最常被漏掉，也最影響可用率。</li>
+      </ul>
+      <div class="take"><b>經驗談</b>提示詞寫得像美術發包單，命中率就高；寫得像許願，就只能一直重跑。</div>
+    </div>
+  </section>
+
+  <!-- 16 一致性怎麼撐 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 一致性</div>
+    <h2>生成的一致性怎麼撐住</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>先定基準圖</h3><p>先生一張你最滿意的，當作全系列的基準。後面每一張都跟它比。</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>固定描述區塊</h3><p>把風格參數寫成固定段落，每次只換主體描述，不要整段重寫。</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>人工過關</h3><p>逐張看過。三個錨對不上就重跑或手改，不要因為「大致上像」就收下。</p></div>
+      </div>
+      <div class="take"><b>人工把關</b>一致性是人守出來的，不是模型自動保證的。這一關省掉，成品會很碎。</div>
+    </div>
+  </section>
+
+  <!-- 17 硬規則 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 本課硬規則</div>
+    <h2>這幾條沒有例外</h2>
+    <div class="content">
+      <ul>
+        <li>正式美術的每個像素必須由生圖模型畫出或由人畫出，不得由程式算出來充數。</li>
+        <li>用程式畫的方塊、色塊、幾何圖形只能標示為 placeholder，不能宣稱美術完成。</li>
+        <li>生成素材要記帳：入口、日期、提示詞、後製步驟。</li>
+        <li>期末報告要附 AI 使用說明，寫清楚哪些是生成的、你在上面做了什麼。</li>
+      </ul>
+      <div class="take"><b>為何嚴格</b>技術驗收過關不等於美術驗收過關。把佔位圖當成品交，是這門課最重的扣分。</div>
+    </div>
+  </section>
+
+  <!-- 18 PART 4 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">04</div>
+    <div class="eyebrow">PART 4</div>
+    <h2>先查庫再生成</h2>
+    <p class="part-sub">很多人一缺素材就直接去生。但現成的素材品質常常更穩，而且省下的時間可以拿去做別的。</p>
+  </section>
+
+  <!-- 19 查庫順序 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 決策順序</div>
+    <h2>缺素材時的四個順位</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>第一順位</dt><dd>課程提供的素材庫，先查有沒有現成可用的</dd>
+        <dt>第二順位</dt><dd>合法的 CC0 免費庫，向量圖示、實拍照、音效都有</dd>
+        <dt>第三順位</dt><dd>AI 生成，用在庫裡沒有、又需要客製的部分</dd>
+        <dt>第四順位</dt><dd>自己畫。留給最能表現你們風格的那幾件</dd>
+      </dl>
+      <div class="take"><b>為何這個順序</b>時間有限。把自己畫的力氣留給玩家最會注意的那幾張，其他的能借就借。</div>
+    </div>
+  </section>
+
+  <!-- 20 授權分級複習 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 授權複習</div>
+    <h2>拿之前先看授權</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">可以發布</span>
+          <h3>CC0 與公有領域</h3>
+          <p>免署名、可商用、可修改。做成 Demo 放上網也沒問題。</p>
+        </div>
+        <div class="card">
+          <span class="who">要看條款</span>
+          <h3>實拍照片庫</h3>
+          <p>Pexels 與 Pixabay 可免費商用，但不可原封不動轉賣，人物與商標另有限制。</p>
+        </div>
+        <div class="card">
+          <span class="who">課堂限定</span>
+          <h3>教育或個人授權</h3>
+          <p>課堂展示可以，公開發行不行。要發行就得換掉。</p>
+        </div>
+      </div>
+      <div class="linkrow">
+        <a class="lk" href="https://www.pexels.com/license/" target="_blank" rel="noopener">Pexels 授權</a>
+        <a class="lk" href="https://pixabay.com/service/license-summary/" target="_blank" rel="noopener">Pixabay 授權</a>
+        <a class="lk" href="https://creativecommons.org/" target="_blank" rel="noopener">Creative Commons</a>
+      </div>
+      <div class="take"><b>素材帳本</b>第 1 週開的素材帳本，這週開始就要真的填。期末補不回來。</div>
+    </div>
+  </section>
+
+  <!-- 21 生成或現成 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 判斷</div>
+    <h2>什麼時候生、什麼時候借</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">適合生成</span>
+          <h3>客製且量不大</h3>
+          <ul>
+            <li>主角立繪與關鍵場景</li>
+            <li>你們特有的道具與 UI 裝飾</li>
+            <li>風格特殊、庫裡找不到的</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">適合借用</span>
+          <h3>通用且量大</h3>
+          <ul>
+            <li>環境物件、地形、樹木石頭</li>
+            <li>介面圖示、按鈕、字型</li>
+            <li>環境音與通用音效</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>判準</b>玩家會盯著看的東西自己做，玩家只當背景的東西借用，時間才夠。</div>
+    </div>
+  </section>
+
+  <!-- 22 PART 5 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">05</div>
+    <div class="eyebrow">PART 5</div>
+    <h2>本週交付</h2>
+    <p class="part-sub">一頁風格板。美術組拿到它就能開始畫，不需要再回頭問「所以到底要什麼感覺」。</p>
+  </section>
+
+  <!-- 23 交付規格 -->
+  <section class="slide">
+    <div class="eyebrow">PART 5 · 交付規格</div>
+    <h2>這週要交什麼</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>交付物</dt><dd>一頁風格板，加一段一百字以內的風格說明</dd>
+        <dt>格式</dt><dd>一頁 A4 橫式，PDF，檔名為「組別代號_W4_風格板」</dd>
+        <dt>內容</dt><dd>四個參數的決定、三到五張帶註解的參考圖、色票、三個錨的規則</dd>
+        <dt>截止</dt><dd>第 5 週上課前，2026 年 10 月 8 日 08:00</dd>
+      </dl>
+      <div class="take"><b>標示方式</b>用 AI 生的候選圖可以放進風格板，但要標明是生成的，並附生成入口與日期。</div>
+    </div>
+  </section>
+
+  <!-- 24 風格板規格 -->
+  <section class="slide">
+    <div class="eyebrow">PART 5 · 版面要求</div>
+    <h2>風格板上要有這三塊</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">左邊</span>
+          <h3>參考圖與註解</h3>
+          <p>三到五張，每張旁邊一行字寫「要它的哪一點」。沒註解的圖不算。</p>
+        </div>
+        <div class="card">
+          <span class="who">中間</span>
+          <h3>色票與參數</h3>
+          <p>主色與輔色的色碼、四個參數各一句話的決定。</p>
+        </div>
+        <div class="card">
+          <span class="who">右邊</span>
+          <h3>三個錨的規則</h3>
+          <p>輪廓線幾像素、色階幾階、光源哪個方向。寫到數字。</p>
+        </div>
+      </div>
+      <div class="take"><b>驗收方式</b>我會把風格板給沒參與的同學看，請他照著描述一個物件。描不出來就是規格不夠。</div>
+    </div>
+  </section>
+
+  <!-- 25 檢核與退件 -->
+  <section class="slide">
+    <div class="eyebrow">PART 5 · 檢核標準</div>
+    <h2>什麼樣算過關</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">及格</span>
+          <h3>四個參數都有決定</h3>
+          <p>視角、造型密度、色彩、材質各寫得出一句具體的話。</p>
+        </div>
+        <div class="card">
+          <span class="who">好</span>
+          <h3>三個錨寫到數字</h3>
+          <p>輪廓線、色階、光源方向都有可驗收的數值或方向，不是形容詞。</p>
+        </div>
+        <div class="card">
+          <span class="who">退件</span>
+          <h3>常見的三種</h3>
+          <p>參考圖沒有註解；色票只寫「暖色系」；生成圖沒標來源與日期。</p>
+        </div>
+      </div>
+      <div class="take"><b>風格板作用</b>風格板是後面十四週的美術憲法。這週寫鬆，之後每一張圖都會有爭議。</div>
+    </div>
+  </section>
+
+  <!-- 26 課堂討論與課後任務 -->
+  <section class="slide">
+    <div class="eyebrow">Week 04 · 收尾</div>
+    <h2>回去做這三件事</h2>
+    <div class="content">
+      <div class="qlist">
+        <p>你們選的風格，組裡畫最慢的那個人畫一張要多久？乘上總數還做得完嗎？</p>
+        <p>把風格板遮住圖只留文字，美術組看得懂要畫什麼嗎？</p>
+        <p>哪些素材可以直接用現成的？現在就列出來，可以省下多少工時？</p>
+      </div>
+      <div class="card">
+        <span class="who">課後任務</span>
+        <p>照風格板實際產出一個物件，可以是道具或圖示。下週上課帶來，驗證規格寫得夠不夠。</p>
+      </div>
+      <div class="take"><b>下週預告</b>劇本與腳本撰寫：世界觀、角色設定，以及怎麼讓劇情撐住玩法而不是拖累它。</div>
+    </div>
+  </section>
+
+  <!-- 27 資源彙整 -->
+  <section class="slide">
+    <div class="eyebrow">Week 04 · 資源彙整</div>
+    <h2>本週資源</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="grp">
+          <h3>參考與工具</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://www.pureref.com/" target="_blank" rel="noopener">PureRef</a>
+            <a class="lk" href="https://www.artstation.com/" target="_blank" rel="noopener">ArtStation</a>
+            <a class="lk" href="https://antigravity.google/" target="_blank" rel="noopener">Antigravity</a>
+          </div>
+        </div>
+        <div class="grp">
+          <h3>素材與授權</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://www.pexels.com/license/" target="_blank" rel="noopener">Pexels 授權</a>
+            <a class="lk" href="https://pixabay.com/service/license-summary/" target="_blank" rel="noopener">Pixabay 授權</a>
+            <a class="lk" href="https://creativecommons.org/" target="_blank" rel="noopener">Creative Commons</a>
+            <a class="lk" href="https://itch.io/game-assets" target="_blank" rel="noopener">itch.io 素材</a>
+          </div>
+        </div>
+      </div>
+      <div class="take"><b>資料取得</b>課程自有素材庫的取用方式我會另外在課堂上示範，那部分不對外開放連結。</div>
+    </div>
+  </section>
+
+  
+
+  </div></div>
+
+  <div class="ctrl">
+    <button id="prev" aria-label="上一張">‹</button>
+    <span class="cnt" id="cnt">1 / 1</span>
+    <button id="next" aria-label="下一張">›</button>
+    <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+  </div>
+  <div class="prog" id="prog"></div>
+
+  <div class="toc" id="toc">
+    <button class="close" id="tocClose">關閉（Esc）</button>
+    <h2 id="tocTitle">目錄</h2>
+    <div class="tgrid" id="tgrid"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ★ 每週只改這一行 ★ */
+  var WEEK_LABEL = '第 4 週 · 風格提案與美術參考';
+
+  var stage = document.getElementById('stage');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var cnt = document.getElementById('cnt');
+  var prog = document.getElementById('prog');
+  var toc = document.getElementById('toc');
+  var tgrid = document.getElementById('tgrid');
+  var cur = 0;
+
+  document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
+
+  slides.forEach(function (s, i) {
+    var f = document.createElement('div');
+    f.className = 'foot';
+    f.innerHTML = '<span>專題企畫|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    s.appendChild(f);
+  });
+
+  var groups = {};
+  slides.forEach(function (s, i) {
+    var eb = s.querySelector('.eyebrow');
+    var part = '開場';
+    if (eb) {
+      var m = eb.textContent.match(/PART\s*(\d)/i);
+      if (m) part = 'PART ' + m[1];
+      else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
+    }
+    var h = s.querySelector('h1, h2');
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+  });
+  Object.keys(groups).forEach(function (k) {
+    var col = document.createElement('div');
+    var h3 = document.createElement('h3');
+    h3.textContent = k;
+    col.appendChild(h3);
+    groups[k].forEach(function (it) {
+      var b = document.createElement('button');
+      b.textContent = it.t;
+      b.dataset.i = it.i;
+      b.addEventListener('click', function () { toggleToc(false); go(it.i); });
+      col.appendChild(b);
+    });
+    tgrid.appendChild(col);
+  });
+
+  function go(i) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach(function (s, j) { s.classList.toggle('active', j === cur); });
+    cnt.textContent = (cur + 1) + ' / ' + slides.length;
+    prog.style.width = ((cur + 1) / slides.length * 100) + '%';
+    if (history.replaceState) history.replaceState(null, '', '#s' + (cur + 1));
+    tgrid.querySelectorAll('button').forEach(function (b) { b.classList.toggle('here', +b.dataset.i === cur); });
+  }
+  function toggleToc(on) {
+    toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
+  }
+
+  document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
+  document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
+  document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
+  document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { toggleToc(false); return; }
+    if (toc.classList.contains('on')) return;
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'Home': go(0); break;
+      case 'End': go(slides.length - 1); break;
+      case 'm': case 'M': toggleToc(); break;
+    }
+  });
+
+  function fit() {
+    var w = window.innerWidth, h = window.innerHeight;
+    if (!w || !h) { requestAnimationFrame(fit); return; }
+    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('load', fit);
+  fit();
+
+  var m = location.hash.match(/^#s(\d+)$/);
+  go(m ? +m[1] - 1 : 0);
+})();
+</script>
+</body>
+</html>

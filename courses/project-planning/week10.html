@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>第 10 週|獨立遊戲與動畫案例</title>
+<style>
+  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  * { box-sizing: border-box; }
+  #app {
+    position: fixed; inset: 0; overflow: hidden;
+    background: var(--bg);
+    font-family: var(--body);
+    color: var(--ink);
+    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
+    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
+    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
+    --bg: #F5F4EC; --bg2: #EFEEE2;
+    --panel: #FDFCF6; --panel2: #EDECDF;
+    --ink: #232B21; --sub: #67705E;
+    --accent: #2F6B4F; --accent-rgb: 47,107,79;
+    --accent2: #BC4F2C;
+    --line: rgba(35,43,33,.16);
+    --link: #2F6B4F;
+    --r: 4px;
+  }
+  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  #app a:hover { opacity: .85; }
+  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
+  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
+  .slide.active { display: flex; }
+  .slide::before {
+    content: ""; position: absolute; inset: 24px; pointer-events: none;
+    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
+  }
+
+  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
+  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
+  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+
+  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
+  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
+  .sub { color: var(--sub); }
+  .small { font-size: 18px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
+  .cards { display: grid; gap: 18px; }
+  .c2 { grid-template-columns: repeat(2, 1fr); }
+  .c3 { grid-template-columns: repeat(3, 1fr); }
+  .c4 { grid-template-columns: repeat(4, 1fr); }
+  .c5 { grid-template-columns: repeat(5, 1fr); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
+  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
+  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
+  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+
+  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
+  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+
+  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
+
+  .cover, .part { justify-content: center; }
+  .cover .eyebrow { margin-bottom: 26px; }
+  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
+  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
+  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
+  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
+  .part h2 { font-size: 56px; }
+  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+
+  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
+  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
+  .kv dd { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
+  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
+  .lk::after { content: " ↗"; font-size: 12px; }
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
+  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
+  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
+  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
+  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
+  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  .tl { display: flex; flex-direction: column; gap: 18px; }
+  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
+  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
+  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+
+  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
+  .content > .cards,
+  .content > .cols,
+  .content > .flow,
+  .content > .kv,
+  .content > .prob { flex: 1 1 auto; }
+  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .qlist,
+  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .biblio { flex: 0 0 auto; }
+  .cols > .card { justify-content: flex-start; }
+
+  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
+  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
+  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
+  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
+  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  .toc.on { display: block; }
+  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
+  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
+  .toc button:hover { background: var(--panel2); }
+  .toc button.here { color: var(--accent2); font-weight: 700; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
+  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+<div id="app" data-deck="b">
+  <div class="stagewrap"><div class="stage" id="stage">
+
+  <!-- 1 封面 -->
+  <section class="slide cover">
+    <div class="eyebrow">專題企畫 · 動畫與遊戲設計系</div>
+    <h1>一個人也做得出來</h1>
+    <p class="cover-sub">2025 年的 Steam 銷量榜上，擠掉大作的是一群低預算的獨立遊戲。這堂課不看它們好不好玩，看它們怎麼用有限資源做到的。</p>
+    <div class="cover-meta"><span>第 10 週</span><span>授課：鄧樹遠</span></div>
+  </section>
+
+  <!-- 2 本週地圖 -->
+  <section class="slide">
+    <div class="eyebrow">Week 10 · 本週地圖</div>
+    <h2>九十分鐘，五段路</h2>
+    <div class="content">
+      <div class="cards c5">
+        <div class="card"><span class="who">PART 1</span><h3>怎麼看案例</h3><p class="sub">四個角度，不看好不好玩</p></div>
+        <div class="card"><span class="who">PART 2</span><h3>小團隊怎麼贏</h3><p class="sub">2025 年榜單的證據</p></div>
+        <div class="card"><span class="who">PART 3</span><h3>台灣的例子</h3><p class="sub">2026 年這一批作品</p></div>
+        <div class="card"><span class="who">PART 4</span><h3>能抄什麼</h3><p class="sub">抄結構，不抄內容</p></div>
+        <div class="card"><span class="who">PART 5</span><h3>本週交付</h3><p class="sub">一份案例拆解報告</p></div>
+      </div>
+      <div class="take"><b>本週目標</b>離開教室時，你要能從一款遊戲反推出它的製作決策，而不只是說「這個好玩」。</div>
+    </div>
+  </section>
+
+  <!-- 3 承接上週 -->
+  <section class="slide">
+    <div class="eyebrow">承接第 9 週 · 期中報告</div>
+    <h2>從紙上進到實作</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">上週結束</span>
+          <h3>企畫階段告一段落</h3>
+          <ul>
+            <li>八章企畫書交了</li>
+            <li>互評回饋收到了</li>
+            <li>知道自己最大的問題在哪</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">接下來九週</span>
+          <h3>要把它做出來</h3>
+          <ul>
+            <li>這週看別人怎麼做</li>
+            <li>下週選引擎、再下週選工具</li>
+            <li>第 13 週開始動手做雛型</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>為何先看案例</b>選工具之前先看清楚別人做到什麼程度，你才知道自己的規模設得對不對。</div>
+    </div>
+  </section>
+
+  <!-- 4 PART 1 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">01</div>
+    <div class="eyebrow">PART 1</div>
+    <h2>怎麼看案例</h2>
+    <p class="part-sub">大部分人看遊戲只看好不好玩。要當開發者，得看出它背後做了哪些取捨。</p>
+  </section>
+
+  <!-- 5 四個角度 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 分析角度</div>
+    <h2>看案例的四個角度</h2>
+    <div class="content">
+      <div class="cards c4">
+        <div class="card"><span class="who">角度一</span><h3>規模</h3><p class="sub">幾個人做多久、內容量多少</p></div>
+        <div class="card"><span class="who">角度二</span><h3>記憶點</h3><p class="sub">別人講起它時會講哪一句</p></div>
+        <div class="card"><span class="who">角度三</span><h3>取捨</h3><p class="sub">哪些地方刻意做得很粗糙</p></div>
+        <div class="card"><span class="who">角度四</span><h3>遮法</h3><p class="sub">用什麼亮點蓋住那些粗糙</p></div>
+      </div>
+      <div class="take"><b>第三與第四最重要</b>它們是低成本專案的核心技術，也是這門課最該學的東西。</div>
+    </div>
+  </section>
+
+  <!-- 6 不看好玩 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 視角轉換</div>
+    <h2>從玩家眼睛換成開發者眼睛</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">玩家會問</span>
+          <h3>好不好玩</h3>
+          <ul>
+            <li>「這個機制很有趣」</li>
+            <li>「美術好看」</li>
+            <li>「劇情感人」</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">你要問</span>
+          <h3>怎麼做到的</h3>
+          <ul>
+            <li>這個機制要寫多少程式</li>
+            <li>這種美術一張要畫多久、總共幾張</li>
+            <li>劇情用什麼方式呈現、成本多少</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>練習方法</b>玩任何遊戲時問一次：如果是我們四個人，這一段要做多久？答案會很有啟發。</div>
+    </div>
+  </section>
+
+  <!-- 7 PART 2 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">02</div>
+    <div class="eyebrow">PART 2</div>
+    <h2>小團隊怎麼贏</h2>
+    <p class="part-sub">2025 年的 Steam 榜單是一個很好的證據：預算不是決定因素，找對切入點才是。</p>
+  </section>
+
+  <!-- 8 2025 榜單 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 產業現況</div>
+    <h2>2025 年榜單發生什麼事</h2>
+    <div class="content">
+      <div class="tl">
+        <div class="ev"><b>銷量冠軍</b><span>《R.E.P.O》拿下 Steam 年度銷量冠軍，是一款獨立遊戲</span></div>
+        <div class="ev"><b>前十佔四</b><span>《PEAK》《Schedule I》《RV There Yet?》等低預算作品擠進前十</span></div>
+        <div class="ev"><b>共同點</b><span>主打多人合作、滑稽趣味，製作成本遠低於同榜的商業大作</span></div>
+        <div class="ev"><b>極端案例</b><span>《Schedule I》幾乎由一人開發，三月搶先體驗，五月底宣布賣破八百萬套</span></div>
+      </div>
+      <div class="linkrow">
+        <a class="lk" href="https://game.udn.com/game/story/122089/9236319" target="_blank" rel="noopener">Steam 年度榜單</a>
+      </div>
+      <div class="take"><b>對你們的意義</b>這不是勵志故事。它說明的是：切入點選對，四個人的專題也有機會被看見。</div>
+    </div>
+  </section>
+
+  <!-- 9 為什麼會贏 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 原因分析</div>
+    <h2>低預算為什麼贏得了</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">大作的成本結構</span>
+          <h3>錢花在畫面與內容量</h3>
+          <ul>
+            <li>寫實美術、大量關卡、配音</li>
+            <li>這些是能用錢堆出來的部分</li>
+            <li>但這些不保證玩家會揪朋友一起玩</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">小團隊的切入點</span>
+          <h3>錢花不起，就換戰場</h3>
+          <ul>
+            <li>把成本放在互動情境而不是畫面</li>
+            <li>好笑、可分享、看直播也有趣</li>
+            <li>玩家幫忙宣傳，省下行銷費</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>核心觀察</b>他們不是做出更好的大作，是選了一個大作沒有優勢的戰場。</div>
+    </div>
+  </section>
+
+  <!-- 10 一人開發的極限 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 規模參考</div>
+    <h2>一個人能做到什麼程度</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>時間換規模</dt><dd>一人開發常見的是拉長時間，用好幾年換出商業水準的內容量</dd>
+        <dt>範圍要極窄</dt><dd>玩法單一但做到極致，不做內容量的競賽</dd>
+        <dt>美術靠風格</dt><dd>選一個自己畫得快的風格，用一致性取代精緻度</dd>
+        <dt>你們的條件</dt><dd>四個人、十二週。規模要抓在「一人開發八個月」的下限以下</dd>
+      </dl>
+      <div class="take"><b>比較方式</b>拆案例時看它的第一個可玩版本，別把多年累積的完成版直接當成專題目標。</div>
+    </div>
+  </section>
+
+  <!-- 11 PART 3 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">03</div>
+    <div class="eyebrow">PART 3</div>
+    <h2>台灣的例子</h2>
+    <p class="part-sub">2026 年台灣有一批獨立作品要上市。看它們的規模與路線，比看國外大作實際得多。</p>
+  </section>
+
+  <!-- 12 台灣作品群 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 2026 這一批</div>
+    <h2>值得追蹤的台灣作品</h2>
+    <div class="content">
+      <div class="cards c4">
+        <div class="card"><span class="who">單人開發</span><h3>炎姬</h3><p class="sub">3D 動作，2026 年 3 月上 Steam</p></div>
+        <div class="card"><span class="who">敘事路線</span><h3>OPUS 系列新作</h3><p class="sub">SIGONO，科幻與情感敘事</p></div>
+        <div class="card"><span class="who">機制創新</span><h3>文字遊戲世界</h3><p class="sub">把文字本身變成玩法</p></div>
+        <div class="card"><span class="who">新作</span><h3>紅眼露比</h3><p class="sub">2026 年台灣獨立作品之一</p></div>
+      </div>
+      <div class="linkrow">
+        <a class="lk" href="https://www.incgmedia.com/spotlight/11-taiwan-indie-games-must-play" target="_blank" rel="noopener">台灣獨立遊戲盤點</a>
+        <a class="lk" href="https://www.indiegametw.com/en/" target="_blank" rel="noopener">台灣遊戲資料站</a>
+      </div>
+      <div class="take"><b>建議</b>四款都加進 Steam 願望清單。看它們怎麼寫商店頁，就是最好的行銷教材。</div>
+    </div>
+  </section>
+
+  <!-- 13 深度案例 炎姬 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 深度案例</div>
+    <h2>炎姬：一個人做八年</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>開發者</dt><dd>「小牛奶」何祥祿，自 2018 年起單人開發</dd>
+        <dt>類型</dt><dd>3D 動作遊戲，2026 年 3 月 4 日登上 Steam</dd>
+        <dt>時間換算</dt><dd>八年單人，換算成四人團隊約兩年。你們有十二週</dd>
+        <dt>要學的</dt><dd>不是學他的規模，是學他怎麼在沒有團隊的情況下持續八年</dd>
+      </dl>
+      <div class="take"><b>殘酷的對照</b>八年跟十二週差了三十倍。所以你們要做的不是縮小版的它，是完全不同尺度的東西。</div>
+    </div>
+  </section>
+
+  <!-- 14 SIGONO 路線 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 另一條路線</div>
+    <h2>用敘事換掉技術門檻</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">路線</span>
+          <h3>敘事驅動</h3>
+          <ul>
+            <li>科幻設定加上情感敘事</li>
+            <li>玩法不追求複雜的即時操作</li>
+            <li>資源集中在美術氛圍與文本</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">為何適合小團隊</span>
+          <h3>成本可控</h3>
+          <ul>
+            <li>不用做複雜的物理與戰鬥系統</li>
+            <li>內容量可以靠文本堆，不用堆關卡</li>
+            <li>美術可以用少量高品質場景撐</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>對照第 5 週</b>這條路線正是「抓準一個小小的角色關係」的商業版本。</div>
+    </div>
+  </section>
+
+  <!-- 15 台灣獨立動畫 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 動畫這一邊</div>
+    <h2>獨立動畫也在打國際</h2>
+    <div class="content">
+      <div class="tl">
+        <div class="ev"><b>2025</b><span>謝文明《螳螂》獲第 62 屆金馬獎最佳動畫短片</span></div>
+        <div class="ev"><b>同年</b><span>《螳螂》入圍威尼斯影展地平線單元，《工》獲盧卡諾影展大獎</span></div>
+        <div class="ev"><b>2026</b><span>《螳螂》續入圍安錫與薩格勒布兩大國際動畫影展</span></div>
+        <div class="ev"><b>規模</b><span>動畫短片多為極小團隊甚至個人完成，長度通常十分鐘上下</span></div>
+      </div>
+      <div class="linkrow">
+        <a class="lk" href="https://www.goldenhorse.org.tw/" target="_blank" rel="noopener">金馬獎官網</a>
+        <a class="lk" href="https://www.incgmedia.com/festival-event/2026-golden-harvest-awards-recommendation" target="_blank" rel="noopener">金穗獎動畫推薦</a>
+      </div>
+      <div class="take"><b>對你們的意義</b>動畫組的專題規模參考這個：十分鐘、極小團隊、靠風格與敘事密度取勝。</div>
+    </div>
+  </section>
+
+  <!-- 16 動畫與遊戲的共同課題 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 兩邊共通</div>
+    <h2>動畫與遊戲的同一個難題</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">共通點</span>
+          <h3>都要在有限工時內做出密度</h3>
+          <ul>
+            <li>一張圖畫多久，決定總長度</li>
+            <li>都要決定哪裡精緻、哪裡簡化</li>
+            <li>都靠風格一致性撐住整體感</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">差異</span>
+          <h3>互動與時間的控制權</h3>
+          <ul>
+            <li>動畫的節奏由你決定，可以精準控制</li>
+            <li>遊戲的節奏由玩家決定，只能設計引導</li>
+            <li>動畫要考慮重看，遊戲要考慮重玩</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>選組別的提醒</b>做動畫專題的組，這學期的每週交付一樣適用，只是把玩法那幾欄換成分鏡與時長。</div>
+    </div>
+  </section>
+
+  <!-- 17 PART 4 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">04</div>
+    <div class="eyebrow">PART 4</div>
+    <h2>能抄什麼</h2>
+    <p class="part-sub">抄結構不抄內容。第 1 週講過，玩法是概念不受保護，但具體表達受保護。</p>
+  </section>
+
+  <!-- 18 可以抄的 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 可以學的</div>
+    <h2>三件事可以直接學</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">學這個</span>
+          <h3>規模控制</h3>
+          <p>他們的第一個可玩版本有多少內容？拿那個當你們的目標，不是拿完成版。</p>
+        </div>
+        <div class="card">
+          <span class="who">學這個</span>
+          <h3>記憶點的做法</h3>
+          <p>不是抄他的記憶點，是學他「把資源集中在一個點上」的做法。</p>
+        </div>
+        <div class="card">
+          <span class="who">學這個</span>
+          <h3>取捨的邏輯</h3>
+          <p>他們刻意放棄了什麼？為什麼放棄那個不會傷到核心？</p>
+        </div>
+      </div>
+      <div class="take"><b>提醒</b>這三件都是「怎麼做決定」，不是「做了什麼」。決策邏輯可以學，成果不能搬。</div>
+    </div>
+  </section>
+
+  <!-- 19 不能抄的 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 不能碰的</div>
+    <h2>這幾樣不要碰</h2>
+    <div class="content">
+      <ul>
+        <li>角色造型、場景美術、UI 版面配置：這些是受保護的具體表達。</li>
+        <li>音樂與音效：直接拿來用是侵權，不是致敬。</li>
+        <li>劇本對白與世界觀設定的具體文字。</li>
+        <li>「換個顏色改個名字」不會讓它變成你的，反而證明你接觸過。</li>
+      </ul>
+      <div class="take"><b>回顧第 1 週</b>抄襲認定要「接觸」加「實質近似」。你在報告裡寫了參考它，接觸就成立了。</div>
+    </div>
+  </section>
+
+  <!-- 20 遮法實例 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 亮點與缺點</div>
+    <h2>用亮點遮缺點的具體做法</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">承認缺點</span>
+          <h3>你做不到的部分</h3>
+          <ul>
+            <li>角色動畫張數不夠</li>
+            <li>場景只有三個</li>
+            <li>沒有配音</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">建立亮點</span>
+          <h3>把資源集中的部分</h3>
+          <ul>
+            <li>一個誰都沒做過的機制</li>
+            <li>一種強烈到記得住的美術風格</li>
+            <li>一段情緒到位的音樂與演出</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>這是策略不是藉口</b>前提是你要誠實知道自己的缺點在哪，才有辦法選對要遮的位置。</div>
+    </div>
+  </section>
+
+  <!-- 21 PART 5 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">05</div>
+    <div class="eyebrow">PART 5</div>
+    <h2>本週交付</h2>
+    <p class="part-sub">選一款跟你們路線接近的作品，用四個角度拆解它。這份拆解會直接影響你們下週選引擎。</p>
+  </section>
+
+  <!-- 22 交付規格 -->
+  <section class="slide">
+    <div class="eyebrow">PART 5 · 交付規格</div>
+    <h2>這週要交什麼</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>交付物</dt><dd>一款作品的四角度拆解報告</dd>
+        <dt>格式</dt><dd>兩頁 A4 以內，PDF，檔名為「組別代號_W10_案例拆解」</dd>
+        <dt>內容</dt><dd>規模、記憶點、取捨、遮法各一段，最後一段寫「我們能抄什麼」</dd>
+        <dt>截止</dt><dd>第 11 週上課前，2026 年 11 月 19 日 08:00</dd>
+      </dl>
+      <div class="take"><b>選擇標準</b>挑跟你們規模接近的，不要挑 3A。拆一款你們做得到的，比拆一款做不到的有用。</div>
+    </div>
+  </section>
+
+  <!-- 23 案例報告怎麼寫 -->
+  <section class="slide">
+    <div class="eyebrow">PART 5 · 寫作要求</div>
+    <h2>拆解報告怎麼寫才有用</h2>
+    <div class="content">
+      <ul>
+        <li>規模那段要有數字：幾個人、多久、幾個關卡、幾個角色。查得到就寫來源。</li>
+        <li>取捨那段要指出「刻意粗糙」的地方，不是列出缺點。這兩個不一樣。</li>
+        <li>最後一段要具體：「我們也把資源集中在音樂」比「值得學習」有用。</li>
+        <li>沒有玩過的遊戲不要拆。看影片可以，但要說明你只看了影片。</li>
+      </ul>
+      <div class="take"><b>常見誤區</b>把商店頁文案抄下來重排不算拆解。拆解要看得到你自己的判斷。</div>
+    </div>
+  </section>
+
+  <!-- 24 檢核與退件 -->
+  <section class="slide">
+    <div class="eyebrow">PART 5 · 檢核標準</div>
+    <h2>什麼樣算過關</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">及格</span>
+          <h3>四個角度都寫了</h3>
+          <p>規模、記憶點、取捨、遮法各有一段，而且是具體的觀察。</p>
+        </div>
+        <div class="card">
+          <span class="who">好</span>
+          <h3>能接回自己的專題</h3>
+          <p>最後一段講得出你們要學哪一項、怎麼用在自己的作品上。</p>
+        </div>
+        <div class="card">
+          <span class="who">退件</span>
+          <h3>常見的三種</h3>
+          <p>拆了一款 3A；整篇都在誇好玩；「我們能抄什麼」寫「值得借鏡」。</p>
+        </div>
+      </div>
+      <div class="take"><b>提醒</b>這份報告下週會用到。選引擎時，你拆的那款用什麼做的就是重要參考。</div>
+    </div>
+  </section>
+
+  <!-- 25 課堂討論與課後任務 -->
+  <section class="slide">
+    <div class="eyebrow">Week 10 · 收尾</div>
+    <h2>回去做這三件事</h2>
+    <div class="content">
+      <div class="qlist">
+        <p>你們的專題如果要有一個記憶點，那個點會是什麼？現在講得出來嗎？</p>
+        <p>你們打算刻意做粗糙的地方是哪裡？想清楚了才不會樣樣都想做好。</p>
+        <p>看完這幾個案例，你們期中設的規模需要調整嗎？</p>
+      </div>
+      <div class="card">
+        <span class="who">課後任務</span>
+        <p>把本週提到的台灣作品加進 Steam 願望清單，看它們的商店頁怎麼寫。第 17 週講行銷會用到。</p>
+      </div>
+      <div class="take"><b>下週預告</b>遊戲引擎選擇：Unity、Godot、RPG Maker、Bakin、視覺小說引擎，各自適合什麼。</div>
+    </div>
+  </section>
+
+  <!-- 26 資源彙整 -->
+  <section class="slide">
+    <div class="eyebrow">Week 10 · 資源彙整</div>
+    <h2>本週資源</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="grp">
+          <h3>台灣獨立遊戲</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://www.incgmedia.com/spotlight/11-taiwan-indie-games-must-play" target="_blank" rel="noopener">台灣獨立遊戲盤點</a>
+            <a class="lk" href="https://www.indiegametw.com/en/" target="_blank" rel="noopener">台灣遊戲資料站</a>
+          </div>
+        </div>
+        <div class="grp">
+          <h3>市場與平台</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://game.udn.com/game/story/122089/9236319" target="_blank" rel="noopener">Steam 年度榜單</a>
+            <a class="lk" href="https://store.steampowered.com/" target="_blank" rel="noopener">Steam</a>
+            <a class="lk" href="https://itch.io/" target="_blank" rel="noopener">itch.io</a>
+            <a class="lk" href="https://partner.steamgames.com/doc/store/tags?l=tchinese" target="_blank" rel="noopener">Steam 標籤文件</a>
+          </div>
+        </div>
+      </div>
+      <div class="take"><b>提醒</b>案例會過期，觀察角度不會。四個角度學起來，之後看任何遊戲都用得上。</div>
+    </div>
+  </section>
+
+  
+
+  </div></div>
+
+  <div class="ctrl">
+    <button id="prev" aria-label="上一張">‹</button>
+    <span class="cnt" id="cnt">1 / 1</span>
+    <button id="next" aria-label="下一張">›</button>
+    <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+  </div>
+  <div class="prog" id="prog"></div>
+
+  <div class="toc" id="toc">
+    <button class="close" id="tocClose">關閉（Esc）</button>
+    <h2 id="tocTitle">目錄</h2>
+    <div class="tgrid" id="tgrid"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ★ 每週只改這一行 ★ */
+  var WEEK_LABEL = '第 10 週 · 獨立遊戲與動畫案例';
+
+  var stage = document.getElementById('stage');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var cnt = document.getElementById('cnt');
+  var prog = document.getElementById('prog');
+  var toc = document.getElementById('toc');
+  var tgrid = document.getElementById('tgrid');
+  var cur = 0;
+
+  document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
+
+  slides.forEach(function (s, i) {
+    var f = document.createElement('div');
+    f.className = 'foot';
+    f.innerHTML = '<span>專題企畫|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    s.appendChild(f);
+  });
+
+  var groups = {};
+  slides.forEach(function (s, i) {
+    var eb = s.querySelector('.eyebrow');
+    var part = '開場';
+    if (eb) {
+      var m = eb.textContent.match(/PART\s*(\d)/i);
+      if (m) part = 'PART ' + m[1];
+      else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
+    }
+    var h = s.querySelector('h1, h2');
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+  });
+  Object.keys(groups).forEach(function (k) {
+    var col = document.createElement('div');
+    var h3 = document.createElement('h3');
+    h3.textContent = k;
+    col.appendChild(h3);
+    groups[k].forEach(function (it) {
+      var b = document.createElement('button');
+      b.textContent = it.t;
+      b.dataset.i = it.i;
+      b.addEventListener('click', function () { toggleToc(false); go(it.i); });
+      col.appendChild(b);
+    });
+    tgrid.appendChild(col);
+  });
+
+  function go(i) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach(function (s, j) { s.classList.toggle('active', j === cur); });
+    cnt.textContent = (cur + 1) + ' / ' + slides.length;
+    prog.style.width = ((cur + 1) / slides.length * 100) + '%';
+    if (history.replaceState) history.replaceState(null, '', '#s' + (cur + 1));
+    tgrid.querySelectorAll('button').forEach(function (b) { b.classList.toggle('here', +b.dataset.i === cur); });
+  }
+  function toggleToc(on) {
+    toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
+  }
+
+  document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
+  document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
+  document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
+  document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { toggleToc(false); return; }
+    if (toc.classList.contains('on')) return;
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'Home': go(0); break;
+      case 'End': go(slides.length - 1); break;
+      case 'm': case 'M': toggleToc(); break;
+    }
+  });
+
+  function fit() {
+    var w = window.innerWidth, h = window.innerHeight;
+    if (!w || !h) { requestAnimationFrame(fit); return; }
+    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('load', fit);
+  fit();
+
+  var m = location.hash.match(/^#s(\d+)$/);
+  go(m ? +m[1] - 1 : 0);
+})();
+</script>
+</body>
+</html>

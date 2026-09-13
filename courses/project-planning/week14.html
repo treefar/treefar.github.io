@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>第 14 週|市場調查與回饋修正</title>
+<style>
+  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  * { box-sizing: border-box; }
+  #app {
+    position: fixed; inset: 0; overflow: hidden;
+    background: var(--bg);
+    font-family: var(--body);
+    color: var(--ink);
+    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
+    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
+    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
+    --bg: #F5F4EC; --bg2: #EFEEE2;
+    --panel: #FDFCF6; --panel2: #EDECDF;
+    --ink: #232B21; --sub: #67705E;
+    --accent: #2F6B4F; --accent-rgb: 47,107,79;
+    --accent2: #BC4F2C;
+    --line: rgba(35,43,33,.16);
+    --link: #2F6B4F;
+    --r: 4px;
+  }
+  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  #app a:hover { opacity: .85; }
+  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
+  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
+  .slide.active { display: flex; }
+  .slide::before {
+    content: ""; position: absolute; inset: 24px; pointer-events: none;
+    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
+  }
+
+  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
+  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
+  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+
+  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
+  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
+  .sub { color: var(--sub); }
+  .small { font-size: 18px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
+  .cards { display: grid; gap: 18px; }
+  .c2 { grid-template-columns: repeat(2, 1fr); }
+  .c3 { grid-template-columns: repeat(3, 1fr); }
+  .c4 { grid-template-columns: repeat(4, 1fr); }
+  .c5 { grid-template-columns: repeat(5, 1fr); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
+  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
+  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
+  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+
+  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
+  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+
+  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
+
+  .cover, .part { justify-content: center; }
+  .cover .eyebrow { margin-bottom: 26px; }
+  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
+  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
+  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
+  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
+  .part h2 { font-size: 56px; }
+  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+
+  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
+  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
+  .kv dd { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
+  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
+  .lk::after { content: " ↗"; font-size: 12px; }
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
+  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
+  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
+  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
+  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
+  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  .tl { display: flex; flex-direction: column; gap: 18px; }
+  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
+  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
+  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+
+  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
+  .content > .cards,
+  .content > .cols,
+  .content > .flow,
+  .content > .kv,
+  .content > .prob { flex: 1 1 auto; }
+  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .qlist,
+  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .biblio { flex: 0 0 auto; }
+  .cols > .card { justify-content: flex-start; }
+
+  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
+  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
+  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
+  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
+  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  .toc.on { display: block; }
+  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
+  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
+  .toc button:hover { background: var(--panel2); }
+  .toc button.here { color: var(--accent2); font-weight: 700; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
+  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+<div id="app" data-deck="b">
+  <div class="stagewrap"><div class="stage" id="stage">
+
+  <!-- 1 封面 -->
+  <section class="slide cover">
+    <div class="eyebrow">專題企畫 · 動畫與遊戲設計系</div>
+    <h1>資料要變成決定</h1>
+    <p class="cover-sub">查了一堆數字卻不知道要改什麼，等於沒查。這堂課講怎麼問、怎麼看，以及怎麼把回饋變成這週就能動手的修改清單。</p>
+    <div class="cover-meta"><span>第 14 週</span><span>授課：鄧樹遠</span></div>
+  </section>
+
+  <!-- 2 本週地圖 -->
+  <section class="slide">
+    <div class="eyebrow">Week 14 · 本週地圖</div>
+    <h2>九十分鐘，五段路</h2>
+    <div class="content">
+      <div class="cards c5">
+        <div class="card"><span class="who">PART 1</span><h3>調查什麼</h3><p class="sub">市場面與使用者面</p></div>
+        <div class="card"><span class="who">PART 2</span><h3>市場面怎麼查</h3><p class="sub">Steam 資料怎麼看</p></div>
+        <div class="card"><span class="who">PART 3</span><h3>使用者面怎麼問</h3><p class="sub">訪談比問卷有用</p></div>
+        <div class="card"><span class="who">PART 4</span><h3>變成修改清單</h3><p class="sub">分類與排序</p></div>
+        <div class="card"><span class="who">PART 5</span><h3>本週交付</h3><p class="sub">回饋修正計畫</p></div>
+      </div>
+      <div class="take"><b>本週目標</b>離開教室時，你要有一張排好序的修改清單，而且知道哪幾條這學期不會做。</div>
+    </div>
+  </section>
+
+  <!-- 3 承接上週 -->
+  <section class="slide">
+    <div class="eyebrow">承接第 13 週 · 雛型開發與初步測試</div>
+    <h2>手上有三份測試紀錄了</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">已完成</span>
+          <h3>可玩雛型與觀察紀錄</h3>
+          <ul>
+            <li>核心迴圈能跑</li>
+            <li>三個人測過，記下卡關點</li>
+            <li>知道哪裡別人看不懂</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">今天要做</span>
+          <h3>把紀錄變成計畫</h3>
+          <ul>
+            <li>哪些一定要改、哪些不改</li>
+            <li>改的順序怎麼排</li>
+            <li>剩四週，做得完的才排進去</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>提醒</b>沒交測試紀錄的組，今天沒有東西可以分析。現在去找人測還來得及。</div>
+    </div>
+  </section>
+
+  <!-- 4 PART 1 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">01</div>
+    <div class="eyebrow">PART 1</div>
+    <h2>調查什麼</h2>
+    <p class="part-sub">市場調查有兩個方向，回答的是完全不同的問題。搞混了會查一堆用不上的東西。</p>
+  </section>
+
+  <!-- 5 兩種調查 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 兩個方向</div>
+    <h2>兩種調查，兩種問題</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">市場面</span>
+          <h3>這種東西有人買嗎</h3>
+          <ul>
+            <li>同類作品賣得如何</li>
+            <li>價格帶落在哪裡</li>
+            <li>市場是空的還是擠的</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">使用者面</span>
+          <h3>我做的這個好玩嗎</h3>
+          <ul>
+            <li>玩家卡在哪、看不懂什麼</li>
+            <li>哪一段想快轉</li>
+            <li>玩完會不會想跟別人講</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>本週優先順序</b>先看測試者在哪裡卡住；市場資料只要足夠幫你確認題材與同類作品。</div>
+    </div>
+  </section>
+
+  <!-- 6 學生做得到的規模 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 規模設定</div>
+    <h2>你們做得到的調查規模</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>市場面</dt><dd>三到五款同類作品，看公開資料就好，不用做產業報告</dd>
+        <dt>使用者面</dt><dd>五到八個實際玩過的人，重質不重量</dd>
+        <dt>時間</dt><dd>兩週內完成，不能吃掉開發時間</dd>
+        <dt>產出</dt><dd>一張排好序的修改清單，不是一份調查報告</dd>
+      </dl>
+      <div class="take"><b>常見錯誤</b>發了兩百份問卷、做了漂亮的圓餅圖，然後不知道要改什麼。那是白做的。</div>
+    </div>
+  </section>
+
+  <!-- 7 PART 2 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">02</div>
+    <div class="eyebrow">PART 2</div>
+    <h2>市場面怎麼查</h2>
+    <p class="part-sub">公開資料就夠用了。重點是知道哪些數字是真的、哪些是估的。</p>
+  </section>
+
+  <!-- 8 Steam 資料 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 資料來源</div>
+    <h2>哪些數字是真的</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>真實數字</dt><dd>同時在線人數、評論數、追蹤數、價格歷史，這些是第一方資料</dd>
+        <dt>估算數字</dt><dd>擁有人數與銷量，由第三方推估，不同站的數字會不一樣</dd>
+        <dt>怎麼用</dt><dd>估算值當量級參考就好，不要當精確數字寫進報告</dd>
+        <dt>要標來源</dt><dd>寫進企畫書時註明哪個站、哪一天查的</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://steamdb.info/" target="_blank" rel="noopener">SteamDB</a>
+        <a class="lk" href="https://steamspy.com/" target="_blank" rel="noopener">SteamSpy</a>
+      </div>
+      <div class="take"><b>第 7 週講過的</b>每個數字都要有出處。估算值要寫「約」，不要寫得像精確統計。</div>
+    </div>
+  </section>
+
+  <!-- 9 競品的真實表現 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 判讀方法</div>
+    <h2>從公開資料看得出什麼</h2>
+    <div class="content">
+      <ul>
+        <li>評論數比銷量好用。評論數少代表玩的人少，這個推論相當可靠。</li>
+        <li>好評率看得出品質，但也看得出社群氣氛，兩者要分開讀。</li>
+        <li>價格歷史看得出它打幾折、多久打一次，反映銷售壓力。</li>
+        <li>更新頻率看得出團隊還在不在。停更兩年的作品不適合當對照組。</li>
+      </ul>
+      <div class="take"><b>對你們的用途</b>不是要預測賺多少，是要確認「這個題材真的有人玩」。</div>
+    </div>
+  </section>
+
+  <!-- 10 願望清單 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 業界基準</div>
+    <h2>幾個當參考的數字</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">上市門檻</span>
+          <h3>願望清單一萬</h3>
+          <p>業界常見的說法是上市前累積一萬個願望清單，才撐得起首月的能見度。</p>
+        </div>
+        <div class="card">
+          <span class="who">中位數</span>
+          <h3>五百到兩千套</h3>
+          <p>第三方分析站估算，中位數的獨立遊戲一輩子大概賣這個量。</p>
+        </div>
+        <div class="card">
+          <span class="who">怎麼看</span>
+          <h3>這些是估算</h3>
+          <p>來自第三方分析站，不是官方數字，定義也各家不同。當量級參考。</p>
+        </div>
+      </div>
+      <div class="take"><b>為什麼要講這些</b>不是要你們去衝銷量，是要你們知道商業成功有多難，畢業後才不會誤判。</div>
+    </div>
+  </section>
+
+  <!-- 11 價格帶 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 定位參考</div>
+    <h2>同類作品賣多少錢</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">查什麼</span>
+          <h3>三到五款的定價</h3>
+          <ul>
+            <li>原價與常態折扣後的價格</li>
+            <li>遊戲時數大概多長</li>
+            <li>每小時單價換算起來多少</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">用途</span>
+          <h3>反推內容量</h3>
+          <ul>
+            <li>同價位的作品有多少內容</li>
+            <li>你們的規模對應到什麼價位</li>
+            <li>知道自己現在做的是什麼量級</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>對專題的意義</b>你們不會真的定價，但這個換算能讓你誠實面對自己的內容量。</div>
+    </div>
+  </section>
+
+  <!-- 12 PART 3 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">03</div>
+    <div class="eyebrow">PART 3</div>
+    <h2>使用者面怎麼問</h2>
+    <p class="part-sub">這一段才是重點。問對問題，五個人的意見比兩百份問卷有用。</p>
+  </section>
+
+  <!-- 13 問卷的陷阱 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 問卷</div>
+    <h2>問卷為什麼常常沒用</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">問題</span>
+          <h3>問到的都是客套話</h3>
+          <ul>
+            <li>「還不錯」「畫面很可愛」</li>
+            <li>五分量表全部填四分</li>
+            <li>建議欄空白或寫「加油」</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">原因</span>
+          <h3>問卷問不到行為</h3>
+          <ul>
+            <li>人回想的跟實際做的不一樣</li>
+            <li>填的人不想讓你難過</li>
+            <li>沒玩過的人也會填</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>什麼時候用問卷</b>要蒐集基本輪廓時可以，例如年齡、常玩什麼。要問體驗就別用。</div>
+    </div>
+  </section>
+
+  <!-- 14 訪談比問卷有用 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 訪談</div>
+    <h2>坐在旁邊看他玩</h2>
+    <div class="content">
+      <ul>
+        <li>讓他玩，你在旁邊記。全程不解釋、不提示、不辯解。</li>
+        <li>他卡住的每一秒都是資料。不要急著幫他。</li>
+        <li>玩完再問，而且問行為不問感受：「剛剛那裡你在想什麼」。</li>
+        <li>錄影比記筆記可靠。徵得同意後錄下螢幕與他的聲音。</li>
+      </ul>
+      <div class="take"><b>最難的部分</b>看自己作品被人卡住很難受，但那正是你需要的資訊。忍住不要解釋。</div>
+    </div>
+  </section>
+
+  <!-- 15 樣本數 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 樣本</div>
+    <h2>要找幾個人才夠</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>五到八個</dt><dd>對專題規模來說夠了。同樣的問題出現三次就是真問題</dd>
+        <dt>要多樣</dt><dd>不要全找同一種人。有玩過同類的、沒玩過的都要有</dd>
+        <dt>分兩批</dt><dd>先測三個、改完再測三個。比一次測八個有用</dd>
+        <dt>不能找誰</dt><dd>自己組員、已經看過開發過程的人</dd>
+      </dl>
+      <div class="take"><b>為何分兩批</b>第一批的問題改完再測，才知道改對了沒有。一次測完就沒有驗證機會。</div>
+    </div>
+  </section>
+
+  <!-- 16 怎麼找到目標玩家 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 找人</div>
+    <h2>去哪裡找人來玩</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">最快</span>
+          <h3>隔壁組互測</h3>
+          <p>同班但沒看過你們專案的組。當場就能測，回饋也專業。</p>
+        </div>
+        <div class="card">
+          <span class="who">最準</span>
+          <h3>系上其他年級</h3>
+          <p>學弟妹或學長姊，跟你們的目標玩家比較接近，而且找得到。</p>
+        </div>
+        <div class="card">
+          <span class="who">最有價值</span>
+          <h3>非本科的朋友</h3>
+          <p>不懂遊戲開發的人。他們卡住的地方最接近真實玩家。</p>
+        </div>
+      </div>
+      <div class="take"><b>提醒</b>三種都找一點。只找同班同學，會得到「開發者視角」的意見，看不到真問題。</div>
+    </div>
+  </section>
+
+  <!-- 17 PART 4 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">04</div>
+    <div class="eyebrow">PART 4</div>
+    <h2>變成修改清單</h2>
+    <p class="part-sub">回饋不能照單全收。剩四週，你們只做得完其中一部分，所以排序比蒐集更重要。</p>
+  </section>
+
+  <!-- 18 分類回饋 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 分類</div>
+    <h2>回饋分成三堆</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">必改</span>
+          <h3>擋住體驗的</h3>
+          <p>三個人以上卡在同一個地方、看不懂怎麼玩、遇到會當掉的錯誤。</p>
+        </div>
+        <div class="card">
+          <span class="who">可改</span>
+          <h3>會更好但不擋路</h3>
+          <p>手感可以更順、提示可以更清楚。時間有剩才做。</p>
+        </div>
+        <div class="card">
+          <span class="who">不改</span>
+          <h3>跟方向衝突的</h3>
+          <p>「應該加多人模式」這種。記下來，寫進報告的未來規劃。</p>
+        </div>
+      </div>
+      <div class="take"><b>第三堆很重要</b>寫下「為什麼不改」，比默默忽略好。期末被問到時你答得出來。</div>
+    </div>
+  </section>
+
+  <!-- 19 優先順序 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 排序</div>
+    <h2>必改的怎麼排先後</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>先修擋路的</h3><p>會讓人玩不下去的問題最優先。當機、卡關、看不懂怎麼操作。</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>再修最多人提的</h3><p>同一個問題被提到三次以上，代表它是普遍問題不是個人偏好。</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>最後修便宜的</h3><p>改動小、效果大的先做。要重做一個系統的，這學期就別排了。</p></div>
+      </div>
+      <div class="take"><b>時間感</b>剩四週，扣掉期末準備只剩兩週半能改。清單超過十條就是排太多了。</div>
+    </div>
+  </section>
+
+  <!-- 20 不要照單全收 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 判斷</div>
+    <h2>玩家說的不一定要照做</h2>
+    <div class="content">
+      <ul>
+        <li>玩家很會描述問題，但不擅長提解法。要聽他哪裡不順，不是聽他叫你怎麼改。</li>
+        <li>「太難了」可能是難度問題，也可能是引導沒做好。要看他卡在哪一步才知道。</li>
+        <li>只有一個人提的意見先放著。可能是個人偏好，不是設計問題。</li>
+        <li>跟你們核心概念衝突的建議，記下來但不要動。方向搖擺比不改更糟。</li>
+      </ul>
+      <div class="take"><b>判準</b>問題描述照單全收，解決方案自己想。這是設計者跟需求方的分界線。</div>
+    </div>
+  </section>
+
+  <!-- 21 改完再測 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 驗證</div>
+    <h2>改完要再測一次</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">常見狀況</span>
+          <h3>改了但沒變好</h3>
+          <ul>
+            <li>加了提示但玩家還是沒看到</li>
+            <li>降低難度但玩家還是卡住</li>
+            <li>改動製造出新的問題</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">怎麼確認</span>
+          <h3>找第二批人測</h3>
+          <ul>
+            <li>找沒測過第一版的人</li>
+            <li>看同一個地方還會不會卡</li>
+            <li>不卡了才算改完</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>時程安排</b>第 15 到 16 週改，第 17 週前一定要再測一輪，不然期末交的是沒驗證過的版本。</div>
+    </div>
+  </section>
+
+  <!-- 22 PART 5 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">05</div>
+    <div class="eyebrow">PART 5</div>
+    <h2>本週交付</h2>
+    <p class="part-sub">一份回饋修正計畫。它會決定你們剩下四週要做什麼，所以要排得誠實。</p>
+  </section>
+
+  <!-- 23 交付規格 -->
+  <section class="slide">
+    <div class="eyebrow">PART 5 · 交付規格</div>
+    <h2>這週要交什麼</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>交付物</dt><dd>回饋修正計畫，加市場面的簡短摘要</dd>
+        <dt>格式</dt><dd>兩頁 A4 以內，PDF，檔名為「組別代號_W14_修正計畫」</dd>
+        <dt>修正清單</dt><dd>必改、可改、不改三堆分開列，必改的要排序並標預估工時</dd>
+        <dt>截止</dt><dd>第 15 週上課前，2026 年 12 月 17 日 08:00</dd>
+      </dl>
+      <div class="take"><b>市場面只要一段</b>三到五款同類作品、你們的差異點還撐不撐得住，寫一段就好。</div>
+    </div>
+  </section>
+
+  <!-- 24 檢核與退件 -->
+  <section class="slide">
+    <div class="eyebrow">PART 5 · 檢核標準</div>
+    <h2>什麼樣算過關</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">及格</span>
+          <h3>三堆都分好了</h3>
+          <p>必改、可改、不改各有內容，而且不改那堆寫得出理由。</p>
+        </div>
+        <div class="card">
+          <span class="who">好</span>
+          <h3>必改清單做得完</h3>
+          <p>條數與預估工時對得上剩下的時間，不是願望清單。</p>
+        </div>
+        <div class="card">
+          <span class="who">退件</span>
+          <h3>常見的三種</h3>
+          <p>必改列了二十條；回饋來源是自己組員；數字沒寫查詢日期與出處。</p>
+        </div>
+      </div>
+      <div class="take"><b>驗收方式</b>我會挑一條必改的問你預估工時怎麼來的。答不出來代表沒有真的排過。</div>
+    </div>
+  </section>
+
+  <!-- 25 課堂討論與課後任務 -->
+  <section class="slide">
+    <div class="eyebrow">Week 14 · 收尾</div>
+    <h2>回去做這三件事</h2>
+    <div class="content">
+      <div class="qlist">
+        <p>三份測試紀錄裡，有沒有同一個問題出現三次？那就是你們的第一優先。</p>
+        <p>必改清單的總工時，對得上剩下兩週半嗎？對不上要砍哪幾條？</p>
+        <p>有沒有哪條回饋你們很想改，但其實跟核心概念衝突？</p>
+      </div>
+      <div class="card">
+        <span class="who">課後任務</span>
+        <p>把必改清單放進看板，一條一張卡片，指定主責人與完成日。下週專案管理會直接用。</p>
+      </div>
+      <div class="take"><b>下週預告</b>專案管理實務：甘特圖與協作平台，怎麼把剩下的時間排到期末那天。</div>
+    </div>
+  </section>
+
+  <!-- 26 資源彙整 -->
+  <section class="slide">
+    <div class="eyebrow">Week 14 · 資源彙整</div>
+    <h2>本週資源</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="grp">
+          <h3>市場資料</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://steamdb.info/" target="_blank" rel="noopener">SteamDB</a>
+            <a class="lk" href="https://steamspy.com/" target="_blank" rel="noopener">SteamSpy</a>
+            <a class="lk" href="https://store.steampowered.com/" target="_blank" rel="noopener">Steam</a>
+            <a class="lk" href="https://partner.steamgames.com/doc/store/tags?l=tchinese" target="_blank" rel="noopener">Steam 標籤文件</a>
+          </div>
+        </div>
+        <div class="grp">
+          <h3>發布與社群</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://itch.io/" target="_blank" rel="noopener">itch.io</a>
+            <a class="lk" href="https://www.indiegametw.com/en/" target="_blank" rel="noopener">台灣遊戲資料站</a>
+          </div>
+        </div>
+      </div>
+      <div class="take"><b>提醒</b>第三方估算數字每家不同。寫進報告一定要註明是哪一站、哪一天查的。</div>
+    </div>
+  </section>
+
+  
+
+  </div></div>
+
+  <div class="ctrl">
+    <button id="prev" aria-label="上一張">‹</button>
+    <span class="cnt" id="cnt">1 / 1</span>
+    <button id="next" aria-label="下一張">›</button>
+    <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+  </div>
+  <div class="prog" id="prog"></div>
+
+  <div class="toc" id="toc">
+    <button class="close" id="tocClose">關閉（Esc）</button>
+    <h2 id="tocTitle">目錄</h2>
+    <div class="tgrid" id="tgrid"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ★ 每週只改這一行 ★ */
+  var WEEK_LABEL = '第 14 週 · 市場調查與回饋修正';
+
+  var stage = document.getElementById('stage');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var cnt = document.getElementById('cnt');
+  var prog = document.getElementById('prog');
+  var toc = document.getElementById('toc');
+  var tgrid = document.getElementById('tgrid');
+  var cur = 0;
+
+  document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
+
+  slides.forEach(function (s, i) {
+    var f = document.createElement('div');
+    f.className = 'foot';
+    f.innerHTML = '<span>專題企畫|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    s.appendChild(f);
+  });
+
+  var groups = {};
+  slides.forEach(function (s, i) {
+    var eb = s.querySelector('.eyebrow');
+    var part = '開場';
+    if (eb) {
+      var m = eb.textContent.match(/PART\s*(\d)/i);
+      if (m) part = 'PART ' + m[1];
+      else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
+    }
+    var h = s.querySelector('h1, h2');
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+  });
+  Object.keys(groups).forEach(function (k) {
+    var col = document.createElement('div');
+    var h3 = document.createElement('h3');
+    h3.textContent = k;
+    col.appendChild(h3);
+    groups[k].forEach(function (it) {
+      var b = document.createElement('button');
+      b.textContent = it.t;
+      b.dataset.i = it.i;
+      b.addEventListener('click', function () { toggleToc(false); go(it.i); });
+      col.appendChild(b);
+    });
+    tgrid.appendChild(col);
+  });
+
+  function go(i) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach(function (s, j) { s.classList.toggle('active', j === cur); });
+    cnt.textContent = (cur + 1) + ' / ' + slides.length;
+    prog.style.width = ((cur + 1) / slides.length * 100) + '%';
+    if (history.replaceState) history.replaceState(null, '', '#s' + (cur + 1));
+    tgrid.querySelectorAll('button').forEach(function (b) { b.classList.toggle('here', +b.dataset.i === cur); });
+  }
+  function toggleToc(on) {
+    toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
+  }
+
+  document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
+  document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
+  document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
+  document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { toggleToc(false); return; }
+    if (toc.classList.contains('on')) return;
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'Home': go(0); break;
+      case 'End': go(slides.length - 1); break;
+      case 'm': case 'M': toggleToc(); break;
+    }
+  });
+
+  function fit() {
+    var w = window.innerWidth, h = window.innerHeight;
+    if (!w || !h) { requestAnimationFrame(fit); return; }
+    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('load', fit);
+  fit();
+
+  var m = location.hash.match(/^#s(\d+)$/);
+  go(m ? +m[1] - 1 : 0);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>第 4 週|遊戲類型與競品分析</title>
+<style>
+  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  * { box-sizing: border-box; }
+  #app {
+    position: fixed; inset: 0; overflow: hidden;
+    background: var(--bg);
+    font-family: var(--body);
+    color: var(--ink);
+    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
+    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
+    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
+    --bg: #F5F4EC; --bg2: #EFEEE2;
+    --panel: #FDFCF6; --panel2: #EDECDF;
+    --ink: #232B21; --sub: #67705E;
+    --accent: #2F6B4F; --accent-rgb: 47,107,79;
+    --accent2: #BC4F2C;
+    --line: rgba(35,43,33,.16);
+    --link: #2F6B4F;
+    --r: 4px;
+  }
+  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  #app a:hover { opacity: .85; }
+  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
+  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
+  .slide.active { display: flex; }
+  .slide::before {
+    content: ""; position: absolute; inset: 24px; pointer-events: none;
+    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
+  }
+
+  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
+  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
+  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+
+  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
+  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
+  .sub { color: var(--sub); }
+  .small { font-size: 18px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
+  .cards { display: grid; gap: 18px; }
+  .c2 { grid-template-columns: repeat(2, 1fr); }
+  .c3 { grid-template-columns: repeat(3, 1fr); }
+  .c4 { grid-template-columns: repeat(4, 1fr); }
+  .c5 { grid-template-columns: repeat(5, 1fr); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
+  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
+  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
+  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+
+  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
+  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+
+  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
+
+  .cover, .part { justify-content: center; }
+  .cover .eyebrow { margin-bottom: 26px; }
+  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
+  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
+  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
+  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
+  .part h2 { font-size: 56px; }
+  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+
+  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
+  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
+  .kv dd { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
+  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
+  .lk::after { content: " ↗"; font-size: 12px; }
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
+  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
+  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
+  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
+  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
+  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  .tl { display: flex; flex-direction: column; gap: 18px; }
+  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
+  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
+  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+
+  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
+  .content > .cards,
+  .content > .cols,
+  .content > .flow,
+  .content > .kv,
+  .content > .prob { flex: 1 1 auto; }
+  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .qlist,
+  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .biblio { flex: 0 0 auto; }
+  .cols > .card { justify-content: flex-start; }
+
+  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
+  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
+  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
+  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
+  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  .toc.on { display: block; }
+  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
+  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
+  .toc button:hover { background: var(--panel2); }
+  .toc button.here { color: var(--accent2); font-weight: 700; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
+  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+ .eyebrow{font-size:18px}.slide h2{font-size:48px}.slide ul{font-size:26px}.slide ul ul{font-size:22px}.small{font-size:18px}.card h3{font-size:26px}.card p,.card li,.card ul{font-size:22px}.card .who{font-size:16px}.take{font-size:22px}.take b{font-size:17px}.foot{font-size:16px}.cover-sub{font-size:30px}.part-sub{font-size:28px}.kv{font-size:24px}.kv dt{font-size:21px}.chip{font-size:23px}.lk{font-size:18px}.flow .step h3{font-size:24px}.flow .step p{font-size:21px}.prob,.biblio{font-size:23px}.biblio .ti{font-size:27px}.qlist p{font-size:26px}.tl .ev{font-size:23px}.grp h3{font-size:20px}
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+<div id="app" data-deck="b">
+  <div class="stagewrap"><div class="stage" id="stage">
+
+  <!-- 1 封面 -->
+  <section class="slide cover">
+    <div class="eyebrow">遊戲企畫 · 動畫與遊戲設計系</div>
+    <h1>找出真正的對手</h1>
+    <p class="cover-sub">「我的競品是薩爾達」是每年最常見的錯誤。這堂課講怎麼找到真正跟你搶同一批玩家的作品，以及從它們身上看出機會。</p>
+    <div class="cover-meta"><span>第 4 週</span><span>授課：鄧樹遠</span></div>
+  </section>
+
+  <!-- 2 本週地圖 -->
+  <section class="slide">
+    <div class="eyebrow">Week 04 · 本週地圖</div>
+    <h2>九十分鐘，五段路</h2>
+    <div class="content">
+      <div class="cards c5">
+        <div class="card"><span class="who">PART 1</span><h3>類型是什麼</h3><p class="sub">三種講法各有用途</p></div>
+        <div class="card"><span class="who">PART 2</span><h3>用標籤找對手</h3><p class="sub">你的對手不是 3A</p></div>
+        <div class="card"><span class="who">PART 3</span><h3>競品怎麼分析</h3><p class="sub">負評比好評有用</p></div>
+        <div class="card"><span class="who">PART 4</span><h3>找差異化機會</h3><p class="sub">怎麼分辨真假差異</p></div>
+        <div class="card"><span class="who">PART 5</span><h3>本週交付</h3><p class="sub">三款競品分析表</p></div>
+      </div>
+      <div class="take"><b>本週目標</b>離開教室時，你要有三款真正的競品，而且說得出你跟它們差在哪。</div>
+    </div>
+  </section>
+
+  <!-- 3 承接上週 -->
+  <section class="slide">
+    <div class="eyebrow">承接第 3 週 · 遊戲產業與商業模式</div>
+    <h2>市場很大，你的位置在哪</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">上週結論</span>
+          <h3>市場大不等於有機會</h3>
+          <ul>
+            <li>市場越大競爭越激烈</li>
+            <li>選平台就是選對手</li>
+            <li>數字要標明統計範圍</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">今天要做</span>
+          <h3>把範圍縮到能處理</h3>
+          <ul>
+            <li>從四千億美元縮到三款遊戲</li>
+            <li>那三款才是你真正的對手</li>
+            <li>看它們的成敗比看大盤有用</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>觀念轉換</b>企畫書裡「市場規模」那一段的價值，遠低於「這三款賣得如何」那一段。</div>
+    </div>
+  </section>
+
+  <!-- 4 PART 1 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">01</div>
+    <div class="eyebrow">PART 1</div>
+    <h2>類型是什麼</h2>
+    <p class="part-sub">同一款遊戲可以用三種完全不同的方式歸類。搞清楚差別，你才知道自己在跟誰比。</p>
+  </section>
+
+  <!-- 5 三種講法 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 三種分類方式</div>
+    <h2>類型有三種講法</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">講法一</span>
+          <h3>玩法動詞</h3>
+          <p>玩家在做什麼：射擊、解謎、建造、經營。這一層決定核心系統怎麼做。</p>
+        </div>
+        <div class="card">
+          <span class="who">講法二</span>
+          <h3>體驗感受</h3>
+          <p>玩家感覺如何：緊張、療癒、荒謬、沉浸。這一層決定美術與音樂方向。</p>
+        </div>
+        <div class="card">
+          <span class="who">講法三</span>
+          <h3>題材外皮</h3>
+          <p>包裝成什麼：科幻、恐怖、校園、農場。這一層最容易換，也最影響第一印象。</p>
+        </div>
+      </div>
+      <div class="take"><b>寫企畫時</b>三層都要講。只講題材（「一款校園恐怖遊戲」）等於沒說明玩法。</div>
+    </div>
+  </section>
+
+  <!-- 6 類型不是標籤 -->
+  <section class="slide">
+    <div class="eyebrow">PART 1 · 差別</div>
+    <h2>類型是概念，標籤是工具</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">類型</span>
+          <h3>用來溝通</h3>
+          <ul>
+            <li>跟人講「這是動作解謎」對方大概懂</li>
+            <li>邊界模糊，每個人定義不太一樣</li>
+            <li>寫在企畫書裡幫助讀者建立印象</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">標籤</span>
+          <h3>用來被找到</h3>
+          <ul>
+            <li>平台實際拿它決定推薦給誰</li>
+            <li>有明確的清單，不能自己發明</li>
+            <li>直接影響曝光與競爭對手是誰</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>這門課的用法</b>類型拿來寫文件、標籤拿來做分析。第 1 週要你抄五個標籤就是為了今天。</div>
+    </div>
+  </section>
+
+  <!-- 7 PART 2 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">02</div>
+    <div class="eyebrow">PART 2</div>
+    <h2>用標籤找對手</h2>
+    <p class="part-sub">競品不是你喜歡的遊戲，是跟你搶同一批玩家、同一筆預算的作品。</p>
+  </section>
+
+  <!-- 8 標籤怎麼運作 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 標籤機制</div>
+    <h2>Steam 標籤怎麼運作</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>誰能標</dt><dd>開發者、符合條件的玩家帳號，以及平台版務</dd>
+        <dt>要幾個</dt><dd>上架前至少五個，官方建議把二十個欄位填滿</dd>
+        <dt>權重</dt><dd>前五個標籤訊號最強，之後的雖然仍有幫助但權重遞減</dd>
+        <dt>作用</dt><dd>平台用它決定把你的遊戲推薦給哪些人看</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://partner.steamgames.com/doc/store/tags?l=tchinese" target="_blank" rel="noopener">Steam 標籤文件</a>
+        <a class="lk" href="https://store.steampowered.com/tag/steam/?l=tchinese" target="_blank" rel="noopener">標籤瀏覽</a>
+      </div>
+      <div class="take"><b>對你的意義</b>前五個標籤決定你跟誰同框。標錯了，遊戲會被推薦給不會買的人。</div>
+    </div>
+  </section>
+
+  <!-- 9 找對手三步 -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 方法</div>
+    <h2>三步找出真對手</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>寫出五個標籤</h3><p>用第 1 週抄的那五個，或依你想做的題目重寫五個。</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>組合搜尋</h3><p>到平台上同時勾選這五個標籤，看跑出哪些作品。</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>挑規模相近的三款</h3><p>挑團隊規模與你接近的。3A 不是你的對手，別挑。</p></div>
+      </div>
+      <div class="take"><b>搜不到怎麼辦</b>搜不到同類，多半不是發現藍海，是這個組合沒人要。放寬一個標籤再搜。</div>
+    </div>
+  </section>
+
+  <!-- 10 對手不是 3A -->
+  <section class="slide">
+    <div class="eyebrow">PART 2 · 常見錯誤</div>
+    <h2>為什麼不能拿 3A 當競品</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">拿 3A 當競品</span>
+          <h3>分析出來沒有用</h3>
+          <ul>
+            <li>它的優勢是幾百人幾年做出來的</li>
+            <li>「我們畫面沒它好」是廢話</li>
+            <li>看不出你能做什麼</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">拿同規模當競品</span>
+          <h3>看得出可以學什麼</h3>
+          <ul>
+            <li>它的取捨你也做得到</li>
+            <li>它的缺點可能就是你的機會</li>
+            <li>它的定價與銷量可以當參考</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>判準</b>問自己「這款如果是我做的，我做得出來嗎」。答案是否的，就不是競品。</div>
+    </div>
+  </section>
+
+  <!-- 11 PART 3 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">03</div>
+    <div class="eyebrow">PART 3</div>
+    <h2>競品怎麼分析</h2>
+    <p class="part-sub">分析不是把商店頁介紹重寫一遍。要看出它做對了什麼、做錯了什麼。</p>
+  </section>
+
+  <!-- 12 分析五欄 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 分析表</div>
+    <h2>每款競品要填四欄</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>基本資料</dt><dd>名稱、上市日期、定價、平台、開發團隊規模</dd>
+        <dt>核心玩法</dt><dd>用一句話寫玩家在做什麼，跟你的遊戲對照</dd>
+        <dt>市場表現</dt><dd>評論數、好評率、常態折扣。數字要註明查詢日期</dd>
+        <dt>玩家在抱怨什麼</dt><dd>從負評裡整理出重複出現的三個問題</dd>
+      </dl>
+      <div class="take"><b>比較重點</b>前三欄查得到；第四欄要回去讀評論，才能找出真正可做差異的地方。</div>
+    </div>
+  </section>
+
+  <!-- 13 看什麼數字 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 數字判讀</div>
+    <h2>哪些數字可信</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">可信</span>
+          <h3>評論數與好評率</h3>
+          <p>平台第一手資料。評論數少代表玩的人少，這個推論相當可靠。</p>
+        </div>
+        <div class="card">
+          <span class="who">參考用</span>
+          <h3>推估的擁有人數</h3>
+          <p>第三方推估，各站數字不同。當量級參考，不要當精確數字。</p>
+        </div>
+        <div class="card">
+          <span class="who">看趨勢</span>
+          <h3>價格與更新歷史</h3>
+          <p>常打折代表銷售有壓力，停更兩年代表團隊已經離開。</p>
+        </div>
+      </div>
+      <div class="linkrow">
+        <a class="lk" href="https://steamdb.info/" target="_blank" rel="noopener">SteamDB</a>
+        <a class="lk" href="https://steamspy.com/" target="_blank" rel="noopener">SteamSpy</a>
+      </div>
+      <div class="take"><b>寫進企畫書時</b>可信的直接寫，推估的要寫「約」並註明來源站與查詢日期。</div>
+    </div>
+  </section>
+
+  <!-- 14 負評最有價值 -->
+  <section class="slide">
+    <div class="eyebrow">PART 3 · 讀評論</div>
+    <h2>負評比好評有用十倍</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">好評</span>
+          <h3>大多講一樣的話</h3>
+          <ul>
+            <li>「很好玩」「美術很棒」「推薦」</li>
+            <li>看不出具體做對了什麼</li>
+            <li>對你的設計沒有幫助</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">負評</span>
+          <h3>會講出具體的痛</h3>
+          <ul>
+            <li>「中期重複度太高」「引導太少」</li>
+            <li>指得出是哪一段出問題</li>
+            <li>重複出現三次以上就是真問題</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>做法</b>把最新的負評看三十則，記下重複出現的抱怨。那份清單就是你的機會清單。</div>
+    </div>
+  </section>
+
+  <!-- 15 PART 4 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">04</div>
+    <div class="eyebrow">PART 4</div>
+    <h2>找差異化機會</h2>
+    <p class="part-sub">差異化不是「我們的畫風比較特別」。要能講出玩家為什麼會因為那個差異選你。</p>
+  </section>
+
+  <!-- 16 三種來源 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 差異化來源</div>
+    <h2>差異化從三個地方來</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">來源一</span>
+          <h3>補對手的缺口</h3>
+          <p>負評裡重複出現的抱怨，如果你能解決，那就是最扎實的差異。</p>
+        </div>
+        <div class="card">
+          <span class="who">來源二</span>
+          <h3>換一個組合</h3>
+          <p>把兩個常見元素組成沒人做過的搭配。成本低，記憶點高。</p>
+        </div>
+        <div class="card">
+          <span class="who">來源三</span>
+          <h3>換一群玩家</h3>
+          <p>同樣的玩法，做給沒被服務到的族群。例如手殘玩家、時間很少的人。</p>
+        </div>
+      </div>
+      <div class="take"><b>最實際的是第一種</b>因為證據就在負評裡，你不用猜玩家要什麼。</div>
+    </div>
+  </section>
+
+  <!-- 17 差異化要能講出來 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 檢驗</div>
+    <h2>怎麼檢驗差異化站不站得住</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">站得住</span>
+          <h3>能填進這個句型</h3>
+          <ul>
+            <li>「玩過某某但覺得某某的人，會喜歡我們，因為某某」</li>
+            <li>三個空格都填得出具體內容</li>
+            <li>第三格能對應到你真的做得到的事</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">站不住</span>
+          <h3>填不進去的那種</h3>
+          <ul>
+            <li>「我們的世界觀比較有深度」</li>
+            <li>「畫風獨特」</li>
+            <li>「更注重玩家體驗」</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>這個句型會用整學期</b>第 7 週論證賣點時會再用一次，期末提案也要講得出來。</div>
+    </div>
+  </section>
+
+  <!-- 18 假差異化 -->
+  <section class="slide">
+    <div class="eyebrow">PART 4 · 常見陷阱</div>
+    <h2>四種假的差異化</h2>
+    <div class="content">
+      <ul>
+        <li>畫風獨特：每個人都覺得自己畫風獨特，玩家看不出差別。</li>
+        <li>劇情深刻：沒玩之前沒人知道，不能當賣點只能當內容。</li>
+        <li>更好玩：這不是差異，是每款遊戲都會說的話。</li>
+        <li>功能更多：功能多不是優勢，除非那些功能解決了具體的痛。</li>
+      </ul>
+      <div class="take"><b>判準</b>如果你的競品也可以照抄這句話寫在自己的商店頁上，那就不是差異化。</div>
+    </div>
+  </section>
+
+  <!-- 19 PART 5 章節頁 -->
+  <section class="slide part">
+    <div class="part-num">05</div>
+    <div class="eyebrow">PART 5</div>
+    <h2>本週交付</h2>
+    <p class="part-sub">三款競品的分析表，加一段你的差異化機會。這份會直接進期末企畫書第三章。</p>
+  </section>
+
+  <!-- 20 交付規格 -->
+  <section class="slide">
+    <div class="eyebrow">PART 5 · 交付規格</div>
+    <h2>這週要交什麼</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>交付物</dt><dd>三款競品分析表，加一段差異化機會</dd>
+        <dt>格式</dt><dd>兩頁 A4 以內，PDF，檔名為「學號_W4_競品分析」</dd>
+        <dt>每款要有</dt><dd>基本資料、核心玩法、市場表現、負評裡的三個抱怨</dd>
+        <dt>截止</dt><dd>下週上課前</dd>
+      </dl>
+      <div class="take"><b>差異化那段</b>要用本週的句型寫：玩過某某但覺得某某的人，會喜歡我們，因為某某。</div>
+    </div>
+  </section>
+
+  <!-- 21 檢核與退件 -->
+  <section class="slide">
+    <div class="eyebrow">PART 5 · 檢核標準</div>
+    <h2>什麼樣算過關</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card">
+          <span class="who">及格</span>
+          <h3>三款規模相近</h3>
+          <p>四欄都填得出來，數字有註明查詢日期。</p>
+        </div>
+        <div class="card">
+          <span class="who">好</span>
+          <h3>負評整理得出重複點</h3>
+          <p>不是隨便貼三則，是看出重複出現的問題。</p>
+        </div>
+        <div class="card">
+          <span class="who">退件</span>
+          <h3>常見的三種</h3>
+          <p>拿 3A 當競品；市場表現寫「銷量不錯」；差異化寫「畫風獨特」。</p>
+        </div>
+      </div>
+      <div class="take"><b>驗收方式</b>我會問「這三款為什麼是你的競品」。答不出來就代表標籤沒選對。</div>
+    </div>
+  </section>
+
+  <!-- 22 課堂討論與課後任務 -->
+  <section class="slide">
+    <div class="eyebrow">Week 04 · 收尾</div>
+    <h2>回去做這三件事</h2>
+    <div class="content">
+      <div class="qlist">
+        <p>你的五個標籤搜出來的作品，跟你想像中的對手一樣嗎？不一樣的話是標籤錯還是想像錯？</p>
+        <p>三款競品的負評裡，有沒有同一個抱怨出現在三款上？</p>
+        <p>你的差異化，競品能不能照抄那句話？可以的話就要重想。</p>
+      </div>
+      <div class="card">
+        <span class="who">課後任務</span>
+        <p>每款競品讀三十則最新負評。這是本學期最花時間但最值得的一份功課。</p>
+      </div>
+      <div class="take"><b>下週預告</b>目標玩家與使用者輪廓：把「喜歡遊戲的人」變成一個你約得到的具體對象。</div>
+    </div>
+  </section>
+
+  <!-- 23 資源彙整 -->
+  <section class="slide">
+    <div class="eyebrow">Week 04 · 資源彙整</div>
+    <h2>本週資源</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="grp">
+          <h3>標籤與搜尋</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://partner.steamgames.com/doc/store/tags?l=tchinese" target="_blank" rel="noopener">Steam 標籤文件</a>
+            <a class="lk" href="https://store.steampowered.com/tag/steam/?l=tchinese" target="_blank" rel="noopener">標籤瀏覽</a>
+            <a class="lk" href="https://store.steampowered.com/" target="_blank" rel="noopener">Steam</a>
+          </div>
+        </div>
+        <div class="grp">
+          <h3>數據查詢</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://steamdb.info/" target="_blank" rel="noopener">SteamDB</a>
+            <a class="lk" href="https://steamspy.com/" target="_blank" rel="noopener">SteamSpy</a>
+            <a class="lk" href="https://itch.io/" target="_blank" rel="noopener">itch.io</a>
+          </div>
+        </div>
+      </div>
+      <div class="take"><b>查找範圍</b>找競品時也看 itch.io；那裡較常找到規模接近學生專題的作品。</div>
+    </div>
+  </section>
+
+  
+
+  </div></div>
+
+  <div class="ctrl">
+    <button id="prev" aria-label="上一張">‹</button>
+    <span class="cnt" id="cnt">1 / 1</span>
+    <button id="next" aria-label="下一張">›</button>
+    <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+  </div>
+  <div class="prog" id="prog"></div>
+
+  <div class="toc" id="toc">
+    <button class="close" id="tocClose">關閉（Esc）</button>
+    <h2 id="tocTitle">目錄</h2>
+    <div class="tgrid" id="tgrid"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ★ 每週只改這一行 ★ */
+  var WEEK_LABEL = '第 4 週 · 遊戲類型與競品分析';
+
+  var stage = document.getElementById('stage');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var cnt = document.getElementById('cnt');
+  var prog = document.getElementById('prog');
+  var toc = document.getElementById('toc');
+  var tgrid = document.getElementById('tgrid');
+  var cur = 0;
+
+  document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
+
+  slides.forEach(function (s, i) {
+    var f = document.createElement('div');
+    f.className = 'foot';
+    f.innerHTML = '<span>遊戲企畫|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    s.appendChild(f);
+  });
+
+  var groups = {};
+  slides.forEach(function (s, i) {
+    var eb = s.querySelector('.eyebrow');
+    var part = '開場';
+    if (eb) {
+      var m = eb.textContent.match(/PART\s*(\d)/i);
+      if (m) part = 'PART ' + m[1];
+      else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
+    }
+    var h = s.querySelector('h1, h2');
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+  });
+  Object.keys(groups).forEach(function (k) {
+    var col = document.createElement('div');
+    var h3 = document.createElement('h3');
+    h3.textContent = k;
+    col.appendChild(h3);
+    groups[k].forEach(function (it) {
+      var b = document.createElement('button');
+      b.textContent = it.t;
+      b.dataset.i = it.i;
+      b.addEventListener('click', function () { toggleToc(false); go(it.i); });
+      col.appendChild(b);
+    });
+    tgrid.appendChild(col);
+  });
+
+  function go(i) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach(function (s, j) { s.classList.toggle('active', j === cur); });
+    cnt.textContent = (cur + 1) + ' / ' + slides.length;
+    prog.style.width = ((cur + 1) / slides.length * 100) + '%';
+    if (history.replaceState) history.replaceState(null, '', '#s' + (cur + 1));
+    tgrid.querySelectorAll('button').forEach(function (b) { b.classList.toggle('here', +b.dataset.i === cur); });
+  }
+  function toggleToc(on) {
+    toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
+  }
+
+  document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
+  document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
+  document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
+  document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { toggleToc(false); return; }
+    if (toc.classList.contains('on')) return;
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'Home': go(0); break;
+      case 'End': go(slides.length - 1); break;
+      case 'm': case 'M': toggleToc(); break;
+    }
+  });
+
+  function fit() {
+    var w = window.innerWidth, h = window.innerHeight;
+    if (!w || !h) { requestAnimationFrame(fit); return; }
+    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('load', fit);
+  fit();
+
+  var m = location.hash.match(/^#s(\d+)$/);
+  go(m ? +m[1] - 1 : 0);
+})();
+</script>
+</body>
+</html>

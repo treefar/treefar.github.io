@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>第 10 週|沉浸式媒體與XR</title>
+<style>
+  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  * { box-sizing: border-box; }
+  #app {
+    position: fixed; inset: 0; overflow: hidden;
+    background: var(--bg);
+    font-family: var(--body);
+    color: var(--ink);
+    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
+    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
+    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
+    --bg: #F5F4EC; --bg2: #EFEEE2;
+    --panel: #FDFCF6; --panel2: #EDECDF;
+    --ink: #232B21; --sub: #67705E;
+    --accent: #2F6B4F; --accent-rgb: 47,107,79;
+    --accent2: #BC4F2C;
+    --line: rgba(35,43,33,.16);
+    --link: #2F6B4F;
+    --r: 4px;
+  }
+  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  #app a:hover { opacity: .85; }
+  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
+  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
+  .slide.active { display: flex; }
+  .slide::before {
+    content: ""; position: absolute; inset: 24px; pointer-events: none;
+    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
+  }
+
+  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
+  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
+  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+
+  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
+  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
+  .sub { color: var(--sub); }
+  .small { font-size: 18px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
+  .cards { display: grid; gap: 18px; }
+  .c2 { grid-template-columns: repeat(2, 1fr); }
+  .c3 { grid-template-columns: repeat(3, 1fr); }
+  .c4 { grid-template-columns: repeat(4, 1fr); }
+  .c5 { grid-template-columns: repeat(5, 1fr); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
+  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
+  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
+  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+
+  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
+  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+
+  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
+
+  .cover, .part { justify-content: center; }
+  .cover .eyebrow { margin-bottom: 26px; }
+  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
+  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
+  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
+  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
+  .part h2 { font-size: 56px; }
+  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+
+  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
+  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
+  .kv dd { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
+  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
+  .lk::after { content: " ↗"; font-size: 12px; }
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
+  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
+  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
+  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
+  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
+  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  .tl { display: flex; flex-direction: column; gap: 18px; }
+  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
+  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
+  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+
+  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
+  .content > .cards,
+  .content > .cols,
+  .content > .flow,
+  .content > .kv,
+  .content > .prob { flex: 1 1 auto; }
+  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .qlist,
+  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .biblio { flex: 0 0 auto; }
+  .cols > .card { justify-content: flex-start; }
+
+  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
+  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
+  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
+  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
+  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  .toc.on { display: block; }
+  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
+  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
+  .toc button:hover { background: var(--panel2); }
+  .toc button.here { color: var(--accent2); font-weight: 700; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
+  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+<div id="app" data-deck="b">
+  <div class="stagewrap"><div class="stage" id="stage">
+
+  <!-- 1 沉浸式媒體與 XR -->
+<section class="slide cover">
+    <div class="eyebrow">人工智慧與互動媒體特論 · 設計創新與經營研究所</div>
+    <h1>沉浸式媒體與 XR</h1>
+    <p class="cover-sub">當顯示器貼上眼睛、世界本身變成介面：釐清 AR/VR/MR/XR 的概念，掌握空間設計原則，看懂 AI 與空間運算交會的 2026。</p>
+    <div class="cover-meta"><span>第 10 週</span><span>論文導讀與案例討論</span><span>授課：鄧樹遠</span></div>
+  </section>
+
+  <!-- 2 九十分鐘，五段路 -->
+<section class="slide">
+    <div class="eyebrow">Week 10 · 本週地圖</div>
+    <h2>九十分鐘，五段路</h2>
+    <div class="content">
+      <div class="cards c5">
+        <div class="card"><span class="who">PART 1</span><h3>概念釐清</h3><p class="sub">AR/VR/MR/XR，一張光譜收齊</p></div>
+        <div class="card"><span class="who">PART 2</span><h3>設計原則</h3><p class="sub">舒適、移動、輸入、空間 UI</p></div>
+        <div class="card"><span class="who">PART 3</span><h3>AI 與 XR 交會</h3><p class="sub">場景生成、虛擬人、空間理解</p></div>
+        <div class="card"><span class="who">PART 4</span><h3>平台現況</h3><p class="sub">蘋果、Meta 與 Android XR 的 2026</p></div>
+        <div class="card"><span class="who">PART 5</span><h3>論文導讀</h3><p class="sub">一張學術地圖＋一次人機共創</p></div>
+      </div>
+      <div class="take"><b>本週目標</b>建立「形態會變、原則不變」的判斷力：任何新頭顯或眼鏡發布時，知道該問哪三個問題。</div>
+    </div>
+  </section>
+
+  <!-- 3 從走進去，到戴上去 -->
+<section class="slide">
+    <div class="eyebrow">承接第 7、8 週 · 感測與互動裝置</div>
+    <h2>從走進去，到戴上去</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">前兩個內容週的世界</span>
+          <h3>走進去的沉浸</h3>
+          <ul>
+            <li>展場與裝置：沉浸是走進被投影包圍的空間</li>
+            <li>感測器在遠處讀你：深度攝影機、LiDAR、mmWave</li>
+            <li>觀眾是群體，體驗是公共的</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">本週的世界</span>
+          <h3>戴上去的沉浸</h3>
+          <ul>
+            <li>顯示器貼著眼睛，世界 360 度包住你</li>
+            <li>感測器貼身讀你：眼動、手勢、頭部姿態</li>
+            <li>觀眾是個人，體驗是第一人稱的</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 概念釐清與空間運算 -->
+<section class="slide part">
+    <div class="part-num">01</div>
+    <div class="eyebrow">PART 1</div>
+    <h2>概念釐清與空間運算</h2>
+    <p class="part-sub">AR、VR、MR、XR 四個縮寫天天被混用，廠商還各自發明新詞。這一段把它們放回同一條光譜，並看懂「空間運算」到底在算什麼。</p>
+  </section>
+
+  <!-- 5 現實與虛擬之間的光譜 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 概念釐清</div>
+    <h2>現實與虛擬之間的光譜</h2>
+    <div class="content">
+      <ul>
+        <li>1994 年 Milgram 與 Kishino 的「現實—虛擬連續體」：AR 到 VR 是一條光譜，不是抽屜</li>
+      </ul>
+      <div class="cards c4">
+        <div class="card"><h3>AR 擴增實境</h3><p class="sub">資訊疊在實景上</p><p class="sub">現實為主、虛為輔</p></div>
+        <div class="card"><h3>MR 混合實境</h3><p class="sub">虛實互相遮擋互動</p><p class="sub">需要理解空間結構</p></div>
+        <div class="card"><h3>VR 虛擬實境</h3><p class="sub">完全合成的世界</p><p class="sub">現實暫時退場</p></div>
+        <div class="card"><h3>XR 延展實境</h3><p class="sub">以上全部的傘詞</p><p class="sub">產業與學界通用</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 空間運算：詞彙的競技場 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 概念釐清</div>
+    <h2>空間運算：詞彙的競技場</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>Apple</dt><dd>只說「空間運算」（spatial computing），刻意避開 VR 一詞，把 Vision Pro 定位成新型電腦</dd>
+        <dt>Meta</dt><dd>從「元宇宙」轉為「混合實境」與「AI 眼鏡」，敘事跟著戰略走</dd>
+        <dt>Google</dt><dd>取名 Android XR：把 XR 當成 Android 的下一個表面，賭生態不賭單機</dd>
+        <dt>學界</dt><dd>XR 為中性傘詞，涵蓋 AR/MR/VR；論文檢索時四個詞都要下</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 7 讓虛實對齊的三項技術 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 概念釐清</div>
+    <h2>讓虛實對齊的三項技術</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><h3>SLAM 定位建圖</h3><p>裝置邊移動邊畫出環境地圖，虛擬物件才能「釘」在真實位置上不漂移。</p></div>
+        <div class="card"><h3>Passthrough 透視</h3><p>相機即時重建外界影像，是頭顯做 MR 的基礎；Vision Pro 與 Quest 都走這條路。</p></div>
+        <div class="card"><h3>眼動與手勢追蹤</h3><p>視線當游標、指尖捏合當點擊；感測器讀的不再是搖桿，而是你的身體。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 XR 的設計原則 -->
+<section class="slide part">
+    <div class="part-num">02</div>
+    <div class="eyebrow">PART 2</div>
+    <h2>XR 的設計原則</h2>
+    <p class="part-sub">平面設計犯錯是難看，XR 設計犯錯是頭暈想吐。這一段是四條保命戒律：舒適度、移動、輸入、空間 UI。</p>
+  </section>
+
+  <!-- 9 舒適度是入場券 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 設計原則</div>
+    <h2>舒適度是入場券</h2>
+    <div class="content">
+      <ul>
+        <li>暈動症（cybersickness）：視覺說你在動、內耳說你沒動，感官衝突引發不適</li>
+        <li>穩定高幀率是鐵則：掉幀與延遲比任何美術瑕疵都致命</li>
+        <li>避免非自主移動：突然加速、鏡頭被搶走、水平線傾斜都是地雷</li>
+        <li>新手從短時段開始：10 到 15 分鐘漸進，讓身體適應</li>
+      </ul>
+      <div class="linkrow">
+        <a class="lk" href="https://developers.meta.com/horizon/design/comfort/" target="_blank" rel="noopener">Meta 舒適度指南</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 移動設計：防暈的藝術 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 設計原則</div>
+    <h2>移動設計：防暈的藝術</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><h3>瞬移 Teleport</h3><p>指哪到哪、跳過中間過程；防暈首選，代價是犧牲移動的連續臨場感。</p></div>
+        <div class="card"><h3>快轉 Snap Turn</h3><p>分段轉向取代平滑旋轉，減少旋轉時的視覺與前庭衝突。</p></div>
+        <div class="card"><h3>視野收縮 Vignette</h3><p>移動瞬間收窄視野，遮掉周邊視覺的強烈動感，暈感明顯下降。</p></div>
+      </div>
+      <ul>
+        <li>平滑移動保留給老手當選項，速度貼近真實步行（約 1.4 公尺／秒）</li>
+      </ul>
+      <div class="take"><b>假設情境</b>測試時若有人走動沒事、有人很快不舒服，就提供替代移動方式；舒適度不能只用設計者自己判斷。</div>
+    </div>
+  </section>
+
+  <!-- 11 輸入：眼、手、語音與腕帶 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 設計原則</div>
+    <h2>輸入：眼、手、語音與腕帶</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><h3>眼動＋捏合</h3><p>Vision Pro 的主輸入：視線即游標、指尖捏合即點擊，幾乎零學習成本。</p></div>
+        <div class="card"><h3>控制器＋裸手</h3><p>Quest 雙軌並行：控制器精準、有回饋；裸手零門檻，適合輕互動。</p></div>
+        <div class="card"><h3>語音＋神經腕帶</h3><p>Ray-Ban Display 的 EMG 腕帶：讀肌電訊號，手指微動作就是滑鼠。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 空間 UI：介面離開螢幕之後 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 設計原則</div>
+    <h2>空間 UI：介面離開螢幕之後</h2>
+    <div class="content">
+      <ul>
+        <li>錨定三選一：鎖頭部、鎖世界、鎖身體；鎖頭部最容易暈，鎖世界最容易跟丟</li>
+        <li>閱讀距離與角度：內容擺在視線前方的舒適圓弧內，別讓使用者仰頭或狂轉脖子</li>
+        <li>空間音訊是導航工具：用聲音告訴使用者「該往哪看」</li>
+        <li>真實世界也是介面的一部分：MR 設計要讓虛擬物件尊重實體遮擋與桌面</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 13 AI 與 XR 的交會 -->
+<section class="slide part">
+    <div class="part-num">03</div>
+    <div class="eyebrow">PART 3</div>
+    <h2>AI 與 XR 的交會</h2>
+    <p class="part-sub">XR 最貴的一直是內容。生成式 AI 正從三個方向進場：生成場景、扮演虛擬人、理解你身處的空間。</p>
+  </section>
+
+  <!-- 14 場景生成：從提示詞到 3D -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · AI 與 XR 的交會</div>
+    <h2>場景生成：從提示詞到 3D</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>1. 提示詞或草圖</h3><p>一句描述、一張參考圖，甚至在頭顯裡直接畫草圖</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>2. 生成 3D 資產</h3><p>Meshy、Tripo 等工具約 30 至 60 秒產出帶貼圖模型</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>3. 進引擎組裝</h3><p>匯入 Unity、Unreal 或網頁引擎，佈置成可走入的場景</p></div>
+      </div>
+      <ul>
+        <li>2026 年的焦點已從「生一個物件」移向「生一個可走動的世界」</li>
+        <li>研究原型如 MS2Mesh-XR：戴著頭顯畫草圖，模型就地生成</li>
+      </ul>
+      <div class="linkrow">
+        <a class="lk" href="https://www.meshy.ai/features/text-to-3d" target="_blank" rel="noopener">Meshy 官方</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 15 世界模型：直接算出世界 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · AI 與 XR 的交會</div>
+    <h2>世界模型：直接算出世界</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>是什麼</dt><dd>Google DeepMind 的 Genie 3：一句提示，即時生成可走動、可互動的世界</dd>
+        <dt>規格</dt><dd class="num">720p、每秒 24 幀即時互動，場景一致性可維持數分鐘</dd>
+        <dt>進展</dt><dd class="num">2025/8 研究預覽；2026/1/29 以 Project Genie 對美國 AI Ultra 訂閱戶開放</dd>
+        <dt>意義</dt><dd>跳過建模與引擎管線，用模型直接「算」出環境：XR 內容的潛在終局</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://deepmind.google/blog/genie-3-a-new-frontier-for-world-models/" target="_blank" rel="noopener">Genie 3 官方</a>
+        <a class="lk" href="https://blog.google/innovation-and-ai/models-and-research/google-deepmind/project-genie/" target="_blank" rel="noopener">Project Genie 公告</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 16 AI 虛擬人進駐虛擬世界 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · AI 與 XR 的交會</div>
+    <h2>AI 虛擬人進駐虛擬世界</h2>
+    <div class="content">
+      <ul>
+        <li>Meta Horizon Studio：對話式編輯器，用提示詞生成場景、NPC 與玩法</li>
+        <li>Meta AI 進駐 Quest：對頭顯說話就能開應用、搜尋內容、回答問題</li>
+        <li>Galaxy XR 的 Likeness：面部追蹤的擬真分身，把「你」帶進視訊通話</li>
+        <li>趨勢：NPC 從預寫腳本樹走向生成式對話，情緒與記憶成為設計參數</li>
+      </ul>
+      <div class="linkrow">
+        <a class="lk" href="https://www.uploadvr.com/meta-horizon-studio-upgrade-ai-assistant-horizon-worlds/" target="_blank" rel="noopener">UploadVR 報導</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 17 空間理解：AI 看懂你的房間 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · AI 與 XR 的交會</div>
+    <h2>空間理解：AI 看懂你的房間</h2>
+    <div class="content">
+      <ul>
+        <li>AI 眼鏡的核心迴路：鏡頭看見、模型理解、在耳邊或鏡片上回答</li>
+        <li>Ray-Ban Display 把 Meta AI 戴上臉：看你所看、答你所問</li>
+        <li>Android XR 把 Gemini 設為系統級助理，依你所在的場景主動供給資訊</li>
+        <li>空間理解讓資訊從「查出來的」變成「就標註在世界上的」</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 18 平台現況：2026 年 7 月 -->
+<section class="slide part">
+    <div class="part-num">04</div>
+    <div class="eyebrow">PART 4</div>
+    <h2>平台現況：2026 年 7 月</h2>
+    <p class="part-sub">蘋果的高價頭顯、Meta 的引擎重造與眼鏡豪賭、Google 的生態劇本。三條路線，一個尚未定案的形態之爭。</p>
+  </section>
+
+  <!-- 19 Vision Pro：M5 世代 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 平台現況 · Apple</div>
+    <h2>Vision Pro：M5 世代現況</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>硬體</dt><dd class="num">2025/10 升級 M5 晶片與雙圈編織頭帶，更新率達 120Hz、續航提升</dd>
+        <dt>台灣</dt><dd class="num">2025/11/28 開賣，NT$119,900 起，三種容量</dd>
+        <dt>系統</dt><dd>visionOS 26（2025/9 發布）：空間小工具、同室共享、廣視角影片</dd>
+        <dt>下一步</dt><dd class="num">visionOS 27 已於 WWDC 2026（6/8）發表，預計年底推出</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://www.apple.com/tw/newsroom/2025/10/apple-vision-pro-upgraded-with-the-powerful-m5-chip/" target="_blank" rel="noopener">Apple 台灣新聞稿</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 20 蘋果的高階困局 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 平台現況 · Apple</div>
+    <h2>蘋果的高階困局</h2>
+    <div class="content">
+      <ul>
+        <li>維持十萬元級的高價帶，主打空間影音、個人劇院與企業應用</li>
+        <li>2026/4 美媒報導：M5 改款銷量不如預期，內部資源轉向智慧眼鏡專案</li>
+        <li>2026/6 售價不降反升的報導，讓「等降價再進場」的期待落空</li>
+        <li>但生態未停擺：visionOS 27 照常發表，開發工具持續更新</li>
+      </ul>
+      <div class="linkrow">
+        <a class="lk" href="https://www.macrumors.com/2026/04/29/apple-vision-pro-m5-flop/" target="_blank" rel="noopener">MacRumors 報導</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 21 Meta：引擎重造與戰略轉彎 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 平台現況 · Meta</div>
+    <h2>Meta：引擎重造與戰略轉彎</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>頭顯主力</dt><dd>Quest 3 系列續任主力，Meta AI 語音助理全面進駐頭顯</dd>
+        <dt>引擎重造</dt><dd>自研 Horizon Engine 取代 Unity 執行環境：載入快 4 倍、單一世界破百人同時在線</dd>
+        <dt>AI 工具</dt><dd>Horizon Studio 代理式編輯器：用對話生成世界，門檻大幅下降</dd>
+        <dt>戰略轉彎</dt><dd class="num">2026/3 Bloomberg 報導：Quest 版 Horizon Worlds 終止，重心轉向手機與 AI</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://roadtovr.com/meta-horizon-worlds-engine-upgrade-concurrent-users-horizon-studio/" target="_blank" rel="noopener">Horizon 引擎報導</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 22 Ray-Ban Display： -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 平台現況 · Meta</div>
+    <h2>Ray-Ban Display：眼鏡先行</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>產品</dt><dd class="num">2025/9 美國上市、約 800 美元：右眼單眼彩色顯示＋神經腕帶</dd>
+        <dt>輸入</dt><dd>EMG 腕帶讀肌電訊號；2026 年初新增手寫輸入與提詞機功能</dd>
+        <dt>市況</dt><dd>需求遠超供給，候補排入 2026；英法義加上市計畫無限期延後</dd>
+        <dt>定位</dt><dd>Meta 將 AI 放在核心，顯示功能則扮演輔助角色</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://www.meta.com/blog/meta-ray-ban-display-ai-glasses-connect-2025/" target="_blank" rel="noopener">Meta 官方發布文</a>
+        <a class="lk" href="https://roadtovr.com/meta-pauses-ray-ban-display-international-release/" target="_blank" rel="noopener">Road to VR 報導</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 23 第三勢力：Android XR -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 平台現況 · Google</div>
+    <h2>第三勢力：Android XR</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>首發裝置</dt><dd class="num">Samsung Galaxy XR 頭顯（2025/10 上市）：Gemini 深度整合的第一台 Android XR 機</dd>
+        <dt>近期更新</dt><dd class="num">2026/4：PC 連線、Likeness 擬真分身、旅行模式</dd>
+        <dt>裝置路線</dt><dd>XREAL Project Aura 眼鏡預告 2026 秋季；分析估今年多款 Android XR 裝置登場</dd>
+        <dt>眼鏡佈局</dt><dd>與 Gentle Monster、Warby Parker 合作的消費級眼鏡仍在路上</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://blog.google/products-and-platforms/platforms/android/android-xr-immersive-features-update-april-2026/" target="_blank" rel="noopener">Android XR 官方</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 24 Meta 的十年豪賭 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 案例討論</div>
+    <h2>Meta 的十年豪賭</h2>
+    <div class="content">
+      <div class="tl">
+        <div class="ev"><b>2014</b><span>Facebook 收購 Oculus，把 VR 當成「下一個運算平台」的入場券</span></div>
+        <div class="ev"><b>2021/10</b><span>公司改名 Meta，元宇宙升格為公司級戰略，重金投入 Reality Labs</span></div>
+        <div class="ev"><b>2025/9</b><span>Connect 2025：Ray-Ban Display 開賣、自研 Horizon Engine 亮相</span></div>
+        <div class="ev"><b>2026/3</b><span>Bloomberg 報導 Quest 版 Horizon Worlds 走入歷史；Worlds 轉攻手機，公司敘事全面轉向 AI 眼鏡</span></div>
+      </div>
+      <div class="qlist">
+        <p>十年投入換來的答案是「眼鏡」而非「頭顯」：沉浸的終局是更深的沉浸，還是更低的門檻？</p>
+        <p>平台一夕轉向時，XR 創作者該把價值押在哪一層：引擎技能、平台獨占內容，還是可攜的空間設計方法？</p>
+      </div>
+      <div class="linkrow">
+        <a class="lk" href="https://www.bloomberg.com/news/articles/2026-03-17/meta-to-discontinue-key-metaverse-product-for-vr-headsets" target="_blank" rel="noopener">Bloomberg 報導</a>
+        <a class="lk" href="https://developers.meta.com/horizon/blog/2026-vr-state-of-the-union-horizon-mobile-focus/" target="_blank" rel="noopener">Meta 開發者部落格</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 25 論文導讀 -->
+<section class="slide part">
+    <div class="part-num">05</div>
+    <div class="eyebrow">PART 5</div>
+    <h2>論文導讀</h2>
+    <p class="part-sub">兩篇文獻：一篇把 XR 與 AI 的交會畫成完整地圖，一篇示範在 VR 裡與生成式 AI 共同創作時，控制權該怎麼分。</p>
+  </section>
+
+  <!-- 26 當 XR 遇上 AI：一張學術地 -->
+<section class="slide">
+    <div class="eyebrow">PART 5 · 論文導讀 ①</div>
+    <h2>當 XR 遇上 AI：一張學術地圖</h2>
+    <div class="content">
+      <div class="biblio">
+        <span class="ti">When XR and AI Meet：A Scoping Review</span>
+        Hirzle, T. 等（2023）。<i>ACM CHI '23</i>，1–45。
+        <a href="https://doi.org/10.1145/3544548.3581072" target="_blank" rel="noopener">doi.org/10.1145/3544548.3581072</a>
+      </div>
+      <dl class="kv">
+        <dt>研究問題</dt><dd>XR 與 AI 兩個領域的交會處，累積了哪些研究、還缺哪些？</dd>
+        <dt>方法</dt><dd class="num">範疇性回顧：從 203 個場域的 2,619 篇篩出 311 篇深入分析</dd>
+        <dt>範圍</dt><dd class="num">2017 至 2021 年，橫跨 HCI 與 AI 兩大社群</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 27 發現：交會處的偏斜與縫隙 -->
+<section class="slide">
+    <div class="eyebrow">PART 5 · 論文導讀 ①</div>
+    <h2>發現：交會處的偏斜與縫隙</h2>
+    <div class="content">
+      <ul>
+        <li>主流是「AI 服務 XR」：手勢與視線辨識、虛擬人與化身、環境與內容生成</li>
+        <li>反向的「XR 服務 AI」少得多：用 XR 產生訓練資料、把模型行為視覺化</li>
+        <li>兩個社群的工具與評測慣例差異大，跨域研究常停在淺層借用</li>
+        <li>挑戰清單：共通資料集、可重製性、跨域方法論，都是現成的研究缺口</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 28 快讀：在 VR 裡與 AI 共創 -->
+<section class="slide">
+    <div class="eyebrow">PART 5 · 論文導讀 ②</div>
+    <h2>快讀：在 VR 裡與 AI 共創</h2>
+    <div class="content">
+      <div class="biblio">
+        <span class="ti">VRCopilot: Authoring 3D Layouts with Generative AI Models in VR</span>
+        Zhang, L., Pan, J., Gettig, J., Oney, S., &amp; Guo, A.（2024）。<i>Proceedings of the 37th Annual ACM Symposium on User Interface Software and Technology</i>（UIST '24），1–13。
+        <a href="https://doi.org/10.1145/3654777.3676451" target="_blank" rel="noopener">doi.org/10.1145/3654777.3676451</a>
+      </div>
+      <ul>
+        <li>系統：把生成式 AI 接進沉浸式創作，人與 AI 在頭顯內共同佈置 3D 空間</li>
+        <li>對照三種模式：全手動、鷹架式（先生成線框再細化）、全自動</li>
+        <li>發現：鷹架式的中介表徵讓使用者能動性與創作歸屬感高於全自動</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 29 把沉浸變成你的研究材料 -->
+<section class="slide">
+    <div class="eyebrow">Week 10 · 課堂討論與課後任務</div>
+    <h2>把沉浸變成你的研究材料</h2>
+    <div class="content">
+      <div class="qlist">
+        <p>Vision Pro 叫好不叫座、Ray-Ban Display 賣到缺貨：關鍵差異是價格、形態，還是使用情境？</p>
+        <p>世界模型若能即時生成場景，XR 設計師的工作還剩什麼？哪些能力反而更值錢？</p>
+        <p>用本週的舒適度戒律，診斷一個你體驗過的 XR 或體感作品：它犯了哪一條？</p>
+      </div>
+      <div class="card">
+        <h3>課後任務（下週開場分享，約 5 分鐘）</h3>
+        <p>用 Meshy 或 Tripo，以一段中文提示詞生成一個 3D 物件並放進任一引擎或線上檢視器；寫 300 字觀察：從提示到可用資產，哪個環節最花時間？品質瓶頸在哪？</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 30 所有連結，一頁帶走 -->
+<section class="slide">
+    <div class="eyebrow">Week 10 · 本週資源彙整</div>
+    <h2>所有連結，一頁帶走</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="grp">
+          <h3>平台現況</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://www.apple.com/tw/newsroom/2025/10/apple-vision-pro-upgraded-with-the-powerful-m5-chip/" target="_blank" rel="noopener">Apple 台灣新聞稿</a>
+            <a class="lk" href="https://www.macrumors.com/2026/04/29/apple-vision-pro-m5-flop/" target="_blank" rel="noopener">MacRumors 報導</a>
+            <a class="lk" href="https://www.meta.com/blog/meta-ray-ban-display-ai-glasses-connect-2025/" target="_blank" rel="noopener">Ray-Ban Display</a>
+            <a class="lk" href="https://blog.google/products-and-platforms/platforms/android/android-xr-immersive-features-update-april-2026/" target="_blank" rel="noopener">Android XR 官方</a>
+            <a class="lk" href="https://www.bloomberg.com/news/articles/2026-03-17/meta-to-discontinue-key-metaverse-product-for-vr-headsets" target="_blank" rel="noopener">Bloomberg 報導</a>
+          </div>
+          <h3 style="margin-top:18px">設計指南</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://developers.meta.com/horizon/design/comfort/" target="_blank" rel="noopener">Meta 舒適度指南</a>
+          </div>
+        </div>
+        <div class="grp">
+          <h3>AI × XR 工具</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://deepmind.google/blog/genie-3-a-new-frontier-for-world-models/" target="_blank" rel="noopener">Genie 3 官方</a>
+            <a class="lk" href="https://blog.google/innovation-and-ai/models-and-research/google-deepmind/project-genie/" target="_blank" rel="noopener">Project Genie 公告</a>
+            <a class="lk" href="https://www.meshy.ai/features/text-to-3d" target="_blank" rel="noopener">Meshy 官方</a>
+            <a class="lk" href="https://www.uploadvr.com/meta-horizon-studio-upgrade-ai-assistant-horizon-worlds/" target="_blank" rel="noopener">Horizon Studio 報導</a>
+          </div>
+          <h3 style="margin-top:18px">本週論文</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://doi.org/10.1145/3544548.3581072" target="_blank" rel="noopener">論文① CHI 綜述</a>
+            <a class="lk" href="https://doi.org/10.1145/3654777.3676451" target="_blank" rel="noopener">論文② VRCopilot</a>
+          </div>
+        </div>
+      </div>
+      <div class="take"><b>本週檢核</b>面對一款新 XR 裝置，你能說出現實占比、輸入方式與舒適度風險嗎？</div>
+    </div>
+  </section>
+
+  
+
+  </div></div>
+
+  <div class="ctrl">
+    <button id="prev" aria-label="上一張">‹</button>
+    <span class="cnt" id="cnt">1 / 1</span>
+    <button id="next" aria-label="下一張">›</button>
+    <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+  </div>
+  <div class="prog" id="prog"></div>
+
+  <div class="toc" id="toc">
+    <button class="close" id="tocClose">關閉（Esc）</button>
+    <h2 id="tocTitle">目錄</h2>
+    <div class="tgrid" id="tgrid"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ★ 每週只改這一行 ★ */
+  var WEEK_LABEL = '第 10 週 · 沉浸式媒體與XR';
+
+  var stage = document.getElementById('stage');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var cnt = document.getElementById('cnt');
+  var prog = document.getElementById('prog');
+  var toc = document.getElementById('toc');
+  var tgrid = document.getElementById('tgrid');
+  var cur = 0;
+
+  document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
+
+  slides.forEach(function (s, i) {
+    var f = document.createElement('div');
+    f.className = 'foot';
+    f.innerHTML = '<span>人工智慧與互動媒體特論|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    s.appendChild(f);
+  });
+
+  var groups = {};
+  slides.forEach(function (s, i) {
+    var eb = s.querySelector('.eyebrow');
+    var part = '開場';
+    if (eb) {
+      var m = eb.textContent.match(/PART\s*(\d)/i);
+      if (m) part = 'PART ' + m[1];
+      else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
+    }
+    var h = s.querySelector('h1, h2');
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+  });
+  Object.keys(groups).forEach(function (k) {
+    var col = document.createElement('div');
+    var h3 = document.createElement('h3');
+    h3.textContent = k;
+    col.appendChild(h3);
+    groups[k].forEach(function (it) {
+      var b = document.createElement('button');
+      b.textContent = it.t;
+      b.dataset.i = it.i;
+      b.addEventListener('click', function () { toggleToc(false); go(it.i); });
+      col.appendChild(b);
+    });
+    tgrid.appendChild(col);
+  });
+
+  function go(i) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach(function (s, j) { s.classList.toggle('active', j === cur); });
+    cnt.textContent = (cur + 1) + ' / ' + slides.length;
+    prog.style.width = ((cur + 1) / slides.length * 100) + '%';
+    if (history.replaceState) history.replaceState(null, '', '#s' + (cur + 1));
+    tgrid.querySelectorAll('button').forEach(function (b) { b.classList.toggle('here', +b.dataset.i === cur); });
+  }
+  function toggleToc(on) {
+    toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
+  }
+
+  document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
+  document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
+  document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
+  document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { toggleToc(false); return; }
+    if (toc.classList.contains('on')) return;
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'Home': go(0); break;
+      case 'End': go(slides.length - 1); break;
+      case 'm': case 'M': toggleToc(); break;
+    }
+  });
+
+  function fit() {
+    var w = window.innerWidth, h = window.innerHeight;
+    if (!w || !h) { requestAnimationFrame(fit); return; }
+    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('load', fit);
+  fit();
+
+  var m = location.hash.match(/^#s(\d+)$/);
+  go(m ? +m[1] - 1 : 0);
+})();
+</script>
+</body>
+</html>

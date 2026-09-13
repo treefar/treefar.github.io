@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>第 8 週|互動裝置與空間設計</title>
+<style>
+  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  * { box-sizing: border-box; }
+  #app {
+    position: fixed; inset: 0; overflow: hidden;
+    background: var(--bg);
+    font-family: var(--body);
+    color: var(--ink);
+    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
+    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
+    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
+    --bg: #F5F4EC; --bg2: #EFEEE2;
+    --panel: #FDFCF6; --panel2: #EDECDF;
+    --ink: #232B21; --sub: #67705E;
+    --accent: #2F6B4F; --accent-rgb: 47,107,79;
+    --accent2: #BC4F2C;
+    --line: rgba(35,43,33,.16);
+    --link: #2F6B4F;
+    --r: 4px;
+  }
+  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  #app a:hover { opacity: .85; }
+  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
+  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
+  .slide.active { display: flex; }
+  .slide::before {
+    content: ""; position: absolute; inset: 24px; pointer-events: none;
+    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
+  }
+
+  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
+  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
+  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+
+  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
+  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
+  .sub { color: var(--sub); }
+  .small { font-size: 18px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
+  .cards { display: grid; gap: 18px; }
+  .c2 { grid-template-columns: repeat(2, 1fr); }
+  .c3 { grid-template-columns: repeat(3, 1fr); }
+  .c4 { grid-template-columns: repeat(4, 1fr); }
+  .c5 { grid-template-columns: repeat(5, 1fr); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
+  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
+  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
+  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+
+  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
+  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+
+  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
+
+  .cover, .part { justify-content: center; }
+  .cover .eyebrow { margin-bottom: 26px; }
+  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
+  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
+  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
+  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
+  .part h2 { font-size: 56px; }
+  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+
+  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
+  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
+  .kv dd { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
+  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
+  .lk::after { content: " ↗"; font-size: 12px; }
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
+  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
+  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
+  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
+  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
+  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  .tl { display: flex; flex-direction: column; gap: 18px; }
+  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
+  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
+  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+
+  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
+  .content > .cards,
+  .content > .cols,
+  .content > .flow,
+  .content > .kv,
+  .content > .prob { flex: 1 1 auto; }
+  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .qlist,
+  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .biblio { flex: 0 0 auto; }
+  .cols > .card { justify-content: flex-start; }
+
+  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
+  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
+  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
+  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
+  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  .toc.on { display: block; }
+  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
+  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
+  .toc button:hover { background: var(--panel2); }
+  .toc button.here { color: var(--accent2); font-weight: 700; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
+  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+<div id="app" data-deck="b">
+  <div class="stagewrap"><div class="stage" id="stage">
+
+  <!-- 1 互動裝置與空間設計 -->
+<section class="slide cover">
+    <div class="eyebrow">人工智慧與互動媒體特論 · 設計創新與經營研究所</div>
+    <h1>互動裝置與空間設計</h1>
+    <p class="cover-sub">當運算走出螢幕、住進空間：從感測到投影的即時管線，以及把觀眾變成作品一部分的設計方法。</p>
+    <div class="cover-meta"><span>第 8 週</span><span>論文導讀與案例討論</span><span>授課：鄧樹遠</span></div>
+  </section>
+
+  <!-- 2 九十分鐘，五段路 -->
+<section class="slide">
+    <div class="eyebrow">Week 08 · 本週地圖</div>
+    <h2>九十分鐘，五段路</h2>
+    <div class="content">
+      <div class="cards c5">
+        <div class="card"><span class="who">PART 1</span><h3>即時運算管線</h3><p class="sub">感測、推論、渲染、輸出的四層分工</p></div>
+        <div class="card"><span class="who">PART 2</span><h3>觀眾參與設計</h3><p class="sub">從旁觀到共創的設計模式</p></div>
+        <div class="card"><span class="who">PART 3</span><h3>生成式 AI 進場</h3><p class="sub">影像與聲音的即時現場生成</p></div>
+        <div class="card"><span class="who">PART 4</span><h3>案例現場</h3><p class="sub">teamLab 技術面與智慧展場</p></div>
+        <div class="card"><span class="who">PART 5</span><h3>論文導讀</h3><p class="sub">一篇經典框架，一篇新近實證</p></div>
+      </div>
+      <div class="take"><b>本週目標</b>看懂任何互動裝置背後的那條管線，並學會用「觀眾」而非「使用者」思考設計。</div>
+    </div>
+  </section>
+
+  <!-- 3 從桌面感測到空間現場 -->
+<section class="slide">
+    <div class="eyebrow">承接第 7 週 · 互動媒體設計基礎</div>
+    <h2>從桌面感測到空間現場</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">上週的世界</span>
+          <h3>互動媒體設計基礎</h3>
+          <ul>
+            <li>深度攝影機、LiDAR、mmWave 的感測原理</li>
+            <li>一個使用者、一支感測器、一面螢幕</li>
+            <li>用可用性（usability）評價介面</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">本週的世界</span>
+          <h3>互動裝置與空間設計</h3>
+          <ul>
+            <li>同一批感測器，裝進建築尺度的真實空間</li>
+            <li>一群觀眾同時輸入、彼此影響、互為風景</li>
+            <li>用體驗與參與評價整個空間</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 即時運算管線 -->
+<section class="slide part">
+    <div class="part-num">01</div>
+    <div class="eyebrow">PART 1</div>
+    <h2>即時運算管線</h2>
+    <p class="part-sub">每一件會回應你的裝置，背後都是同一條迴圈：感測、推論、渲染、輸出。看懂這四層，就能拆解世界上任何互動裝置。</p>
+  </section>
+
+  <!-- 5 一條管線，四層分工 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 即時運算管線</div>
+    <h2>一條管線，四層分工</h2>
+    <div class="content">
+      <div class="cards c4">
+        <div class="card"><span class="who">LAYER 1</span><h3>感測</h3><p class="sub">攝影機、LiDAR、麥克風：把現場變成資料</p></div>
+        <div class="card"><span class="who">LAYER 2</span><h3>推論</h3><p class="sub">偵測與追蹤：資料變成「發生了什麼」</p></div>
+        <div class="card"><span class="who">LAYER 3</span><h3>渲染</h3><p class="sub">引擎與生成程式：決定「回應什麼」</p></div>
+        <div class="card"><span class="who">LAYER 4</span><h3>輸出</h3><p class="sub">投影、LED、音響：把回應放回空間</p></div>
+      </div>
+      <ul>
+        <li>整條迴圈要在數十到一百毫秒內跑完，觀眾才會相信「它正在回應我」</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 6 感測層：空間中的眼睛 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 即時運算管線 · 感測</div>
+    <h2>感測層：空間中的眼睛</h2>
+    <div class="content">
+      <ul>
+        <li>深度攝影機：骨架與手勢辨識，室內近距離最成熟，但怕強光直射</li>
+        <li>LiDAR：大範圍人流與輪廓追蹤，不受環境光影響，適合展場尺度</li>
+        <li>mmWave 毫米波：偵測人數與位置、不拍攝影像，隱私敏感場域首選</li>
+        <li>空間裝設三個敵人：遮擋、環境光、多人重疊——選型先看現場條件</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 7 推論層：毫秒級的判斷 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 即時運算管線 · 推論</div>
+    <h2>推論層：毫秒級的判斷</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>延遲預算</dt><dd class="num">30fps 一格只有 33ms；從感測到輸出整條鏈常要求壓在 0.1 秒內</dd>
+        <dt>常見任務</dt><dd>骨架追蹤、人流計數、手勢辨識、前景分割</dd>
+        <dt>2025 現況</dt><dd>即時機器學習推論已可在單機 GPU 低延遲執行，體感互動門檻大降</dd>
+        <dt>部署位置</dt><dd>以現場邊緣運算為主；雲端只處理不趕時間的分析工作</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 8 渲染與輸出：引擎與媒體伺服器 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 即時運算管線 · 渲染與輸出</div>
+    <h2>渲染與輸出：引擎與媒體伺服器</h2>
+    <div class="content">
+      <ul>
+        <li>TouchDesigner：節點式即時運算，互動裝置圈的通用語</li>
+        <li>Unreal Engine：高擬真即時場景，敘事型展演的主力</li>
+        <li>媒體伺服器 disguise 統籌同步：2025 年起支援 TouchDesigner 內容直跑</li>
+        <li>投影融接與幾何校正：多台投影機拼成一面無縫的曲面</li>
+      </ul>
+      <div class="linkrow">
+        <a class="lk" href="https://www.disguise.one/en/insights/news/disguise-sets-industry-standard-content-flexibility-groundbreaking-solutions-ise-2025" target="_blank" rel="noopener">disguise ISE 2025</a>
+        <a class="lk" href="https://www.disguise.one/en/insights/blog/real-time-experiences-jean-francois-larouche-moment-factory" target="_blank" rel="noopener">即時工作流訪談</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 觀眾參與的設計模式 -->
+<section class="slide part">
+    <div class="part-num">02</div>
+    <div class="eyebrow">PART 2</div>
+    <h2>觀眾參與的設計模式</h2>
+    <p class="part-sub">互動裝置的現場永遠不只一個人：有人在玩、有人在看、有人在排隊。這一段整理「一群人」的設計方法。</p>
+  </section>
+
+  <!-- 10 參與光譜：從旁觀到共創 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 觀眾參與</div>
+    <h2>參與光譜：從旁觀到共創</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>旁觀 Spectate</h3><p>看別人互動也是體驗的一部分：排隊區就是前排觀眾席</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>參與 Participate</h3><p>身體成為輸入：走動、觸摸、發聲都會改變作品狀態</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>共創 Co-create</h3><p>觀眾的產出進入作品本身，成為別人看到的內容</p></div>
+      </div>
+      <ul>
+        <li>同一件作品裡三種角色同時存在，好的裝置替每一種角色都設計了位置</li>
+      </ul>
+      <div class="take"><b>假設情境</b>假設一位同學正在操作、其他組員排隊觀看：畫面與聲音要讓旁觀者也看得懂發生了什麼。</div>
+    </div>
+  </section>
+
+  <!-- 11 回饋迴圈：讓互動可讀 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 觀眾參與</div>
+    <h2>回饋迴圈：讓互動可讀</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><h3>可發現性</h3><p>觀眾怎麼知道「這裡可以互動」？用光、聲音與別人的身影當邀請。</p></div>
+        <div class="card"><h3>可讀性</h3><p>我做了什麼、它變了什麼：因果要在一秒內對上，否則像壞掉。</p></div>
+        <div class="card"><h3>可深化</h3><p>第一下誰都會，第十下要有進階的回報，體驗才留得住人。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 一群人的互動，怎麼設計 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 觀眾參與</div>
+    <h2>一群人的互動，怎麼設計</h2>
+    <div class="content">
+      <ul>
+        <li>多人同時輸入：系統要分得出「誰做的」，或索性擁抱集體效果</li>
+        <li>社交尷尬是隱形的流失原因：降低單人被注視的壓力、鼓勵結伴</li>
+        <li>無控制器的全身互動已商品化：Moment Factory 的 Augmented Games</li>
+        <li>互動熱點會塞車：輪替、旁觀位與動線要跟內容一起設計</li>
+      </ul>
+      <div class="linkrow">
+        <a class="lk" href="https://blooloop.com/technology/news/moment-factory-augmented-games-global-rollout/" target="_blank" rel="noopener">Augmented Games</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13 生成式 AI 進入現場 -->
+<section class="slide part">
+    <div class="part-num">03</div>
+    <div class="eyebrow">PART 3</div>
+    <h2>生成式 AI 進入現場</h2>
+    <p class="part-sub">第 4 週的生成模型，如何從離線工具變成現場演員？影像與聲音的即時生成，正在改寫「展覽內容」的定義。</p>
+  </section>
+
+  <!-- 14 現場接入 AI 的三種深度 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 生成式 AI 進場</div>
+    <h2>現場接入 AI 的三種深度</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><h3>預先生成</h3><p>AI 離線產好素材，現場只負責播放：穩定、可審查，但每一場都一樣。</p></div>
+        <div class="card"><h3>資料驅動即時</h3><p>程式現場演算、內容框架固定：teamLab 的花、Anadol 的資料雕塑。</p></div>
+        <div class="card"><h3>全即時生成</h3><p>觀眾輸入直接觸發生成模型，每一刻獨一無二；延遲與品質仍在拉鋸。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 15 即時生成影像：資料成為顏料 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 生成式 AI 進場 · 影像</div>
+    <h2>即時生成影像：資料成為顏料</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>Dataland</dt><dd class="num">全球首座 AI 藝術館，2026/6/20 於洛杉磯 The Grand LA 開幕</dd>
+        <dt>即時運算</dt><dd>Google Cloud 基礎設施現場生成；開幕展 Machine Dreams: Rainforest</dd>
+        <dt>畢爾包古根漢</dt><dd class="num">2025/3–10「in situ」首展：以 3,500 萬張建築影像訓練 LAM 模型</dd>
+        <dt>共同語言</dt><dd>資料是顏料、光是畫布：系統持續生成，而非播放檔案</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://blog.google/company-news/outreach-and-initiatives/arts-culture/dataland-ai-art-museum/" target="_blank" rel="noopener">Dataland（Google）</a>
+        <a class="lk" href="https://www.guggenheim-bilbao.eus/en/exhibitions/in-situ-refik-anadol" target="_blank" rel="noopener">古根漢展覽頁</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 16 即時聲音與空間音訊 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 生成式 AI 進場 · 聲音</div>
+    <h2>即時聲音與空間音訊</h2>
+    <div class="content">
+      <ul>
+        <li>影音同源：Dataland 以數百萬筆自然影像與聲音資料即時生成視聽內容</li>
+        <li>波束成形（beamforming）：Sphere 以 HOLOPLOT 把聲音「投影」到指定座位區</li>
+        <li>不戴耳機的個人化：同一空間、不同位置，聽到不同的內容</li>
+        <li>反向也成立：麥克風陣列讓聲音成為觀眾輸入的感測通道</li>
+      </ul>
+      <div class="linkrow">
+        <a class="lk" href="https://www.holoplot.com/case-studies/msg-sphere-case-study" target="_blank" rel="noopener">HOLOPLOT 案例</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 17 案例現場 -->
+<section class="slide part">
+    <div class="part-num">04</div>
+    <div class="eyebrow">PART 4</div>
+    <h2>案例現場</h2>
+    <p class="part-sub">第 2 週我們遠遠看過 teamLab；今天拆開它的引擎室，再對照 Moment Factory、Sphere 與台灣的現場。</p>
+  </section>
+
+  <!-- 18 teamLab Borderle -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 案例 · teamLab</div>
+    <h2>teamLab Borderless：技術解剖</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>現況</dt><dd class="num">2024/2/9 移址麻布台之丘重開；2026/7/8 起 Light Sculpture–Flow 展區更新</dd>
+        <dt>即時演算</dt><dd>官方明言：作品不是預錄影像的回放，而是由程式持續即時渲染</dd>
+        <dt>無邊界</dt><dd>作品走出房間、沿走廊流動、彼此干涉：全館渲染必須同步</dd>
+        <dt>互動</dt><dd>花開花謝、群蝶飛行隨觀眾行為改變，此刻的畫面僅此一次</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://www.teamlab.art/e/tokyo/" target="_blank" rel="noopener">Borderless 官方</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 19 teamLab Phenomen -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 案例 · teamLab</div>
+    <h2>teamLab Phenomena：環境即作品</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>開幕</dt><dd class="num">2025/4/18 於阿布達比 Saadiyat 文化特區，1.7 萬平方公尺全球最大</dd>
+        <dt>概念</dt><dd>「環境現象」：光、風、水、霧形成的現象本身就是作品</dd>
+        <dt>輸入</dt><dd>濕度、氣流、光線與觀眾的移動，都會即時改變作品狀態</dd>
+        <dt>意義</dt><dd>從「把影像投在牆上」走向「運算整個物理環境」</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://www.teamlab.art/e/phenomena/" target="_blank" rel="noopener">Phenomena 官方</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 20 teamLab 在台灣：共創的現 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 案例 · 台灣</div>
+    <h2>teamLab 在台灣：共創的現場</h2>
+    <div class="content">
+      <ul>
+        <li>「共創！未來園」高雄場：2025/6/7–10/12 於國立科學工藝博物館</li>
+        <li>台北站吸引近 20 萬人次後移展南下，市場胃納已被驗證</li>
+        <li>核心機制是共創：孩子畫的魚被掃描，游進眾人共享的大水族館</li>
+        <li>對照題：台灣自製沉浸式內容的量能與定價，如何面對進口 IP</li>
+      </ul>
+      <div class="linkrow">
+        <a class="lk" href="https://futurepark.teamlab.art/en/" target="_blank" rel="noopener">Future Park 官方</a>
+        <a class="lk" href="https://500times.udn.com/wtimes/story/120842/8036109" target="_blank" rel="noopener">500輯報導</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 21 Moment Factory：把 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 案例 · Moment Factory</div>
+    <h2>Moment Factory：把玩法裝進空間</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>定位</dt><dd>蒙特婁多媒體工作室：機場、森林夜行、球場到展館都有作品</dd>
+        <dt>新作</dt><dd>華府 MCAAD「Perpetual Story Machine」：1.5 億像素的 360 度敘事空間</dd>
+        <dt>技術</dt><dd>disguise 統籌加 Unreal 即時內容；先玩合作遊戲、再進故事核心</dd>
+        <dt>產品化</dt><dd>Augmented Games 體感遊戲全球授權：展演公司變產品公司</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://momentfactory.com/" target="_blank" rel="noopener">Moment Factory</a>
+        <a class="lk" href="https://blooloop.com/moment-factory-perpetual-story-machine/" target="_blank" rel="noopener">blooloop 報導</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 22 Sphere：智慧展場的極端值 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 案例 · Sphere</div>
+    <h2>Sphere：智慧展場的極端值</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>硬體</dt><dd class="num">內牆 16K×16K、約 1.5 萬平方公尺 LED、64,000 塊模組包住 1.8 萬名觀眾</dd>
+        <dt>體感</dt><dd>觸覺座椅加風、香氣與溫度的 4D 系統；聲音由波束成形精準遞送</dd>
+        <dt>內容</dt><dd class="num">2025/8/28 起《綠野仙蹤》沉浸版上映；駐地演唱會與原生電影並行</dd>
+        <dt>啟示</dt><dd>場地本身就是媒體：內容必須配合球體空間重新製作，無法直接搬用一般銀幕版本</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 23 案例討論：teamLab 的三十 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 案例討論</div>
+    <h2>案例討論：teamLab 的三十年</h2>
+    <div class="content">
+      <div class="tl">
+        <div class="ev"><b>2001</b><span>於東京成立：自稱「超技術專家」的藝術家與工程師集團</span></div>
+        <div class="ev"><b>2018/6</b><span>台場 Borderless 開幕，隔年以約 220 萬人次創單一藝術團體金氏紀錄</span></div>
+        <div class="ev"><b>2022/8</b><span>台場館因都更閉館；品牌靠 Planets 與海外授權維持聲量</span></div>
+        <div class="ev"><b>2024/2</b><span>麻布台之丘重開幕，空間與作品全面翻新</span></div>
+        <div class="ev"><b>2025–26</b><span>阿布達比 Phenomena 開幕成全球最大；東京館持續換展更新</span></div>
+      </div>
+      <div class="qlist">
+        <p>同樣預算可辦十檔巡迴光影展，teamLab 為何堅持自建常設館？它算的是哪一筆帳？</p>
+        <p>官方強調「即時演算、非預錄」——觀眾分辨得出來嗎？這個差異值多少票價？</p>
+      </div>
+      <div class="linkrow">
+        <a class="lk" href="https://www.gensler.com/gri/immersive-industry-report-2025" target="_blank" rel="noopener">Gensler 產業報告</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 24 論文導讀 -->
+<section class="slide part">
+    <div class="part-num">05</div>
+    <div class="eyebrow">PART 5</div>
+    <h2>論文導讀</h2>
+    <p class="part-sub">一篇 2005 年的經典教你「為觀眾設計」，一篇 2025 年的實證檢驗「沉浸到底值不值」。</p>
+  </section>
+
+  <!-- 25 為觀眾設計，不只為使用者 -->
+<section class="slide">
+    <div class="eyebrow">PART 5 · 論文導讀 ①</div>
+    <h2>為觀眾設計，不只為使用者</h2>
+    <div class="content">
+      <div class="biblio">
+        <span class="ti">Designing the Spectator Experience</span>
+        Reeves, S., Benford, S., O'Malley, C., &amp; Fraser, M.（2005）。<i>Proceedings of the SIGCHI Conference on Human Factors in Computing Systems（CHI '05）</i>, 741–750。ACM。
+        <a href="https://doi.org/10.1145/1054972.1055074" target="_blank" rel="noopener">doi.org/10.1145/1054972.1055074</a>
+      </div>
+      <dl class="kv">
+        <dt>研究問題</dt><dd>互動者的「操作」與系統的「效果」，該讓旁觀的人看見多少？</dd>
+        <dt>方法</dt><dd>分析公共空間的互動裝置與展演案例，歸納出二維設計框架</dd>
+        <dt>核心概念</dt><dd>操作（manipulation）與效果（effect）兩軸，各可「隱藏」或「放大」</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 26 四種策略：藏與顯的矩陣 -->
+<section class="slide">
+    <div class="eyebrow">PART 5 · 論文導讀 ①</div>
+    <h2>四種策略：藏與顯的矩陣</h2>
+    <div class="content">
+      <div class="cards c4">
+        <div class="card"><span class="who">SECRETIVE</span><h3>祕密型</h3><p class="sub">操作與效果都藏：私密的個人化體驗</p></div>
+        <div class="card"><span class="who">EXPRESSIVE</span><h3>表現型</h3><p class="sub">操作與效果都放大：互動即表演，teamLab 主流</p></div>
+        <div class="card"><span class="who">MAGICAL</span><h3>魔術型</h3><p class="sub">藏操作、顯效果：只見奇觀，不見機關</p></div>
+        <div class="card"><span class="who">SUSPENSEFUL</span><h3>懸疑型</h3><p class="sub">顯操作、藏效果：輪到自己才揭曉</p></div>
+      </div>
+      <ul>
+        <li>設計啟示：先決定要觀眾站在哪一格，再回頭選感測與輸出技術</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 27 快讀：感官強度值不值得 -->
+<section class="slide">
+    <div class="eyebrow">PART 5 · 論文導讀 ②</div>
+    <h2>快讀：感官強度值不值得</h2>
+    <div class="content">
+      <div class="biblio">
+        <span class="ti">Immersive Art Exhibitions: Sensory Intensity Effects on Visitor Satisfaction via Visitor Attention and Visitor Experience</span>
+        Luo, D., Doucé, L., &amp; Nys, K.（2025）。<i>Visitor Studies</i>, 28(2), 272–293。
+        <a href="https://doi.org/10.1080/10645578.2025.2510838" target="_blank" rel="noopener">doi.org/10.1080/10645578.2025.2510838</a>
+      </div>
+      <ul>
+        <li>方法：356 位觀眾問卷，比較沉浸式數位展與傳統美術館展</li>
+        <li>發現：感官強度顯著提升注意力、體驗與滿意度，注意力是關鍵中介</li>
+        <li>框架：延伸體驗經濟理論——美感、娛樂、逃離三維度貢獻最大</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 28 把今天的內容變成你的裝置 -->
+<section class="slide">
+    <div class="eyebrow">Week 08 · 課堂討論與課後任務</div>
+    <h2>把今天的內容變成你的裝置</h2>
+    <div class="content">
+      <div class="qlist">
+        <p>用 Reeves 矩陣分析你體驗過的互動作品：操作與效果各是藏是顯？換一格會變成什麼？</p>
+        <p>生成式 AI 讓作品「每一刻僅此一次」——若觀眾分辨不出即時與預錄，價值還在嗎？</p>
+        <p>展場若能辨識並記住個別觀眾來客製內容，體驗與隱私的界線你畫在哪裡？</p>
+      </div>
+      <div class="card">
+        <h3>課後任務（銜接期中報告）</h3>
+        <p>選一件你體驗過或有影像紀錄的互動裝置，畫出四層管線推測圖（感測、推論、渲染、輸出），標出它在 Reeves 矩陣的位置與你判斷的延遲瓶頸，寫 300 字分析——這就是期中報告的案例分析素材。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 29 所有連結，一頁帶走 -->
+<section class="slide">
+    <div class="eyebrow">Week 08 · 本週資源彙整</div>
+    <h2>所有連結，一頁帶走</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="grp">
+          <h3>展館與工作室官方</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://www.teamlab.art/e/tokyo/" target="_blank" rel="noopener">Borderless 官方</a>
+            <a class="lk" href="https://www.teamlab.art/e/phenomena/" target="_blank" rel="noopener">Phenomena 官方</a>
+            <a class="lk" href="https://futurepark.teamlab.art/en/" target="_blank" rel="noopener">Future Park 官方</a>
+            <a class="lk" href="https://momentfactory.com/" target="_blank" rel="noopener">Moment Factory</a>
+          </div>
+          <h3 style="margin-top:18px">技術與產業</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://www.disguise.one/en/insights/news/disguise-sets-industry-standard-content-flexibility-groundbreaking-solutions-ise-2025" target="_blank" rel="noopener">disguise ISE 2025</a>
+            <a class="lk" href="https://www.disguise.one/en/insights/blog/real-time-experiences-jean-francois-larouche-moment-factory" target="_blank" rel="noopener">即時工作流訪談</a>
+            <a class="lk" href="https://www.holoplot.com/case-studies/msg-sphere-case-study" target="_blank" rel="noopener">HOLOPLOT×Sphere</a>
+            <a class="lk" href="https://www.gensler.com/gri/immersive-industry-report-2025" target="_blank" rel="noopener">Gensler 產業報告</a>
+          </div>
+        </div>
+        <div class="grp">
+          <h3>生成式 AI 現場</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://blog.google/company-news/outreach-and-initiatives/arts-culture/dataland-ai-art-museum/" target="_blank" rel="noopener">Dataland（Google）</a>
+            <a class="lk" href="https://www.guggenheim-bilbao.eus/en/exhibitions/in-situ-refik-anadol" target="_blank" rel="noopener">古根漢 in situ</a>
+          </div>
+          <h3 style="margin-top:18px">案例報導</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://500times.udn.com/wtimes/story/120842/8036109" target="_blank" rel="noopener">高雄未來園報導</a>
+            <a class="lk" href="https://blooloop.com/moment-factory-perpetual-story-machine/" target="_blank" rel="noopener">故事機（blooloop）</a>
+            <a class="lk" href="https://blooloop.com/technology/news/moment-factory-augmented-games-global-rollout/" target="_blank" rel="noopener">體感遊戲擴點</a>
+          </div>
+          <h3 style="margin-top:18px">本週論文</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://doi.org/10.1145/1054972.1055074" target="_blank" rel="noopener">論文① CHI 2005</a>
+            <a class="lk" href="https://doi.org/10.1080/10645578.2025.2510838" target="_blank" rel="noopener">論文② 2025 實證</a>
+          </div>
+        </div>
+      </div>
+      <div class="take"><b>本週檢核</b>你的裝置在沒有人操作時，旁觀者看得懂、願意靠近，也知道怎麼開始嗎？</div>
+    </div>
+  </section>
+
+  
+
+  </div></div>
+
+  <div class="ctrl">
+    <button id="prev" aria-label="上一張">‹</button>
+    <span class="cnt" id="cnt">1 / 1</span>
+    <button id="next" aria-label="下一張">›</button>
+    <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+  </div>
+  <div class="prog" id="prog"></div>
+
+  <div class="toc" id="toc">
+    <button class="close" id="tocClose">關閉（Esc）</button>
+    <h2 id="tocTitle">目錄</h2>
+    <div class="tgrid" id="tgrid"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ★ 每週只改這一行 ★ */
+  var WEEK_LABEL = '第 8 週 · 互動裝置與空間設計';
+
+  var stage = document.getElementById('stage');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var cnt = document.getElementById('cnt');
+  var prog = document.getElementById('prog');
+  var toc = document.getElementById('toc');
+  var tgrid = document.getElementById('tgrid');
+  var cur = 0;
+
+  document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
+
+  slides.forEach(function (s, i) {
+    var f = document.createElement('div');
+    f.className = 'foot';
+    f.innerHTML = '<span>人工智慧與互動媒體特論|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    s.appendChild(f);
+  });
+
+  var groups = {};
+  slides.forEach(function (s, i) {
+    var eb = s.querySelector('.eyebrow');
+    var part = '開場';
+    if (eb) {
+      var m = eb.textContent.match(/PART\s*(\d)/i);
+      if (m) part = 'PART ' + m[1];
+      else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
+    }
+    var h = s.querySelector('h1, h2');
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+  });
+  Object.keys(groups).forEach(function (k) {
+    var col = document.createElement('div');
+    var h3 = document.createElement('h3');
+    h3.textContent = k;
+    col.appendChild(h3);
+    groups[k].forEach(function (it) {
+      var b = document.createElement('button');
+      b.textContent = it.t;
+      b.dataset.i = it.i;
+      b.addEventListener('click', function () { toggleToc(false); go(it.i); });
+      col.appendChild(b);
+    });
+    tgrid.appendChild(col);
+  });
+
+  function go(i) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach(function (s, j) { s.classList.toggle('active', j === cur); });
+    cnt.textContent = (cur + 1) + ' / ' + slides.length;
+    prog.style.width = ((cur + 1) / slides.length * 100) + '%';
+    if (history.replaceState) history.replaceState(null, '', '#s' + (cur + 1));
+    tgrid.querySelectorAll('button').forEach(function (b) { b.classList.toggle('here', +b.dataset.i === cur); });
+  }
+  function toggleToc(on) {
+    toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
+  }
+
+  document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
+  document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
+  document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
+  document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { toggleToc(false); return; }
+    if (toc.classList.contains('on')) return;
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'Home': go(0); break;
+      case 'End': go(slides.length - 1); break;
+      case 'm': case 'M': toggleToc(); break;
+    }
+  });
+
+  function fit() {
+    var w = window.innerWidth, h = window.innerHeight;
+    if (!w || !h) { requestAnimationFrame(fit); return; }
+    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('load', fit);
+  fit();
+
+  var m = location.hash.match(/^#s(\d+)$/);
+  go(m ? +m[1] - 1 : 0);
+})();
+</script>
+</body>
+</html>

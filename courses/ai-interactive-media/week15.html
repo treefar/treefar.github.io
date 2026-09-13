@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>第 15 週|未來趨勢</title>
+<style>
+  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  * { box-sizing: border-box; }
+  #app {
+    position: fixed; inset: 0; overflow: hidden;
+    background: var(--bg);
+    font-family: var(--body);
+    color: var(--ink);
+    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
+    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
+    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
+    --bg: #F5F4EC; --bg2: #EFEEE2;
+    --panel: #FDFCF6; --panel2: #EDECDF;
+    --ink: #232B21; --sub: #67705E;
+    --accent: #2F6B4F; --accent-rgb: 47,107,79;
+    --accent2: #BC4F2C;
+    --line: rgba(35,43,33,.16);
+    --link: #2F6B4F;
+    --r: 4px;
+  }
+  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  #app a:hover { opacity: .85; }
+  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
+  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
+  .slide.active { display: flex; }
+  .slide::before {
+    content: ""; position: absolute; inset: 24px; pointer-events: none;
+    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
+  }
+
+  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
+  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
+  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+
+  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
+  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
+  .sub { color: var(--sub); }
+  .small { font-size: 18px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
+  .cards { display: grid; gap: 18px; }
+  .c2 { grid-template-columns: repeat(2, 1fr); }
+  .c3 { grid-template-columns: repeat(3, 1fr); }
+  .c4 { grid-template-columns: repeat(4, 1fr); }
+  .c5 { grid-template-columns: repeat(5, 1fr); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
+  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
+  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
+  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+
+  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
+  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+
+  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
+
+  .cover, .part { justify-content: center; }
+  .cover .eyebrow { margin-bottom: 26px; }
+  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
+  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
+  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
+  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
+  .part h2 { font-size: 56px; }
+  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+
+  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
+  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
+  .kv dd { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
+  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
+  .lk::after { content: " ↗"; font-size: 12px; }
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
+  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
+  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
+  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
+  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
+  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  .tl { display: flex; flex-direction: column; gap: 18px; }
+  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
+  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
+  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+
+  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
+  .content > .cards,
+  .content > .cols,
+  .content > .flow,
+  .content > .kv,
+  .content > .prob { flex: 1 1 auto; }
+  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .qlist,
+  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .biblio { flex: 0 0 auto; }
+  .cols > .card { justify-content: flex-start; }
+
+  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
+  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
+  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
+  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
+  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  .toc.on { display: block; }
+  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
+  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
+  .toc button:hover { background: var(--panel2); }
+  .toc button.here { color: var(--accent2); font-weight: 700; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
+  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+<div id="app" data-deck="b">
+  <div class="stagewrap"><div class="stage" id="stage">
+
+  <!-- 1 未來趨勢與設計師角色 -->
+<section class="slide cover">
+    <div class="eyebrow">人工智慧與互動媒體特論 · 設計創新與經營研究所</div>
+    <h1>未來趨勢與設計師角色</h1>
+    <p class="cover-sub">最後一個內容週：代理式 AI、世界模型、裝置端 AI 三條曲線正在改寫互動媒體，也改寫「設計師」這三個字的工作說明書。</p>
+    <div class="cover-meta"><span>第 15 週</span><span>論文導讀與案例討論</span><span>授課：鄧樹遠</span></div>
+  </section>
+
+  <!-- 2 九十分鐘，五段路 -->
+<section class="slide">
+    <div class="eyebrow">Week 15 · 本週地圖</div>
+    <h2>九十分鐘，五段路</h2>
+    <div class="content">
+      <div class="cards c5">
+        <div class="card"><span class="who">PART 1</span><h3>代理式 AI</h3><p class="sub">從回答問題到代辦事務</p></div>
+        <div class="card"><span class="who">PART 2</span><h3>世界模型</h3><p class="sub">一句提示詞的可玩世界</p></div>
+        <div class="card"><span class="who">PART 3</span><h3>裝置端 AI</h3><p class="sub">算力走進眼鏡與口袋</p></div>
+        <div class="card"><span class="who">PART 4</span><h3>角色轉變</h3><p class="sub">兩份報告裡的設計職涯</p></div>
+        <div class="card"><span class="who">PART 5</span><h3>論文導讀</h3><p class="sub">用兩篇文獻定位自己</p></div>
+      </div>
+      <div class="take"><b>本週目標</b>帶走一張五年判斷地圖：看懂三條趨勢線，並為下週的期末提案選定題目方向。</div>
+    </div>
+  </section>
+
+  <!-- 3 從規範抬頭看趨勢 -->
+<section class="slide">
+    <div class="eyebrow">承接第 14 週 · 倫理、智財與偏見</div>
+    <h2>從規範抬頭看趨勢</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">上週的問題</span>
+          <h3>AI 不該做什麼</h3>
+          <ul>
+            <li>訴訟、深偽標示、訓練資料偏見</li>
+            <li>用法規與倫理框住既有技術</li>
+            <li>面向過去：處理已發生的爭議</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">本週的問題</span>
+          <h3>AI 將會做什麼</h3>
+          <ul>
+            <li>代理、世界模型、裝置端三條曲線</li>
+            <li>用趨勢與數據推演自己的職涯位置</li>
+            <li>面向未來：期末提案的題目來源</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 代理式 AI -->
+<section class="slide part">
+    <div class="part-num">01</div>
+    <div class="eyebrow">PART 1</div>
+    <h2>代理式 AI</h2>
+    <p class="part-sub">2026 年 AI 圈最熱的關鍵字。當模型從「回答你」變成「替你動手」，設計的對象也跟著改變。</p>
+  </section>
+
+  <!-- 5 從回答問題到代辦事務 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 代理式 AI</div>
+    <h2>從回答問題到代辦事務</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>聊天機器人（2023）</h3><p>你問它答：單輪輸出，規劃與執行全由人負責</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>副駕駛（2024–25）</h3><p>嵌進工具裡輔助：AI 給選項，人主導每一步</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>代理（2026）</h3><p>給定目標後自主規劃、呼叫工具、多步執行到交付</p></div>
+      </div>
+      <ul>
+        <li>關鍵能力三件套：拆解任務、操作外部工具、自我檢查與修正</li>
+        <li>「自主」有程度之分：多數商用代理仍處於「有界自動化」階段</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 6 代理的 2026：從獨行到編隊 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 代理式 AI</div>
+    <h2>代理的 2026：從獨行到編隊</h2>
+    <div class="content">
+      <ul>
+        <li>單一全能代理退場，改由多個專職代理編隊協作（orchestration）</li>
+        <li>企業級要求成為預設：權限控管、稽核紀錄、評估點、備援機制</li>
+        <li>「代理原生」產品出現：代理是主介面，傳統畫面退居幕後</li>
+        <li>Deloitte《Tech Trends 2026》把代理式 AI 列為企業技術核心議題</li>
+      </ul>
+      <div class="linkrow">
+        <a class="lk" href="https://www.deloitte.com/us/en/insights/topics/technology-management/tech-trends/2026/agentic-ai-strategy.html" target="_blank" rel="noopener">Deloitte 趨勢報告</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 兩萬名工作者的現場回報 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 代理式 AI · Microsoft</div>
+    <h2>兩萬名工作者的現場回報</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>調查</dt><dd class="num">2026 Work Trend Index：10 國、兩萬名工作者（2026 年 5 月發布）</dd>
+        <dt>代理成長</dt><dd class="num">Microsoft 365 內的活躍代理數量，一年成長 15 倍</dd>
+        <dt>時間流向</dt><dd class="num">66% 的 AI 使用者表示，花在高價值工作上的時間變多了</dd>
+        <dt>前緣工作者</dt><dd class="num">16% 的「前緣專業者」刻意保留無 AI 練習、動手前先分工</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://www.microsoft.com/en-us/worklab/work-trend-index/agents-human-agency-and-the-opportunity-for-every-organization" target="_blank" rel="noopener">微軟工作趨勢指數</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 對設計工作的三個意義 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 代理式 AI</div>
+    <h2>對設計工作的三個意義</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><h3>設計對象改變</h3><p>從畫面與流程，變成意圖、邊界與監督點：你在設計的是一段委派關係。</p></div>
+        <div class="card"><h3>新的介面課題</h3><p>代理何時該打斷人？出錯時怎麼交還控制權？信任如何累積、如何修復？</p></div>
+        <div class="card"><h3>判斷力溢價</h3><p>執行成本趨近於零之後，「決定做什麼、驗收好不好」成為最貴的環節。</p></div>
+      </div>
+      <div class="take"><b>假設情境</b>假設要讓代理整理小組資料，先像交代新同事一樣寫清楚任務、可讀範圍與驗收方式。</div>
+    </div>
+  </section>
+
+  <!-- 9 世界模型與互動生成 -->
+<section class="slide part">
+    <div class="part-num">02</div>
+    <div class="eyebrow">PART 2</div>
+    <h2>世界模型與互動生成</h2>
+    <p class="part-sub">影片模型給你看一段畫面，世界模型讓你走進去。2026 年，「可玩的世界」開始變成一句提示詞的事。</p>
+  </section>
+
+  <!-- 10 世界模型：會回應你的影像 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 世界模型</div>
+    <h2>世界模型：會回應你的影像</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">你熟悉的</span>
+          <h3>影片生成模型</h3>
+          <ul>
+            <li>一次算完整段影格，觀眾只能看</li>
+            <li>內容固定，不回應任何操作</li>
+            <li>代表：Sora、Veo（第 12 週談過）</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">本週登場</span>
+          <h3>世界模型</h3>
+          <ul>
+            <li>逐格自迴歸生成，把你的操作當輸入</li>
+            <li>環境持續存在、可導航、可互動</li>
+            <li>代表：Genie 3、Marble</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 Genie 3：一句話的可玩世界 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 世界模型 · Google DeepMind</div>
+    <h2>Genie 3：一句話的可玩世界</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>研究預覽</dt><dd class="num">2025/8 發表：首個即時互動的通用世界模型，24fps 逐格生成</dd>
+        <dt>公開上線</dt><dd class="num">2026/1/29 以 Project Genie 開放美國 Google AI Ultra 訂閱者</dd>
+        <dt>三種玩法</dt><dd>世界草繪（文字＋圖片）、即時探索、重混他人世界並輸出影片</dd>
+        <dt>目前限制</dt><dd>單次生成約 60 秒、角色控制不穩、寫實度仍有落差</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://blog.google/innovation-and-ai/models-and-research/google-deepmind/project-genie/" target="_blank" rel="noopener">Project Genie 官方</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 Marble：把世界接進 3D  -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 世界模型 · World Labs</div>
+    <h2>Marble：把世界接進 3D 工作流</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>團隊</dt><dd class="num">李飛飛創立的 World Labs；2026/2 獲 10 億美元投資（NVIDIA、Autodesk 等）</dd>
+        <dt>產品</dt><dd class="num">Marble：2025/11 限量測試、2026/2 正式商用的生成式世界模型</dd>
+        <dt>輸出</dt><dd>同時產出三角網格與碰撞網格，直接進 3D 軟體與物理引擎</dd>
+        <dt>路線圖</dt><dd class="num">李飛飛 2026/6 提出世界模型三種功能：渲染器、模擬器、規劃器</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://techcrunch.com/2025/11/12/fei-fei-lis-world-labs-speeds-up-the-world-model-race-with-marble-its-first-commercial-product/" target="_blank" rel="noopener">TechCrunch：Marble</a>
+        <a class="lk" href="https://time.com/7339513/ai-fei-fei-li-virtual-worlds/" target="_blank" rel="noopener">TIME 專訪李飛飛</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13 互動媒體的三個機會 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 世界模型</div>
+    <h2>互動媒體的三個機會</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><h3>原型加速</h3><p>關卡與展場的灰盒驗證，從數週壓縮到數小時，迭代次數翻好幾倍。</p></div>
+        <div class="card"><h3>內容個人化</h3><p>每位觀眾看到的世界可以即時不同，「版本」與「關卡」的概念開始鬆動。</p></div>
+        <div class="card"><h3>權責重畫</h3><p>當世界是生成的，設計師負責規則、氛圍與邊界，而非逐一擺放物件。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14 裝置端 AI 與新硬體 -->
+<section class="slide part">
+    <div class="part-num">03</div>
+    <div class="eyebrow">PART 3</div>
+    <h2>裝置端 AI 與新硬體</h2>
+    <p class="part-sub">推理成本下降、隱私要求上升，AI 從資料中心走向眼鏡、耳機與口袋，硬體形態正在重新洗牌。</p>
+  </section>
+
+  <!-- 15 為什麼算力往身上走 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 裝置端 AI</div>
+    <h2>為什麼算力往身上走</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>延遲</dt><dd>即時翻譯、導覽、體感互動，等不起雲端往返的來回時間</dd>
+        <dt>隱私</dt><dd>相機常開的穿戴裝置，資料不出裝置才可能被社會接受</dd>
+        <dt>成本</dt><dd>雲端推理按次計費；裝置端一次買斷，規模越大越划算</dd>
+        <dt>離線</dt><dd>展場、戶外、弱網環境，本來就是互動媒體的日常戰場</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 16 AI 眼鏡與 NPU 軍備賽 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 裝置端 AI · Qualcomm</div>
+    <h2>AI 眼鏡與 NPU 軍備賽</h2>
+    <div class="content">
+      <ul>
+        <li>無螢幕智慧眼鏡出貨年增約 167%，是消費電子成長最快的品類</li>
+        <li>2026/6 發表 Snapdragon Reality Elite：NPU 效能較前代提升 160%</li>
+        <li>裝置端以每秒 45 token 執行 30 億參數模型，即時對話已夠用</li>
+        <li>同場推出 START 工具包：模組＋軟體堆疊，讓品牌快速做出自家 AI 眼鏡</li>
+      </ul>
+      <div class="linkrow">
+        <a class="lk" href="https://techcrunch.com/2026/06/16/qualcomm-wants-to-be-the-chip-inside-whatever-replaces-your-smartphone-and-it-just-announced-two-products-toward-that-end/" target="_blank" rel="noopener">TechCrunch：高通</a>
+        <a class="lk" href="https://thenextweb.com/news/qualcomm-snapdragon-reality-elite-start-ai-wearables-post-smartphone" target="_blank" rel="noopener">TNW 深入報導</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 17 新硬體的學費：三年五件事 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 案例討論</div>
+    <h2>新硬體的學費：三年五件事</h2>
+    <div class="content">
+      <div class="tl">
+        <div class="ev"><b>2024</b><span>Rabbit R1 與 Humane Ai Pin 出貨即翻車：發表會展示的自主能力，量產品做不到</span></div>
+        <div class="ev"><b>2025/2</b><span>Humane 停止營運，HP 以 1.16 億美元收購資產，已售出的 Ai Pin 全數變磚</span></div>
+        <div class="ev"><b>2025</b><span>Meta Ray-Ban 眼鏡系列站穩市場：改良人們本來就戴的東西，而非發明新習慣</span></div>
+        <div class="ev"><b>2025/5</b><span>OpenAI 以約 65 億美元併購 Jony Ive 的 io，投入無螢幕的 AI 原生裝置</span></div>
+        <div class="ev"><b>2026/2</b><span>OpenAI 裝置證實延至 2027 年：傳為耳機式與筆型，io 之名因商標爭議放棄</span></div>
+      </div>
+      <div class="qlist">
+        <p>Rabbit 與 Humane 的失敗是產品問題還是時機問題？若 2027 年重來，你會改哪三件事？</p>
+        <p>模型公司自己做硬體，對互動媒體設計師是新舞台還是新門檻？說出你的理由。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 18 設計師角色的轉變 -->
+<section class="slide part">
+    <div class="part-num">04</div>
+    <div class="eyebrow">PART 4</div>
+    <h2>設計師角色的轉變</h2>
+    <p class="part-sub">一份報告說職缺在衰退，另一份說機會在增加——兩者都是真的，關鍵在你把自己放在哪一側。</p>
+  </section>
+
+  <!-- 19 WEF：一升一降的設計職涯 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 產業報告 · WEF</div>
+    <h2>WEF：一升一降的設計職涯</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>調查規模</dt><dd class="num">《Future of Jobs 2025》：55 國逾千家雇主，涵蓋 1,400 萬名工作者</dd>
+        <dt>警訊</dt><dd class="num">平面設計師首次進入「衰退最快職類」名單，排名第 11</dd>
+        <dt>成長</dt><dd class="num">UI 與 UX 設計師名列「成長最快職類」第 8</dd>
+        <dt>技能</dt><dd>創意思考列重要性成長技能第 4；AI 與大數據素養需求竄升最快</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://www.weforum.org/publications/the-future-of-jobs-report-2025/in-full/3-skills-outlook/" target="_blank" rel="noopener">WEF 報告原文</a>
+        <a class="lk" href="https://www.creativeboom.com/news/its-official-ai-is-coming-for-your-graphic-design-job/" target="_blank" rel="noopener">Creative Boom 解讀</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 20 Adobe 的兩份調查與一個質疑 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 產業報告 · Adobe</div>
+    <h2>Adobe 的兩份調查與一個質疑</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">創作者端 · 2026/4</span>
+          <h3>AI 是加速器</h3>
+          <ul>
+            <li>400 位創意人＋400 位行銷人受訪</li>
+            <li>近九成認為品質提升，每週平均省 17 小時</li>
+            <li>46% 表示職涯機會反而增加</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">職缺端 · 2026/6</span>
+          <h3>工作被重分配</h3>
+          <ul>
+            <li>分析 2025/9 與 2026/4 兩波共 5.3 萬筆職缺</li>
+            <li>另調查 1,433 位在職創意人的職能變化</li>
+            <li>結論：創意工作正被重分配，而非單純消失</li>
+          </ul>
+        </div>
+      </div>
+      <div class="linkrow">
+        <a class="lk" href="https://blog.adobe.com/en/publish/2026/04/17/creatives-say-ai-helping-them-meet-growing-demand-content-improving-their-work" target="_blank" rel="noopener">Adobe 創作者調查</a>
+        <a class="lk" href="https://www.adobe.com/ai/research/202606/ai-is-redistributing-creative-work.html" target="_blank" rel="noopener">Adobe 職缺研究</a>
+        <a class="lk" href="https://appleinsider.com/articles/26/06/16/adobes-glowing-ai-survey-leaves-out-most-of-the-creative-industry" target="_blank" rel="noopener">AppleInsider 質疑</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 21 從執行者到指揮者 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 角色轉變</div>
+    <h2>從執行者到指揮者</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>執行者</h3><p>親手產出每張圖、每行程式。自動化最先觸及、AI 蠶食最快的一層</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>策展者</h3><p>定義方向、篩選與整合生成結果。2026 年多數設計者的實際位置</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>指揮者</h3><p>設定目標、編排人與代理、承擔最終責任。各報告共同指向的下一層</p></div>
+      </div>
+      <ul>
+        <li>三種角色會同時存在於同一個職涯裡，只是比例逐年改變</li>
+        <li>學校作業多半仍在訓練第一層——這個落差要自己補</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 22 給設計研究生的四種資本 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 能力建議</div>
+    <h2>給設計研究生的四種資本</h2>
+    <div class="content">
+      <div class="cards c4">
+        <div class="card"><h3>判斷與品味</h3><p class="sub">說得出生成結果好在哪、差在哪，給得出修正方向</p></div>
+        <div class="card"><h3>系統與編排</h3><p class="sub">會設計「人＋多代理」的工作流，不只操作單一工具</p></div>
+        <div class="card"><h3>跨域翻譯</h3><p class="sub">把設計語言翻成技術、商業、研究都聽得懂的話</p></div>
+        <div class="card"><h3>研究素養</h3><p class="sub">用數據與文獻檢驗趨勢話術——本課 18 週的底層目標</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 23 論文導讀 -->
+<section class="slide part">
+    <div class="part-num">05</div>
+    <div class="eyebrow">PART 5</div>
+    <h2>論文導讀</h2>
+    <p class="part-sub">一篇 2026 年的共創工作坊研究看角色邊界，一篇 Science Advances 的實驗看創造力的集體代價。</p>
+  </section>
+
+  <!-- 24 人機共創中，角色如何重畫 -->
+<section class="slide">
+    <div class="eyebrow">PART 5 · 論文導讀 ①</div>
+    <h2>人機共創中，角色如何重畫</h2>
+    <div class="content">
+      <div class="biblio">
+        <span class="ti">Rethinking design roles: a study on designer and user perceptions during human-AI co-creation</span>
+        Ma, L., Chen, J., Hou, X., Qiao, Y., Gao, X., Feng, Y., &amp; Chen, D.（2026）。<i>Universal Access in the Information Society</i>, 25(2), 56。
+        <a href="https://doi.org/10.1007/s10209-026-01326-7" target="_blank" rel="noopener">doi.org/10.1007/s10209-026-01326-7</a>
+      </div>
+      <dl class="kv">
+        <dt>研究問題</dt><dd>生成式 AI 進入概念設計階段後，設計師與使用者的角色定位如何改變？</dd>
+        <dt>方法</dt><dd>18 位參與者的共創設計工作坊；訪談資料以主題分析法編碼</dd>
+        <dt>對象</dt><dd>專業設計師與非專業使用者兩個群體對照</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 25 發現：執行讓位，判斷上位 -->
+<section class="slide">
+    <div class="eyebrow">PART 5 · 論文導讀 ①</div>
+    <h2>發現：執行讓位，判斷上位</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><h3>設計師</h3><p>從直接動手執行，移向定約束、選輸出、扛決策的角色。</p></div>
+        <div class="card"><h3>使用者</h3><p>從被動提出需求，升級為主動探索的共同創作者。</p></div>
+        <div class="card"><h3>邊界仍在</h3><p>到了關鍵或高風險的決策點，使用者仍回頭尋求專業判斷。</p></div>
+      </div>
+      <ul>
+        <li>研究提出「角色邊界框架」，供生成式設計工具規劃不同使用者的支援策略</li>
+        <li>與 WEF、Adobe 的產業數據互相印證：執行貶值、判斷增值</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 26 快讀：哪些工作最先被改寫 -->
+<section class="slide">
+    <div class="eyebrow">PART 5 · 論文導讀 ②</div>
+    <h2>快讀：哪些工作最先被改寫</h2>
+    <div class="content">
+      <div class="biblio">
+        <span class="ti">GPTs are GPTs: Labor market impact potential of LLMs</span>
+        Eloundou, T., Manning, S., Mishkin, P., &amp; Rock, D.（2024）。<i>Science</i>, 384(6702), 1306–1308。
+        <a href="https://doi.org/10.1126/science.adj0998" target="_blank" rel="noopener">doi.org/10.1126/science.adj0998</a>
+      </div>
+      <ul>
+        <li>方法：以「任務」為單位評估各職業對大型語言模型的暴露度，人工與模型評分交叉驗證</li>
+        <li>發現：約八成勞動者至少一成任務受影響；高薪、高學歷的知識工作暴露度反而更高</li>
+        <li>對設計：暴露度高不等於被取代，而是任務重組——與論文①「執行讓位、判斷上位」互相印證</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 27 把趨勢變成你的提案 -->
+<section class="slide">
+    <div class="eyebrow">Week 15 · 課堂討論與課後任務</div>
+    <h2>把趨勢變成你的提案</h2>
+    <div class="content">
+      <div class="qlist">
+        <p>WEF 說平面設計在衰退、UI/UX 在成長：這是職業消失，還是能力重新包裝？三年後你的職稱是什麼？</p>
+        <p>當「可玩的世界」變成一句提示詞，互動媒體設計師不可取代的部分還剩什麼？用今天的證據回答。</p>
+        <p>Doshi 與 Hauser 的同質化警告，怎麼寫進期末專題？你的題目如何證明「人的差異」仍有價值？</p>
+      </div>
+      <div class="card">
+        <h3>課後任務（下週提案工作坊直接使用）</h3>
+        <p>從三條趨勢線挑一條，寫 300 字「2031 年的一天」：你的職稱、AI 同事的分工、你負責驗收什麼。再用四欄草擬期末題目：問題、對象、AI 角色、驗證方式。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 28 所有連結，一頁帶走 -->
+<section class="slide">
+    <div class="eyebrow">Week 15 · 本週資源彙整</div>
+    <h2>所有連結，一頁帶走</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="grp">
+          <h3>代理式 AI</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://www.microsoft.com/en-us/worklab/work-trend-index/agents-human-agency-and-the-opportunity-for-every-organization" target="_blank" rel="noopener">微軟工作趨勢指數</a>
+            <a class="lk" href="https://www.deloitte.com/us/en/insights/topics/technology-management/tech-trends/2026/agentic-ai-strategy.html" target="_blank" rel="noopener">Deloitte 趨勢報告</a>
+          </div>
+          <h3 style="margin-top:18px">世界模型</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://blog.google/innovation-and-ai/models-and-research/google-deepmind/project-genie/" target="_blank" rel="noopener">Project Genie 官方</a>
+            <a class="lk" href="https://techcrunch.com/2025/11/12/fei-fei-lis-world-labs-speeds-up-the-world-model-race-with-marble-its-first-commercial-product/" target="_blank" rel="noopener">TechCrunch：Marble</a>
+            <a class="lk" href="https://time.com/7339513/ai-fei-fei-li-virtual-worlds/" target="_blank" rel="noopener">TIME 專訪李飛飛</a>
+          </div>
+          <h3 style="margin-top:18px">裝置端 AI 與硬體</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://techcrunch.com/2026/06/16/qualcomm-wants-to-be-the-chip-inside-whatever-replaces-your-smartphone-and-it-just-announced-two-products-toward-that-end/" target="_blank" rel="noopener">TechCrunch：高通</a>
+            <a class="lk" href="https://thenextweb.com/news/qualcomm-snapdragon-reality-elite-start-ai-wearables-post-smartphone" target="_blank" rel="noopener">TNW 深入報導</a>
+            <a class="lk" href="https://techcrunch.com/2025/02/18/humanes-ai-pin-is-dead-as-hp-buys-startups-assets-for-116m/" target="_blank" rel="noopener">Humane 之死</a>
+            <a class="lk" href="https://www.axios.com/2026/01/19/openai-device-2026-lehane-jony-ive" target="_blank" rel="noopener">Axios：OpenAI 裝置</a>
+            <a class="lk" href="https://9to5mac.com/2026/02/10/jony-ives-ai-hardware-is-delayed-to-2027-and-wont-be-called-io/" target="_blank" rel="noopener">9to5Mac：延期</a>
+          </div>
+        </div>
+        <div class="grp">
+          <h3>設計師角色</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://www.weforum.org/publications/the-future-of-jobs-report-2025/in-full/3-skills-outlook/" target="_blank" rel="noopener">WEF 報告原文</a>
+            <a class="lk" href="https://www.creativeboom.com/news/its-official-ai-is-coming-for-your-graphic-design-job/" target="_blank" rel="noopener">Creative Boom 解讀</a>
+            <a class="lk" href="https://blog.adobe.com/en/publish/2026/04/17/creatives-say-ai-helping-them-meet-growing-demand-content-improving-their-work" target="_blank" rel="noopener">Adobe 創作者調查</a>
+            <a class="lk" href="https://www.adobe.com/ai/research/202606/ai-is-redistributing-creative-work.html" target="_blank" rel="noopener">Adobe 職缺研究</a>
+            <a class="lk" href="https://appleinsider.com/articles/26/06/16/adobes-glowing-ai-survey-leaves-out-most-of-the-creative-industry" target="_blank" rel="noopener">AppleInsider 質疑</a>
+          </div>
+          <h3 style="margin-top:18px">本週論文</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://doi.org/10.1007/s10209-026-01326-7" target="_blank" rel="noopener">論文① 角色重畫</a>
+            <a class="lk" href="https://doi.org/10.1126/science.adj0998" target="_blank" rel="noopener">論文② 勞動市場分析</a>
+          </div>
+        </div>
+      </div>
+      <div class="take"><b>本週檢核</b>你的期末方向能否對應一條趨勢、一道具體問題，以及一種可取得的證據？</div>
+    </div>
+  </section>
+
+  
+
+  </div></div>
+
+  <div class="ctrl">
+    <button id="prev" aria-label="上一張">‹</button>
+    <span class="cnt" id="cnt">1 / 1</span>
+    <button id="next" aria-label="下一張">›</button>
+    <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+  </div>
+  <div class="prog" id="prog"></div>
+
+  <div class="toc" id="toc">
+    <button class="close" id="tocClose">關閉（Esc）</button>
+    <h2 id="tocTitle">目錄</h2>
+    <div class="tgrid" id="tgrid"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ★ 每週只改這一行 ★ */
+  var WEEK_LABEL = '第 15 週 · 未來趨勢';
+
+  var stage = document.getElementById('stage');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var cnt = document.getElementById('cnt');
+  var prog = document.getElementById('prog');
+  var toc = document.getElementById('toc');
+  var tgrid = document.getElementById('tgrid');
+  var cur = 0;
+
+  document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
+
+  slides.forEach(function (s, i) {
+    var f = document.createElement('div');
+    f.className = 'foot';
+    f.innerHTML = '<span>人工智慧與互動媒體特論|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    s.appendChild(f);
+  });
+
+  var groups = {};
+  slides.forEach(function (s, i) {
+    var eb = s.querySelector('.eyebrow');
+    var part = '開場';
+    if (eb) {
+      var m = eb.textContent.match(/PART\s*(\d)/i);
+      if (m) part = 'PART ' + m[1];
+      else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
+    }
+    var h = s.querySelector('h1, h2');
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+  });
+  Object.keys(groups).forEach(function (k) {
+    var col = document.createElement('div');
+    var h3 = document.createElement('h3');
+    h3.textContent = k;
+    col.appendChild(h3);
+    groups[k].forEach(function (it) {
+      var b = document.createElement('button');
+      b.textContent = it.t;
+      b.dataset.i = it.i;
+      b.addEventListener('click', function () { toggleToc(false); go(it.i); });
+      col.appendChild(b);
+    });
+    tgrid.appendChild(col);
+  });
+
+  function go(i) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach(function (s, j) { s.classList.toggle('active', j === cur); });
+    cnt.textContent = (cur + 1) + ' / ' + slides.length;
+    prog.style.width = ((cur + 1) / slides.length * 100) + '%';
+    if (history.replaceState) history.replaceState(null, '', '#s' + (cur + 1));
+    tgrid.querySelectorAll('button').forEach(function (b) { b.classList.toggle('here', +b.dataset.i === cur); });
+  }
+  function toggleToc(on) {
+    toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
+  }
+
+  document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
+  document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
+  document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
+  document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { toggleToc(false); return; }
+    if (toc.classList.contains('on')) return;
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'Home': go(0); break;
+      case 'End': go(slides.length - 1); break;
+      case 'm': case 'M': toggleToc(); break;
+    }
+  });
+
+  function fit() {
+    var w = window.innerWidth, h = window.innerHeight;
+    if (!w || !h) { requestAnimationFrame(fit); return; }
+    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('load', fit);
+  fit();
+
+  var m = location.hash.match(/^#s(\d+)$/);
+  go(m ? +m[1] - 1 : 0);
+})();
+</script>
+</body>
+</html>

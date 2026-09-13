@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>第 11 週|空間建築與環境設計</title>
+<style>
+  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  * { box-sizing: border-box; }
+  #app {
+    position: fixed; inset: 0; overflow: hidden;
+    background: var(--bg);
+    font-family: var(--body);
+    color: var(--ink);
+    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
+    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
+    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
+    --bg: #F5F4EC; --bg2: #EFEEE2;
+    --panel: #FDFCF6; --panel2: #EDECDF;
+    --ink: #232B21; --sub: #67705E;
+    --accent: #2F6B4F; --accent-rgb: 47,107,79;
+    --accent2: #BC4F2C;
+    --line: rgba(35,43,33,.16);
+    --link: #2F6B4F;
+    --r: 4px;
+  }
+  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  #app a:hover { opacity: .85; }
+  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
+  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
+  .slide.active { display: flex; }
+  .slide::before {
+    content: ""; position: absolute; inset: 24px; pointer-events: none;
+    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
+  }
+
+  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
+  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
+  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+
+  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
+  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
+  .sub { color: var(--sub); }
+  .small { font-size: 18px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
+  .cards { display: grid; gap: 18px; }
+  .c2 { grid-template-columns: repeat(2, 1fr); }
+  .c3 { grid-template-columns: repeat(3, 1fr); }
+  .c4 { grid-template-columns: repeat(4, 1fr); }
+  .c5 { grid-template-columns: repeat(5, 1fr); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
+  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
+  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
+  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+
+  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
+  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+
+  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
+
+  .cover, .part { justify-content: center; }
+  .cover .eyebrow { margin-bottom: 26px; }
+  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
+  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
+  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
+  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
+  .part h2 { font-size: 56px; }
+  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+
+  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
+  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
+  .kv dd { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
+  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
+  .lk::after { content: " ↗"; font-size: 12px; }
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
+  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
+  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
+  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
+  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
+  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  .tl { display: flex; flex-direction: column; gap: 18px; }
+  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
+  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
+  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+
+  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
+  .content > .cards,
+  .content > .cols,
+  .content > .flow,
+  .content > .kv,
+  .content > .prob { flex: 1 1 auto; }
+  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .qlist,
+  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .biblio { flex: 0 0 auto; }
+  .cols > .card { justify-content: flex-start; }
+
+  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
+  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
+  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
+  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
+  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  .toc.on { display: block; }
+  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
+  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
+  .toc button:hover { background: var(--panel2); }
+  .toc button.here { color: var(--accent2); font-weight: 700; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
+  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+<div id="app" data-deck="b">
+  <div class="stagewrap"><div class="stage" id="stage">
+
+  <!-- 1 AI 與空間建築設計 -->
+<section class="slide cover">
+    <div class="eyebrow">人工智慧與互動媒體特論 · 設計創新與經營研究所</div>
+    <h1>AI 與空間建築設計</h1>
+    <p class="cover-sub">從一顆感測器到一整座城市：數位孿生（Digital Twin）讓實體空間有了會思考的分身，設計師該站在鏡子的哪一側？</p>
+    <div class="cover-meta"><span>第 11 週</span><span>論文導讀與案例討論</span><span>授課：鄧樹遠</span></div>
+  </section>
+
+  <!-- 2 九十分鐘，五段路 -->
+<section class="slide">
+    <div class="eyebrow">Week 11 · 本週地圖</div>
+    <h2>九十分鐘，五段路</h2>
+    <div class="content">
+      <div class="cards c5">
+        <div class="card"><span class="who">PART 1</span><h3>數位孿生是什麼</h3><p class="sub">物件、建築、城市三個層級</p></div>
+        <div class="card"><span class="who">PART 2</span><h3>AI 進設計流程</h3><p class="sub">概念生成、性能模擬、法規檢核</p></div>
+        <div class="card"><span class="who">PART 3</span><h3>智慧空間</h3><p class="sub">環境感知與會回應的建築</p></div>
+        <div class="card"><span class="who">PART 4</span><h3>都市尺度</h3><p class="sub">新加坡與高雄兩座孿生城市</p></div>
+        <div class="card"><span class="who">PART 5</span><h3>論文導讀</h3><p class="sub">兩篇文獻，看清熱潮下的難題</p></div>
+      </div>
+      <div class="take"><b>本週目標</b>能分辨 3D 模型、BIM、數位孿生的差異，並能評估一個城市孿生案例的虛實。</div>
+    </div>
+  </section>
+
+  <!-- 3 兩個方向，同一面鏡子 -->
+<section class="slide">
+    <div class="eyebrow">承接第 10 週 · 沉浸式媒體與空間運算</div>
+    <h2>兩個方向，同一面鏡子</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">上週的方向</span>
+          <h3>數位進入實體</h3>
+          <ul>
+            <li>AR／XR 把數位內容疊進真實空間</li>
+            <li>空間運算：裝置即時掃描、理解房間</li>
+            <li>使用者戴上裝置，世界被增強</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">本週的方向</span>
+          <h3>實體進入數位</h3>
+          <ul>
+            <li>數位孿生把整個空間複製進電腦</li>
+            <li>感測器持續回傳，分身與本尊同步</li>
+            <li>先在分身上實驗，再回寫真實世界</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 數位孿生：概念與層級 -->
+<section class="slide part">
+    <div class="part-num">01</div>
+    <div class="eyebrow">PART 1</div>
+    <h2>數位孿生：概念與層級</h2>
+    <p class="part-sub">它不是比較漂亮的 3D 模型。差別在資料會不會流動：分身跟本尊有沒有持續同步、能不能互相影響。</p>
+  </section>
+
+  <!-- 5 從 3D 模型到數位孿生 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 數位孿生概念</div>
+    <h2>從 3D 模型到數位孿生</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>3D 模型</h3><p>靜態幾何：只記錄「長什麼樣子」。實體改了，模型不會知道</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>BIM</h3><p>幾何＋語意：牆是牆、管是管，攜帶材料、造價與工程資訊</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>數位孿生</h3><p>加上即時資料流：感測器持續同步，可模擬、可預測、可回控</p></div>
+      </div>
+      <ul>
+        <li>概念可追溯至 2002 年 Michael Grieves 的產品生命週期管理課程</li>
+        <li>判準是「雙向」：實體餵資料給分身，分身的推演回頭指揮實體</li>
+      </ul>
+      <div class="take"><b>假設情境</b>報告看到華麗的城市 3D 畫面時，先問資料從哪裡來、何時更新；答不出來就不要直接稱為數位孿生。</div>
+    </div>
+  </section>
+
+  <!-- 6 三個層級：物件、建築、城市 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 數位孿生層級</div>
+    <h2>三個層級：物件、建築、城市</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><span class="who">尺度一</span><h3>物件級</h3><p>一顆引擎、一台風機的分身；預測維護與壽命估算，工業界最成熟。</p></div>
+        <div class="card"><span class="who">尺度二</span><h3>建築級</h3><p>BIM＋IoT 的營運孿生：能耗、人流、設備狀態一屏掌握。</p></div>
+        <div class="card"><span class="who">尺度三</span><h3>城市級</h3><p>整座城市的分身：規劃、交通、防災情境模擬，PART 4 的主角。</p></div>
+      </div>
+      <ul>
+        <li>層級越往上，資料來源越雜、利害關係人越多，難題從技術變成治理</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 7 AI 在孿生裡的三種工作 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · AI 的位置</div>
+    <h2>AI 在孿生裡的三種工作</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><h3>把分身建起來</h3><p>電腦視覺與 3D Gaussian Splatting：從影像快速重建城市級模型。</p></div>
+        <div class="card"><h3>讓分身動起來</h3><p>物理模擬與代理人模型：人流、車流、風雨在分身裡預先上演。</p></div>
+        <div class="card"><h3>拿分身做決策</h3><p>AI 在孿生中訓練與試錯：機器人與交通號誌先在虛擬世界犯錯。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 Omniverse：孿生的作業系 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 平台現況 · NVIDIA</div>
+    <h2>Omniverse：孿生的作業系統</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>定位</dt><dd>以 OpenUSD 為共通格式的工業數位孿生開發平台</dd>
+        <dt>大事</dt><dd class="num">2026 年 5 月起開發與生產全面免費，7 月 1 日正式公告</dd>
+        <dt>商模</dt><dd>原生產授權每 GPU 年費 4,500 美元，改為免費＋付費企業支援</dd>
+        <dt>DSX</dt><dd class="num">2026/3 推出 Omniverse DSX Blueprint：AI 工廠的數位孿生藍圖</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://www.storagereview.com/news/nvidia-quietly-makes-omniverse-free-for-production-use" target="_blank" rel="noopener">免費化報導</a>
+        <a class="lk" href="https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Releases-Vera-Rubin-DSX-AI-Factory-Reference-Design-and-Omniverse-DSX-Digital-Twin-Blueprint-With-Broad-Industry-Support/default.aspx" target="_blank" rel="noopener">DSX 官方新聞稿</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 AI 在建築設計流程 -->
+<section class="slide part">
+    <div class="part-num">02</div>
+    <div class="eyebrow">PART 2</div>
+    <h2>AI 在建築設計流程</h2>
+    <p class="part-sub">從第一張概念圖到送照審查，AI 在三個環節各自找到位置：發想、模擬、檢核。</p>
+  </section>
+
+  <!-- 10 三個環節，三種角色 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 流程總覽</div>
+    <h2>三個環節，三種角色</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>概念生成</h3><p>擴散模型秒出方案意象，快速展開設計空間</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>性能模擬</h3><p>日照、風場、噪音、碳排即時回饋，邊畫邊算</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>法規檢核</h3><p>AI 對照法規逐條檢查圖說，送照前先自我審查</p></div>
+      </div>
+      <ul>
+        <li>共同點：AI 都在加速回饋迴圈，把等待數天的答案壓到數秒</li>
+        <li>差異點：越往後端容錯越低；法規檢核錯一條，代價是整案重送</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 11 ZHA：把擴散模型排進日常 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 概念生成 · Zaha Hadid Architects</div>
+    <h2>ZHA：把擴散模型排進日常</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>工具</dt><dd>Stable Diffusion、Rhino.ai 已是工作流程的固定成員</dd>
+        <dt>效益</dt><dd class="num">自估中期設計準備生產力提升最多 50%，競圖提案量倍增</dd>
+        <dt>淵源</dt><dd>2023 年 Schumacher 即公開：多數專案以 AI 圖像做概念發想</dd>
+        <dt>展覽</dt><dd class="num">深圳 MOCAUP「Architecture of Possibility」2025/12–2026/4</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://www.archdaily.com/1037409/zaha-hadid-architects-explores-ai-driven-design-at-architecture-of-possibility-exhibition-in-shenzhen-china" target="_blank" rel="noopener">ArchDaily 展覽報導</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 Forma：邊畫量體邊看數據 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 性能模擬 · Autodesk</div>
+    <h2>Forma：邊畫量體邊看數據</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>定位</dt><dd>雲端前期設計平台：量體一改，環境分析秒級更新</dd>
+        <dt>分析</dt><dd>日照、風場、噪音、隱含碳；2025 年最熱門的是日照時數</dd>
+        <dt>新品</dt><dd class="num">Forma Building Design 2026/4/7 上線，Revit 訂閱戶免費取得</dd>
+        <dt>生成</dt><dd>Building Layout Explorer：由量體直接生成樓層平面選項</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://adsknews.autodesk.com/en/news/autodesk-design-and-make-intelligence/" target="_blank" rel="noopener">官方發布新聞</a>
+        <a class="lk" href="https://adsknews.autodesk.com/en/news/building-layout-explorer-in-autodesk-forma/" target="_blank" rel="noopener">Layout Explorer</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13 送照前的 AI 預審 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 法規檢核</div>
+    <h2>送照前的 AI 預審</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">UPCODES</span>
+          <h3>Copilot Intelligence</h3>
+          <ul>
+            <li>面向 AEC 產業的專案感知法規助理</li>
+            <li>自家基準測試：法規合規答題 93%，逾通用模型兩倍</li>
+            <li>自動生成含條文出處的專案檢查清單</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">ARCHISTAR</span>
+          <h3>AI PreCheck</h3>
+          <ul>
+            <li>自動比對 CAD／BIM／PDF 圖說與建築法規</li>
+            <li>2025 年洛杉磯火災後：協助加速核發重建許可</li>
+            <li>導入城市回報審查週期最多縮短 55%</li>
+          </ul>
+        </div>
+      </div>
+      <div class="linkrow">
+        <a class="lk" href="https://up.codes/features/ai" target="_blank" rel="noopener">UpCodes Copilot</a>
+        <a class="lk" href="https://www.archistar.ai/aiprecheck/" target="_blank" rel="noopener">AI PreCheck</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14 智慧空間與環境感知 -->
+<section class="slide part">
+    <div class="part-num">03</div>
+    <div class="eyebrow">PART 3</div>
+    <h2>智慧空間與環境感知</h2>
+    <p class="part-sub">空間怎麼知道你在哪、需要什麼？把第 7 週的感測技術，接進建築的日常營運。</p>
+  </section>
+
+  <!-- 15 空間如何感知使用者 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 環境感知</div>
+    <h2>空間如何感知使用者</h2>
+    <div class="content">
+      <ul>
+        <li>佔用感測：紅外線、CO2、mmWave 雷達、影像辨識，精度與成本各異</li>
+        <li>環境參數：溫濕度、照度、噪音、空氣品質，構成空間的生命徵象</li>
+        <li>隱私光譜：影像最準也最敏感；mmWave 與 CO2 能匿名推估人數</li>
+        <li>邊緣運算：辨識在裝置端完成，只上傳結果、不上傳畫面</li>
+        <li>第 7 週的感測技術在這裡從互動裝置，變成建築的神經系統</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 16 AI 管建築：從節能開始 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 智慧建築</div>
+    <h2>AI 管建築：從節能開始</h2>
+    <div class="content">
+      <ul>
+        <li>空調與照明佔建築能耗大宗，AI 依佔用預測「預先」調節而非事後反應</li>
+        <li>產業估計全球智慧建築部署 2026 年達 140 億美元規模，成長近一倍</li>
+        <li>實務難題：混合辦公、季節變化、感測器漂移，讓預測模型持續失準</li>
+        <li>因此需要「舒適界限＋保底規則」：AI 負責最佳化，規則負責兜底</li>
+      </ul>
+      <div class="linkrow">
+        <a class="lk" href="https://www.sciencedirect.com/science/article/pii/S2950550X25000342" target="_blank" rel="noopener">2025 智慧建築綜述</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 17 三種智慧空間的想像 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 設計視角</div>
+    <h2>三種智慧空間的想像</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><h3>節能派</h3><p>建築管理系統＋AI：目標是帳單與碳排，使用者最好毫無所感。</p></div>
+        <div class="card"><h3>體驗派</h3><p>空間即介面：燈光、聲音、影像隨人流回應，第 8 週的展演現場。</p></div>
+        <div class="card"><h3>維運派</h3><p>預測性維護：設備壞掉前先預警，孿生是維運人員的儀表板。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 18 都市尺度的數位孿生 -->
+<section class="slide part">
+    <div class="part-num">04</div>
+    <div class="eyebrow">PART 4</div>
+    <h2>都市尺度的數位孿生</h2>
+    <p class="part-sub">一個國家級的老前輩，一個正在長大的台灣案例：城市孿生正從展示品變成治理工具。</p>
+  </section>
+
+  <!-- 19 Virtual Singapor -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 城市孿生 · 新加坡</div>
+    <h2>Virtual Singapore：國家級分身</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>定位</dt><dd>全國尺度 3D 數位孿生，Smart Nation 政策的基礎建設</dd>
+        <dt>時程</dt><dd class="num">2014/12 啟動、2022 年建置完成，投入約 5,300 萬美元</dd>
+        <dt>平台</dt><dd>Dassault Systèmes 3DEXPERIENCE City；國研基金會與土地局共同主導</dd>
+        <dt>下一步</dt><dd>國家級「地下空間」孿生建置中：管線與地質一併入模</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://en.wikipedia.org/wiki/Virtual_Singapore" target="_blank" rel="noopener">Wikipedia 條目</a>
+        <a class="lk" href="https://infra.global/singapores-digital-twin-from-science-fiction-to-hi-tech-reality/" target="_blank" rel="noopener">建置歷程專文</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 20 高雄：黃仁勳口中的孿生城市 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 深度案例 · 高雄</div>
+    <h2>高雄：黃仁勳口中的孿生城市</h2>
+    <div class="content">
+      <div class="tl">
+        <div class="ev"><b>2024/6</b><span>鴻海攜手 NVIDIA 宣布在高雄建 AI 先進算力中心</span></div>
+        <div class="ev"><b>建模</b><span>光達＋3D Gaussian Splatting，建出 2 公分級城市分身</span></div>
+        <div class="ev"><b>主權 AI</b><span>清洗標註 2,000 TB 在地影像，訓練高雄自己的城市模型</span></div>
+        <div class="ev"><b>2026/3</b><span>智慧城市展：中華電展示代理式 AI＋孿生優化交通決策</span></div>
+        <div class="ev"><b>2026/6</b><span>陳其邁受邀出席 GTC Taipei；分身中預演豪雨與化學槽車情境</span></div>
+      </div>
+      <div class="qlist">
+        <p>城市孿生吃的是市民的日常影像：2,000 TB 資料的隱私與治理界線該畫在哪？</p>
+        <p>「主權 AI」對一座城市的意義是什麼？與直接租用國外雲端模型差在哪裡？</p>
+      </div>
+      <div class="linkrow">
+        <a class="lk" href="https://city.gvm.com.tw/article/121435" target="_blank" rel="noopener">城市學專題</a>
+        <a class="lk" href="https://finance.technews.tw/2026/03/11/cht-ks-smart-city/" target="_blank" rel="noopener">TechNews 報導</a>
+        <a class="lk" href="https://newtalk.tw/news/view/2026-06-02/1038858" target="_blank" rel="noopener">GTC Taipei 新聞</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 21 城市孿生不只是技術題 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 共同課題</div>
+    <h2>城市孿生不只是技術題</h2>
+    <div class="content">
+      <ul>
+        <li>技術面：資料格式互不相通、模型更新燒錢、精度與即時性拉鋸</li>
+        <li>治理面：誰擁有資料、誰為錯誤決策負責、市民在哪個環節參與</li>
+        <li>價值面：展示很炫，但日常誰在用？缺乏商業模式是普遍痛點</li>
+        <li>這些不是推測：下一段的論文用系統性方法把它們一一攤開</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 22 論文導讀 -->
+<section class="slide part">
+    <div class="part-num">05</div>
+    <div class="eyebrow">PART 5</div>
+    <h2>論文導讀</h2>
+    <p class="part-sub">一篇把城市孿生的難題盤點成清單，一篇實測擴散模型能替建築師做什麼。</p>
+  </section>
+
+  <!-- 23 城市數位孿生的挑戰盤點 -->
+<section class="slide">
+    <div class="eyebrow">PART 5 · 論文導讀 ①</div>
+    <h2>城市數位孿生的挑戰盤點</h2>
+    <div class="content">
+      <div class="biblio">
+        <span class="ti">Challenges of urban digital twins: A systematic review and a Delphi expert survey</span>
+        Lei, B., Janssen, P., Stoter, J., &amp; Biljecki, F.（2023）。<i>Automation in Construction</i>, 147, 104716。
+        <a href="https://doi.org/10.1016/j.autcon.2022.104716" target="_blank" rel="noopener">doi.org/10.1016/j.autcon.2022.104716</a>
+      </div>
+      <dl class="kv">
+        <dt>研究問題</dt><dd>城市數位孿生在真實落地時，究竟卡在哪些地方？</dd>
+        <dt>方法</dt><dd>系統性文獻回顧＋Delphi 專家調查：學界、業界、政府三方專家</dd>
+        <dt>團隊</dt><dd>新加坡國立大學 Urban Analytics Lab 與 TU Delft</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 24 發現：14 項技術題、9 項治理 -->
+<section class="slide">
+    <div class="eyebrow">PART 5 · 論文導讀 ①</div>
+    <h2>發現：14 項技術題、9 項治理題</h2>
+    <div class="content">
+      <ul>
+        <li>識別 14 項技術挑戰與 9 項非技術挑戰，對應到孿生的生命週期階段</li>
+        <li>最嚴重兩類：互通性（語意標準各自為政）與實用價值（缺乏商業模式）</li>
+        <li>社會與法律面向的問題最常被忽視，既有文獻幾乎不談</li>
+        <li>啟示：孿生專案的規劃書裡，治理章節應該和技術章節一樣厚</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 25 快讀：AI 藝術進了建築事務所 -->
+<section class="slide">
+    <div class="eyebrow">PART 5 · 論文導讀 ②</div>
+    <h2>快讀：AI 藝術進了建築事務所</h2>
+    <div class="content">
+      <div class="biblio">
+        <span class="ti">AI art in architecture</span>
+        Ploennigs, J., &amp; Berger, M.（2023）。<i>AI in Civil Engineering</i>, 2(1), 8。
+        <a href="https://doi.org/10.1007/s43503-023-00018-y" target="_blank" rel="noopener">doi.org/10.1007/s43503-023-00018-y</a>
+      </div>
+      <ul>
+        <li>方法：以 NLP 分析 4,000 萬筆 Midjourney 查詢，並實測三個擴散平台</li>
+        <li>發現：盤點哪些建築設計任務「已可解決、即將可解決」，越前期越成熟</li>
+        <li>貢獻：依各平台強項，推導出室內與外觀設計的整合工作流程</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 26 把今天的內容變成你的題目 -->
+<section class="slide">
+    <div class="eyebrow">Week 11 · 課堂討論與課後任務</div>
+    <h2>把今天的內容變成你的題目</h2>
+    <div class="content">
+      <div class="qlist">
+        <p>你的母領域若要用數位孿生（遊戲場景、展場、校園），最小可行版本長怎樣？資料從哪來？</p>
+        <p>高雄用 2,000 TB 市民影像養城市 AI：告知與退出機制該怎麼設計，才對得起市民？</p>
+        <p>Lei 等人說「缺乏商業模式」是孿生最痛的傷：替 Virtual Singapore 想一個收費對象。</p>
+      </div>
+      <div class="card">
+        <h3>課後任務（下週開場分享，約 5 分鐘）</h3>
+        <p>挑一個你熟悉的實體空間（系館、展場、通勤路線），寫一頁「孿生規格書」：感測什麼、多久同步、給誰看、誰付錢。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 27 所有連結，一頁帶走 -->
+<section class="slide">
+    <div class="eyebrow">Week 11 · 本週資源彙整</div>
+    <h2>所有連結，一頁帶走</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="grp">
+          <h3>平台與工具</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://www.storagereview.com/news/nvidia-quietly-makes-omniverse-free-for-production-use" target="_blank" rel="noopener">Omniverse 免費化</a>
+            <a class="lk" href="https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Releases-Vera-Rubin-DSX-AI-Factory-Reference-Design-and-Omniverse-DSX-Digital-Twin-Blueprint-With-Broad-Industry-Support/default.aspx" target="_blank" rel="noopener">Omniverse DSX</a>
+            <a class="lk" href="https://adsknews.autodesk.com/en/news/autodesk-design-and-make-intelligence/" target="_blank" rel="noopener">Forma 新品發布</a>
+            <a class="lk" href="https://adsknews.autodesk.com/en/news/building-layout-explorer-in-autodesk-forma/" target="_blank" rel="noopener">Layout Explorer</a>
+          </div>
+          <h3 style="margin-top:18px">法規與智慧建築</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://up.codes/features/ai" target="_blank" rel="noopener">UpCodes Copilot</a>
+            <a class="lk" href="https://www.archistar.ai/aiprecheck/" target="_blank" rel="noopener">Archistar 預審</a>
+            <a class="lk" href="https://www.sciencedirect.com/science/article/pii/S2950550X25000342" target="_blank" rel="noopener">智慧建築綜述</a>
+          </div>
+        </div>
+        <div class="grp">
+          <h3>案例</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://www.archdaily.com/1037409/zaha-hadid-architects-explores-ai-driven-design-at-architecture-of-possibility-exhibition-in-shenzhen-china" target="_blank" rel="noopener">ZHA 深圳展</a>
+            <a class="lk" href="https://en.wikipedia.org/wiki/Virtual_Singapore" target="_blank" rel="noopener">新加坡孿生</a>
+            <a class="lk" href="https://infra.global/singapores-digital-twin-from-science-fiction-to-hi-tech-reality/" target="_blank" rel="noopener">新加坡專文</a>
+            <a class="lk" href="https://city.gvm.com.tw/article/121435" target="_blank" rel="noopener">高雄城市學</a>
+            <a class="lk" href="https://finance.technews.tw/2026/03/11/cht-ks-smart-city/" target="_blank" rel="noopener">高雄智慧城市展</a>
+          </div>
+          <h3 style="margin-top:18px">本週論文</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://doi.org/10.1016/j.autcon.2022.104716" target="_blank" rel="noopener">論文① 孿生挑戰</a>
+            <a class="lk" href="https://doi.org/10.1007/s43503-023-00018-y" target="_blank" rel="noopener">論文② AI 藝術</a>
+            <a class="lk" href="https://newtalk.tw/news/view/2026-06-02/1038858" target="_blank" rel="noopener">高雄 GTC 新聞</a>
+          </div>
+        </div>
+      </div>
+      <div class="take"><b>本週檢核</b>看到數位孿生案例時，你能說出資料來源、更新頻率與持續維護者嗎？</div>
+    </div>
+  </section>
+
+  
+
+  </div></div>
+
+  <div class="ctrl">
+    <button id="prev" aria-label="上一張">‹</button>
+    <span class="cnt" id="cnt">1 / 1</span>
+    <button id="next" aria-label="下一張">›</button>
+    <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+  </div>
+  <div class="prog" id="prog"></div>
+
+  <div class="toc" id="toc">
+    <button class="close" id="tocClose">關閉（Esc）</button>
+    <h2 id="tocTitle">目錄</h2>
+    <div class="tgrid" id="tgrid"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ★ 每週只改這一行 ★ */
+  var WEEK_LABEL = '第 11 週 · 空間建築與環境設計';
+
+  var stage = document.getElementById('stage');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var cnt = document.getElementById('cnt');
+  var prog = document.getElementById('prog');
+  var toc = document.getElementById('toc');
+  var tgrid = document.getElementById('tgrid');
+  var cur = 0;
+
+  document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
+
+  slides.forEach(function (s, i) {
+    var f = document.createElement('div');
+    f.className = 'foot';
+    f.innerHTML = '<span>人工智慧與互動媒體特論|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    s.appendChild(f);
+  });
+
+  var groups = {};
+  slides.forEach(function (s, i) {
+    var eb = s.querySelector('.eyebrow');
+    var part = '開場';
+    if (eb) {
+      var m = eb.textContent.match(/PART\s*(\d)/i);
+      if (m) part = 'PART ' + m[1];
+      else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
+    }
+    var h = s.querySelector('h1, h2');
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+  });
+  Object.keys(groups).forEach(function (k) {
+    var col = document.createElement('div');
+    var h3 = document.createElement('h3');
+    h3.textContent = k;
+    col.appendChild(h3);
+    groups[k].forEach(function (it) {
+      var b = document.createElement('button');
+      b.textContent = it.t;
+      b.dataset.i = it.i;
+      b.addEventListener('click', function () { toggleToc(false); go(it.i); });
+      col.appendChild(b);
+    });
+    tgrid.appendChild(col);
+  });
+
+  function go(i) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach(function (s, j) { s.classList.toggle('active', j === cur); });
+    cnt.textContent = (cur + 1) + ' / ' + slides.length;
+    prog.style.width = ((cur + 1) / slides.length * 100) + '%';
+    if (history.replaceState) history.replaceState(null, '', '#s' + (cur + 1));
+    tgrid.querySelectorAll('button').forEach(function (b) { b.classList.toggle('here', +b.dataset.i === cur); });
+  }
+  function toggleToc(on) {
+    toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
+  }
+
+  document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
+  document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
+  document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
+  document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { toggleToc(false); return; }
+    if (toc.classList.contains('on')) return;
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'Home': go(0); break;
+      case 'End': go(slides.length - 1); break;
+      case 'm': case 'M': toggleToc(); break;
+    }
+  });
+
+  function fit() {
+    var w = window.innerWidth, h = window.innerHeight;
+    if (!w || !h) { requestAnimationFrame(fit); return; }
+    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('load', fit);
+  fit();
+
+  var m = location.hash.match(/^#s(\d+)$/);
+  go(m ? +m[1] - 1 : 0);
+})();
+</script>
+</body>
+</html>

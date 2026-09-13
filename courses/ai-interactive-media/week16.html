@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>第 16 週|期末專題提案</title>
+<style>
+  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  * { box-sizing: border-box; }
+  #app {
+    position: fixed; inset: 0; overflow: hidden;
+    background: var(--bg);
+    font-family: var(--body);
+    color: var(--ink);
+    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
+    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
+    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
+    --bg: #F5F4EC; --bg2: #EFEEE2;
+    --panel: #FDFCF6; --panel2: #EDECDF;
+    --ink: #232B21; --sub: #67705E;
+    --accent: #2F6B4F; --accent-rgb: 47,107,79;
+    --accent2: #BC4F2C;
+    --line: rgba(35,43,33,.16);
+    --link: #2F6B4F;
+    --r: 4px;
+  }
+  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  #app a:hover { opacity: .85; }
+  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
+  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
+  .slide.active { display: flex; }
+  .slide::before {
+    content: ""; position: absolute; inset: 24px; pointer-events: none;
+    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
+  }
+
+  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
+  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
+  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+
+  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
+  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
+  .sub { color: var(--sub); }
+  .small { font-size: 18px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
+  .cards { display: grid; gap: 18px; }
+  .c2 { grid-template-columns: repeat(2, 1fr); }
+  .c3 { grid-template-columns: repeat(3, 1fr); }
+  .c4 { grid-template-columns: repeat(4, 1fr); }
+  .c5 { grid-template-columns: repeat(5, 1fr); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
+  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
+  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
+  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+
+  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
+  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+
+  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
+
+  .cover, .part { justify-content: center; }
+  .cover .eyebrow { margin-bottom: 26px; }
+  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
+  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
+  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
+  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
+  .part h2 { font-size: 56px; }
+  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+
+  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
+  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
+  .kv dd { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
+  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
+  .lk::after { content: " ↗"; font-size: 12px; }
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
+  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
+  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
+  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
+  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
+  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  .tl { display: flex; flex-direction: column; gap: 18px; }
+  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
+  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
+  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+
+  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
+  .content > .cards,
+  .content > .cols,
+  .content > .flow,
+  .content > .kv,
+  .content > .prob { flex: 1 1 auto; }
+  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .qlist,
+  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .biblio { flex: 0 0 auto; }
+  .cols > .card { justify-content: flex-start; }
+
+  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
+  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
+  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
+  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
+  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  .toc.on { display: block; }
+  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
+  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
+  .toc button:hover { background: var(--panel2); }
+  .toc button.here { color: var(--accent2); font-weight: 700; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
+  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+<div id="app" data-deck="b">
+  <div class="stagewrap"><div class="stage" id="stage">
+
+  <!-- 1 期末專題提案工作坊 -->
+<section class="slide cover">
+    <div class="eyebrow">人工智慧與互動媒體特論 · 設計創新與經營研究所</div>
+    <h1>期末專題提案工作坊</h1>
+    <p class="cover-sub">把 15 週的輸入變成一頁提案：研究問題、對象領域、AI 角色、驗證方式，然後讓同儕幫你做第一次壓力測試。</p>
+    <div class="cover-meta"><span>第 16 週</span><span>提案工作坊 · 同儕回饋</span><span>授課：鄧樹遠</span></div>
+  </section>
+
+  <!-- 2 九十分鐘，三段路 -->
+<section class="slide">
+    <div class="eyebrow">Week 16 · 本週地圖</div>
+    <h2>九十分鐘，三段路</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><span class="who">PART 1</span><h3>從報告到提案</h3><p class="sub">期末要什麼、一頁提案的五個欄位怎麼寫</p></div>
+        <div class="card"><span class="who">PART 2</span><h3>好題目與壞題目</h3><p class="sub">三好三壞對照，加一張前 15 週找題索引地圖</p></div>
+        <div class="card"><span class="who">PART 3</span><h3>工作坊與回饋</h3><p class="sub">三分鐘口頭提案、三欄回饋單、下週門診預約</p></div>
+      </div>
+      <div class="take"><b>本週目標</b>離開教室時，每個人手上有一頁被同儕壓力測試過的提案。</div>
+    </div>
+  </section>
+
+  <!-- 3 從看趨勢，到下注一題 -->
+<section class="slide">
+    <div class="eyebrow">承接第 15 週 · 未來趨勢</div>
+    <h2>從看趨勢，到下注一題</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>第 1 到 15 週</h3><p>原理、各設計領域應用、倫理與趨勢：輸入階段完成</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>今天（第 16 週）</h3><p>選定一題，寫成一頁提案，接受同儕回饋</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>第 17、18 週</h3><p>個別指導修訂提案，期末發表與繳交</p></div>
+      </div>
+      <ul>
+        <li>過去每週的「課堂討論」都是題目的種子：先翻回你自己的筆記</li>
+        <li>今天不求題目完美，只求把它攤在桌上讓人檢視</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 4 從報告到提案 -->
+<section class="slide part">
+    <div class="part-num">01</div>
+    <div class="eyebrow">PART 1</div>
+    <h2>從報告到提案</h2>
+    <p class="part-sub">期中你交的是文獻回顧與案例分析，期末要交的是你自己的專題研究。這一段先講清楚差在哪，再給你一頁提案的框架。</p>
+  </section>
+
+  <!-- 5 期中與期末：兩份報告的分工 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 從報告到提案</div>
+    <h2>期中與期末：兩份報告的分工</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">第 9 週 · 已完成</span>
+          <h3>期中報告</h3>
+          <ul>
+            <li>文獻回顧與案例分析</li>
+            <li>整理別人做過什麼、怎麼看</li>
+            <li>訓練的能力：讀懂研究、評析案例</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">第 18 週 · 即將繳交</span>
+          <h3>期末專題</h3>
+          <ul>
+            <li>結合自身設計領域的專題研究</li>
+            <li>提出自己的問題，並嘗試回答它</li>
+            <li>訓練的能力：定義問題、設計驗證</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 期末專題長什麼樣 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 從報告到提案</div>
+    <h2>期末專題長什麼樣</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>性質</dt><dd>小規模專題研究：實作加評估、比較實驗、系統性案例研究皆可</dd>
+        <dt>規模</dt><dd>一學期做得完的量：一個問題、一種方法、一組拿得到的資料</dd>
+        <dt>產出</dt><dd>書面報告與期末發表；繳交規格與評分 rubric 於第 18 週公布</dd>
+        <dt>期程</dt><dd>本週提案、第 17 週個別指導、第 18 週發表與繳交</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 7 一頁提案：五個欄位 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 一頁提案框架</div>
+    <h2>一頁提案：五個欄位</h2>
+    <div class="content">
+      <p style="font-size:21px; margin:0">一頁 A4、五個欄位、每欄二到三句話。這一頁是下週個別指導的入場券。</p>
+      <div class="cards c5">
+        <div class="card"><h3>研究問題</h3><p class="sub">一個可回答的問句</p><p class="sub">含對象與判準</p></div>
+        <div class="card"><h3>對象領域</h3><p class="sub">你的母領域</p><p class="sub">明確場域與樣本</p></div>
+        <div class="card"><h3>AI 角色</h3><p class="sub">工具、對象</p><p class="sub">或研究方法</p></div>
+        <div class="card"><h3>方法與驗證</h3><p class="sub">怎麼做、怎麼量</p><p class="sub">怎樣算成功</p></div>
+        <div class="card"><h3>預期貢獻</h3><p class="sub">對誰有用</p><p class="sub">新知識或新作法</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 研究問題怎麼寫 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 一頁提案框架</div>
+    <h2>研究問題怎麼寫</h2>
+    <div class="content">
+      <ul>
+        <li>研究問題是「可以被回答的問句」，不是主題名詞</li>
+        <li>加三個限定：對象（誰、哪些作品）、環節（流程哪一段）、判準（怎樣算好）</li>
+        <li>自我檢驗：一學期做得完嗎？資料拿得到嗎？答案有可能是否定的嗎？</li>
+        <li>大學寫作中心的共識結構：問題、重要性、方法，三者缺一不可</li>
+      </ul>
+      <div class="linkrow">
+        <a class="lk" href="https://libguides.usc.edu/writingguide/assignments/researchproposal" target="_blank" rel="noopener">USC 寫作指南</a>
+        <a class="lk" href="https://www.unr.edu/writing-speaking-center/grant-writing-and-research-proposal-resources/research-proposal" target="_blank" rel="noopener">UNR 寫作中心</a>
+        <a class="lk" href="https://www.unh.edu/undergrad-research/students/writing-effective-research-proposal" target="_blank" rel="noopener">UNH 提案指引</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 AI 角色、方法與驗證 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 一頁提案框架</div>
+    <h2>AI 角色、方法與驗證</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>AI 的角色</dt><dd>三選一講清楚：工具（輔助產出）、對象（研究 AI 本身）、方法（AI 當研究工具）</dd>
+        <dt>方法</dt><dd>比較實驗、問卷與訪談、系統性案例分析、實作與迭代紀錄，擇一為主</dd>
+        <dt>驗證</dt><dd>定義「怎樣算成功」：效率、品質評分、使用者回饋或專家評審</dd>
+        <dt>常見缺漏</dt><dd>只寫「我要做什麼」，沒寫「我怎麼知道做得好不好」</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://guides.library.ucla.edu/c.php?g=180334&amp;p=1289236" target="_blank" rel="noopener">UCLA 提案指南</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 好題目與壞題目 -->
+<section class="slide part">
+    <div class="part-num">02</div>
+    <div class="eyebrow">PART 2</div>
+    <h2>好題目與壞題目</h2>
+    <p class="part-sub">同一個興趣，可以長成能畢業的題目，也可以長成災難。三個好示範、三種壞通病，再給一張從前 15 週挖題目的索引地圖。</p>
+  </section>
+
+  <!-- 11 好題目長這樣：三個示範 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 好題目與壞題目</div>
+    <h2>好題目長這樣：三個示範</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><span class="who">動畫</span><h3>分鏡工具比較</h3><p>三款生成式影像工具用於 30 秒短片前期分鏡：效率與導演意圖保真度比較。</p><p class="sub">範圍小、可比較、有判準</p></div>
+        <div class="card"><span class="who">視傳</span><h3>街景字感生成</h3><p>以台灣招牌字樣本訓練字體生成，由專家評審檢驗風格辨識度。</p><p class="sub">資料明確、驗證可行</p></div>
+        <div class="card"><span class="who">工設</span><h3>安全帽生成式設計</h3><p>生成式設計與人工設計案在輕量化與結構模擬表現上的對照。</p><p class="sub">有基準線、量化可比</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 壞題目長這樣：三種通病 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 好題目與壞題目</div>
+    <h2>壞題目長這樣：三種通病</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><span class="who">遊戲 · 只有產出</span><h3>用 AI 做一款遊戲</h3><p>沒有研究問題：做完了，然後呢？沒有判準，無從評斷好壞。</p></div>
+        <div class="card"><span class="who">建築 · 大哉問</span><h3>AI 會不會取代建築師</h3><p>牽涉整個產業與十年尺度，一學期無法驗證，只能各說各話。</p></div>
+        <div class="card"><span class="who">視傳 · 名詞當題目</span><h3>AI 與設計的未來</h3><p>主題名詞不是問句：沒有對象、沒有方法、沒有判準。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13 壞題目急救三步 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 好題目與壞題目</div>
+    <h2>壞題目急救三步</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>1. 縮範圍</h3><p>把「AI 與設計」縮成一個領域、一個環節、一種工具</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>2. 定對象</h3><p>指名資料來源：誰的作品、哪個場域、幾件樣本</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>3. 給判準</h3><p>跟什麼比、用什麼量、誰來評：說清楚怎樣算成功</p></div>
+      </div>
+      <ul>
+        <li>示範：「AI 與遊戲」改成「AI NPC 對話生成在恐怖遊戲 Demo 中的沉浸感評估」</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 14 索引地圖：從媒材找題目 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 找題索引地圖</div>
+    <h2>索引地圖：從媒材找題目</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><span class="who">第 5 · 13 週</span><h3>視覺與圖像</h3><p>品牌識別自動化、字體生成、提示工程作為創作方法學。</p></div>
+        <div class="card"><span class="who">第 6 · 11 週</span><h3>產品與空間</h3><p>生成式設計、數位孿生、AI 輔助建築與環境設計的實案評估。</p></div>
+        <div class="card"><span class="who">第 12 週</span><h3>動態影像</h3><p>影片生成用於動畫前期、自動剪輯的敘事品質研究。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 15 索引地圖：從互動與議題找 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 找題索引地圖</div>
+    <h2>索引地圖：從互動與議題找</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><span class="who">第 7 · 8 週</span><h3>互動與裝置</h3><p>感測技術、觀眾參與、沉浸式展場的 AI 即時生成。</p></div>
+        <div class="card"><span class="who">第 10 週</span><h3>沉浸媒體</h3><p>XR 與空間運算、頭戴裝置上的 AI 介面設計。</p></div>
+        <div class="card"><span class="who">第 14 · 15 週</span><h3>倫理與趨勢</h3><p>生成內容標示、著作權揭露、代理式 AI 的設計工作流。</p></div>
+      </div>
+      <div class="take"><b>假設情境</b>假設你主張「AI 讓動畫更有創意」，先說要比較哪些作品、問哪些人或記錄哪些過程；找不到證據就要縮題。</div>
+    </div>
+  </section>
+
+  <!-- 16 工作坊：提案與回饋 -->
+<section class="slide part">
+    <div class="part-num">03</div>
+    <div class="eyebrow">PART 3</div>
+    <h2>工作坊：提案與回饋</h2>
+    <p class="part-sub">接下來把時間交給你們：每人三分鐘口頭提案，同儕用三欄回饋單回應。規則先講清楚，回饋才會有用。</p>
+  </section>
+
+  <!-- 17 今天的九十分鐘 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 工作坊流程</div>
+    <h2>今天的九十分鐘</h2>
+    <div class="content">
+      <div class="tl">
+        <div class="ev"><b>00–15 分</b><span>提案框架複習，教師示範提案一則</span></div>
+        <div class="ev"><b>15–60 分</b><span>分組口頭提案：每人 3 分鐘，加 2 分鐘快問快答</span></div>
+        <div class="ev"><b>60–75 分</b><span>回饋單書寫與交換：每人至少為 3 位同學填寫</span></div>
+        <div class="ev"><b>75–90 分</b><span>全班盤點共通問題，登記下週個別指導時段</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 18 三分鐘口頭提案怎麼講 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 口頭提案</div>
+    <h2>三分鐘口頭提案怎麼講</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>第 1 分鐘 · 問題與對象</h3><p>你想回答什麼問句、在哪個領域、用什麼資料</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>第 2 分鐘 · 角色與方法</h3><p>AI 是工具、對象還是方法；怎麼做、怎麼驗證</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>第 3 分鐘 · 貢獻與求助</h3><p>預期貢獻一句話，加上最想被回饋的一個不確定</p></div>
+      </div>
+      <ul>
+        <li>搭配你的一頁提案（投影或紙本），讓聽眾邊看邊聽</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 19 回饋單：三個欄位 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 同儕回饋</div>
+    <h2>回饋單：三個欄位</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><span class="who">I LIKE</span><h3>欄位一：亮點</h3><p>「我欣賞…」具體指出提案中已經成立、值得保留的部分。</p></div>
+        <div class="card"><span class="who">I WISH</span><h3>欄位二：疑慮</h3><p>「我希望看到…」說出你的擔心，而不是宣判對錯。</p></div>
+        <div class="card"><span class="who">WHAT IF</span><h3>欄位三：可能性</h3><p>「如果改成…會怎樣」丟出一個選項，供對方自行取捨。</p></div>
+      </div>
+      <ul>
+        <li>具名填寫、每人至少 3 份；收齊後連同提案一起帶去下週門診</li>
+      </ul>
+      <div class="linkrow">
+        <a class="lk" href="https://dschool.stanford.edu/tools/design-thinking-bootleg" target="_blank" rel="noopener">d.school 工具卡</a>
+        <a class="lk" href="https://dschool.stanford.edu/resources" target="_blank" rel="noopener">d.school 資源頁</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 20 第 17 週個別指導預約 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 下週個別指導</div>
+    <h2>第 17 週個別指導預約</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>形式</dt><dd>每人 20 分鐘門診，聚焦提案修訂、文獻與方法問題</dd>
+        <dt>預約</dt><dd>今天課末於課程平台登記時段，先到先選、額滿為止</dd>
+        <dt>攜帶</dt><dd>修訂版一頁提案 v2、今天收到的回饋單、3 筆候選文獻</dd>
+        <dt>地點</dt><dd>研究室或線上擇一，登記時註明</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 21 把今天的回饋變成 v2 -->
+<section class="slide">
+    <div class="eyebrow">Week 16 · 課堂討論與課後任務</div>
+    <h2>把今天的回饋變成 v2</h2>
+    <div class="content">
+      <div class="qlist">
+        <p>你的提案裡 AI 是工具、對象還是方法？換一種角色，題目會變成什麼樣？</p>
+        <p>今天最刺但最有用的一條回饋是什麼？你打算接受、反駁，還是設法驗證？</p>
+      </div>
+      <div class="card">
+        <h3>課後任務（下週門診的入場券）</h3>
+        <p>依回饋單把一頁提案修訂為 v2，附上 3 筆想讀的候選文獻，於個別指導前上傳課程平台；回饋單原件一併帶來。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 22 所有連結，一頁帶走 -->
+<section class="slide">
+    <div class="eyebrow">Week 16 · 本週資源彙整</div>
+    <h2>所有連結，一頁帶走</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="grp">
+          <h3>提案寫作指南</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://libguides.usc.edu/writingguide/assignments/researchproposal" target="_blank" rel="noopener">USC 寫作指南</a>
+            <a class="lk" href="https://www.unr.edu/writing-speaking-center/grant-writing-and-research-proposal-resources/research-proposal" target="_blank" rel="noopener">UNR 寫作中心</a>
+            <a class="lk" href="https://www.unh.edu/undergrad-research/students/writing-effective-research-proposal" target="_blank" rel="noopener">UNH 提案指引</a>
+            <a class="lk" href="https://guides.library.ucla.edu/c.php?g=180334&amp;p=1289236" target="_blank" rel="noopener">UCLA 提案指南</a>
+          </div>
+        </div>
+        <div class="grp">
+          <h3>同儕回饋方法</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://dschool.stanford.edu/tools/design-thinking-bootleg" target="_blank" rel="noopener">d.school 工具卡</a>
+            <a class="lk" href="https://dschool.stanford.edu/resources" target="_blank" rel="noopener">d.school 資源頁</a>
+          </div>
+        </div>
+      </div>
+      <div class="take"><b>本週檢核</b>這個研究問題能否在一學期內回答？若答案是否定的，題目仍然成立嗎？</div>
+    </div>
+  </section>
+
+  
+
+  </div></div>
+
+  <div class="ctrl">
+    <button id="prev" aria-label="上一張">‹</button>
+    <span class="cnt" id="cnt">1 / 1</span>
+    <button id="next" aria-label="下一張">›</button>
+    <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+  </div>
+  <div class="prog" id="prog"></div>
+
+  <div class="toc" id="toc">
+    <button class="close" id="tocClose">關閉（Esc）</button>
+    <h2 id="tocTitle">目錄</h2>
+    <div class="tgrid" id="tgrid"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ★ 每週只改這一行 ★ */
+  var WEEK_LABEL = '第 16 週 · 期末專題提案';
+
+  var stage = document.getElementById('stage');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var cnt = document.getElementById('cnt');
+  var prog = document.getElementById('prog');
+  var toc = document.getElementById('toc');
+  var tgrid = document.getElementById('tgrid');
+  var cur = 0;
+
+  document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
+
+  slides.forEach(function (s, i) {
+    var f = document.createElement('div');
+    f.className = 'foot';
+    f.innerHTML = '<span>人工智慧與互動媒體特論|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    s.appendChild(f);
+  });
+
+  var groups = {};
+  slides.forEach(function (s, i) {
+    var eb = s.querySelector('.eyebrow');
+    var part = '開場';
+    if (eb) {
+      var m = eb.textContent.match(/PART\s*(\d)/i);
+      if (m) part = 'PART ' + m[1];
+      else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
+    }
+    var h = s.querySelector('h1, h2');
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+  });
+  Object.keys(groups).forEach(function (k) {
+    var col = document.createElement('div');
+    var h3 = document.createElement('h3');
+    h3.textContent = k;
+    col.appendChild(h3);
+    groups[k].forEach(function (it) {
+      var b = document.createElement('button');
+      b.textContent = it.t;
+      b.dataset.i = it.i;
+      b.addEventListener('click', function () { toggleToc(false); go(it.i); });
+      col.appendChild(b);
+    });
+    tgrid.appendChild(col);
+  });
+
+  function go(i) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach(function (s, j) { s.classList.toggle('active', j === cur); });
+    cnt.textContent = (cur + 1) + ' / ' + slides.length;
+    prog.style.width = ((cur + 1) / slides.length * 100) + '%';
+    if (history.replaceState) history.replaceState(null, '', '#s' + (cur + 1));
+    tgrid.querySelectorAll('button').forEach(function (b) { b.classList.toggle('here', +b.dataset.i === cur); });
+  }
+  function toggleToc(on) {
+    toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
+  }
+
+  document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
+  document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
+  document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
+  document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { toggleToc(false); return; }
+    if (toc.classList.contains('on')) return;
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'Home': go(0); break;
+      case 'End': go(slides.length - 1); break;
+      case 'm': case 'M': toggleToc(); break;
+    }
+  });
+
+  function fit() {
+    var w = window.innerWidth, h = window.innerHeight;
+    if (!w || !h) { requestAnimationFrame(fit); return; }
+    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('load', fit);
+  fit();
+
+  var m = location.hash.match(/^#s(\d+)$/);
+  go(m ? +m[1] - 1 : 0);
+})();
+</script>
+</body>
+</html>
