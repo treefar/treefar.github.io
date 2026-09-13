@@ -1,0 +1,799 @@
+<!doctype html>
+<html lang="zh-Hant"><head>
+<meta charset="utf-8">
+<title>第 3 週|人工智慧基礎概念</title>
+<style>
+  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  * { box-sizing: border-box; }
+  #app {
+    position: fixed; inset: 0; overflow: hidden;
+    background: var(--bg);
+    font-family: var(--body);
+    color: var(--ink);
+    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
+    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
+    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
+    --bg: #F5F4EC; --bg2: #EFEEE2;
+    --panel: #FDFCF6; --panel2: #EDECDF;
+    --ink: #232B21; --sub: #67705E;
+    --accent: #2F6B4F; --accent-rgb: 47,107,79;
+    --accent2: #BC4F2C;
+    --line: rgba(35,43,33,.16);
+    --link: #2F6B4F;
+    --r: 4px;
+  }
+  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  #app a:hover { opacity: .85; }
+  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
+  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
+  .slide.active { display: flex; }
+  .slide::before {
+    content: ""; position: absolute; inset: 24px; pointer-events: none;
+    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
+  }
+
+  .eyebrow { font-size: 16px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
+  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
+  h2 { font-family: var(--disp); font-size: 46px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+
+  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 24px; line-height: 1.55; }
+  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 20px; color: var(--sub); }
+  .sub { color: var(--sub); }
+  .small { font-size: 16px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
+  .cards { display: grid; gap: 18px; }
+  .c2 { grid-template-columns: repeat(2, 1fr); }
+  .c3 { grid-template-columns: repeat(3, 1fr); }
+  .c4 { grid-template-columns: repeat(4, 1fr); }
+  .c5 { grid-template-columns: repeat(5, 1fr); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .card h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 12px; font-weight: 700; }
+  .card p, .card li { font-size: 20px; line-height: 1.55; margin: 0; }
+  .card ul { padding-left: 1.15em; gap: 9px; font-size: 20px; }
+  .card .who { display: block; font-size: 15px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+
+  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 21px; line-height: 1.5; }
+  .take b { color: var(--accent2); font-size: 16px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+
+  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 14px; letter-spacing: .06em; color: var(--sub); }
+
+  .cover, .part { justify-content: center; }
+  .cover .eyebrow { margin-bottom: 26px; }
+  .cover-sub { font-size: 28px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
+  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
+  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
+  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
+  .part h2 { font-size: 56px; }
+  .part-sub { font-size: 26px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+
+  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 23px; line-height: 1.5; align-content: space-evenly; }
+  .kv dt { color: var(--accent); font-weight: 700; font-size: 20px; letter-spacing: .04em; }
+  .kv dd { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 22px; }
+  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 17px; text-decoration: none; }
+  .lk::after { content: " ↗"; font-size: 12px; }
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .step h3 { font-family: var(--disp); font-size: 23px; margin: 0 0 10px; font-weight: 700; }
+  .flow .step p { font-size: 19px; line-height: 1.55; margin: 0; color: var(--sub); }
+  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
+  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 22px; align-content: space-evenly; }
+  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 22px; line-height: 1.7; }
+  .biblio .ti { font-family: var(--disp); font-size: 26px; line-height: 1.4; display: block; margin-bottom: 10px; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 24px; line-height: 1.55; display: flex; gap: 16px; }
+  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  .tl { display: flex; flex-direction: column; gap: 18px; }
+  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 22px; line-height: 1.5; }
+  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
+  .grp h3 { font-family: var(--disp); font-size: 19px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+
+  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
+  .content > .cards,
+  .content > .cols,
+  .content > .flow,
+  .content > .kv,
+  .content > .prob { flex: 1 1 auto; }
+  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .qlist,
+  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .biblio { flex: 0 0 auto; }
+  .cols > .card { justify-content: flex-start; }
+
+  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
+  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
+  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
+  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
+  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  .toc.on { display: block; }
+  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
+  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
+  .toc button:hover { background: var(--panel2); }
+  .toc button.here { color: var(--accent2); font-weight: 700; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
+  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+<div id="app" data-deck="b">
+  <div class="stagewrap"><div class="stage" id="stage" style="transform: scale(0.727848);">
+
+  <!-- 1 人工智慧基礎概念 -->
+<section class="slide cover active">
+    <div class="eyebrow">人工智慧與互動媒體特論 · 設計創新與經營研究所</div>
+    <h1>人工智慧基礎概念</h1>
+    <p class="cover-sub">機器學習、深度學習與神經網路的設計視角導讀：在動手生成之前，先弄懂機器是怎麼「學」的。</p>
+    <div class="cover-meta"><span>第 3 週</span><span>論文導讀與案例討論</span><span>授課：鄧樹遠</span></div>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">1 / 30</span></div></section>
+
+  <!-- 2 九十分鐘，五段路 -->
+<section class="slide">
+    <div class="eyebrow">Week 03 · 本週地圖</div>
+    <h2>九十分鐘，五段路</h2>
+    <div class="content">
+      <div class="cards c5">
+        <div class="card"><span class="who">PART 1</span><h3>名詞的地圖</h3><p class="sub">AI、ML、DL 到底誰包誰</p></div>
+        <div class="card"><span class="who">PART 2</span><h3>三種學習</h3><p class="sub">監督、非監督、強化</p></div>
+        <div class="card"><span class="who">PART 3</span><h3>網路與訓練</h3><p class="sub">機器的「學」如何發生</p></div>
+        <div class="card"><span class="who">PART 4</span><h3>資料與標註</h3><p class="sub">餵什麼資料，長什麼能力</p></div>
+        <div class="card"><span class="who">PART 5</span><h3>論文導讀</h3><p class="sub">一篇經典，一篇設計</p></div>
+      </div>
+      <div class="take"><b>本週目標</b>離開教室時，能把任何 AI 功能拆成三個問題：什麼任務、哪種學習、用什麼資料訓練。</div>
+    </div>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">2 / 30</span></div></section>
+
+  <!-- 3 從年表走進黑盒子 -->
+<section class="slide">
+    <div class="eyebrow">承接第 2 週 · AI 與互動媒體概論</div>
+    <h2>從年表走進黑盒子</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">上週：把地圖攤開</span>
+          <h3>七十年的起落</h3>
+          <ul>
+            <li>達特茅斯會議、兩次 AI 寒冬、2012 年後的大爆發</li>
+            <li>應用地圖：AI 在設計領域「做什麼」</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">本週：打開盒子</span>
+          <h3>它是怎麼做到的</h3>
+          <ul>
+            <li>學習方式、神經網路、資料集：三塊地基</li>
+            <li>只談「判別式」：分類、預測、辨識；生成式留給下週</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>觀察</b>年表上每次起落都對應一次方法更替；今天講的方法，正是 2012 年後這一波的主角。</div>
+    </div>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">3 / 30</span></div></section>
+
+  <!-- 4 AI、機器學習、深度學習 -->
+<section class="slide part">
+    <div class="part-num">01</div>
+    <div class="eyebrow">PART 1</div>
+    <h2>AI、機器學習、深度學習</h2>
+    <p class="part-sub">三個常被混用的名詞，其實是一組同心圓。先把詞彙放對位置，之後讀新聞與論文才不會迷路。</p>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">4 / 30</span></div></section>
+
+  <!-- 5 同心圓：誰包住誰 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 名詞的地圖</div>
+    <h2>同心圓：誰包住誰</h2>
+    <div class="content">
+      <div class="cols">
+        <div>
+          <svg viewBox="0 0 460 260" width="460" height="260" role="img" aria-label="AI、機器學習、深度學習的同心圓關係">
+            <circle cx="230" cy="132" r="118" fill="var(--panel)" stroke="var(--line)" stroke-width="2"></circle>
+            <circle cx="230" cy="168" r="82" fill="var(--panel2)" stroke="var(--line)" stroke-width="2"></circle>
+            <circle cx="230" cy="204" r="46" fill="var(--accent)"></circle>
+            <text x="230" y="48" text-anchor="middle" fill="var(--ink)" font-size="17" font-weight="700">人工智慧 AI</text>
+            <text x="230" y="116" text-anchor="middle" fill="var(--ink)" font-size="16" font-weight="700">機器學習 ML</text>
+            <text x="230" y="210" text-anchor="middle" fill="var(--panel)" font-size="15" font-weight="700">深度學習 DL</text>
+          </svg>
+        </div>
+        <ul>
+          <li>人工智慧（1956 起）：讓機器表現出「像人」的行為，是一個目標</li>
+          <li>機器學習：不寫死規則，讓機器從資料歸納規律，是一種方法</li>
+          <li>深度學習（2012 爆發）：以多層神經網路學習，是一類技術</li>
+          <li>2026 年新聞裡說的「AI」，多數其實指最內圈這一類</li>
+        </ul>
+      </div>
+      <div class="take"><b>提醒</b>論文寫作時三個詞不可互換：方法段寫 ML 或 DL，動機段才寫 AI。</div>
+    </div>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">5 / 30</span></div></section>
+
+  <!-- 6 從寫規則到給範例 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 名詞的地圖</div>
+    <h2>從寫規則到給範例</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">傳統程式設計</span>
+          <h3>人寫規則，電腦執行</h3>
+          <ul>
+            <li>輸入：資料＋規則 → 輸出：答案</li>
+            <li>例：排版格線、字級級距的 if-then 判斷</li>
+            <li>規則說不清楚的任務就寫不出來</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">機器學習</span>
+          <h3>人給範例，電腦歸納</h3>
+          <ul>
+            <li>輸入：資料＋答案 → 輸出：規則（模型）</li>
+            <li>例：給一萬張好版面，讓它自己抓規律</li>
+            <li>「說不清但看得出」的任務，正是它的主場</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>類比</b>教學生不是背公式而是看例題；機器學習就是「用例題寫程式」。</div>
+    </div>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">6 / 30</span></div></section>
+
+  <!-- 7 判別式 AI：回答「這是什麼」 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 名詞的地圖</div>
+    <h2>判別式 AI：回答「這是什麼」</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><h3>分類</h3><p>這張圖有沒有貓？這封信是不是垃圾郵件？輸出是一個類別。</p></div>
+        <div class="card"><h3>預測</h3><p>這個按鈕的點擊率多高？下一季銷量多少？輸出是一個數值。</p></div>
+        <div class="card"><h3>辨識</h3><p>這張臉是誰？這段語音說了什麼？輸出是身分或內容。</p></div>
+      </div>
+      <ul>
+        <li>設計工具中的判別式：一鍵去背、自動標籤、以圖搜圖、瑕疵檢測</li>
+        <li>共同點：不創造新內容，只下判斷；「生成」是下週的事</li>
+      </ul>
+      <div class="take"><b>設計視角</b>生成式工具每一步背後都有判別式把關：先學會「認」，才輪得到「造」。</div>
+    </div>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">7 / 30</span></div></section>
+
+  <!-- 8 神經網路拿下諾貝爾獎 -->
+<section class="slide">
+    <div class="eyebrow">PART 1 · 名詞的地圖</div>
+    <h2>神經網路拿下諾貝爾獎</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>獎項</dt><dd class="num">2024 年諾貝爾物理學獎，2024/10/8 公布</dd>
+        <dt>得主</dt><dd>John Hopfield 與 Geoffrey Hinton</dd>
+        <dt>理由</dt><dd>「使神經網路機器學習成為可能的基礎性發現與發明」</dd>
+        <dt>呼應</dt><dd>同年化學獎也頒給以 AI 預測蛋白質結構的研究者</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://www.nobelprize.org/prizes/physics/2024/press-release/" target="_blank" rel="noopener">諾貝爾獎新聞稿</a>
+      </div>
+      <div class="take"><b>觀察</b>一年兩座諾貝爾獎頒給 AI 相關工作：今天教的不是流行工具，是已定調的科學。</div>
+    </div>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">8 / 30</span></div></section>
+
+  <!-- 9 三種學習方式 -->
+<section class="slide part">
+    <div class="part-num">02</div>
+    <div class="eyebrow">PART 2</div>
+    <h2>三種學習方式</h2>
+    <p class="part-sub">機器怎麼學，看你給它什麼：給標籤是監督式，只給資料是非監督式，給獎懲就是強化學習。</p>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">9 / 30</span></div></section>
+
+  <!-- 10 監督式學習：從標籤學 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 三種學習方式</div>
+    <h2>監督式學習：從標籤學</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>1. 給標好的範例</h3><p>數萬張標了「貓／非貓」的圖片，標籤就是老師</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>2. 學出對應</h3><p>模型不斷調整參數，讓自己的預測貼近標籤</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>3. 考沒見過的題</h3><p>新圖片也能正確判斷，才算真的學會</p></div>
+      </div>
+      <ul>
+        <li>設計場景：字型辨識、圖庫自動標籤、使用者行為預測</li>
+        <li>代價：標籤要人給；資料量與標註品質直接決定成敗</li>
+      </ul>
+      <div class="take"><b>提醒</b>垃圾進、垃圾出：標錯的資料教出答錯的模型，資料整理是核心不是雜務。</div>
+    </div>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">10 / 30</span></div></section>
+
+  <!-- 11 非監督式學習：自己找結構 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 三種學習方式</div>
+    <h2>非監督式學習：自己找結構</h2>
+    <div class="content">
+      <ul>
+        <li>只有資料、沒有標籤：模型自行找出資料內部的結構</li>
+        <li>分群（clustering）：把相似的擺一起，例：受眾分群、風格聚類</li>
+        <li>降維：把高維資料壓成二維地圖，情緒板與語意地圖的近親</li>
+        <li>設計場景：訪談逐字稿的主題浮現、量表資料的族群探索</li>
+      </ul>
+      <div class="take"><b>設計視角</b>它給的是結構不是答案：每一群叫什麼、有何意義，仍由設計師詮釋。</div>
+    </div>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">11 / 30</span></div></section>
+
+  <!-- 12 強化學習：從獎懲中學 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 三種學習方式</div>
+    <h2>強化學習：從獎懲中學</h2>
+    <div class="content">
+      <ul>
+        <li>代理人（agent）在環境中行動，靠「獎勵訊號」修正策略，沒有標準答案</li>
+        <li>AlphaGo（2016）：自我對弈數百萬盤，下出人類沒見過的第 37 手</li>
+        <li>適合「怎麼做」說不清、但「結果好壞」可以打分的任務</li>
+        <li>下週預告：RLHF 把人類偏好當獎勵訊號，正是這一路的延伸</li>
+      </ul>
+      <div class="linkrow">
+        <a class="lk" href="https://deepmind.google/" target="_blank" rel="noopener">DeepMind</a>
+      </div>
+      <div class="take"><b>類比</b>像養電子寵物：不教牠每一步，只在做對時給點數，行為自己長出來。</div>
+    </div>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">12 / 30</span></div></section>
+
+  <!-- 13 三種學習，對到設計日常 -->
+<section class="slide">
+    <div class="eyebrow">PART 2 · 三種學習方式</div>
+    <h2>三種學習，對到設計日常</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><h3>監督式</h3><ul><li>去背與自動標籤</li><li>點擊率與銷量預測</li><li>Netflix 封面選圖的骨幹</li></ul></div>
+        <div class="card"><h3>非監督式</h3><ul><li>受眾與風格分群</li><li>訪談逐字稿主題聚類</li><li>競品地圖與情緒板整理</li></ul></div>
+        <div class="card"><h3>強化學習</h3><ul><li>遊戲 AI 與 NPC 行為</li><li>介面版位自動最佳化</li><li>下週登場的 RLHF</li></ul></div>
+      </div>
+      <div class="take"><b>觀察</b>一個推薦系統常三種並用：先分群、再預測點擊、最後用回饋微調。</div>
+    </div>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">13 / 30</span></div></section>
+
+  <!-- 14 神經網路與訓練 -->
+<section class="slide part">
+    <div class="part-num">03</div>
+    <div class="eyebrow">PART 3</div>
+    <h2>神經網路與訓練</h2>
+    <p class="part-sub">所謂學習，在數學上只是一件事：調整幾百萬顆旋鈕，讓輸出越來越接近目標。四個直觀一次講完。</p>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">14 / 30</span></div></section>
+
+  <!-- 15 神經元：一顆加權投票機 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 神經網路與訓練</div>
+    <h2>神經元：一顆加權投票機</h2>
+    <div class="content">
+      <div class="cols">
+        <div>
+          <svg viewBox="0 0 460 240" width="460" height="240" role="img" aria-label="人工神經元的加權總和示意">
+            <circle cx="60" cy="44" r="20" fill="var(--panel2)" stroke="var(--line)" stroke-width="2"></circle>
+            <circle cx="60" cy="120" r="20" fill="var(--panel2)" stroke="var(--line)" stroke-width="2"></circle>
+            <circle cx="60" cy="196" r="20" fill="var(--panel2)" stroke="var(--line)" stroke-width="2"></circle>
+            <text x="60" y="49" text-anchor="middle" fill="var(--sub)" font-size="14">x1</text>
+            <text x="60" y="125" text-anchor="middle" fill="var(--sub)" font-size="14">x2</text>
+            <text x="60" y="201" text-anchor="middle" fill="var(--sub)" font-size="14">x3</text>
+            <line x1="80" y1="44" x2="216" y2="108" stroke="var(--line)" stroke-width="2"></line>
+            <line x1="80" y1="120" x2="214" y2="120" stroke="var(--line)" stroke-width="2"></line>
+            <line x1="80" y1="196" x2="216" y2="132" stroke="var(--line)" stroke-width="2"></line>
+            <text x="142" y="66" fill="var(--accent2)" font-size="14" font-weight="700">w1</text>
+            <text x="142" y="112" fill="var(--accent2)" font-size="14" font-weight="700">w2</text>
+            <text x="142" y="180" fill="var(--accent2)" font-size="14" font-weight="700">w3</text>
+            <circle cx="250" cy="120" r="36" fill="var(--panel)" stroke="var(--accent)" stroke-width="2.5"></circle>
+            <text x="250" y="129" text-anchor="middle" fill="var(--accent)" font-size="26" font-weight="700">Σ</text>
+            <line x1="286" y1="120" x2="366" y2="120" stroke="var(--accent)" stroke-width="3"></line>
+            <polygon points="366,113 380,120 366,127" fill="var(--accent)"></polygon>
+            <text x="392" y="114" fill="var(--ink)" font-size="16" font-weight="700">輸出</text>
+            <text x="392" y="138" fill="var(--sub)" font-size="13">過門檻才發射</text>
+          </svg>
+        </div>
+        <ul>
+          <li>一顆神經元：把各輸入乘上權重加總，超過門檻才送出訊號</li>
+          <li>權重就是旋鈕：所謂「學習」，調的正是這幾百萬顆旋鈕</li>
+          <li>單顆很簡單，層層相連之後，就能認得貓、字型與風格</li>
+        </ul>
+      </div>
+      <div class="take"><b>類比</b>像評審團：每位評審意見的份量不同，總分過門檻，提案就通過。</div>
+    </div>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">15 / 30</span></div></section>
+
+  <!-- 16 深度：特徵一層層長出來 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 神經網路與訓練</div>
+    <h2>深度：特徵一層層長出來</h2>
+    <div class="content">
+      <div class="flow">
+        <div class="step"><h3>淺層</h3><p>邊緣、色塊、筆觸：最基本的視覺元素</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>中層</h3><p>形狀與局部圖樣：眼睛、車輪、窗框</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>深層</h3><p>語意概念：貓、汽車、某一種風格</p></div>
+      </div>
+      <ul>
+        <li>特徵不是人寫的，是訓練中自己長出來的：這是與傳統作法的分水嶺</li>
+        <li>LeCun 等人稱之為表徵學習（representation learning），詳見 PART 5</li>
+      </ul>
+      <div class="take"><b>設計視角</b>設計師看稿也分層：先構圖再細節；網路的階層與視知覺意外相似。</div>
+    </div>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">16 / 30</span></div></section>
+
+  <!-- 17 訓練：往損失更低處走 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 神經網路與訓練</div>
+    <h2>訓練：往損失更低處走</h2>
+    <div class="content">
+      <ul>
+        <li>損失函數：一把尺，量「模型輸出」與「正確答案」差多遠</li>
+        <li>梯度下降：每看一批資料，往損失變小的方向微調所有權重</li>
+        <li>重複數百萬次，直到尺上的數字降不下去為止</li>
+        <li>GPU 擅長這種大規模平行乘加：這正是它成為 AI 硬體核心的原因</li>
+      </ul>
+      <div class="take"><b>類比</b>濃霧中下山：看不見全景，只能感覺腳下坡度，一步步往低處挪。</div>
+    </div>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">17 / 30</span></div></section>
+
+  <!-- 18 背題的模型：過擬合與評估 -->
+<section class="slide">
+    <div class="eyebrow">PART 3 · 神經網路與訓練</div>
+    <h2>背題的模型：過擬合與評估</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>病徵</dt><dd>訓練資料近乎全對，沒看過的資料就出錯：背題而非學會</dd>
+        <dt>成因</dt><dd>模型把訓練集裡的雜訊與巧合，也當成規律記了下來</dd>
+        <dt>解法</dt><dd>資料切成訓練、驗證、測試三份；只信沒看過那份的成績</dd>
+        <dt>評估</dt><dd>準確率之外看錯誤分布：錯在哪一類、對誰特別不準</dd>
+      </dl>
+      <div class="take"><b>研究所鐵則</b>拿訓練過的對象再測一次，量到的是記憶不是能力：實驗設計同理。</div>
+    </div>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">18 / 30</span></div></section>
+
+  <!-- 19 資料集與標註 -->
+<section class="slide part">
+    <div class="part-num">04</div>
+    <div class="eyebrow">PART 4</div>
+    <h2>資料集與標註</h2>
+    <p class="part-sub">模型能力的上限不在演算法，在資料。三個故事：點燃革命的資料集、走向網路規模的代價、以及誰在標註。</p>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">19 / 30</span></div></section>
+
+  <!-- 20 ImageNet：一個資料集的革 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 資料集與標註</div>
+    <h2>ImageNet：一個資料集的革命</h2>
+    <div class="content">
+      <div class="tl">
+        <div class="ev"><b>2009</b><span>李飛飛團隊發布 ImageNet：逾 1400 萬張人工標註影像、2 萬多類</span></div>
+        <div class="ev"><b>2010</b><span>ILSVRC 挑戰賽開跑：120 萬張、1000 類，成為全球公版考卷</span></div>
+        <div class="ev"><b>2012</b><span>AlexNet 以 15.3% 錯誤率奪冠，第二名 26.2%，差距空前</span></div>
+        <div class="ev"><b>之後</b><span>電腦視覺全面轉向深度學習，GPU 訓練成為標配</span></div>
+      </div>
+      <div class="linkrow">
+        <a class="lk" href="https://en.wikipedia.org/wiki/ImageNet" target="_blank" rel="noopener">ImageNet 維基</a>
+        <a class="lk" href="https://en.wikipedia.org/wiki/AlexNet" target="_blank" rel="noopener">AlexNet 維基</a>
+      </div>
+      <div class="take"><b>觀察</b>演算法早就存在，是資料集把舞台搭好：沒有 ImageNet 就沒有 2012 那一刻。</div>
+    </div>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">20 / 30</span></div></section>
+
+  <!-- 21 資料集的膨脹：從標註到爬取 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 資料集與標註</div>
+    <h2>資料集的膨脹：從標註到爬取</h2>
+    <div class="content">
+      <dl class="kv" style="grid-template-columns:260px 1fr">
+        <dt>ImageNet（2009）</dt><dd>逾 1400 萬張，人工逐張標註，以群眾外包完成</dd>
+        <dt>LAION-5B（2022）</dt><dd>58.5 億組圖文對，自網路爬取、以 CLIP 模型自動篩選</dd>
+        <dt>代價</dt><dd>2023 年被查出含兒少不當內容，一度自公開平台下架</dd>
+        <dt>現況</dt><dd>資料品質、授權與合法性，成為 2025 年後的核心研究議題</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://arxiv.org/abs/2210.08402" target="_blank" rel="noopener">LAION-5B 論文</a>
+      </div>
+      <div class="take"><b>觀察</b>從人工精標到網路爬取：規模換來能力，也把整個網路的偏見一起吃下去。</div>
+    </div>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">21 / 30</span></div></section>
+
+  <!-- 22 誰在標資料：標註經濟 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 資料集與標註</div>
+    <h2>誰在標資料：標註經濟</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>Scale AI</dt><dd>資料標註龍頭，曾供應 OpenAI、Google 等主要實驗室</dd>
+        <dt>2025/6</dt><dd class="num">Meta 以 143 億美元入股 49%，公司估值 290 億美元</dd>
+        <dt>連鎖效應</dt><dd>Google、OpenAI 因資料保密疑慮轉單，同業接收客戶</dd>
+        <dt>人的一面</dt><dd>數十萬標註員分布全球；RLHF 時代連「偏好」都靠人標</dd>
+      </dl>
+      <div class="linkrow">
+        <a class="lk" href="https://spectrum.ieee.org/data-labeling-scale-ai-agents" target="_blank" rel="noopener">IEEE 標註報導</a>
+        <a class="lk" href="https://www.forbes.com/sites/janakirammsv/2025/06/23/meta-invests-14-billion-in-scale-ai-to-strengthen-model-training/" target="_blank" rel="noopener">Forbes 報導</a>
+      </div>
+      <div class="take"><b>提醒</b>每個聰明模型背後都有大量人工：標註是 AI 供應鏈中最人力密集的一環。</div>
+    </div>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">22 / 30</span></div></section>
+
+  <!-- 23 深度案例：Netflix 封面選 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 深度案例討論</div>
+    <h2>深度案例：Netflix 封面選圖</h2>
+    <div class="content">
+      <div class="tl">
+        <div class="ev"><b>2017/12</b><span>官方技術部落格公開封面個人化系統：contextual bandits</span></div>
+        <div class="ev"><b>2018</b><span>於 ACM 推薦系統大會 RecSys 正式發表</span></div>
+        <div class="ev"><b>做法</b><span>每部片備多版本封面，依觀看脈絡即時挑一張給你</span></div>
+        <div class="ev"><b>2026/1</b><span>改以 LLM 後訓練選圖（Llama 3.1 8B），較產線模型再升 3 至 5%</span></div>
+      </div>
+      <div class="qlist">
+        <p>同一部片對不同人顯示不同封面，是貼心還是操弄？界線在哪？</p>
+        <p>「選哪張圖」原是視覺設計的判斷；被模型接手後，設計師的價值移到哪？</p>
+      </div>
+      <div class="linkrow">
+        <a class="lk" href="https://netflixtechblog.com/artwork-personalization-c589f074ad76" target="_blank" rel="noopener">Netflix 部落格</a>
+        <a class="lk" href="https://research.netflix.com/publication/netflix-artwork-personalization-via-llm-post-training" target="_blank" rel="noopener">Netflix 研究頁</a>
+        <a class="lk" href="https://dl.acm.org/doi/10.1145/3240323.3241729" target="_blank" rel="noopener">RecSys 2018</a>
+      </div>
+    </div>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">23 / 30</span></div></section>
+
+  <!-- 24 十分鐘，訓練你的分類器 -->
+<section class="slide">
+    <div class="eyebrow">PART 4 · 課堂實作</div>
+    <h2>十分鐘，訓練你的分類器</h2>
+    <div class="content">
+      <ul>
+        <li>Teachable Machine：Google 免費工具，2017 年上線、2026 年仍在維護</li>
+        <li>上傳影像、聲音或姿態範例，不寫程式，幾分鐘訓練出分類模型</li>
+        <li>原理正是今天所學：遷移學習加監督式分類，資料不離開你的電腦</li>
+        <li>課堂演練：訓練「好版面、壞版面」分類器，觀察它何時失靈</li>
+      </ul>
+      <div class="linkrow">
+        <a class="lk" href="https://teachablemachine.withgoogle.com/" target="_blank" rel="noopener">Teachable 官網</a>
+        <a class="lk" href="https://blog.google/innovation-and-ai/products/teachable-machine/" target="_blank" rel="noopener">2.0 官方介紹</a>
+      </div>
+      <div class="take"><b>設計視角</b>親手餵一次資料，比十張投影片更能體會「資料品質就是模型品質」。</div>
+    </div>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">24 / 30</span></div></section>
+
+  <!-- 25 論文導讀 -->
+<section class="slide part">
+    <div class="part-num">05</div>
+    <div class="eyebrow">PART 5</div>
+    <h2>論文導讀</h2>
+    <p class="part-sub">一篇經典綜述奠定詞彙，一篇設計研究示範：如何把今天的概念，放進設計流程的研究裡。</p>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">25 / 30</span></div></section>
+
+  <!-- 26 經典：三巨頭的深度學習綜述 -->
+<section class="slide">
+    <div class="eyebrow">PART 5 · 論文導讀 ①</div>
+    <h2>經典：三巨頭的深度學習綜述</h2>
+    <div class="content">
+      <div class="biblio">
+        <span class="ti">Deep learning</span>
+        LeCun, Y., Bengio, Y., &amp; Hinton, G.（2015）。<i>Nature</i>, 521(7553), 436–444。
+        <a href="https://doi.org/10.1038/nature14539" target="_blank" rel="noopener">doi.org/10.1038/nature14539</a>
+      </div>
+      <dl class="kv">
+        <dt>作者地位</dt><dd>三人於 2018 年共獲圖靈獎；Hinton 再獲 2024 諾貝爾獎</dd>
+        <dt>核心主張</dt><dd>深度學習即表徵學習：特徵由資料學出，不再人工設計</dd>
+        <dt>涵蓋內容</dt><dd>監督式學習、卷積網路、循環網路，與對未來的展望</dd>
+      </dl>
+      <div class="take"><b>為何選它</b>被引用逾七萬次的定錨文獻：今天每個概念都能在這八頁找到原典。</div>
+    </div>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">26 / 30</span></div></section>
+
+  <!-- 27 讀經典的三個收穫 -->
+<section class="slide">
+    <div class="eyebrow">PART 5 · 論文導讀 ①</div>
+    <h2>讀經典的三個收穫</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card"><h3>詞彙的原典</h3><p>本週所有名詞的權威定義，論文寫作時可直接引用。</p></div>
+        <div class="card"><h3>階層與知覺</h3><p>特徵由邊緣到語意逐層構成，與視覺設計的觀看經驗相通。</p></div>
+        <div class="card"><h3>預言與對照</h3><p>文末看好非監督式學習；十年後的生成式浪潮部分應驗。</p></div>
+      </div>
+      <ul>
+        <li>對設計的啟示：理解表徵，才能理解「風格」如何被模型捕捉與遷移</li>
+      </ul>
+      <div class="take"><b>期中報告可借用</b>文獻回顧需要 AI 段落的定錨文獻時，先放這一篇再展開。</div>
+    </div>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">27 / 30</span></div></section>
+
+  <!-- 28 快讀：AI 進設計流程哪一段 -->
+<section class="slide">
+    <div class="eyebrow">PART 5 · 論文導讀 ②</div>
+    <h2>快讀：AI 進設計流程哪一段</h2>
+    <div class="content">
+      <div class="biblio">
+        <span class="ti">When and How to Use AI in the Design Process? Implications for Human-AI Design Collaboration</span>
+        Lee, S., Law, M., &amp; Hoffman, G.（2025）。<i>International Journal of Human–Computer Interaction</i>, 41(2), 1569–1584。
+        <a href="https://doi.org/10.1080/10447318.2024.2353451" target="_blank" rel="noopener">doi.org/10.1080/10447318.2024.2353451</a>
+      </div>
+      <ul>
+        <li>方法：以雙鑽石設計流程為座標，系統盤點既有 AI 設計支援系統</li>
+        <li>發現：AI 高度集中在後段「產生解法」，前段「發現與定義問題」極少</li>
+        <li>提議：AI 可在前期提供靈感、給定約束、提出隱喻、探索設計材料</li>
+      </ul>
+      <div class="take"><b>為何選它</b>用設計師熟悉的雙鑽石當地圖，把本週概念放進設計流程的座標系。</div>
+    </div>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">28 / 30</span></div></section>
+
+  <!-- 29 把概念變成判斷力 -->
+<section class="slide">
+    <div class="eyebrow">Week 03 · 課堂討論與課後任務</div>
+    <h2>把概念變成判斷力</h2>
+    <div class="content">
+      <div class="qlist">
+        <p>你的設計日常裡，哪三件事其實是判別式問題？各屬哪種學習方式？</p>
+        <p>若把 Netflix 式封面個人化搬上作品集平台，你贊成嗎？誰受益、誰受損？</p>
+        <p>Lee 等人指出 AI 少碰「定義問題」階段：是做不到，還是不該做？</p>
+      </div>
+      <div class="card">
+        <h3>課後任務（下週開場分享，約 5 分鐘）</h3>
+        <p>用 Teachable Machine 訓練一個與你研究相關的小分類器（每類 30 張圖內），截圖一個成功與一個失靈案例，寫 300 字：資料如何影響結果？</p>
+      </div>
+      <div class="take"><b>下週預告</b>第 4 週生成式 AI 導論：從判別走向生成，Transformer 與擴散模型登場。</div>
+    </div>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">29 / 30</span></div></section>
+
+  <!-- 30 本週資源，一頁帶走 -->
+<section class="slide">
+    <div class="eyebrow">Week 03 · 本週資源彙整</div>
+    <h2>本週資源，一頁帶走</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="grp">
+          <h3>概念與里程碑</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://www.nobelprize.org/prizes/physics/2024/press-release/" target="_blank" rel="noopener">諾貝爾獎新聞稿</a>
+            <a class="lk" href="https://en.wikipedia.org/wiki/ImageNet" target="_blank" rel="noopener">ImageNet 維基</a>
+            <a class="lk" href="https://en.wikipedia.org/wiki/AlexNet" target="_blank" rel="noopener">AlexNet 維基</a>
+            <a class="lk" href="https://arxiv.org/abs/2210.08402" target="_blank" rel="noopener">LAION-5B 論文</a>
+            <a class="lk" href="https://deepmind.google/" target="_blank" rel="noopener">DeepMind</a>
+          </div>
+          <h3 style="margin-top:18px">動手做</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://teachablemachine.withgoogle.com/" target="_blank" rel="noopener">Teachable 官網</a>
+            <a class="lk" href="https://blog.google/innovation-and-ai/products/teachable-machine/" target="_blank" rel="noopener">2.0 官方介紹</a>
+          </div>
+        </div>
+        <div class="grp">
+          <h3>案例</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://netflixtechblog.com/artwork-personalization-c589f074ad76" target="_blank" rel="noopener">Netflix 部落格</a>
+            <a class="lk" href="https://research.netflix.com/publication/netflix-artwork-personalization-via-llm-post-training" target="_blank" rel="noopener">Netflix 研究頁</a>
+            <a class="lk" href="https://dl.acm.org/doi/10.1145/3240323.3241729" target="_blank" rel="noopener">RecSys 2018</a>
+            <a class="lk" href="https://spectrum.ieee.org/data-labeling-scale-ai-agents" target="_blank" rel="noopener">IEEE 標註報導</a>
+            <a class="lk" href="https://www.forbes.com/sites/janakirammsv/2025/06/23/meta-invests-14-billion-in-scale-ai-to-strengthen-model-training/" target="_blank" rel="noopener">Forbes 報導</a>
+          </div>
+          <h3 style="margin-top:18px">本週論文</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://doi.org/10.1038/nature14539" target="_blank" rel="noopener">Nature 綜述</a>
+            <a class="lk" href="https://doi.org/10.1080/10447318.2024.2353451" target="_blank" rel="noopener">IJHCI 論文</a>
+          </div>
+        </div>
+      </div>
+      <div class="take"><b>提醒</b>名詞會退流行、原理不會：記住本週的地基，下週起的工具都蓋在上面。</div>
+    </div>
+  <div class="foot"><span>人工智慧與互動媒體特論|第 3 週 · 人工智慧基礎概念</span><span class="num">30 / 30</span></div></section>
+
+  
+
+  </div></div>
+
+  <div class="ctrl">
+    <button id="prev" aria-label="上一張">‹</button>
+    <span class="cnt" id="cnt">1 / 30</span>
+    <button id="next" aria-label="下一張">›</button>
+    <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+  </div>
+  <div class="prog" id="prog" style="width: 3.33333%;"></div>
+
+  <div class="toc" id="toc">
+    <button class="close" id="tocClose">關閉（Esc）</button>
+    <h2 id="tocTitle">目錄：第 3 週 · 人工智慧基礎概念</h2>
+    <div class="tgrid" id="tgrid"><div><h3>開場</h3><button data-i="0" class="here">1. 人工智慧基礎概念</button><button data-i="1">2. 九十分鐘，五段路</button><button data-i="2">3. 從年表走進黑盒子</button></div><div><h3>PART 1</h3><button data-i="3">4. AI、機器學習、深度學習</button><button data-i="4">5. 同心圓：誰包住誰</button><button data-i="5">6. 從寫規則到給範例</button><button data-i="6">7. 判別式 AI：回答「這是什麼」</button><button data-i="7">8. 神經網路拿下諾貝爾獎</button></div><div><h3>PART 2</h3><button data-i="8">9. 三種學習方式</button><button data-i="9">10. 監督式學習：從標籤學</button><button data-i="10">11. 非監督式學習：自己找結構</button><button data-i="11">12. 強化學習：從獎懲中學</button><button data-i="12">13. 三種學習，對到設計日常</button></div><div><h3>PART 3</h3><button data-i="13">14. 神經網路與訓練</button><button data-i="14">15. 神經元：一顆加權投票機</button><button data-i="15">16. 深度：特徵一層層長出來</button><button data-i="16">17. 訓練：往損失更低處走</button><button data-i="17">18. 背題的模型：過擬合與評估</button></div><div><h3>PART 4</h3><button data-i="18">19. 資料集與標註</button><button data-i="19">20. ImageNet：一個資料集的革命</button><button data-i="20">21. 資料集的膨脹：從標註到爬取</button><button data-i="21">22. 誰在標資料：標註經濟</button><button data-i="22">23. 深度案例：Netflix 封面選圖</button><button data-i="23">24. 十分鐘，訓練你的分類器</button></div><div><h3>PART 5</h3><button data-i="24">25. 論文導讀</button><button data-i="25">26. 經典：三巨頭的深度學習綜述</button><button data-i="26">27. 讀經典的三個收穫</button><button data-i="27">28. 快讀：AI 進設計流程哪一段</button></div><div><h3>收尾</h3><button data-i="28">29. 把概念變成判斷力</button><button data-i="29">30. 本週資源，一頁帶走</button></div></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ★ 每週只改這一行 ★ */
+  var WEEK_LABEL = '第 3 週 · 人工智慧基礎概念';
+
+  var stage = document.getElementById('stage');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var cnt = document.getElementById('cnt');
+  var prog = document.getElementById('prog');
+  var toc = document.getElementById('toc');
+  var tgrid = document.getElementById('tgrid');
+  var cur = 0;
+
+  document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
+
+  slides.forEach(function (s, i) {
+    var f = document.createElement('div');
+    f.className = 'foot';
+    f.innerHTML = '<span>人工智慧與互動媒體特論|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    s.appendChild(f);
+  });
+
+  var groups = {};
+  slides.forEach(function (s, i) {
+    var eb = s.querySelector('.eyebrow');
+    var part = '開場';
+    if (eb) {
+      var m = eb.textContent.match(/PART\s*(\d)/i);
+      if (m) part = 'PART ' + m[1];
+      else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
+    }
+    var h = s.querySelector('h1, h2');
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+  });
+  Object.keys(groups).forEach(function (k) {
+    var col = document.createElement('div');
+    var h3 = document.createElement('h3');
+    h3.textContent = k;
+    col.appendChild(h3);
+    groups[k].forEach(function (it) {
+      var b = document.createElement('button');
+      b.textContent = it.t;
+      b.dataset.i = it.i;
+      b.addEventListener('click', function () { toggleToc(false); go(it.i); });
+      col.appendChild(b);
+    });
+    tgrid.appendChild(col);
+  });
+
+  function go(i) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach(function (s, j) { s.classList.toggle('active', j === cur); });
+    cnt.textContent = (cur + 1) + ' / ' + slides.length;
+    prog.style.width = ((cur + 1) / slides.length * 100) + '%';
+    if (history.replaceState) history.replaceState(null, '', '#s' + (cur + 1));
+    tgrid.querySelectorAll('button').forEach(function (b) { b.classList.toggle('here', +b.dataset.i === cur); });
+  }
+  function toggleToc(on) {
+    toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
+  }
+
+  document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
+  document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
+  document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
+  document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { toggleToc(false); return; }
+    if (toc.classList.contains('on')) return;
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'Home': go(0); break;
+      case 'End': go(slides.length - 1); break;
+      case 'm': case 'M': toggleToc(); break;
+    }
+  });
+
+  function fit() {
+    var w = window.innerWidth, h = window.innerHeight;
+    if (!w || !h) { requestAnimationFrame(fit); return; }
+    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('load', fit);
+  fit();
+
+  var m = location.hash.match(/^#s(\d+)$/);
+  go(m ? +m[1] - 1 : 0);
+})();
+</script>
+
+
+</body></html>
