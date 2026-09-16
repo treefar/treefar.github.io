@@ -3,172 +3,226 @@
 <head>
 <meta charset="utf-8">
 <title>第 17 週|個別指導</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;1,300;1,400&family=Noto+Serif+TC:wght@300;400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  /* ============ 版型：水彩由灰轉彩（style-library gris-watercolor，色值取自 styles/gris-watercolor.json）============ */
   * { box-sizing: border-box; }
-  #app {
-    position: fixed; inset: 0; overflow: hidden;
-    background: var(--bg);
-    font-family: var(--body);
-    color: var(--ink);
-    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
-    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
-    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
-    --bg: #F5F4EC; --bg2: #EFEEE2;
-    --panel: #FDFCF6; --panel2: #EDECDF;
-    --ink: #232B21; --sub: #67705E;
-    --accent: #2F6B4F; --accent-rgb: 47,107,79;
-    --accent2: #BC4F2C;
-    --line: rgba(35,43,33,.16);
-    --link: #2F6B4F;
-    --r: 4px;
+  :root {
+    --bg: #ece5d9; --bg2: #e3dbcc; --surface: #fffdf6; --surface2: #e3dbcc;
+    --ink: #2c2823; --ink2: #564e43; --muted: #756c5e; --line: #d8cfbd;
+    --blue: #2f7596; --red: #bd564a; --green: #6f9266; --yellow: #dbab44; --grey: #9a948a;
+    --wash-blue: #7da8bd; --wash-rose: #d59289; --wash-gold: #e6c97e; --wash-sage: #a3bd9b; --wash-grey: #b9b3a8;
+    --c: var(--blue); --c-soft: var(--wash-blue);
+    --body: 'Noto Serif TC', 'Cormorant', Georgia, 'PMingLiU', serif;
+    --sans: 'Noto Sans TC', 'Microsoft JhengHei', system-ui, sans-serif;
+    --disp: 'Noto Serif TC', 'Cormorant', Georgia, serif;
+    --num: 'Cormorant', 'Noto Serif TC', serif;
   }
-  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
-  #app a:hover { opacity: .85; }
-  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-weight: 300; }
+  a { color: var(--c); text-underline-offset: 4px; text-decoration-thickness: 1px; }
+  :focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+  b, strong { font-weight: 500; }
 
+  /* ---------- 投影區 ---------- */
+  #deck { position: relative; height: 100vh; min-height: 560px; overflow: hidden; background: var(--bg2); }
   .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
-  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
-  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
-  .slide.active { display: flex; }
-  .slide::before {
-    content: ""; position: absolute; inset: 24px; pointer-events: none;
-    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
-  }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; background: var(--bg); box-shadow: 0 30px 70px -34px rgba(50,42,34,.5); overflow: hidden; }
+  .slide { position: absolute; inset: 0; padding: 56px 110px 72px; display: none; flex-direction: column; }
+  .slide.active { display: flex; animation: fadein .6s ease both; }
+  @keyframes fadein { from { opacity: 0 } to { opacity: 1 } }
+  /* 章節換色：只換 --c 與 --c-soft */
+  .slide.p-blue, .slide[data-c="blue"] { --c: var(--blue); --c-soft: var(--wash-blue); }
+  .slide.p-red, .slide[data-c="red"] { --c: var(--red); --c-soft: var(--wash-rose); }
+  .slide.p-green, .slide[data-c="green"] { --c: var(--green); --c-soft: var(--wash-sage); }
+  .slide.p-yellow, .slide[data-c="yellow"] { --c: var(--yellow); --c-soft: var(--wash-gold); }
+  .slide.p-grey, .slide[data-c="grey"] { --c: var(--grey); --c-soft: var(--wash-grey); }
+  /* 水彩暈染 */
+  .slide::before { content: ""; position: absolute; inset: 0; pointer-events: none; background:
+    radial-gradient(ellipse 520px 380px at 84% 20%, color-mix(in srgb, var(--c-soft) 34%, transparent), transparent 70%),
+    radial-gradient(ellipse 420px 300px at 10% 90%, color-mix(in srgb, var(--c-soft) 20%, transparent), transparent 70%); }
+  .slide > * { position: relative; }
 
-  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
-  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
-  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
-  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+  .eyebrow { font-family: var(--sans); font-weight: 500; font-size: 16px; letter-spacing: .34em; text-transform: uppercase; color: var(--c); display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+  .eyebrow::before { content: ""; width: 40px; height: 1px; background: var(--c); flex: 0 0 auto; }
+  h1 { font-family: var(--disp); font-size: 88px; line-height: 1.15; margin: 0; font-weight: 400; letter-spacing: .02em; text-wrap: balance; }
+  h2 { font-family: var(--disp); font-size: 54px; line-height: 1.2; margin: 0 0 22px; font-weight: 400; text-wrap: balance; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 18px; }
 
-  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
-  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
-  .sub { color: var(--sub); }
+  .slide ul { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 16px; font-size: 27px; line-height: 1.6; }
+  .slide ul ul { margin-top: 6px; gap: 6px; font-size: 22px; color: var(--ink2); }
+  .slide li::marker { color: var(--c); }
+  .sub { color: var(--ink2); }
   .small { font-size: 18px; }
-  .num { font-variant-numeric: tabular-nums; }
+  .num { font-family: var(--num); font-variant-numeric: tabular-nums; }
 
-  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
-  .cards { display: grid; gap: 18px; }
+  /* 這套不用卡片：分區靠 1px 紙緣線與留白 */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 56px; align-items: stretch; }
+  .cards { display: grid; gap: 0 40px; }
   .c2 { grid-template-columns: repeat(2, 1fr); }
   .c3 { grid-template-columns: repeat(3, 1fr); }
   .c4 { grid-template-columns: repeat(4, 1fr); }
   .c5 { grid-template-columns: repeat(5, 1fr); }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
-  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
-  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
-  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+  .card { background: transparent; border: 0; border-top: 1px solid var(--c); padding: 18px 0 14px; min-width: 0; display: flex; flex-direction: column; justify-content: flex-start; }
+  .card.pink, .card.cyan, .card.grape, .card.lemon { background: transparent; }
+  .card h3 { font-family: var(--disp); font-size: 27px; margin: 0 0 10px; font-weight: 400; line-height: 1.3; }
+  .card p, .card li { font-size: 22px; line-height: 1.6; margin: 0; color: var(--ink2); }
+  .card ul { padding-left: 1.05em; gap: 8px; font-size: 22px; }
+  .card .who { display: block; font-family: var(--sans); font-weight: 500; font-size: 14px; letter-spacing: .24em; text-transform: uppercase; color: var(--c); margin-bottom: 10px; }
+  .cols > .card h3 { font-size: 29px; }
+  .cols > .card p, .cols > .card li { font-size: 24px; }
 
-  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
-  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+  /* 結語：用 lede 大字，不用框 */
+  .take { margin-top: auto; display: flex; gap: 18px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 16px; font-size: 24px; line-height: 1.55; }
+  .take b { font-family: var(--sans); color: var(--c); font-size: 14px; letter-spacing: .24em; text-transform: uppercase; white-space: nowrap; font-weight: 500; }
 
-  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
+  .foot { position: absolute; left: 110px; right: 110px; bottom: 30px; display: flex; justify-content: space-between; font-family: var(--sans); font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
 
+  /* 封面與章節頁：同一張紙，只是暈染更重、字更大 */
   .cover, .part { justify-content: center; }
-  .cover .eyebrow { margin-bottom: 26px; }
-  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
-  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
-  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
-  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
-  .part h2 { font-size: 56px; }
-  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+  .cover::before, .part::before { background:
+    radial-gradient(ellipse 700px 520px at 80% 25%, color-mix(in srgb, var(--c-soft) 48%, transparent), transparent 70%),
+    radial-gradient(ellipse 520px 380px at 12% 88%, color-mix(in srgb, var(--c-soft) 30%, transparent), transparent 70%); }
+  .cover .eyebrow { margin-bottom: 30px; }
+  .cover-sub { font-size: 30px; color: var(--ink2); margin: 26px 0 0; line-height: 1.6; max-width: 26em; }
+  .cover-meta { margin-top: 44px; display: flex; gap: 28px; flex-wrap: wrap; font-family: var(--sans); font-size: 13px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
+  .part-num { font-family: var(--num); font-style: italic; font-size: 132px; line-height: 1; margin-bottom: 6px; color: var(--c); font-weight: 300; }
+  .part h2 { font-size: 64px; }
+  .part-sub { font-size: 28px; color: var(--ink2); margin: 18px 0 0; max-width: 30em; line-height: 1.65; }
 
-  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
-  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
-  .kv dd { margin: 0; }
-  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
-  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
-  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
-  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
-  .lk::after { content: " ↗"; font-size: 12px; }
+  /* fact-row：左小標右正文 */
+  .kv { display: grid; grid-template-columns: 230px 1fr; gap: 0 24px; font-size: 25px; line-height: 1.55; border-top: 1px solid var(--line); align-content: start; }
+  .kv dt { font-family: var(--sans); font-weight: 500; font-size: 15px; letter-spacing: .22em; text-transform: uppercase; color: var(--c); padding: 20px 0 14px; border-bottom: 1px solid var(--line); }
+  .kv dd { margin: 0; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px 26px; align-items: center; }
+  .chip { font-family: var(--sans); font-weight: 500; font-size: 17px; letter-spacing: .12em; padding: 6px 0; border-bottom: 1px solid var(--c); background: none; color: var(--ink); }
+  .chip.hot { color: var(--c); }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px 26px; }
+  .lk { display: inline-block; padding: 6px 0; border-bottom: 1px solid var(--c); font-family: var(--sans); font-size: 17px; text-decoration: none; color: var(--ink); font-weight: 500; }
+  .lk:hover { color: var(--c); }
+  .lk::after { content: " ↗"; font-size: 12px; color: var(--c); }
   .flow { display: flex; align-items: stretch; gap: 0; }
-  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
-  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
-  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
-  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
-  .bar i { display: block; height: 100%; background: var(--accent); }
-  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
-  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
-  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
-  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
-  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
-  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
-  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
-  .tl { display: flex; flex-direction: column; gap: 18px; }
-  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
-  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
-  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+  .flow .step { flex: 1; border-top: 1px solid var(--c); padding: 18px 22px 12px 0; min-width: 0; display: flex; flex-direction: column; justify-content: flex-start; }
+  .flow .step h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 8px; font-weight: 400; }
+  .flow .step p { font-size: 22px; line-height: 1.6; margin: 0; color: var(--ink2); }
+  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-family: var(--num); font-style: italic; font-size: 36px; color: var(--c); font-weight: 300; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 16px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 27px; line-height: 1.55; display: flex; gap: 18px; }
+  .qlist p::before { content: counter(q, upper-roman); font-family: var(--num); font-style: italic; color: var(--c); font-weight: 400; flex: 0 0 auto; min-width: 1.4em; }
+  .grp h3 { font-family: var(--sans); font-weight: 500; font-size: 14px; letter-spacing: .24em; text-transform: uppercase; color: var(--c); margin: 0 0 12px; }
+  .card p.big, .cols > .card p.big { font-family: var(--num); font-size: 120px; line-height: 1; font-weight: 300; color: var(--c); margin: 0; }
+  .card p.big small { font-family: var(--sans); font-size: 15px; letter-spacing: .22em; text-transform: uppercase; line-height: 1.5; color: var(--muted); font-weight: 500; display: block; margin-top: 12px; }
 
-  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
-  .content > .cards,
-  .content > .cols,
-  .content > .flow,
-  .content > .kv,
-  .content > .prob { flex: 1 1 auto; }
+  .content > .cards, .content > .cols, .content > .flow { flex: 0 0 auto; margin-top: auto; margin-bottom: auto; }
+  .content > .kv { flex: 1 1 auto; }
+  .cards .card { min-height: 180px; }
+  .cols > .card { min-height: 220px; }
   .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
-  .content > .qlist,
-  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
-  .content > .biblio { flex: 0 0 auto; }
-  .cols > .card { justify-content: flex-start; }
 
-  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
-  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
-  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
-  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
-  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  sup.fn { font-family: var(--sans); font-size: 12px; line-height: 1; vertical-align: top; margin-left: 4px; position: relative; top: -2px; }
+  sup.fn a { display: inline-block; border: 1px solid var(--c); color: var(--c); border-radius: 50%; height: 20px; line-height: 18px; min-width: 20px; padding: 0 5px; text-align: center; text-decoration: none; font-weight: 500; }
+
+  .ctrl { position: absolute; right: 16px; bottom: 14px; display: flex; gap: 8px; align-items: center; z-index: 30; }
+  .ctrl button { font-family: var(--sans); border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 14px; height: 32px; min-width: 34px; padding: 0 10px; border-radius: 2px; cursor: pointer; }
+  .ctrl button:hover { border-color: var(--c); color: var(--c); }
+  .ctrl .cnt { font-family: var(--num); font-size: 15px; color: var(--muted); padding: 0 6px; font-variant-numeric: tabular-nums; }
+  .prog { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--c); width: 0; z-index: 30; transition: width .3s ease; }
+  .hint { position: absolute; left: 16px; bottom: 16px; z-index: 30; font-family: var(--sans); font-size: 12px; letter-spacing: .12em; color: var(--muted); }
+
+  .toc { position: absolute; inset: 0; background: rgba(236,229,217,.97); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
   .toc.on { display: block; }
-  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
-  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
-  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
-  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
-  .toc button:hover { background: var(--panel2); }
-  .toc button.here { color: var(--accent2); font-weight: 700; }
-  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
-  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+  .toc h2 { font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 26px; }
+  .toc h3 { font-family: var(--sans); color: var(--c); font-size: 13px; letter-spacing: .24em; text-transform: uppercase; margin: 0 0 10px; font-weight: 500; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 17px; padding: 6px 8px; cursor: pointer; font-family: var(--body); font-weight: 300; }
+  .toc button:hover { color: var(--c); }
+  .toc button.here { color: var(--c); font-weight: 500; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 13px; color: var(--muted); font-family: var(--sans); }
+
+  /* ---------- 講義區 ---------- */
+  .notes { max-width: 900px; margin: 0 auto; padding: 72px 20px 110px; }
+  .notes-head { margin-bottom: 56px; }
+  .notes-head .eyebrow { margin-bottom: 14px; }
+  .notes-head h2 { font-size: 46px; margin: 0 0 14px; }
+  .notes-head p { color: var(--ink2); font-size: 20px; line-height: 1.75; margin: 0; max-width: 34em; }
+  .sec { background: transparent; border: 0; border-top: 1px solid var(--line); padding: 34px 0 20px; margin: 0 0 26px; --c: var(--blue); }
+  .sec.cyan { --c: var(--green); } .sec.grape { --c: var(--red); } .sec.lemon { --c: var(--yellow); }
+  .sec h2 { font-size: 32px; margin: 0 0 16px; }
+  .sec h3 { font-family: var(--disp); font-size: 23px; margin: 28px 0 10px; font-weight: 500; }
+  .sec p, .sec li { font-size: 19px; line-height: 1.9; color: var(--ink2); margin: 0 0 14px; }
+  .sec li { margin: 0 0 6px; }
+  .sec strong { color: var(--ink); font-weight: 500; }
+  .sec .kicker { display: inline-block; font-family: var(--sans); font-size: 12px; letter-spacing: .34em; text-transform: uppercase; color: var(--c); margin-bottom: 12px; font-weight: 500; }
+  .sec .kicker::before { content: "—"; margin-right: 10px; }
+  .sec table { width: 100%; border-collapse: collapse; font-size: 18px; margin: 8px 0 16px; }
+  .sec th, .sec td { text-align: left; padding: 12px 12px 12px 0; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.65; }
+  .sec th { font-family: var(--sans); font-size: 13px; letter-spacing: .22em; text-transform: uppercase; color: var(--c); font-weight: 500; }
+  .scene { border-left: 1px solid var(--c); padding: 6px 0 6px 22px; margin: 18px 0 22px; }
+  .scene .who { font-family: var(--sans); font-size: 12px; letter-spacing: .24em; text-transform: uppercase; color: var(--c); font-weight: 500; display: block; margin-bottom: 6px; }
+  .scene p { margin: 0; }
+  ol.src { padding-left: 1.6em; counter-reset: s; list-style: none; }
+  ol.src li { counter-increment: s; position: relative; padding-left: 6px; margin-bottom: 16px; line-height: 1.7; }
+  ol.src li::before { content: counter(s); position: absolute; left: -1.7em; top: .3em; font-family: var(--num); font-style: italic; font-size: 16px; color: var(--c); border: 1px solid var(--c); border-radius: 50%; min-width: 22px; height: 22px; line-height: 20px; text-align: center; }
+  ol.src li:target { background: color-mix(in srgb, var(--c-soft) 22%, transparent); }
+  ol.src .ti { color: var(--ink); font-weight: 500; }
+  ol.src .meta { display: block; font-family: var(--sans); font-size: 14px; color: var(--muted); }
+  ol.src a { word-break: break-all; font-size: 14px; font-family: var(--sans); }
+  .check { counter-reset: c; list-style: none; padding: 0; }
+  .check li { counter-increment: c; display: flex; gap: 14px; align-items: baseline; }
+  .check li::before { content: "☐"; color: var(--c); font-size: 20px; flex: 0 0 auto; }
+  .backtop { position: fixed; right: 18px; bottom: 18px; z-index: 50; font-family: var(--sans); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink); background: var(--surface); border: 1px solid var(--line); padding: 10px 16px; text-decoration: none; display: none; }
+  .backtop.show { display: inline-block; }
+  .version { font-family: var(--sans); font-size: 13px; letter-spacing: .1em; color: var(--muted); margin-top: 40px; }
+
+  @media (max-width: 720px) { .notes { padding: 40px 16px 80px; } .notes-head h2 { font-size: 32px; } .kv { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .slide.active { animation: none; } .prog { transition: none; } }
+  @media print { #deck, .backtop { display: none; } .notes { max-width: none; padding: 0; } .sec { break-inside: avoid; } }
 </style>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
 </head>
 <body>
-<div id="app" data-deck="b">
+
+<div id="deck" data-deck="gris-watercolor">
   <div class="stagewrap"><div class="stage" id="stage">
 
-  <!-- 1 期末專題個別指導 -->
-<section class="slide cover">
+  <!-- 1 封面 -->
+  <section class="slide cover">
     <div class="eyebrow">人工智慧與互動媒體特論 · 設計創新與經營研究所</div>
     <h1>期末專題個別指導</h1>
-    <p class="cover-sub">不上新課。今天做三件事：把報告架構對齊、把文獻管好、把你卡住的問題掛號看診——距離繳交，剩八天。</p>
-    <div class="cover-meta"><span>第 17 週</span><span>個別指導週</span><span>授課：鄧樹遠</span></div>
+    <p class="cover-sub">不上新課。今天把報告架構對齊、把文獻管好、把卡住的地方掛號看診；離開前每個人都要知道自己剩下幾天、要補什麼。</p>
+    <div class="cover-meta"><span>第 17 週</span><span>個別指導週</span><span>授課：鄧樹遠</span><span>投影片 ＋ 下方講義</span></div>
   </section>
 
-  <!-- 2 九十分鐘，三段路 -->
-<section class="slide">
+  <!-- 2 本週地圖 -->
+  <section class="slide">
     <div class="eyebrow">Week 17 · 本週地圖</div>
-    <h2>九十分鐘，三段路</h2>
+    <h2>九十分鐘，四段路</h2>
     <div class="content">
-      <div class="cards c3">
-        <div class="card"><span class="who">PART 1</span><h3>報告架構與規範</h3><p class="sub">五章骨架、圖表版面規範、AI 協作揭露的期末版寫法</p></div>
-        <div class="card"><span class="who">PART 2</span><h3>文獻整理工作流</h3><p class="sub">Zotero 現況、DOI 驗證習慣、AI 文獻工具的正確用法</p></div>
-        <div class="card"><span class="who">PART 3</span><h3>門診與倒數</h3><p class="sub">八個常見症狀與處方、諮詢時段用法、最後八天時程表</p></div>
+      <div class="cards c4">
+        <div class="card"><span class="who">Part 1</span><h3>架構與規範</h3><p class="sub">五章骨架、圖表規則、揭露期末版</p></div>
+        <div class="card"><span class="who">Part 2</span><h3>文獻工作流</h3><p class="sub">Zotero 10、DOI 驗證、AI 文獻工具</p></div>
+        <div class="card"><span class="who">Part 3</span><h3>常見卡關門診</h3><p class="sub">八個症狀，各配一張處方</p></div>
+        <div class="card"><span class="who">Part 4</span><h3>預約、準備與倒數</h3><p class="sub">怎麼掛號、帶什麼來、剩下幾天怎麼走</p></div>
       </div>
-      <div class="take"><b>本週目標</b>離開教室時：知道報告長什麼樣、文獻怎麼管、自己卡在哪、剩下的八天怎麼走。</div>
+      <div class="take"><b>本週目標</b>離開教室時：知道報告長什麼樣、文獻怎麼管、自己卡在哪、下一次見面前要做完什麼。</div>
     </div>
   </section>
 
-  <!-- 3 從一頁提案到一本報告 -->
-<section class="slide">
-    <div class="eyebrow">承接第 16 週 · 提案工作坊</div>
+  <!-- 3 承接上週 -->
+  <section class="slide">
+    <div class="eyebrow">承接第 16 週 · 期末專題提案</div>
     <h2>從一頁提案到一本報告</h2>
     <div class="content">
       <div class="cols">
         <div class="card">
           <span class="who">第 16 週你交出的</span>
-          <h3>一頁提案</h3>
+          <h3>一頁提案 v2</h3>
           <ul>
-            <li>研究問題、對象領域、AI 角色、方法與驗證、預期貢獻五欄框架</li>
-            <li>同儕回饋便利貼：別人看見的洞與亮點</li>
+            <li>研究問題、對象領域、AI 角色、方法與驗證、預期貢獻</li>
+            <li>三筆想讀的候選文獻，同儕回饋單原件</li>
           </ul>
         </div>
         <div class="card">
@@ -176,182 +230,162 @@
           <h3>期末報告</h3>
           <ul>
             <li>完整五章、圖表齊備、格式統一</li>
-            <li>每筆書目經查證、附 AI 協作揭露聲明</li>
+            <li>每筆書目經查證，附 AI 協作揭露</li>
           </ul>
         </div>
       </div>
+      <div class="take"><b>今天的門檻</b>沒有提案 v2 也可以掛號，但要先說得出你的研究問題是哪一句。</div>
     </div>
   </section>
 
-  <!-- 4 報告架構與規範 -->
-<section class="slide part">
+  <!-- 4 PART 1 -->
+  <section class="slide part p-blue">
     <div class="part-num">01</div>
-    <div class="eyebrow">PART 1</div>
+    <div class="eyebrow">Part 1</div>
     <h2>報告架構與規範</h2>
-    <p class="part-sub">第 9 週講過期中的寫法，期末只多不少。一副五章骨架、一套圖表規範、一份寫得像樣的 AI 揭露聲明。</p>
+    <p class="part-sub">第 9 週講過期中的寫法，期末只多不少：一副五章骨架、一套圖表規則、一份寫得像樣的 AI 協作揭露。</p>
   </section>
 
-  <!-- 5 五章骨架：每章回答一個問題 -->
-<section class="slide">
-    <div class="eyebrow">PART 1 · 報告架構</div>
+  <!-- 5 五章骨架 -->
+  <section class="slide" data-c="blue">
+    <div class="eyebrow">Part 1 · 報告架構</div>
     <h2>五章骨架：每章回答一個問題</h2>
     <div class="content">
-      <div class="tl">
-        <div class="ev"><b>緒論</b><span>為什麼值得做：背景、問題意識、研究問題與範圍界定</span></div>
-        <div class="ev"><b>文獻回顧</b><span>站在誰的肩上：分群比較、點出缺口，不是逐篇流水帳</span></div>
-        <div class="ev"><b>方法與設計</b><span>你怎麼做：案例選擇或創作流程，交代 AI 用在哪個環節</span></div>
-        <div class="ev"><b>分析與發現</b><span>你看到什麼：用框架整理證據，圖表在這一章說話</span></div>
-        <div class="ev"><b>結論與反思</b><span>所以呢：回答研究問題、承認限制、指出下一步</span></div>
-      </div>
+      <dl class="kv">
+        <dt>緒論</dt><dd>為什麼值得做：背景、問題意識、研究問題與範圍界定。</dd>
+        <dt>文獻回顧</dt><dd>站在誰的肩上：分群比較、點出缺口，不是逐篇流水帳。</dd>
+        <dt>方法與設計</dt><dd>你怎麼做：案例選擇或創作流程，交代 AI 用在哪個環節。</dd>
+        <dt>分析與發現</dt><dd>你看到什麼：用框架整理證據，圖表在這一章說話。</dd>
+        <dt>結論與反思</dt><dd>所以呢：回答研究問題、承認限制、指出下一步。</dd>
+      </dl>
     </div>
   </section>
 
-  <!-- 6 圖表與版面規範 -->
-<section class="slide">
-    <div class="eyebrow">PART 1 · 圖表與版面</div>
+  <!-- 6 圖表與版面 -->
+  <section class="slide" data-c="blue">
+    <div class="eyebrow">Part 1 · 圖表與版面</div>
     <h2>圖表與版面規範</h2>
     <div class="content">
       <ul>
-        <li>圖表一律編號加標題：圖標題在下、表標題在上，內文要點名「如圖 1」</li>
-        <li>非原創圖片標明來源與授權；AI 生成圖須標示工具與提示概要</li>
-        <li>解析度足夠、文字可讀；截圖裁掉無關視窗與個人資料</li>
-        <li>版面：A4、12 pt、1.5 倍行高、邊界 2.5 cm，頁碼齊全</li>
-        <li>圖表是證據不是裝飾：放了就要在內文分析它</li>
+        <li>圖與表都要編號加標題：編號在最上，標題在編號下方；註記放圖表下方。<sup class="fn"><a href="#src-12">12</a></sup></li>
+        <li>內文要點名「如圖 1」；放了就要分析它，圖表是證據不是裝飾。</li>
+        <li>非原創圖片標來源與授權；AI 生成圖標工具名稱與提示概要。</li>
+        <li>解析度足夠、文字可讀；截圖裁掉無關視窗與個人資料。</li>
+        <li>版面：A4、12 pt、1.5 倍行高、邊界 2.5 cm，頁碼齊全。</li>
       </ul>
     </div>
   </section>
 
-  <!-- 7 AI 協作揭露：期末版寫法 -->
-<section class="slide">
-    <div class="eyebrow">PART 1 · 呼應第 9 週</div>
+  <!-- 7 AI 揭露 -->
+  <section class="slide" data-c="blue">
+    <div class="eyebrow">Part 1 · 呼應第 9 週</div>
     <h2>AI 協作揭露：期末版寫法</h2>
     <div class="content">
       <div class="card">
-        <h3>揭露聲明範例（置於報告末、參考文獻之前）</h3>
-        <p>「本報告使用 Claude（Anthropic）協助文獻摘要整理與段落潤飾、Elicit 輔助文獻篩選；所有書目均經 Crossref 逐筆查證，圖 3 以 Midjourney 生成並已於圖說標示；文責由本人承擔。」</p>
+        <span class="who">揭露聲明範例，置於報告末、參考文獻之前</span>
+        <p>「本報告使用某文字模型協助文獻摘要與段落潤飾、Elicit 輔助文獻篩選；所有書目均經 Crossref 逐筆查證；圖 3 以某生圖工具生成並於圖說標示；文責由本人承擔。」</p>
       </div>
       <ul>
-        <li>三要素不變：用了什麼工具、用在哪個環節、人如何查證把關</li>
-        <li>期末新增：AI 文獻工具（如 Elicit）也算協作，一併揭露</li>
-        <li>揭露與實際使用不符，比不揭露更傷信任（rubric 佔 15%）</li>
+        <li>三要素不變：用了什麼工具、用在哪個環節、人怎麼查證把關。<sup class="fn"><a href="#src-13">13</a></sup></li>
+        <li>期末新增：AI 文獻工具也算協作，一併寫進去；出版社已有固定句型可仿。<sup class="fn"><a href="#src-14">14</a></sup></li>
       </ul>
-      <div class="linkrow">
-        <a class="lk" href="https://apastyle.apa.org/" target="_blank" rel="noopener">APA Style 官網</a>
-        <a class="lk" href="https://publicationethics.org/" target="_blank" rel="noopener">COPE 官網</a>
-      </div>
     </div>
   </section>
 
-  <!-- 8 文獻整理工作流 -->
-<section class="slide part">
+  <!-- 8 PART 2 -->
+  <section class="slide part p-red">
     <div class="part-num">02</div>
-    <div class="eyebrow">PART 2</div>
+    <div class="eyebrow">Part 2</div>
     <h2>文獻整理工作流</h2>
     <p class="part-sub">工具只有三種：管書目的、驗真偽的、幫你找的。一條工作流把它們串起來，期末報告的書目就不會出事。</p>
   </section>
 
-  <!-- 9 Zotero 9：書目管理的預設 -->
-<section class="slide">
-    <div class="eyebrow">PART 2 · 書目管理</div>
-    <h2>Zotero 9：書目管理的預設答案</h2>
+  <!-- 9 Zotero -->
+  <section class="slide" data-c="red">
+    <div class="eyebrow">Part 2 · 書目管理 · 2025–2026 現況</div>
+    <h2>Zotero 10：書目管理的預設答案</h2>
     <div class="content">
       <dl class="kv">
-        <dt>現況</dt><dd class="num">9.0.6（2026/7/7）；免費開源，1 月出 8.0、4 月出 9.0，更新明顯加速</dd>
-        <dt>匯入</dt><dd>瀏覽器 Connector 一鍵存書目與 PDF，存檔當下即可加標籤與筆記</dd>
-        <dt>引用</dt><dd>Word／Google Docs 外掛邊寫邊引；8.0 起整合為單一引用對話框</dd>
-        <dt>進階</dt><dd>9.0 新增 PDF 朗讀與跨裝置「最近閱讀」；群組文庫適合團隊共筆</dd>
+        <dt>現況</dt><dd>10.0 於 2026-08-17 發布，最新 10.0.2（2026-09-09）；免費開源。<sup class="fn"><a href="#src-1">1</a></sup></dd>
+        <dt>10 版新功能</dt><dd>快速搜尋列可做進階篩選；集合面板可多選合併檢視；PDF 重排檢視可續標註。<sup class="fn"><a href="#src-2">2</a></sup></dd>
+        <dt>邊寫邊引</dt><dd>外掛支援 Word、LibreOffice、Google Docs，書目隨引用自動生成。<sup class="fn"><a href="#src-3">3</a></sup></dd>
+        <dt>本課設定</dt><dd>引用樣式一律設 APA 第 7 版；交稿前重整一次書目。<sup class="fn"><a href="#src-10">10</a></sup></dd>
       </dl>
-      <div class="linkrow">
-        <a class="lk" href="https://www.zotero.org/" target="_blank" rel="noopener">Zotero 官網</a>
-        <a class="lk" href="https://www.zotero.org/support/changelog" target="_blank" rel="noopener">版本紀錄</a>
-      </div>
     </div>
   </section>
 
-  <!-- 10 DOI 驗證：一筆都不放過 -->
-<section class="slide">
-    <div class="eyebrow">PART 2 · 書目驗證</div>
+  <!-- 10 DOI 驗證 -->
+  <section class="slide" data-c="red">
+    <div class="eyebrow">Part 2 · 書目驗證</div>
     <h2>DOI 驗證：一筆都不放過</h2>
     <div class="content">
       <div class="flow">
-        <div class="step"><h3>1. 取得書目</h3><p>AI 或工具給的每一筆，先當「未驗證」處理</p></div>
+        <div class="step"><h3>1. 取得書目</h3><p>AI 或工具給的每一筆，先當「未驗證」處理。</p></div>
         <div class="arr">→</div>
-        <div class="step"><h3>2. Crossref 查證</h3><p>用 DOI 解析或以篇名搜尋，比對作者、年份、卷期</p></div>
+        <div class="step"><h3>2. Crossref 查證</h3><p>整段書目貼進 Simple Text Query，一次最多 1,000 筆，比對作者、年份、卷期。<sup class="fn"><a href="#src-5">5</a></sup></p></div>
         <div class="arr">→</div>
-        <div class="step"><h3>3. 入庫再引用</h3><p>查證通過才進 Zotero；查無此篇，直接刪</p></div>
+        <div class="step"><h3>3. 入庫再引用</h3><p>doi.org/ 加 DOI 能開才進 Zotero；查無此篇，直接刪。<sup class="fn"><a href="#src-6">6</a></sup></p></div>
       </div>
-      <ul>
-        <li>幻覺文獻是第 9 週點名的頭號退件原因，期末仍然是</li>
-        <li>習慣：文獻進庫當下就驗，不要堆到交稿前夜</li>
-      </ul>
-      <div class="linkrow">
-        <a class="lk" href="https://www.crossref.org/" target="_blank" rel="noopener">Crossref 官網</a>
-        <a class="lk" href="https://www.doi.org/" target="_blank" rel="noopener">doi.org</a>
-      </div>
+      <div class="take"><b>習慣</b>文獻進庫當下就驗，不要堆到交稿前夜；幻覺文獻是第 9 週點名的頭號退件原因。</div>
     </div>
   </section>
 
-  <!-- 11 AI 文獻工具：加速器，不是免檢 -->
-<section class="slide">
-    <div class="eyebrow">PART 2 · AI 文獻工具</div>
+  <!-- 11 AI 文獻工具 -->
+  <section class="slide" data-c="red">
+    <div class="eyebrow">Part 2 · AI 文獻工具</div>
     <h2>AI 文獻工具：加速器，不是免檢通道</h2>
     <div class="content">
       <div class="cols">
         <div class="card">
-          <span class="who">ELICIT</span>
+          <span class="who">Elicit</span>
           <h3>語意搜尋與資料抽取</h3>
           <ul>
             <li>以研究問題找論文、比對摘要、抽取表格資料</li>
-            <li>2026 現況：系統性回顧工作流支援 PRISMA 2020，步驟可追溯</li>
-            <li><a href="https://elicit.com/" target="_blank" rel="noopener">elicit.com</a></li>
+            <li>自述索引逾 1.25 億篇；系統性回顧工作流支援 PRISMA 2020<sup class="fn"><a href="#src-7">7</a></sup></li>
           </ul>
         </div>
         <div class="card">
-          <span class="who">RESEARCHRABBIT</span>
+          <span class="who">ResearchRabbit</span>
           <h3>引文網絡視覺化</h3>
           <ul>
-            <li>丟幾篇種子論文，長出相關文獻地圖，順藤摸瓜</li>
-            <li>免費方案對研究生足夠；適合開題探索與交稿前補漏</li>
-            <li><a href="https://www.researchrabbit.ai/" target="_blank" rel="noopener">researchrabbit.ai</a></li>
+            <li>丟一篇種子論文，長出相關文獻地圖</li>
+            <li>免費註冊；適合開題探索與交稿前補漏<sup class="fn"><a href="#src-8">8</a></sup></li>
           </ul>
         </div>
       </div>
+      <div class="take"><b>共同規則</b>它們給的每一筆，仍要走上一張的三步。廠商首頁的準確率數字是自述，不是獨立驗證。</div>
     </div>
   </section>
 
-  <!-- 12 快讀：Elicit 抽資料，可信 -->
-<section class="slide">
-    <div class="eyebrow">PART 2 · 快讀一篇</div>
+  <!-- 12 快讀論文 -->
+  <section class="slide" data-c="red">
+    <div class="eyebrow">Part 2 · 快讀一篇</div>
     <h2>快讀：Elicit 抽資料，可信嗎</h2>
     <div class="content">
-      <div class="biblio">
-        <span class="ti">Using Elicit AI research assistant for data extraction in systematic reviews: A feasibility study across environmental and life sciences</span>
-        Lagisz, M., Mizuno, A., Morrison, K., Pollo, P., Ricolfi, L., Yang, Y., &amp; Nakagawa, S.（2026）。<i>Research Synthesis Methods</i>, 1–18（先行出版）。
-        <a href="https://doi.org/10.1017/rsm.2026.10080" target="_blank" rel="noopener">doi.org/10.1017/rsm.2026.10080</a>
-      </div>
-      <ul>
-        <li>方法：七個系統性回顧、以人工抽取為金標準，分三階段測 Elicit 的抽取表現</li>
-        <li>發現：開發階段 78% 變項達標，換新文章後僅 69% 維持；演算法一改版結果又變</li>
-        <li>作者建議：只當人工之外的「第二抽取者」，提示需微調並獨立驗證</li>
-      </ul>
+      <dl class="kv">
+        <dt>書目</dt><dd>Lagisz 等七位（2026）。〈Using Elicit AI research assistant for data extraction in systematic reviews〉。<sup class="fn"><a href="#src-9">9</a></sup></dd>
+        <dt>方法</dt><dd>七個系統性回顧、人工抽取為金標準；提示詞調到 87% 以上再測。<sup class="fn"><a href="#src-11">11</a></sup></dd>
+        <dt>發現</dt><dd>換一批新文章準確率傾向下降；跨帳號重現：數值 90%、引句 46%、推理 30%。<sup class="fn"><a href="#src-11">11</a></sup></dd>
+        <dt>結論</dt><dd>「可以補充、但不能取代」人工抽取；提示要微調並獨立驗證。<sup class="fn"><a href="#src-11">11</a></sup></dd>
+      </dl>
     </div>
   </section>
 
-  <!-- 13 常見問題門診與倒數 -->
-<section class="slide part">
+  <!-- 13 PART 3 -->
+  <section class="slide part p-green">
     <div class="part-num">03</div>
-    <div class="eyebrow">PART 3</div>
-    <h2>常見問題門診與倒數</h2>
-    <p class="part-sub">八個每年都會出現的症狀，配上可以立刻執行的處方；最後把個別諮詢的用法與八天時程表釘在牆上。</p>
+    <div class="eyebrow">Part 3</div>
+    <h2>常見卡關門診</h2>
+    <p class="part-sub">八個每年都會出現的症狀，配上可以立刻執行的處方。先對號入座，再決定今天掛哪一科。</p>
   </section>
 
-  <!-- 14 門診（一）：文獻與架構 -->
-<section class="slide">
-    <div class="eyebrow">PART 3 · 常見問題門診</div>
+  <!-- 14 門診一 -->
+  <section class="slide" data-c="green">
+    <div class="eyebrow">Part 3 · 文獻與架構</div>
     <h2>門診（一）：文獻與架構</h2>
     <div class="content">
       <div class="cards c2">
-        <div class="card"><h3>症狀 1：文獻回顧是流水帳</h3><p>處方：按主題分群比較，收尾點名缺口——「大家都在做 A，沒人檢驗 B」。</p></div>
+        <div class="card"><h3>症狀 1：文獻回顧是流水帳</h3><p>處方：按主題分群比較，收尾點名缺口：「大家都在做 A，沒人檢驗 B」。</p></div>
         <div class="card"><h3>症狀 2：引了查無此篇的文獻</h3><p>處方：全部書目過一次 Crossref；查不到就刪，寧缺勿假。</p></div>
         <div class="card"><h3>症狀 3：題目太大收不了尾</h3><p>處方：砍到一個問題、一個場域；捨不得的部分寫進「未來研究」。</p></div>
         <div class="card"><h3>症狀 4：案例分析像產品介紹</h3><p>處方：套一個分析框架，每段結尾回扣研究問題一次。</p></div>
@@ -359,67 +393,131 @@
     </div>
   </section>
 
-  <!-- 15 門診（二）：格式與心態 -->
-<section class="slide">
-    <div class="eyebrow">PART 3 · 常見問題門診</div>
+  <!-- 15 門診二 -->
+  <section class="slide" data-c="green">
+    <div class="eyebrow">Part 3 · 格式與心態</div>
     <h2>門診（二）：格式與心態</h2>
     <div class="content">
       <div class="cards c2">
-        <div class="card"><h3>症狀 5：圖表沒編號沒來源</h3><p>處方：照 PART 1 的規範補齊；AI 生成圖加標示，十分鐘的事。</p></div>
-        <div class="card"><h3>症狀 6：AI 揭露只寫「有用」</h3><p>處方：改用三要素——工具、環節、把關方式，具體到可被驗證。</p></div>
+        <div class="card"><h3>症狀 5：圖表沒編號沒來源</h3><p>處方：照 Part 1 的規範補齊；AI 生成圖加標示，十分鐘的事。</p></div>
+        <div class="card"><h3>症狀 6：AI 揭露只寫「有用」</h3><p>處方：改用三要素：工具、環節、把關方式，具體到可被驗證。</p></div>
         <div class="card"><h3>症狀 7：引用格式混用</h3><p>處方：Zotero 統一設 APA 第 7 版，交稿前重整書目一次搞定。</p></div>
-        <div class="card"><h3>症狀 8：進度落後不敢來諮詢</h3><p>處方：空手也能掛號；門診醫的是卡住的點，不是驗收成品。</p></div>
+        <div class="card"><h3>症狀 8：進度落後不敢來</h3><p>處方：空手也能掛號；門診醫的是卡住的點，不是驗收成品。</p></div>
       </div>
     </div>
   </section>
 
-  <!-- 16 個別諮詢：20 分鐘怎麼用 -->
-<section class="slide">
-    <div class="eyebrow">PART 3 · 個別諮詢時段</div>
-    <h2>個別諮詢：20 分鐘怎麼用</h2>
+  <!-- 16 PART 4 -->
+  <section class="slide part p-yellow">
+    <div class="part-num">04</div>
+    <div class="eyebrow">Part 4</div>
+    <h2>預約、準備與倒數</h2>
+    <p class="part-sub">個別指導不是「老師幫我看看」。它有流程、有入場券、有時限；用對了，二十分鐘能省你三天。</p>
+  </section>
+
+  <!-- 17 流程 -->
+  <section class="slide" data-c="yellow">
+    <div class="eyebrow">Part 4 · 個別指導流程</div>
+    <h2>一次個別指導，三段</h2>
     <div class="content">
       <div class="flow">
-        <div class="step"><h3>事前</h3><p>預約時段；把最新稿與三個具體問題先傳到課程資料夾</p></div>
+        <div class="step"><h3>事前</h3><p>預約時段；最新稿與三個具體問題，前一天傳到課程資料夾。</p></div>
         <div class="arr">→</div>
-        <div class="step"><h3>席間 20 分鐘</h3><p>先講最卡的點，再對架構與文獻，最後議定下一步</p></div>
+        <div class="step"><h3>席間 20 分鐘</h3><p>先講最卡的點，再對架構與文獻，最後議定下一步與完成時間。</p></div>
         <div class="arr">→</div>
-        <div class="step"><h3>事後 48 小時</h3><p>把共識改進稿子，回一句話報告進度</p></div>
+        <div class="step"><h3>事後 48 小時</h3><p>把共識改進稿子，回一句話報告進度；沒回就當作沒共識。</p></div>
       </div>
-      <ul>
-        <li>問題越具體，處方越有效：「幫我看看」是最低效的開場</li>
-        <li>時段之外用課程信箱提問，附上具體段落與頁碼</li>
-      </ul>
-      <div class="take"><b>假設情境</b>門診前若小組群組還在爭哪張圖能用，就帶著兩版與爭點來問；不要只展示已經修好的部分。</div>
+      <div class="take"><b>假設情境</b>小組群組還在爭哪張圖能用，就帶著兩版與爭點來問；不要只展示已經修好的部分。</div>
     </div>
   </section>
 
-  <!-- 17 倒數八天：時程表 -->
-<section class="slide">
-    <div class="eyebrow">PART 3 · 倒數時程</div>
-    <h2>倒數八天：時程表</h2>
+  <!-- 18 預約與準備清單 -->
+  <section class="slide" data-c="yellow">
+    <div class="eyebrow">Part 4 · 預約與準備清單</div>
+    <h2>掛號規則與入場券</h2>
     <div class="content">
-      <div class="tl">
-        <div class="ev"><b>07/15 今</b><span>第 17 週個別指導：對架構、理文獻、掛號看診</span></div>
-        <div class="ev"><b>07/16–18</b><span>依諮詢共識修架構、補文獻與圖表；線上追問隨時開放</span></div>
-        <div class="ev"><b>07/19 前</b><span>建議完成初稿，跑一遍第 9 週「五個地雷」自檢清單</span></div>
-        <div class="ev"><b>07/21 前</b><span>定稿：書目重整、AI 揭露聲明、圖表編號全數到位</span></div>
-        <div class="ev"><b>07/22</b><span>第 18 週期末評量：繳交與發表，規格與 rubric 當日詳述</span></div>
+      <div class="cols">
+        <div class="card">
+          <span class="who">預約規則</span>
+          <ul>
+            <li>時段表課堂公布，先到先選，每人一格 20 分鐘</li>
+            <li>小組共用題目可合併掛號，時間不加倍</li>
+            <li>取消請提前一天，空出的格讓給候補</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">帶來的東西</span>
+          <ul>
+            <li>最新稿（初稿也算），標出你最沒把握的一章</li>
+            <li>三個具體問題，寫成一句話一題</li>
+            <li>書目清單與 Crossref 查證結果；圖表草稿</li>
+          </ul>
+        </div>
       </div>
+      <div class="take"><b>時段之外</b>用課程信箱提問，附具體段落與頁碼；「幫我看看」是最低效的開場。</div>
     </div>
   </section>
 
-  <!-- 18 所有連結，一頁帶走 -->
-<section class="slide">
-    <div class="eyebrow">Week 17 · 本週資源彙整</div>
-    <h2>所有連結，一頁帶走</h2>
+  <!-- 19 老師的課堂規矩 -->
+  <section class="slide" data-c="yellow">
+    <div class="eyebrow">Part 4 · 老師的課堂規矩</div>
+    <h2>門診裡我只做四件事</h2>
+    <div class="content">
+      <ul>
+        <li>只看你帶來的問題，不代寫、不代查；查證是你交報告的一部分。</li>
+        <li>先問「研究問題是哪一句」，答不出來就先停在這裡，其他不看。</li>
+        <li>書目沒過 Crossref 的，我不討論內容，先回去驗。</li>
+        <li>每次結束一定議定「下一個完成時間」；沒有時間的共識不算共識。</li>
+      </ul>
+      <div class="take"><b>一句話</b>門診的價值在於讓你早三天知道哪裡不行，不是讓你聽到「還不錯」。</div>
+    </div>
+  </section>
+
+  <!-- 20 倒數 -->
+  <section class="slide" data-c="yellow">
+    <div class="eyebrow">Part 4 · 倒數時程</div>
+    <h2>從今天到繳交，四個節點</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>今天</dt><dd>對架構、理文獻、掛號看診；離開前寫下要補的證據與要刪的內容。</dd>
+        <dt>門診後 48 小時</dt><dd>依共識修架構、補文獻與圖表；回報一句話進度。</dd>
+        <dt>繳交前三天</dt><dd>完成初稿，跑一遍第 9 週「五個地雷」自檢；書目全數過 Crossref。</dd>
+        <dt>繳交前一天</dt><dd>定稿：書目重整、AI 揭露聲明、圖表編號全數到位；確認檔名與格式。</dd>
+      </dl>
+      <div class="take"><b>期限</b>正式繳交日與方式以第 18 週課堂公布為準；上面四個節點依它往回推。</div>
+    </div>
+  </section>
+
+  <!-- 21 收尾 -->
+  <section class="slide">
+    <div class="eyebrow">Week 17 · 收尾</div>
+    <h2>離開門診前回答這三題</h2>
+    <div class="content">
+      <div class="qlist">
+        <p>你的研究問題是哪一句？寫在報告第一頁了嗎？</p>
+        <p>書目裡還有幾筆沒過 Crossref？今天回去先驗哪三筆？</p>
+        <p>你和老師議定的下一個完成時間是什麼時候？誰負責回報？</p>
+      </div>
+      <div class="card">
+        <span class="who">課後任務</span>
+        <p>依門診共識修訂稿子，48 小時內在課程平台回一句話進度；繳交前三天完成初稿並跑完自檢清單。</p>
+      </div>
+      <div class="take"><b>下週預告</b>期末評量：繳交規格與配分、AI 揭露最終檢查、十八週回顧。</div>
+    </div>
+  </section>
+
+  <!-- 22 資源彙整 -->
+  <section class="slide">
+    <div class="eyebrow">Week 17 · 資源彙整</div>
+    <h2>本週資源</h2>
     <div class="content">
       <div class="cols">
         <div class="grp">
           <h3>書目管理與驗證</h3>
           <div class="linkrow">
-            <a class="lk" href="https://www.zotero.org/" target="_blank" rel="noopener">Zotero 官網</a>
+            <a class="lk" href="https://www.zotero.org/" target="_blank" rel="noopener">Zotero</a>
             <a class="lk" href="https://www.zotero.org/support/changelog" target="_blank" rel="noopener">Zotero 版本紀錄</a>
-            <a class="lk" href="https://www.crossref.org/" target="_blank" rel="noopener">Crossref</a>
+            <a class="lk" href="https://apps.crossref.org/simpleTextQuery" target="_blank" rel="noopener">Crossref Simple Text Query</a>
             <a class="lk" href="https://www.doi.org/" target="_blank" rel="noopener">doi.org</a>
           </div>
           <h3 style="margin-top:18px">AI 文獻工具</h3>
@@ -431,28 +529,30 @@
         <div class="grp">
           <h3>格式與揭露</h3>
           <div class="linkrow">
-            <a class="lk" href="https://apastyle.apa.org/" target="_blank" rel="noopener">APA Style</a>
-            <a class="lk" href="https://publicationethics.org/" target="_blank" rel="noopener">COPE</a>
+            <a class="lk" href="https://apastyle.apa.org/style-grammar-guidelines/references/dois-urls" target="_blank" rel="noopener">APA DOI 格式</a>
+            <a class="lk" href="https://owl.purdue.edu/owl/research_and_citation/apa_style/apa_formatting_and_style_guide/apa_tables_and_figures.html" target="_blank" rel="noopener">Purdue OWL 圖表</a>
+            <a class="lk" href="https://www.elsevier.com/about/policies-and-standards/generative-ai-policies-for-journals" target="_blank" rel="noopener">Elsevier AI 聲明句型</a>
           </div>
           <h3 style="margin-top:18px">本週論文</h3>
           <div class="linkrow">
-            <a class="lk" href="https://doi.org/10.1017/rsm.2026.10080" target="_blank" rel="noopener">Elicit 可行性研究</a>
+            <a class="lk" href="https://doi.org/10.1017/rsm.2026.10080" target="_blank" rel="noopener">Lagisz 等（2026）</a>
           </div>
         </div>
       </div>
-      <div class="take"><b>本週檢核</b>離開門診前，你是否已列出要補的證據、要刪的內容與下一個完成時間？</div>
+      <div class="take"><b>出處與補充</b>在下方講義，按 N 鍵。每一條版本與數字的來源、查證日期都在那裡。</div>
     </div>
   </section>
 
-  
-
   </div></div>
 
+  <div class="hint">← → 換頁　M 目錄　N 講義　F 全螢幕</div>
   <div class="ctrl">
     <button id="prev" aria-label="上一張">‹</button>
     <span class="cnt" id="cnt">1 / 1</span>
     <button id="next" aria-label="下一張">›</button>
     <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+    <button id="toNotes" title="講義（N）">講義 ↓</button>
+    <button id="full" title="全螢幕（F）">⛶</button>
   </div>
   <div class="prog" id="prog"></div>
 
@@ -463,17 +563,178 @@
   </div>
 </div>
 
+<!-- ============ 講義區 ============ -->
+<main class="notes" id="notes">
+  <div class="notes-head">
+    <div class="eyebrow">Week 17 · 講義</div>
+    <h2>期末專題個別指導</h2>
+    <p>投影片講的是骨架，這裡放肉：五章骨架每章的判準、圖表與揭露的細則、Zotero 10 與 Crossref 的實際操作、AI 文獻工具的限制與本週論文的證據、八個症狀的處方、預約與準備清單、我在門診裡的規矩，以及倒數節點的自我檢核。</p>
+  </div>
+
+  <section class="sec">
+    <span class="kicker">導讀</span>
+    <h2>這週在解決什麼問題</h2>
+    <p>第 16 週你交了一頁提案 v2 與三筆候選文獻；第 18 週要交一本完整的期末報告。中間只有這一週，而且不上新課。這週要做的是把提案展開成五章、把書目管進一套可驗證的工作流、把每個人卡住的點在二十分鐘內講清楚並議定下一步。離開教室時，你要能回答三件事：研究問題是哪一句、還有幾筆書目沒驗、下一個完成時間是什麼時候。</p>
+    <p>三個關鍵詞先講清楚。<strong>五章骨架</strong>是緒論、文獻回顧、方法與設計、分析與發現、結論與反思，每章各回答一個問題。<strong>DOI 驗證</strong>是把每一筆書目拿去 Crossref 比對、確認 doi.org 能解析，查不到就刪。<sup class="fn"><a href="#src-4">4</a></sup><sup class="fn"><a href="#src-6">6</a></sup> <strong>個別指導</strong>是有預約、有入場券、有時限的門診：事前傳稿與三個問題、席間 20 分鐘、事後 48 小時回報。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">§1</span>
+    <h2>報告架構與規範：五章、圖表、揭露</h2>
+    <p>五章骨架的判準只有一句：每章回答一個問題。緒論回答「為什麼值得做」，要有背景、問題意識、研究問題與範圍界定；文獻回顧回答「站在誰的肩上」，要分群比較並點出缺口，不是逐篇摘要；方法與設計回答「你怎麼做」，案例選擇或創作流程都要交代 AI 用在哪個環節；分析與發現回答「你看到什麼」，圖表在這一章說話；結論與反思回答「所以呢」，回答研究問題、承認限制、指出下一步。第 9 週期中報告的三段結構是這五章的縮小版，寫過期中的人只是把中間三章拉開。</p>
+    <h3>圖表規則：編號與標題在上，註記在下</h3>
+    <table>
+      <thead><tr><th>項目</th><th>做法</th><th>常見錯誤</th></tr></thead>
+      <tbody>
+        <tr><td>編號與標題</td><td>表與圖都是編號在最上、標題在編號下方；註記放圖表下方<sup class="fn"><a href="#src-12">12</a></sup></td><td>圖標題放下面、表標題放上面，兩套規則混用</td></tr>
+        <tr><td>內文對應</td><td>每張圖表在內文至少被點名一次（「如圖 1」），並分析它</td><td>放了圖沒解釋，當裝飾</td></tr>
+        <tr><td>來源與授權</td><td>非原創圖片標來源與授權；AI 生成圖標工具名稱與提示概要</td><td>截圖沒來源；AI 圖當自己畫的</td></tr>
+        <tr><td>可讀性</td><td>解析度足夠、文字可讀；裁掉無關視窗與個人資料</td><td>整個螢幕截下來，看不清也洩漏資料</td></tr>
+        <tr><td>版面</td><td>A4、12 pt、1.5 倍行高、邊界 2.5 cm，頁碼齊全</td><td>各章行距不一、沒頁碼</td></tr>
+      </tbody>
+    </table>
+    <p>v1 教材寫「圖標題在下、表標題在上」，我這次核對 Purdue OWL 的 APA 第 7 版整理，表與圖都是編號在上、標題在編號下方，所以改成同一套規則。<sup class="fn"><a href="#src-12">12</a></sup> APA 官方的圖表頁對抓取工具回空頁，出處標二手；你用 Word 或 Google Docs 的 APA 範本時，以範本內建的位置為準即可。</p>
+    <h3>AI 協作揭露：期末版</h3>
+    <p>三要素不變：用了什麼工具、用在哪個環節、人怎麼查證把關。這是出版倫理委員會 COPE 的立場，也是本課從第 9 週沿用的規則：AI 工具不能列為作者，作者要揭露用了哪個工具、怎麼用，並對內容負完全責任。<sup class="fn"><a href="#src-13">13</a></sup> 期末多一條：AI 文獻工具（Elicit、ResearchRabbit 這類）也算協作，要寫進去。不知道怎麼下筆的，可以仿 Elsevier 給投稿者的固定句型：「在準備本文的過程中，作者使用了［工具］以［目的］。使用後作者已審閱並視需要修改內容，並對內容負完全責任。」<sup class="fn"><a href="#src-14">14</a></sup> 揭露與實際使用不符，比不揭露更傷信任；期末 rubric 的「結構格式與 AI 揭露」佔 15%，第 18 週會再講一次。</p>
+  </section>
+
+  <section class="sec grape">
+    <span class="kicker">§2</span>
+    <h2>文獻整理工作流：管書目、驗真偽、幫你找</h2>
+    <p>書目管理用 Zotero。2026-08-17 發布的 Zotero 10 把進階搜尋放進快速搜尋列的篩選按鈕、集合面板可以多選合併檢視、PDF 新增可調整格式的重排檢視並可繼續標註；最新版本是 2026-09-09 的 10.0.2。<sup class="fn"><a href="#src-1">1</a></sup><sup class="fn"><a href="#src-2">2</a></sup> 引用外掛支援 Word、LibreOffice 與 Google Docs，邊寫邊引，書目自動生成。<sup class="fn"><a href="#src-3">3</a></sup> 本課的設定只有一條：引用樣式設 APA 第 7 版，DOI 一律寫成 https://doi.org/ 開頭。<sup class="fn"><a href="#src-10">10</a></sup></p>
+    <p>書目驗證走三步。第一步，AI 或工具給的每一筆先當「未驗證」。第二步，Crossref 是連結研究物件的開放基礎設施，首頁就有後設資料搜尋；<sup class="fn"><a href="#src-4">4</a></sup> 更快的做法是把整段參考文獻貼進 Simple Text Query，它會比對後回傳對應的 DOI 連結，一次最多 1,000 筆。<sup class="fn"><a href="#src-5">5</a></sup> 第三步，在 DOI 前加 doi.org/ 變成連結，點下去會解析到該物件的最新資訊；<sup class="fn"><a href="#src-6">6</a></sup> 能開才進 Zotero，查無此篇直接刪。習慣是文獻進庫當下就驗，不要堆到交稿前夜。</p>
+    <p>AI 文獻工具是加速器，不是免檢通道。Elicit 自述索引超過 1.25 億篇論文，系統性回顧工作流支援 PRISMA 2020、每一步可追溯；<sup class="fn"><a href="#src-7">7</a></sup> ResearchRabbit 用一篇種子論文長出引文關係圖，註冊免費。<sup class="fn"><a href="#src-8">8</a></sup> 兩家首頁上的準確率與論文數都是廠商自述，不是獨立驗證；它們給的每一筆仍要走上面三步。</p>
+    <div class="scene">
+      <span class="who">假設情境</span>
+      <p>一位同學用 AI 助理列了十二筆文獻，看起來作者、期刊、年份都很像樣。貼進 Simple Text Query 後回來八筆 DOI，四筆沒有。他去 Google Scholar 再找那四筆，兩筆是真論文但標題被改寫，兩筆完全不存在。八天後交稿時，他的書目十筆，全部能開。同一個班上另一位同學跳過這一步，退件原因是「引用查無此篇」。</p>
+    </div>
+    <h3>本週論文：Elicit 抽資料，可信嗎</h3>
+    <p>Lagisz、Mizuno、Morrison、Pollo、Ricolfi、Yang 與 Nakagawa 的〈Using Elicit AI research assistant for data extraction in systematic reviews: A feasibility study across environmental and life sciences〉，Research Synthesis Methods，2026-05-29 線上出版，1–18 頁。<sup class="fn"><a href="#src-9">9</a></sup> 方法是拿七個生命與環境科學系統性回顧的文章、以人工抽取為金標準測 Elicit，提示詞反覆調整到 87% 以上準確率後再測。發現有兩件事值得記：換一批新文章時準確率傾向下降；跨帳號重現性在數值上有 90%，但佐證引句只有 46%、推理只有 30%。作者的結論是 Elicit「可以補充、但不能取代」人工資料抽取者，提示需微調並獨立驗證。<sup class="fn"><a href="#src-11">11</a></sup> 對你的意義：AI 文獻工具抽出來的數字可以當第二雙眼睛，但它給的「理由」不要直接抄進報告。Cambridge 全文頁對抓取工具回 404，摘要以 Semantic Scholar 轉載核對，出處標二手；v1 寫的「78% 達標、換新文章後 69%」在摘要裡沒看到，我刪了。</p>
+  </section>
+
+  <section class="sec cyan">
+    <span class="kicker">§3</span>
+    <h2>常見卡關門診：八個症狀與處方</h2>
+    <table>
+      <thead><tr><th>症狀</th><th>處方</th><th>掛哪一科</th></tr></thead>
+      <tbody>
+        <tr><td>1. 文獻回顧是流水帳</td><td>按主題分群比較，收尾點名缺口：「大家都在做 A，沒人檢驗 B」</td><td>架構</td></tr>
+        <tr><td>2. 引了查無此篇的文獻</td><td>全部書目過一次 Crossref；查不到就刪，寧缺勿假</td><td>文獻</td></tr>
+        <tr><td>3. 題目太大收不了尾</td><td>砍到一個問題、一個場域；捨不得的寫進「未來研究」</td><td>架構</td></tr>
+        <tr><td>4. 案例分析像產品介紹</td><td>套一個分析框架，每段結尾回扣研究問題一次</td><td>架構</td></tr>
+        <tr><td>5. 圖表沒編號沒來源</td><td>照 §1 表格補齊；AI 生成圖加標示</td><td>格式</td></tr>
+        <tr><td>6. AI 揭露只寫「有用」</td><td>改用三要素：工具、環節、把關方式，具體到可被驗證</td><td>格式</td></tr>
+        <tr><td>7. 引用格式混用</td><td>Zotero 統一設 APA 第 7 版，交稿前重整書目</td><td>格式</td></tr>
+        <tr><td>8. 進度落後不敢來</td><td>空手也能掛號；門診醫的是卡住的點，不是驗收成品</td><td>心態</td></tr>
+      </tbody>
+    </table>
+    <p>前四個是內容問題，中間三個是格式問題，最後一個是心態問題。格式問題最便宜，十分鐘到半小時可以清掉；內容問題要在門診裡談，因為它牽動整本的結構；心態問題只有一個處方：來。</p>
+  </section>
+
+  <section class="sec lemon">
+    <span class="kicker">§4</span>
+    <h2>預約、準備與倒數</h2>
+    <p>一次個別指導分三段。事前：預約時段，把最新稿與三個具體問題在前一天傳到課程資料夾，讓我有時間先讀。席間 20 分鐘：先講最卡的點，再對架構與文獻，最後議定下一步與完成時間。事後 48 小時：把共識改進稿子，在課程平台回一句話報告進度；沒回，我當作沒有共識，下次從頭談。</p>
+    <h3>掛號規則</h3>
+    <ul>
+      <li>時段表課堂公布，先到先選，每人一格 20 分鐘。</li>
+      <li>小組共用題目可以合併掛號，但時間不加倍，所以問題要先在組內收斂。</li>
+      <li>取消請提前一天，空出的格讓給候補；無故未到的，這學期不再補時段。</li>
+      <li>時段之外用課程信箱提問，附具體段落與頁碼；「幫我看看」是最低效的開場。</li>
+    </ul>
+    <h3>入場券：帶來的東西</h3>
+    <ul>
+      <li>最新稿，初稿也算；標出你最沒把握的一章。</li>
+      <li>三個具體問題，寫成一句話一題。例如「文獻回顧第二節分群合不合理」比「文獻怎麼寫」好十倍。</li>
+      <li>書目清單與 Crossref 查證結果；沒驗過的先驗，驗完再來。</li>
+      <li>圖表草稿，哪怕是手繪；有爭議的圖帶兩個版本與爭點。</li>
+    </ul>
+    <h3>倒數節點</h3>
+    <p>正式繳交日與方式以第 18 週課堂公布為準，四個節點依它往回推：今天對架構、理文獻、掛號看診，離開前寫下要補的證據與要刪的內容；門診後 48 小時依共識修架構、補文獻與圖表並回報；繳交前三天完成初稿，跑一遍第 9 週的「五個地雷」自檢，書目全數過 Crossref；繳交前一天定稿，書目重整、AI 揭露聲明、圖表編號全數到位，確認檔名與格式。v1 寫了具體日期，v2 不寫，因為每學期不同。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">老師的課堂規矩</span>
+    <h2>門診裡我只做四件事</h2>
+    <p>第一，只看你帶來的問題，不代寫、不代查。查證是你交報告的一部分，我替你查了，你的揭露聲明就寫不出「本人查證」。第二，先問「研究問題是哪一句」。答不出來就先停在這裡，其他不看；因為架構、文獻、圖表全部由這一句決定，這一句沒定，其他的討論都是浪費你的 20 分鐘。第三，書目沒過 Crossref 的，我不討論內容，先回去驗；上週才講過幻覺文獻是頭號退件原因，我不會在門診裡幫你讀一篇可能不存在的論文。第四，每次結束一定議定「下一個完成時間」，沒有時間的共識不算共識。門診的價值在於讓你早三天知道哪裡不行，不是讓你聽到「還不錯」。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">出處</span>
+    <h2>本週引用的資料</h2>
+    <p>每一條都在 2026-09-16 打開確認過；APA 與 COPE 條目沿用第 9 週查證，標「沿用」。COPE 官方頁 403、APA 官方圖表頁回空頁、Cambridge 全文頁 404，改引可開啟的轉載頁並標二手。網址失效請告訴我，我會換。</p>
+    <ol class="src">
+      <li id="src-1"><span class="ti">Zotero〈Changelog〉</span><span class="meta">Zotero 官方 · 最新一筆 2026-09-09 · 10.0.2、10.0.1（08-24）、10.0（08-17）· 查證 2026-09-16</span><a href="https://www.zotero.org/support/changelog" target="_blank" rel="noopener">https://www.zotero.org/support/changelog</a></li>
+      <li id="src-2"><span class="ti">Zotero Blog〈Zotero 10〉</span><span class="meta">Zotero 官方 · 2026-08-17 · 進階搜尋篩選、集合多選、PDF 重排檢視 · 查證 2026-09-16</span><a href="https://www.zotero.org/blog/" target="_blank" rel="noopener">https://www.zotero.org/blog/</a></li>
+      <li id="src-3"><span class="ti">Zotero〈Word Processor Integration〉</span><span class="meta">Zotero 官方 · 頁面未標日期 · Word、LibreOffice、Google Docs · 查證 2026-09-16</span><a href="https://www.zotero.org/support/word_processor_integration" target="_blank" rel="noopener">https://www.zotero.org/support/word_processor_integration</a></li>
+      <li id="src-4"><span class="ti">Crossref 首頁</span><span class="meta">Crossref 官方 · 頁面未標日期 · 開放基礎設施、Search metadata · 查證 2026-09-16</span><a href="https://www.crossref.org/" target="_blank" rel="noopener">https://www.crossref.org/</a></li>
+      <li id="src-5"><span class="ti">Crossref〈Simple Text Query〉</span><span class="meta">Crossref 官方 · 頁面未標日期 · 貼上參考文獻回傳 DOI、最多 1,000 筆 · 查證 2026-09-16</span><a href="https://apps.crossref.org/simpleTextQuery" target="_blank" rel="noopener">https://apps.crossref.org/simpleTextQuery</a></li>
+      <li id="src-6"><span class="ti">DOI Foundation 首頁</span><span class="meta">International DOI Foundation 官方 · 頁面未標日期 · doi.org/ 前綴即可解析 · 查證 2026-09-16</span><a href="https://www.doi.org/" target="_blank" rel="noopener">https://www.doi.org/</a></li>
+      <li id="src-7"><span class="ti">Elicit 首頁</span><span class="meta">Elicit 官方（廠商自述）· 2026-09-03 · 逾 1.25 億篇、PRISMA 2020 · 查證 2026-09-16</span><a href="https://elicit.com/" target="_blank" rel="noopener">https://elicit.com/</a></li>
+      <li id="src-8"><span class="ti">ResearchRabbit 首頁</span><span class="meta">ResearchRabbit 官方（廠商自述）· 頁面未標日期 · 種子論文、免費註冊 · 查證 2026-09-16</span><a href="https://www.researchrabbit.ai/" target="_blank" rel="noopener">https://www.researchrabbit.ai/</a></li>
+      <li id="src-9"><span class="ti">Lagisz, M., Mizuno, A., Morrison, K., Pollo, P., Ricolfi, L., Yang, Y. &amp; Nakagawa, S.〈Using Elicit AI research assistant for data extraction in systematic reviews: A feasibility study across environmental and life sciences〉</span><span class="meta">Research Synthesis Methods, 1–18 · 2026-05-29 線上出版 · 書目以 Crossref API 核對 · 查證 2026-09-16</span><a href="https://doi.org/10.1017/rsm.2026.10080" target="_blank" rel="noopener">https://doi.org/10.1017/rsm.2026.10080</a></li>
+      <li id="src-10"><span class="ti">APA Style〈DOIs and URLs〉；〈Author–Date Citation System〉</span><span class="meta">American Psychological Association 官方 · 頁面未標日期 · 沿用第 9 週 · 查證 2026-09-16</span><a href="https://apastyle.apa.org/style-grammar-guidelines/references/dois-urls" target="_blank" rel="noopener">https://apastyle.apa.org/style-grammar-guidelines/references/dois-urls</a>　<a href="https://apastyle.apa.org/style-grammar-guidelines/citations/basic-principles/author-date" target="_blank" rel="noopener">https://apastyle.apa.org/style-grammar-guidelines/citations/basic-principles/author-date</a></li>
+      <li id="src-11"><span class="ti">Semantic Scholar API：Lagisz 等（2026）摘要</span><span class="meta">Semantic Scholar（二手，摘要轉載；Cambridge 全文頁 404）· 七個回顧、87% 門檻、跨帳號 90%／46%／30%、complement but not replace · 查證 2026-09-16</span><a href="https://api.semanticscholar.org/graph/v1/paper/DOI:10.1017/rsm.2026.10080?fields=title,abstract,year,venue" target="_blank" rel="noopener">https://api.semanticscholar.org/graph/v1/paper/DOI:10.1017/rsm.2026.10080?fields=title,abstract,year,venue</a></li>
+      <li id="src-12"><span class="ti">Purdue OWL〈APA Tables and Figures〉</span><span class="meta">Purdue Online Writing Lab（二手；APA 官方圖表頁回空頁）· 頁面未標日期 · 編號在上、標題在編號下、註記在下 · 查證 2026-09-16</span><a href="https://owl.purdue.edu/owl/research_and_citation/apa_style/apa_formatting_and_style_guide/apa_tables_and_figures.html" target="_blank" rel="noopener">https://owl.purdue.edu/owl/research_and_citation/apa_style/apa_formatting_and_style_guide/apa_tables_and_figures.html</a></li>
+      <li id="src-13"><span class="ti">JPL Library〈COPE Position Statement on Authorship and AI Tools〉</span><span class="meta">JPL Library 轉載 COPE（二手；COPE 官方頁 403）· 2023-06-04 · cannot be listed as an author · 沿用第 9 週 · 查證 2026-09-16</span><a href="https://jpl-nasa.libguides.com/blog/Authorship-and-AI-Tools" target="_blank" rel="noopener">https://jpl-nasa.libguides.com/blog/Authorship-and-AI-Tools</a></li>
+      <li id="src-14"><span class="ti">Elsevier〈Generative AI policies for journals〉</span><span class="meta">Elsevier 官方 · 頁面未標日期 · 固定聲明句型 · 沿用第 9 週 · 查證 2026-09-16</span><a href="https://www.elsevier.com/about/policies-and-standards/generative-ai-policies-for-journals" target="_blank" rel="noopener">https://www.elsevier.com/about/policies-and-standards/generative-ai-policies-for-journals</a></li>
+    </ol>
+  </section>
+
+  <section class="sec cyan">
+    <span class="kicker">補充資訊</span>
+    <h2>延伸閱讀與這一週刪掉的東西</h2>
+    <h3>這一週刪掉的東西，以及為什麼</h3>
+    <ul>
+      <li><strong>v1「Zotero 9.0.6、1 月出 8.0、4 月出 9.0」</strong>：變更紀錄最新為 10.0.2，改寫成 Zotero 10 現況；8.0 與 9.0 的月份沒有逐一核對，不寫。<sup class="fn"><a href="#src-1">1</a></sup></li>
+      <li><strong>v1「9.0 新增 PDF 朗讀與跨裝置最近閱讀」「8.0 單一引用對話框」</strong>：Zotero 10 部落格文與變更紀錄頂端沒看到，改寫成已查證的 10 版功能。<sup class="fn"><a href="#src-2">2</a></sup></li>
+      <li><strong>v1 論文「78% 變項達標、換新文章後 69%」</strong>：摘要未見，只寫摘要有的數字。<sup class="fn"><a href="#src-11">11</a></sup></li>
+      <li><strong>v1「圖標題在下、表標題在上」</strong>：與 APA 第 7 版不符，改為圖表編號與標題都在上方。<sup class="fn"><a href="#src-12">12</a></sup></li>
+      <li><strong>v1 的具體日期（07/15 到 07/22）</strong>：每學期不同，改成相對節點，正式日期課堂公布。</li>
+    </ul>
+    <h3>延伸閱讀</h3>
+    <ul>
+      <li>Crossref Simple Text Query 一頁就能用，交稿前把整份參考文獻貼一次，比逐筆查快。<sup class="fn"><a href="#src-5">5</a></sup></li>
+      <li>Zotero 10 部落格文附了每個新功能的截圖，換版本前先看一遍。<sup class="fn"><a href="#src-2">2</a></sup></li>
+      <li>Elsevier 的 AI 聲明句型可以直接翻成中文放在你的揭露頁，再補上工具名稱與環節。<sup class="fn"><a href="#src-14">14</a></sup></li>
+      <li>Lagisz 等的論文適合當「AI 文獻工具能信到哪裡」的第一篇證據，它自己就是系統性回顧方法的期刊。<sup class="fn"><a href="#src-9">9</a></sup></li>
+    </ul>
+  </section>
+
+  <section class="sec lemon">
+    <span class="kicker">本週檢核</span>
+    <h2>離開門診前自己打勾</h2>
+    <ul class="check">
+      <li>研究問題寫成一句話，放在報告第一頁。</li>
+      <li>五章骨架的每一章各有一句「這章回答什麼」。</li>
+      <li>書目全部過 Crossref 或 doi.org，查不到的已刪；Zotero 樣式設 APA 第 7 版。</li>
+      <li>圖表都有編號與標題（在上方）、內文點名、來源或 AI 標示。</li>
+      <li>AI 協作揭露寫了工具、環節、把關方式，AI 文獻工具也列進去。</li>
+      <li>門診前一天傳了最新稿與三個具體問題到課程資料夾。</li>
+      <li>門診結束時寫下「要補的證據、要刪的內容、下一個完成時間」，48 小時內在課程平台回報一句話。</li>
+    </ul>
+  </section>
+
+  <p class="version">2026-09-16 翻新：版型改為水彩由灰轉彩、新增講義區、Zotero 更新至 10.0.2、圖表規則依 APA 第 7 版改正、本週論文改寫到摘要有的為止、倒數時程改為相對節點、新增預約規則與入場券清單。前一版：2026-09-13。</p>
+
+</main>
+
+<a class="backtop" id="backtop" href="#deck">↑ 回投影片</a>
+
 <script>
 (function () {
   /* ★ 每週只改這一行 ★ */
+  var COURSE_LABEL = '人工智慧與互動媒體特論';
   var WEEK_LABEL = '第 17 週 · 個別指導';
 
+  var deck = document.getElementById('deck');
   var stage = document.getElementById('stage');
   var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
   var cnt = document.getElementById('cnt');
   var prog = document.getElementById('prog');
   var toc = document.getElementById('toc');
   var tgrid = document.getElementById('tgrid');
+  var backtop = document.getElementById('backtop');
   var cur = 0;
 
   document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
@@ -481,7 +742,7 @@
   slides.forEach(function (s, i) {
     var f = document.createElement('div');
     f.className = 'foot';
-    f.innerHTML = '<span>人工智慧與互動媒體特論|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    f.innerHTML = '<span>' + COURSE_LABEL + '|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
     s.appendChild(f);
   });
 
@@ -490,12 +751,12 @@
     var eb = s.querySelector('.eyebrow');
     var part = '開場';
     if (eb) {
-      var m = eb.textContent.match(/PART\s*(\d)/i);
-      if (m) part = 'PART ' + m[1];
+      var m = eb.textContent.match(/Part\s*(\d)/i);
+      if (m) part = 'Part ' + m[1];
       else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
     }
     var h = s.querySelector('h1, h2');
-    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent.replace(/\d+$/, '') : '') });
   });
   Object.keys(groups).forEach(function (k) {
     var col = document.createElement('div');
@@ -523,35 +784,57 @@
   function toggleToc(on) {
     toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
   }
+  function atDeck() { return window.scrollY < 40; }
+  function toNotes() { document.getElementById('notes').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  function toggleFull() {
+    if (document.fullscreenElement) { document.exitFullscreen(); return; }
+    if (deck.requestFullscreen) deck.requestFullscreen();
+  }
 
   document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
   document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
   document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
   document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+  document.getElementById('toNotes').addEventListener('click', toNotes);
+  document.getElementById('full').addEventListener('click', toggleFull);
 
   document.addEventListener('keydown', function (e) {
+    if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
     if (e.key === 'Escape') { toggleToc(false); return; }
     if (toc.classList.contains('on')) return;
     switch (e.key) {
-      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
-      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
-      case 'Home': go(0); break;
-      case 'End': go(slides.length - 1); break;
+      case 'ArrowRight': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'ArrowDown': case ' ': if (atDeck()) { e.preventDefault(); go(cur + 1); } break;
+      case 'ArrowUp': if (atDeck()) { e.preventDefault(); go(cur - 1); } break;
+      case 'Home': if (atDeck()) go(0); break;
+      case 'End': if (atDeck()) go(slides.length - 1); break;
       case 'm': case 'M': toggleToc(); break;
+      case 'n': case 'N': toNotes(); break;
+      case 'f': case 'F': toggleFull(); break;
     }
   });
 
   function fit() {
-    var w = window.innerWidth, h = window.innerHeight;
+    var w = deck.clientWidth, h = deck.clientHeight;
     if (!w || !h) { requestAnimationFrame(fit); return; }
-    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+    stage.style.transform = 'scale(' + Math.min((w - 48) / 1300, (h - 88) / 740) + ')';
   }
   window.addEventListener('resize', fit);
   window.addEventListener('load', fit);
+  document.addEventListener('fullscreenchange', fit);
   fit();
+
+  window.addEventListener('scroll', function () {
+    backtop.classList.toggle('show', window.scrollY > deck.clientHeight * 0.6);
+  }, { passive: true });
 
   var m = location.hash.match(/^#s(\d+)$/);
   go(m ? +m[1] - 1 : 0);
+  if (!m && location.hash) {
+    var target = document.querySelector(location.hash.replace(/[^#\w-]/g, ''));
+    if (target) setTimeout(function () { target.scrollIntoView({ block: 'start' }); }, 50);
+  }
 })();
 </script>
 </body>

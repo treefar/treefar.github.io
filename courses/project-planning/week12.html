@@ -3,144 +3,181 @@
 <head>
 <meta charset="utf-8">
 <title>第 12 週|美術動畫開發工具</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Serif+TC:wght@400;500;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  /* ============ 版型：典籍金箔（style-library capcom-codex，色值取自 styles/capcom-codex.json）============ */
   * { box-sizing: border-box; }
-  #app {
-    position: fixed; inset: 0; overflow: hidden;
-    background: var(--bg);
-    font-family: var(--body);
-    color: var(--ink);
-    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
-    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
-    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
-    --bg: #F5F4EC; --bg2: #EFEEE2;
-    --panel: #FDFCF6; --panel2: #EDECDF;
-    --ink: #232B21; --sub: #67705E;
-    --accent: #2F6B4F; --accent-rgb: 47,107,79;
-    --accent2: #BC4F2C;
-    --line: rgba(35,43,33,.16);
-    --link: #2F6B4F;
-    --r: 4px;
+  :root {
+    --bg: #f4ead8; --cream: #efe2bf; --cream2: #e6d4ad; --ink: #1c1308; --ink2: #3a2a16; --muted: #5a3a14;
+    --gold: #8a5a1a; --gold2: #b88a3a; --goldDeep: #5a3a14; --burgundy: #6a1a1a; --sage: #4a5a3a;
+    --body: 'Noto Serif TC', 'Cormorant Garamond', Georgia, 'PMingLiU', serif;
+    --disp: 'Cinzel', 'Noto Serif TC', serif;
+    --num: 'Cormorant Garamond', 'Cinzel', serif;
+    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .23 0 0 0 0 .08 0 0 0 .18 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
   }
-  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
-  #app a:hover { opacity: .85; }
-  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-weight: 400; }
+  a { color: var(--gold); text-underline-offset: 4px; text-decoration-thickness: 1px; }
+  :focus-visible { outline: 2px solid var(--gold2); outline-offset: 2px; }
 
-  .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
-  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
-  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
-  .slide.active { display: flex; }
-  .slide::before {
-    content: ""; position: absolute; inset: 24px; pointer-events: none;
-    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
-  }
+  /* ---------- 投影區 ---------- */
+  #deck { position: relative; height: 100vh; min-height: 560px; overflow: hidden; background: #e6d4ad; }
+  #deck::after { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: var(--grain); opacity: .5; mix-blend-mode: multiply; }
+  .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 1; }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; background: var(--bg); box-shadow: 0 0 0 4px rgba(0,0,0,.4), 0 40px 120px rgba(0,0,0,.35); overflow: hidden; }
+  .stage::before { content: ""; position: absolute; inset: 36px; border: 1px solid rgba(90,58,20,.55); pointer-events: none; z-index: 2; }
+  .stage::after { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: var(--grain); opacity: .5; mix-blend-mode: multiply; z-index: 3; }
+  .slide { position: absolute; inset: 0; padding: 92px 110px 84px; display: none; flex-direction: column; }
+  .slide.active { display: flex; animation: fadein .45s ease both; }
+  @keyframes fadein { from { opacity: 0 } to { opacity: 1 } }
+  /* 書脊文字：每張都有，由 JS 用 .foot 產生（頁尾），頁首用 .eyebrow 置中版 */
+  .eyebrow { font-family: var(--disp); font-size: 14px; letter-spacing: .5em; text-transform: uppercase; color: var(--gold); margin-bottom: 20px; }
+  h1 { font-family: 'Noto Serif TC', serif; font-size: 78px; line-height: 1.15; margin: 0; font-weight: 700; letter-spacing: .06em; text-wrap: balance; }
+  h2 { font-family: 'Noto Serif TC', serif; font-size: 44px; line-height: 1.25; margin: 0 0 26px; font-weight: 700; letter-spacing: .04em; text-wrap: balance; }
+  /* 章節標題匾額（cartouche） */
+  .slide:not(.cover):not(.part) h2 { display: inline-block; align-self: flex-start; padding: 8px 40px; border: 1px solid var(--gold); background: var(--cream); box-shadow: inset 0 0 0 4px var(--bg), inset 0 0 0 5px var(--gold2); clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0 50%); font-size: 36px; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 18px; }
 
-  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
-  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
-  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
-  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
-
-  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
-  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
-  .sub { color: var(--sub); }
+  .slide ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 14px; font-size: 26px; line-height: 1.6; }
+  .slide ul ul { margin-top: 6px; gap: 6px; font-size: 22px; color: var(--ink2); }
+  .slide li::marker { color: var(--gold2); }
+  .sub { color: var(--ink2); }
   .small { font-size: 18px; }
-  .num { font-variant-numeric: tabular-nums; }
+  .num { font-family: var(--num); font-variant-numeric: tabular-nums; }
 
-  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
-  .cards { display: grid; gap: 18px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: stretch; }
+  .cards { display: grid; gap: 22px; }
   .c2 { grid-template-columns: repeat(2, 1fr); }
   .c3 { grid-template-columns: repeat(3, 1fr); }
   .c4 { grid-template-columns: repeat(4, 1fr); }
   .c5 { grid-template-columns: repeat(5, 1fr); }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
-  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
-  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
-  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+  /* 羊皮紙卡：1px 金深框＋內縮 4px 紙色＋再一圈金 */
+  .card { background: var(--cream); border: 1px solid var(--goldDeep); border-radius: 0; box-shadow: inset 0 0 0 4px var(--bg), inset 0 0 0 5px var(--gold2); padding: 24px 26px; min-width: 0; display: flex; flex-direction: column; justify-content: flex-start; }
+  .card.pink { background: #efe0d6; } .card.cyan { background: #e4e6d4; } .card.grape { background: #e9dfd0; } .card.lemon { background: var(--cream2); }
+  .card h3 { font-family: 'Noto Serif TC', serif; font-size: 26px; margin: 0 0 10px; font-weight: 700; line-height: 1.3; }
+  .card p, .card li { font-size: 22px; line-height: 1.6; margin: 0; color: var(--ink2); }
+  .card ul { padding-left: 1.1em; gap: 8px; font-size: 22px; }
+  .card .who { display: block; font-family: var(--disp); font-size: 13px; letter-spacing: .3em; text-transform: uppercase; color: var(--gold); margin-bottom: 10px; }
+  .cols > .card h3 { font-size: 28px; }
+  .cols > .card p, .cols > .card li { font-size: 23px; }
 
-  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
-  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+  /* 典籍旁註 */
+  .take { margin-top: auto; display: flex; gap: 18px; align-items: baseline; background: var(--cream2); border-left: 1px solid var(--gold); border-right: 1px solid var(--gold); padding: 14px 24px; font-size: 22px; line-height: 1.55; }
+  .take b { font-family: var(--disp); color: var(--burgundy); font-size: 13px; letter-spacing: .3em; text-transform: uppercase; white-space: nowrap; }
 
-  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
+  .foot { position: absolute; left: 60px; right: 60px; bottom: 46px; display: flex; justify-content: space-between; font-family: var(--disp); font-size: 12px; letter-spacing: .5em; text-transform: uppercase; color: var(--goldDeep); z-index: 4; }
 
   .cover, .part { justify-content: center; }
-  .cover .eyebrow { margin-bottom: 26px; }
-  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
-  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
-  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
-  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
-  .part h2 { font-size: 56px; }
-  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+  .cover .eyebrow, .part .eyebrow { margin-bottom: 26px; }
+  .cover-sub { font-size: 27px; color: var(--ink2); margin: 24px 0 0; line-height: 1.7; max-width: 28em; }
+  .cover-meta { margin-top: 40px; display: flex; gap: 14px; flex-wrap: wrap; font-family: var(--disp); font-size: 12px; letter-spacing: .3em; text-transform: uppercase; color: var(--goldDeep); }
+  .cover-meta span { border: 1px solid var(--gold2); padding: 8px 16px; }
+  /* 章節頁徽章 */
+  .part-num { width: 150px; height: 150px; border-radius: 50%; border: 1px solid var(--gold); box-shadow: inset 0 0 0 5px var(--bg), inset 0 0 0 6px var(--gold2); display: flex; align-items: center; justify-content: center; font-family: var(--disp); font-size: 52px; font-weight: 600; color: var(--gold); background: var(--cream); margin-bottom: 26px; }
+  .part h2 { font-size: 60px; }
+  .part-sub { font-size: 27px; color: var(--ink2); margin: 18px 0 0; max-width: 30em; line-height: 1.7; }
 
-  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
-  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
-  .kv dd { margin: 0; }
+  .kv { display: grid; grid-template-columns: 220px 1fr; gap: 0 24px; font-size: 23px; line-height: 1.5; align-content: start; border-top: 1px solid var(--gold2); }
+  .kv dt { font-family: var(--disp); font-size: 14px; letter-spacing: .3em; text-transform: uppercase; color: var(--gold); padding: 14px 0 10px; border-bottom: 1px solid var(--gold2); }
+  .kv dd { margin: 0; padding: 10px 0; border-bottom: 1px solid var(--gold2); }
   .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
-  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .chip { font-family: var(--disp); font-size: 15px; letter-spacing: .2em; text-transform: uppercase; padding: 8px 16px; border: 1px solid var(--gold2); background: var(--cream); color: var(--ink); }
+  .chip.hot { background: var(--gold2); color: var(--bg); }
   .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
-  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
+  .lk { display: inline-block; border: 1px solid var(--gold2); background: var(--cream); padding: 8px 18px; font-family: 'Noto Serif TC', serif; font-size: 18px; text-decoration: none; color: var(--ink); }
+  .lk:hover { background: var(--gold2); color: var(--bg); }
   .lk::after { content: " ↗"; font-size: 12px; }
   .flow { display: flex; align-items: stretch; gap: 0; }
-  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
-  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
-  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
-  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
-  .bar i { display: block; height: 100%; background: var(--accent); }
-  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
-  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
-  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
-  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
-  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
-  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
-  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
-  .tl { display: flex; flex-direction: column; gap: 18px; }
-  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
-  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
-  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+  .flow .step { flex: 1; background: var(--cream); border: 1px solid var(--goldDeep); box-shadow: inset 0 0 0 4px var(--bg), inset 0 0 0 5px var(--gold2); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .step h3 { font-family: 'Noto Serif TC', serif; font-size: 25px; margin: 0 0 8px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.6; margin: 0; color: var(--ink2); }
+  .flow .arr { flex: 0 0 48px; display: flex; align-items: center; justify-content: center; font-family: var(--disp); font-size: 28px; color: var(--gold); }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 16px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 18px; }
+  .qlist p::before { content: counter(q, upper-roman); font-family: var(--disp); color: var(--gold); font-weight: 600; flex: 0 0 auto; min-width: 1.6em; }
+  .grp h3 { font-family: var(--disp); font-size: 14px; letter-spacing: .3em; text-transform: uppercase; color: var(--gold); margin: 0 0 12px; }
+  .card p.big, .cols > .card p.big { font-family: var(--num); font-size: 100px; line-height: 1; font-weight: 500; color: var(--gold); margin: 0; }
+  .card p.big small { font-family: var(--disp); font-size: 13px; letter-spacing: .3em; text-transform: uppercase; line-height: 1.5; color: var(--muted); display: block; margin-top: 12px; }
 
-  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
-  .content > .cards,
-  .content > .cols,
-  .content > .flow,
-  .content > .kv,
-  .content > .prob { flex: 1 1 auto; }
+  .content > .cards, .content > .cols, .content > .flow { flex: 0 0 auto; margin-top: auto; margin-bottom: auto; }
+  .content > .kv { flex: 1 1 auto; }
+  .cards .card { min-height: 190px; }
+  .cols > .card { min-height: 230px; }
   .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
-  .content > .qlist,
-  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
-  .content > .biblio { flex: 0 0 auto; }
-  .cols > .card { justify-content: flex-start; }
 
-  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
-  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
-  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
-  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
-  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  sup.fn { font-family: var(--disp); font-size: 11px; line-height: 1; vertical-align: top; margin-left: 4px; position: relative; top: -2px; }
+  sup.fn a { display: inline-block; border: 1px solid var(--gold); color: var(--gold); border-radius: 50%; height: 20px; line-height: 18px; min-width: 20px; padding: 0 5px; text-align: center; text-decoration: none; font-weight: 600; background: var(--cream); }
+
+  .ctrl { position: absolute; right: 16px; bottom: 14px; display: flex; gap: 8px; align-items: center; z-index: 30; }
+  .ctrl button { font-family: var(--disp); border: 1px solid var(--gold2); background: var(--cream); color: var(--ink); font-size: 13px; letter-spacing: .1em; height: 32px; min-width: 34px; padding: 0 12px; border-radius: 0; cursor: pointer; }
+  .ctrl button:hover { background: var(--gold2); color: var(--bg); }
+  .ctrl .cnt { font-family: var(--num); font-size: 15px; color: var(--muted); padding: 0 6px; font-variant-numeric: tabular-nums; }
+  .prog { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--gold2); width: 0; z-index: 30; transition: width .3s ease; }
+  .hint { position: absolute; left: 16px; bottom: 16px; z-index: 30; font-family: var(--disp); font-size: 11px; letter-spacing: .2em; color: var(--muted); }
+
+  .toc { position: absolute; inset: 0; background: rgba(244,234,216,.97); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
   .toc.on { display: block; }
-  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
-  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
-  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
-  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
-  .toc button:hover { background: var(--panel2); }
-  .toc button.here { color: var(--accent2); font-weight: 700; }
-  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
-  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+  .toc h2 { font-size: 24px; margin: 0 0 22px; font-family: 'Noto Serif TC', serif; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 26px; }
+  .toc h3 { font-family: var(--disp); color: var(--gold); font-size: 12px; letter-spacing: .3em; text-transform: uppercase; margin: 0 0 10px; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 17px; padding: 6px 8px; cursor: pointer; font-family: var(--body); }
+  .toc button:hover { color: var(--gold); }
+  .toc button.here { color: var(--burgundy); font-weight: 700; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 12px; color: var(--muted); font-family: var(--disp); letter-spacing: .2em; }
+
+  /* ---------- 講義區 ---------- */
+  .notes { max-width: 920px; margin: 0 auto; padding: 72px 20px 110px; position: relative; }
+  .notes-head { text-align: center; margin-bottom: 48px; }
+  .notes-head .eyebrow { margin-bottom: 14px; }
+  .notes-head h2 { font-family: 'Noto Serif TC', serif; font-size: 44px; margin: 0 0 14px; font-weight: 700; letter-spacing: .06em; }
+  .notes-head p { color: var(--ink2); font-size: 19px; line-height: 1.8; margin: 0 auto; max-width: 34em; }
+  .sec { background: var(--cream); border: 1px solid var(--goldDeep); box-shadow: inset 0 0 0 4px var(--bg), inset 0 0 0 5px var(--gold2); padding: 34px 38px; margin: 0 0 30px; }
+  .sec h2 { font-family: 'Noto Serif TC', serif; font-size: 30px; margin: 0 0 16px; font-weight: 700; letter-spacing: .04em; }
+  .sec h3 { font-family: 'Noto Serif TC', serif; font-size: 22px; margin: 26px 0 10px; font-weight: 700; }
+  .sec p, .sec li { font-size: 19px; line-height: 1.85; color: var(--ink2); margin: 0 0 14px; }
+  .sec li { margin: 0 0 6px; }
+  .sec strong { color: var(--ink); font-weight: 700; }
+  .sec .kicker { display: inline-block; font-family: var(--disp); font-size: 12px; letter-spacing: .4em; text-transform: uppercase; color: var(--gold); border-bottom: 1px solid var(--gold2); padding-bottom: 4px; margin-bottom: 14px; }
+  .sec.cyan .kicker { color: var(--sage); } .sec.grape .kicker { color: var(--burgundy); } .sec.lemon .kicker { color: var(--goldDeep); }
+  .sec table { width: 100%; border-collapse: collapse; font-size: 18px; margin: 8px 0 16px; }
+  .sec th, .sec td { text-align: left; padding: 12px 12px 12px 0; border-bottom: 1px solid var(--gold2); vertical-align: top; line-height: 1.65; }
+  .sec th { font-family: var(--disp); font-size: 12px; letter-spacing: .3em; text-transform: uppercase; color: var(--gold); }
+  .scene { background: var(--cream2); border-left: 1px solid var(--gold); border-right: 1px solid var(--gold); padding: 16px 24px; margin: 18px 0 22px; }
+  .scene .who { font-family: var(--disp); font-size: 12px; letter-spacing: .3em; text-transform: uppercase; color: var(--burgundy); display: block; margin-bottom: 6px; }
+  .scene p { margin: 0; }
+  ol.src { padding-left: 1.6em; counter-reset: s; list-style: none; }
+  ol.src li { counter-increment: s; position: relative; padding-left: 6px; margin-bottom: 16px; line-height: 1.7; }
+  ol.src li::before { content: counter(s); position: absolute; left: -1.7em; top: .3em; font-family: var(--disp); font-size: 12px; font-weight: 600; color: var(--gold); border: 1px solid var(--gold); border-radius: 50%; min-width: 22px; height: 22px; line-height: 20px; text-align: center; background: var(--bg); }
+  ol.src li:target { background: var(--cream2); }
+  ol.src .ti { color: var(--ink); font-weight: 700; }
+  ol.src .meta { display: block; font-size: 14px; color: var(--muted); }
+  ol.src a { word-break: break-all; font-size: 14px; }
+  .check { counter-reset: c; list-style: none; padding: 0; }
+  .check li { counter-increment: c; display: flex; gap: 14px; align-items: baseline; }
+  .check li::before { content: "☐"; color: var(--gold); font-size: 20px; flex: 0 0 auto; }
+  .backtop { position: fixed; right: 18px; bottom: 18px; z-index: 50; font-family: var(--disp); font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--ink); background: var(--cream); border: 1px solid var(--gold2); padding: 10px 16px; text-decoration: none; display: none; }
+  .backtop.show { display: inline-block; }
+  .version { text-align: center; font-family: var(--disp); font-size: 12px; letter-spacing: .2em; color: var(--muted); margin-top: 40px; }
+
+  @media (max-width: 720px) { .notes { padding: 40px 16px 80px; } .sec { padding: 22px 18px; } .notes-head h2 { font-size: 30px; } .kv { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .slide.active { animation: none; } .prog { transition: none; } }
+  @media print { #deck, .backtop { display: none; } .notes { max-width: none; padding: 0; } .sec { break-inside: avoid; box-shadow: none; } }
 </style>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
 </head>
 <body>
-<div id="app" data-deck="b">
+<div id="deck" data-deck="capcom-codex">
   <div class="stagewrap"><div class="stage" id="stage">
 
   <!-- 1 封面 -->
   <section class="slide cover">
     <div class="eyebrow">專題企畫 · 動畫與遊戲設計系</div>
     <h1>工具鏈要接得上</h1>
-    <p class="cover-sub">畫得出來不等於用得了。這堂課講從畫圖到進引擎的整條路，以及最常斷在哪一段。</p>
-    <div class="cover-meta"><span>第 12 週</span><span>授課：鄧樹遠</span></div>
+    <p class="cover-sub">畫得出來不等於用得了。這堂課講從畫圖到進引擎的整條路、最常斷在哪一段，以及每個工具的授權頁 2026 年怎麼寫。</p>
+    <div class="cover-meta"><span>第 12 週</span><span>授課：鄧樹遠</span><span>投影片 ＋ 下方講義</span></div>
   </section>
 
   <!-- 2 本週地圖 -->
@@ -149,11 +186,11 @@
     <h2>九十分鐘，五段路</h2>
     <div class="content">
       <div class="cards c5">
-        <div class="card"><span class="who">PART 1</span><h3>先想流程</h3><p class="sub">素材從哪到哪</p></div>
-        <div class="card"><span class="who">PART 2</span><h3>2D 工具</h3><p class="sub">像素、手繪、圖磚</p></div>
-        <div class="card"><span class="who">PART 3</span><h3>3D 工具</h3><p class="sub">建模、組件、生成</p></div>
-        <div class="card"><span class="who">PART 4</span><h3>資源怎麼配</h3><p class="sub">自製與借用的比例</p></div>
-        <div class="card"><span class="who">PART 5</span><h3>本週交付</h3><p class="sub">工具鏈與規格表</p></div>
+        <div class="card pink"><span class="who">Part 1</span><h3>先想流程</h3><p class="sub">素材從哪到哪</p></div>
+        <div class="card cyan"><span class="who">Part 2</span><h3>2D 工具</h3><p class="sub">像素、手繪、骨架、圖磚</p></div>
+        <div class="card grape"><span class="who">Part 3</span><h3>3D 工具</h3><p class="sub">建模、生成、落地檢查</p></div>
+        <div class="card lemon"><span class="who">Part 4</span><h3>資源怎麼配</h3><p class="sub">自製、借用與字型</p></div>
+        <div class="card"><span class="who">Part 5</span><h3>本週交付</h3><p class="sub">工具鏈與規格表</p></div>
       </div>
       <div class="take"><b>本週目標</b>離開教室時，你們要有一張表：每種素材由誰、用什麼工具、產出什麼規格。</div>
     </div>
@@ -165,7 +202,7 @@
     <h2>引擎定了，素材要跟上</h2>
     <div class="content">
       <div class="cols">
-        <div class="card">
+        <div class="card cyan">
           <span class="who">已完成</span>
           <h3>引擎決定書</h3>
           <ul>
@@ -174,7 +211,7 @@
             <li>知道被刷掉的選項為什麼被刷</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card pink">
           <span class="who">今天要做</span>
           <h3>把素材端接上去</h3>
           <ul>
@@ -188,17 +225,17 @@
     </div>
   </section>
 
-  <!-- 4 PART 1 章節頁 -->
+  <!-- 4 PART 1 -->
   <section class="slide part">
     <div class="part-num">01</div>
-    <div class="eyebrow">PART 1</div>
+    <div class="eyebrow">Part 1</div>
     <h2>先想流程</h2>
     <p class="part-sub">工具不是一個一個挑的，是一條鏈。任何一節接不上，整條就卡住。</p>
   </section>
 
-  <!-- 5 素材的一生 -->
+  <!-- 5 三站 -->
   <section class="slide">
-    <div class="eyebrow">PART 1 · 流程</div>
+    <div class="eyebrow">Part 1 · 流程</div>
     <h2>一張圖要走三站</h2>
     <div class="content">
       <div class="flow">
@@ -212,13 +249,13 @@
     </div>
   </section>
 
-  <!-- 6 工具鏈斷在哪 -->
+  <!-- 6 斷點 -->
   <section class="slide">
-    <div class="eyebrow">PART 1 · 常見斷點</div>
+    <div class="eyebrow">Part 1 · 常見斷點</div>
     <h2>每年都斷在這幾個地方</h2>
     <div class="content">
       <div class="cols">
-        <div class="card">
+        <div class="card pink">
           <span class="who">格式問題</span>
           <h3>存錯或沒去背</h3>
           <ul>
@@ -227,7 +264,7 @@
             <li>3D 模型貼圖沒有一起帶出來</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card cyan">
           <span class="who">規格問題</span>
           <h3>尺寸與比例不一致</h3>
           <ul>
@@ -237,18 +274,18 @@
           </ul>
         </div>
       </div>
-      <div class="take"><b>解法很單純</b>開工前訂好規格表，每個人照著做。事後統一的成本是十倍。</div>
+      <div class="take"><b>解法很單純</b>開工前訂好規格表，每個人照著做。事後統一的成本高得多。</div>
     </div>
   </section>
 
-  <!-- 7 規格先訂 -->
+  <!-- 7 規格表 -->
   <section class="slide">
-    <div class="eyebrow">PART 1 · 規格表</div>
+    <div class="eyebrow">Part 1 · 規格表</div>
     <h2>規格表要訂這四項</h2>
     <div class="content">
       <dl class="kv">
-        <dt>尺寸基準</dt><dd>一個角色多少像素高、一個圖磚多大，全組同一個數字</dd>
-        <dt>檔案格式</dt><dd>2D 用支援透明的格式，3D 統一輸出格式與座標軸</dd>
+        <dt>尺寸基準</dt><dd>一個角色多少像素高、一個圖磚多大、Unity 的 Pixels Per Unit 設多少，全組同一個數字<sup class="fn"><a href="#src-6">6</a></sup></dd>
+        <dt>檔案格式</dt><dd>2D 用支援透明的 PNG，3D 統一輸出格式與座標軸</dd>
         <dt>命名規則</dt><dd>類別加名稱加版本，全部小寫英數，不要用中文檔名</dd>
         <dt>存放位置</dt><dd>共用雲端資料夾的固定路徑，不是各存各的電腦</dd>
       </dl>
@@ -256,139 +293,146 @@
     </div>
   </section>
 
-  <!-- 8 PART 2 章節頁 -->
+  <!-- 8 PART 2 -->
   <section class="slide part">
     <div class="part-num">02</div>
-    <div class="eyebrow">PART 2</div>
+    <div class="eyebrow">Part 2</div>
     <h2>2D 工具</h2>
-    <p class="part-sub">多數專題會走 2D，因為工時撐得住。工具選對，一個人也畫得完一款遊戲。</p>
+    <p class="part-sub">多數專題會走 2D，因為工時撐得住。每個工具的授權與價格都是 2026 年 9 月開官方頁核對的。</p>
   </section>
 
   <!-- 9 Aseprite -->
   <section class="slide">
-    <div class="eyebrow">PART 2 · 像素風</div>
-    <h2>像素風走 Aseprite</h2>
+    <div class="eyebrow">Part 2 · 像素風</div>
+    <h2>像素風走 Aseprite<sup class="fn"><a href="#src-1">1</a></sup></h2>
     <div class="content">
       <dl class="kv">
-        <dt>它是什麼</dt><dd>專門做像素圖與像素動畫的編輯器，2026 年 2 月版本為 1.3.17</dd>
-        <dt>強在哪</dt><dd>動畫時間軸、洋蔥皮、色盤管理都是為像素設計的</dd>
-        <dt>怎麼取得</dt><dd>官網或 Steam 購買，付費軟體，可跨三個平台使用</dd>
+        <dt>它是什麼</dt><dd>像素圖與像素動畫編輯器，Igara Studio 出品；GitHub 最新版 1.3.18.5，2026 年 9 月 9 日</dd>
+        <dt>怎麼付</dt><dd>官網最低 19.99 美元，附 Steam key；Steam 定價 NT$377；DRM-free</dd>
+        <dt>授權</dt><dd>原始碼公開可自行編譯供個人使用，但不可再散布編譯版；做出來的素材可用於任何商業產品</dd>
         <dt>輸出</dt><dd>能直接輸出圖集與動畫，省掉自己排版的時間</dd>
       </dl>
-      <div class="linkrow">
-        <a class="lk" href="https://www.aseprite.org/" target="_blank" rel="noopener">Aseprite</a>
-        <a class="lk" href="https://store.steampowered.com/app/431730/Aseprite/?l=tchinese" target="_blank" rel="noopener">Aseprite Steam</a>
-      </div>
       <div class="take"><b>像素風的陷阱</b>看起來省，但動畫最花時間。一個八方向走路循環就要幾十張圖。</div>
     </div>
   </section>
 
-  <!-- 10 手繪風 -->
+  <!-- 10 Krita -->
   <section class="slide">
-    <div class="eyebrow">PART 2 · 手繪風</div>
-    <h2>手繪風的免費選項</h2>
+    <div class="eyebrow">Part 2 · 手繪風</div>
+    <h2>手繪風走 Krita<sup class="fn"><a href="#src-2">2</a></sup></h2>
     <div class="content">
       <div class="cols">
-        <div class="card">
-          <span class="who">免費開源</span>
-          <h3>Krita</h3>
+        <div class="card cyan">
+          <span class="who">授權頁怎麼寫</span>
+          <h3>GPL 第 3 版，免費</h3>
           <ul>
-            <li>2026 年 6 月版本為 5.3.2.1</li>
-            <li>一百多組專業筆刷預設</li>
-            <li>支援壓感與筆傾斜，有動畫時間軸</li>
+            <li>可為任何目的使用，包括商業創作</li>
+            <li>做出來的作品是你的財產，沒有限制</li>
+            <li>最新版 5.3.3，2026 年 7 月 29 日</li>
           </ul>
         </div>
-        <div class="card">
-          <span class="who">選擇原則</span>
-          <h3>用你已經會的那個</h3>
+        <div class="card lemon">
+          <span class="who">要注意</span>
+          <h3>付費版只是贊助</h3>
           <ul>
-            <li>手繪工具之間差異沒有想像中大</li>
-            <li>換工具的學習成本比工具差異大</li>
+            <li>官網直接下載免費</li>
+            <li>Steam、Microsoft Store 的付費版只多自動更新</li>
             <li>全組同一套比較好互相支援</li>
           </ul>
         </div>
-      </div>
-      <div class="linkrow">
-        <a class="lk" href="https://krita.org/" target="_blank" rel="noopener">Krita</a>
       </div>
       <div class="take"><b>分工前先對齊</b>手繪風最難的是三個人畫出一致線條。開畫前先回頭核對第 4 週的三個錨。</div>
     </div>
   </section>
 
-  <!-- 11 圖磚與場景 -->
+  <!-- 11 Spine 與骨架 -->
   <section class="slide">
-    <div class="eyebrow">PART 2 · 場景效率</div>
-    <h2>場景不要一張張畫</h2>
+    <div class="eyebrow">Part 2 · 動畫成本</div>
+    <h2>逐格太貴就走骨架<sup class="fn"><a href="#src-3">3</a></sup></h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card pink">
+          <span class="who">Spine</span>
+          <h3>付費，每人一份</h3>
+          <ul>
+            <li>定價頁當天：Essential 69 美元、Professional 379 美元</li>
+            <li>Education 版不可用來做商業產品</li>
+            <li>年營收或募資達 50 萬美元要 Enterprise</li>
+          </ul>
+        </div>
+        <div class="card cyan">
+          <span class="who">Unity 內建</span>
+          <h3>2D Animation 套件<sup class="fn"><a href="#src-8">8</a></sup></h3>
+          <ul>
+            <li>手冊寫「快速為 2D 角色綁骨與製作動畫」</li>
+            <li>不用另外買，跟 Unity 6 一起裝</li>
+            <li>先用它做待機與移動，夠用再談 Spine</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>優先順序</b>待機與移動一定要做，其他動作能省則省。玩家盯著看的就那兩個。</div>
+    </div>
+  </section>
+
+  <!-- 12 圖磚 -->
+  <section class="slide">
+    <div class="eyebrow">Part 2 · 場景效率</div>
+    <h2>場景不要一張張畫<sup class="fn"><a href="#src-7">7</a></sup></h2>
     <div class="content">
       <div class="cards c3">
-        <div class="card">
-          <span class="who">做法</span>
-          <h3>圖磚拼接</h3>
-          <p>畫一組小圖磚，用引擎的圖磚地圖工具拼。比整張畫快十倍。</p>
-        </div>
-        <div class="card">
-          <span class="who">好處</span>
-          <h3>改起來便宜</h3>
-          <p>要調整關卡佈局，拖一拖就好，不用重畫整張背景。</p>
-        </div>
-        <div class="card">
-          <span class="who">代價</span>
-          <h3>要先設計得夠通用</h3>
-          <p>圖磚要能任意組合而不露破綻，前期設計要多花一點心思。</p>
-        </div>
+        <div class="card cyan"><span class="who">做法</span><h3>圖磚拼接</h3><p>畫一組小圖磚，用 Unity 的 Tilemap 與 Tile Palette 把圖磚畫到場景上。</p></div>
+        <div class="card lemon"><span class="who">好處</span><h3>改起來便宜</h3><p>要調整關卡佈局，拖一拖就好，不用重畫整張背景。</p></div>
+        <div class="card pink"><span class="who">代價</span><h3>要先設計得夠通用</h3><p>圖磚要能任意組合而不露破綻，前期設計要多花一點心思。</p></div>
       </div>
       <div class="take"><b>適用範圍</b>平台、俯視、等角這幾種視角都適用。純劇情向的視覺小說才不需要。</div>
     </div>
   </section>
 
-  <!-- 12 2D 動畫 -->
+  <!-- 13 進 Unity 的兩個設定 -->
   <section class="slide">
-    <div class="eyebrow">PART 2 · 動畫成本</div>
-    <h2>動畫是 2D 最大的坑</h2>
+    <div class="eyebrow">Part 2 · 2025–2026 現況</div>
+    <h2>Unity 6 匯入 2D 圖要設兩件事<sup class="fn"><a href="#src-6">6</a></sup></h2>
     <div class="content">
-      <ul>
-        <li>逐格動畫最好看也最貴。一個動作八到十二張，角色多就爆炸。</li>
-        <li>骨架動畫比較省：一套圖切成零件，靠旋轉位移做動作，改起來也快。</li>
-        <li>能不做就不做。用特效、位移、縮放代替，玩家其實看不出差別。</li>
-        <li>先做最常看到的那一兩個動作，其他等時間有剩再說。</li>
-      </ul>
-      <div class="take"><b>優先順序</b>待機與移動一定要做，其他動作能省則省。玩家盯著看的就那兩個。</div>
+      <dl class="kv">
+        <dt>Texture Type</dt><dd>要當 Sprite 用的圖，設「Sprite (2D and UI)」</dd>
+        <dt>Pixels Per Unit</dt><dd>對應到世界空間一個單位的像素數。全專案同一個數字</dd>
+        <dt>Filter Mode</dt><dd>像素風選 Point (no filter)，手冊寫「近看呈方塊狀」</dd>
+        <dt>手冊版本</dt><dd>Unity 6.5（6000.5），2026 年 9 月 16 日查證</dd>
+      </dl>
+      <div class="take"><b>像素糊掉的原因</b>Filter Mode 留在 Bilinear，或各圖的 Pixels Per Unit 不同。</div>
     </div>
   </section>
 
-  <!-- 13 PART 3 章節頁 -->
+  <!-- 14 PART 3 -->
   <section class="slide part">
     <div class="part-num">03</div>
-    <div class="eyebrow">PART 3</div>
+    <div class="eyebrow">Part 3</div>
     <h2>3D 工具</h2>
     <p class="part-sub">3D 的工作量是 2D 的好幾倍。要走這條路，工具鏈更要先接好。</p>
   </section>
 
-  <!-- 14 Blender -->
+  <!-- 15 Blender -->
   <section class="slide">
-    <div class="eyebrow">PART 3 · 建模</div>
-    <h2>Blender：免費而且夠用</h2>
+    <div class="eyebrow">Part 3 · 建模</div>
+    <h2>Blender：免費而且夠用<sup class="fn"><a href="#src-4">4</a></sup></h2>
     <div class="content">
       <dl class="kv">
-        <dt>它是什麼</dt><dd>免費開源的 3D 軟體，2026 年 7 月版本為 5.2</dd>
+        <dt>它是什麼</dt><dd>免費開源 3D 軟體，GPL 授權；最新版 5.2.2 LTS，2026 年 9 月 15 日</dd>
+        <dt>授權頁怎麼寫</dt><dd>可為任何目的使用，包括做商業遊戲；做出來的作品與 .blend 檔都是你的財產</dd>
         <dt>涵蓋範圍</dt><dd>建模、UV、材質、綁骨、動畫、算圖，一套全包</dd>
-        <dt>自動化</dt><dd>有 Python 介面，批次匯出與重複工作可以寫腳本處理</dd>
         <dt>學習成本</dt><dd>介面複雜，但中文教學非常多，卡住查得到</dd>
       </dl>
-      <div class="linkrow">
-        <a class="lk" href="https://www.blender.org/" target="_blank" rel="noopener">Blender</a>
-      </div>
       <div class="take"><b>對專題的建議</b>只學你需要的那幾個功能。想把 Blender 學完再開工，這學期就結束了。</div>
     </div>
   </section>
 
-  <!-- 15 組件式與生成式 -->
+  <!-- 16 組件與生成 -->
   <section class="slide">
-    <div class="eyebrow">PART 3 · 省時做法</div>
+    <div class="eyebrow">Part 3 · 省時做法</div>
     <h2>不會建模也能做 3D</h2>
     <div class="content">
       <div class="cols">
-        <div class="card">
+        <div class="card cyan">
           <span class="who">組件式</span>
           <h3>現成零件拼場景</h3>
           <ul>
@@ -397,13 +441,13 @@
             <li>風格被零件庫決定，要挑一致的用</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card lemon">
           <span class="who">生成式</span>
-          <h3>AI 生 3D 模型</h3>
+          <h3>AI 生 3D 模型<sup class="fn"><a href="#src-5">5</a></sup></h3>
           <ul>
-            <li>第 6 週講過的 Tripo3D，文字或圖轉模型</li>
-            <li>適合道具與場景物件，角色還是弱</li>
-            <li>生完一定要跑下一頁那六項檢查</li>
+            <li>第 6 週講過的 Tripo，文字或圖轉模型</li>
+            <li>文件寫無貼圖約 40 秒、含貼圖約 120 秒</li>
+            <li>適合道具與場景物件，生完要跑下一頁檢查</li>
           </ul>
         </div>
       </div>
@@ -411,10 +455,10 @@
     </div>
   </section>
 
-  <!-- 16 3D 落地檢查 -->
+  <!-- 17 落地檢查 -->
   <section class="slide">
-    <div class="eyebrow">PART 3 · 落地檢查</div>
-    <h2>模型進引擎前檢查六項</h2>
+    <div class="eyebrow">Part 3 · 落地檢查</div>
+    <h2>模型進引擎前檢查五項</h2>
     <div class="content">
       <ul>
         <li>單位：一單位等於一公尺嗎。角色比場景大十倍是最常見的問題。</li>
@@ -423,66 +467,54 @@
         <li>面數：生成或掃描來的模型常常過高，要先減面。</li>
         <li>授權紀錄：來源、日期、提示詞，一律記進素材帳本。</li>
       </ul>
-      <div class="take"><b>做成檢查表</b>第一次做很花時間，做成清單之後每個模型三分鐘就跑完。</div>
+      <div class="take"><b>做成檢查表</b>第一次做很花時間，做成清單之後每個模型幾分鐘就跑完。</div>
     </div>
   </section>
 
-  <!-- 17 PART 4 章節頁 -->
+  <!-- 18 PART 4 -->
   <section class="slide part">
     <div class="part-num">04</div>
-    <div class="eyebrow">PART 4</div>
+    <div class="eyebrow">Part 4</div>
     <h2>資源怎麼配</h2>
-    <p class="part-sub">十二週做不完所有素材。哪些自己做、哪些借用，這個決定比工具選擇更影響成敗。</p>
+    <p class="part-sub">九週做不完所有素材。哪些自己做、哪些借用，這個決定比工具選擇更影響成敗。</p>
   </section>
 
-  <!-- 18 課程素材庫 -->
+  <!-- 19 素材庫三級 -->
   <section class="slide">
-    <div class="eyebrow">PART 4 · 素材來源</div>
+    <div class="eyebrow">Part 4 · 素材來源</div>
     <h2>課程素材庫怎麼用</h2>
     <div class="content">
       <div class="cards c3">
-        <div class="card">
-          <span class="who">第一級</span>
-          <h3>可以直接發布</h3>
-          <p>CC0 那一批，免署名可商用。做成 Demo 放上網都沒問題。</p>
-        </div>
-        <div class="card">
-          <span class="who">第二級</span>
-          <h3>課堂使用可以</h3>
-          <p>課程採購的套件。專題展示沒問題，要對外發行前先問我。</p>
-        </div>
-        <div class="card">
-          <span class="who">第三級</span>
-          <h3>只能看不能用</h3>
-          <p>授權未確認的那些。當參考可以，不要放進你們的專案。</p>
-        </div>
+        <div class="card cyan"><span class="who">第一級</span><h3>可以直接發布</h3><p>CC0 那一批，例如 Kenney 素材包頁標 CC0 的。<sup class="fn"><a href="#src-11">11</a></sup>免署名可商用，做成 Demo 放上網都沒問題。</p></div>
+        <div class="card lemon"><span class="who">第二級</span><h3>課堂使用可以</h3><p>課程採購的套件。專題展示沒問題，要對外發行前先問我。</p></div>
+        <div class="card pink"><span class="who">第三級</span><h3>只能看不能用</h3><p>授權未確認的那些。當參考可以，不要放進你們的專案。</p></div>
       </div>
-      <div class="take"><b>取用方式</b>課堂上會示範怎麼查與怎麼拿。每拿一件就填素材帳本，不要留到期末。</div>
+      <div class="take"><b>取用方式</b>課堂上會示範怎麼查與怎麼拿。每拿一件就填第 8 週的素材帳本，不要留到期末。</div>
     </div>
   </section>
 
-  <!-- 19 字型的坑 -->
+  <!-- 20 字型 -->
   <section class="slide">
-    <div class="eyebrow">PART 4 · 字型</div>
-    <h2>字型是最容易出事的</h2>
+    <div class="eyebrow">Part 4 · 字型</div>
+    <h2>字型是最容易出事的<sup class="fn"><a href="#src-9">9</a></sup></h2>
     <div class="content">
       <ul>
-        <li>市售中文字型拿來做遊戲標題，是最常收到律師信的一類，比圖片還常見。</li>
-        <li>「網路上找得到免費下載」不等於可以商用，中文字型尤其嚴格。</li>
-        <li>課程提供一批已經逐支查證授權的免費字型，其中有可打中文的與帶注音的。</li>
+        <li>「網路上找得到免費下載」不等於可以商用，中文字型尤其要逐支看授權。</li>
+        <li>安全的一類是 SIL Open Font License：可用於作品、Logo、網站，不需致謝，可修改與再散布。<sup class="fn"><a href="#src-10">10</a></sup></li>
+        <li>台灣的例子：justfont 的 jf open 粉圓，OFL 1.1，免費、免署名、可商用，只要不把字型本身當商品賣。</li>
         <li>用之前確認三件事：能不能商用、要不要署名、能不能內嵌進遊戲。</li>
       </ul>
-      <div class="take"><b>安全做法</b>字型一律從課程提供的那批選。想用別的，先把授權頁拿給我看。</div>
+      <div class="take"><b>安全做法</b>字型一律從課程提供的那批或 OFL 字型選。想用別的，先把授權頁拿給我看。</div>
     </div>
   </section>
 
-  <!-- 20 自製與借用 -->
+  <!-- 21 自製與借用 -->
   <section class="slide">
-    <div class="eyebrow">PART 4 · 配置比例</div>
+    <div class="eyebrow">Part 4 · 配置比例</div>
     <h2>力氣要花在哪</h2>
     <div class="content">
       <div class="cols">
-        <div class="card">
+        <div class="card cyan">
           <span class="who">自己做</span>
           <h3>玩家會盯著看的</h3>
           <ul>
@@ -491,7 +523,7 @@
             <li>核心玩法的視覺回饋</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card lemon">
           <span class="who">借用</span>
           <h3>玩家只當背景的</h3>
           <ul>
@@ -505,56 +537,58 @@
     </div>
   </section>
 
-  <!-- 21 PART 5 章節頁 -->
+  <!-- 22 老師的課堂規矩 -->
+  <section class="slide">
+    <div class="eyebrow">Part 4 · 老師的課堂規矩</div>
+    <h2>我驗工具鏈的三條規矩</h2>
+    <div class="content">
+      <ul>
+        <li>每個工具的授權欄要寫官方授權頁網址與查看日期。Spine Education 版做的商業作品、盜版 Aseprite，我一律不收。</li>
+        <li>規格表的尺寸要是數字。寫「看情況」「大概」的退件；Unity 的 Pixels Per Unit 全專案只能有一個值。</li>
+        <li>沒有實際走通一次的工具鏈不算交。一個素材從工具走到引擎畫面上，截圖給我。</li>
+      </ul>
+      <div class="take"><b>回頭看第 6 週</b>AI 生成的模型與圖片，來源、日期、提示詞照第 6 週的規矩記帳本；程序畫出來的色塊只能標 placeholder。</div>
+    </div>
+  </section>
+
+  <!-- 23 PART 5 -->
   <section class="slide part">
     <div class="part-num">05</div>
-    <div class="eyebrow">PART 5</div>
+    <div class="eyebrow">Part 5</div>
     <h2>本週交付</h2>
     <p class="part-sub">工具鏈表加規格表。下週開始做雛型，這兩張表就是美術端的作業指令。</p>
   </section>
 
-  <!-- 22 交付規格 -->
+  <!-- 24 交付規格 -->
   <section class="slide">
-    <div class="eyebrow">PART 5 · 交付規格</div>
+    <div class="eyebrow">Part 5 · 交付規格</div>
     <h2>這週要交什麼</h2>
     <div class="content">
       <dl class="kv">
         <dt>交付物</dt><dd>工具鏈表加素材規格表</dd>
-        <dt>格式</dt><dd>一頁 A4，PDF，檔名為「組別代號_W12_工具與規格」</dd>
-        <dt>工具鏈表</dt><dd>每種素材由誰負責、用什麼工具、輸出什麼格式</dd>
+        <dt>格式</dt><dd>一頁 A4，PDF，檔名「組別代號_W12_工具與規格」</dd>
+        <dt>工具鏈表</dt><dd>每種素材由誰負責、用什麼工具、授權頁網址、輸出什麼格式</dd>
         <dt>截止</dt><dd>第 13 週上課前，2026 年 12 月 3 日 08:00</dd>
       </dl>
       <div class="take"><b>另外附一件</b>用你們的工具鏈實際做出一個素材，從產出走到匯入引擎，證明這條路通。</div>
     </div>
   </section>
 
-  <!-- 23 檢核與退件 -->
+  <!-- 25 檢核 -->
   <section class="slide">
-    <div class="eyebrow">PART 5 · 檢核標準</div>
+    <div class="eyebrow">Part 5 · 檢核標準</div>
     <h2>什麼樣算過關</h2>
     <div class="content">
       <div class="cards c3">
-        <div class="card">
-          <span class="who">及格</span>
-          <h3>四項規格都有數字</h3>
-          <p>尺寸、格式、命名、存放位置四項都寫得出具體內容。</p>
-        </div>
-        <div class="card">
-          <span class="who">好</span>
-          <h3>整條鏈實際走通</h3>
-          <p>有一個素材真的從工具走到引擎裡，看得到畫面。</p>
-        </div>
-        <div class="card">
-          <span class="who">退件</span>
-          <h3>常見的三種</h3>
-          <p>尺寸寫「看情況」；命名規則用中文；沒有實際匯入過。</p>
-        </div>
+        <div class="card cyan"><span class="who">及格</span><h3>四項規格都有數字</h3><p>尺寸、格式、命名、存放位置四項都寫得出具體內容。</p></div>
+        <div class="card lemon"><span class="who">好</span><h3>整條鏈實際走通</h3><p>有一個素材真的從工具走到引擎裡，看得到畫面。</p></div>
+        <div class="card pink"><span class="who">退件</span><h3>常見的三種</h3><p>尺寸寫「看情況」；命名規則用中文；沒有實際匯入過。</p></div>
       </div>
       <div class="take"><b>為何要求走通一次</b>規格表寫得再漂亮，沒實際跑過就不知道哪裡會卡。</div>
     </div>
   </section>
 
-  <!-- 24 課堂討論與課後任務 -->
+  <!-- 26 收尾 -->
   <section class="slide">
     <div class="eyebrow">Week 12 · 收尾</div>
     <h2>回去做這三件事</h2>
@@ -564,7 +598,7 @@
         <p>哪些素材可以借用？列出來能省下多少工時？</p>
         <p>用的字型授權查過了嗎？能不能內嵌進遊戲？</p>
       </div>
-      <div class="card">
+      <div class="card grape">
         <span class="who">課後任務</span>
         <p>把規格表貼在看板最上面，跟第 4 週的風格板放在一起。下週做雛型會一直查。</p>
       </div>
@@ -572,43 +606,45 @@
     </div>
   </section>
 
-  <!-- 25 資源彙整 -->
+  <!-- 27 資源彙整 -->
   <section class="slide">
     <div class="eyebrow">Week 12 · 資源彙整</div>
     <h2>本週資源</h2>
     <div class="content">
       <div class="cols">
         <div class="grp">
-          <h3>2D 工具</h3>
+          <h3>工具的授權頁</h3>
           <div class="linkrow">
-            <a class="lk" href="https://www.aseprite.org/" target="_blank" rel="noopener">Aseprite</a>
-            <a class="lk" href="https://store.steampowered.com/app/431730/Aseprite/?l=tchinese" target="_blank" rel="noopener">Aseprite Steam</a>
-            <a class="lk" href="https://krita.org/" target="_blank" rel="noopener">Krita</a>
+            <a class="lk" href="https://www.aseprite.org/faq/" target="_blank" rel="noopener">Aseprite FAQ</a>
+            <a class="lk" href="https://krita.org/en/about/license/" target="_blank" rel="noopener">Krita 授權</a>
+            <a class="lk" href="https://www.blender.org/about/license/" target="_blank" rel="noopener">Blender 授權</a>
+            <a class="lk" href="https://esotericsoftware.com/spine-purchase" target="_blank" rel="noopener">Spine 購買</a>
           </div>
         </div>
         <div class="grp">
-          <h3>3D 與素材</h3>
+          <h3>Unity 6 手冊與字型</h3>
           <div class="linkrow">
-            <a class="lk" href="https://www.blender.org/" target="_blank" rel="noopener">Blender</a>
-            <a class="lk" href="https://www.tripo3d.ai/" target="_blank" rel="noopener">Tripo AI</a>
-            <a class="lk" href="https://kenney.nl/assets" target="_blank" rel="noopener">Kenney 素材</a>
-            <a class="lk" href="https://creativecommons.org/" target="_blank" rel="noopener">Creative Commons</a>
+            <a class="lk" href="https://docs.unity3d.com/6000.5/Documentation/Manual/texture-type-sprite.html" target="_blank" rel="noopener">Sprite 匯入設定</a>
+            <a class="lk" href="https://docs.unity3d.com/6000.5/Documentation/Manual/tilemaps/tilemaps-landing.html" target="_blank" rel="noopener">Tilemaps</a>
+            <a class="lk" href="https://github.com/justfont/open-huninn-font" target="_blank" rel="noopener">jf open 粉圓</a>
+            <a class="lk" href="https://openfontlicense.org/" target="_blank" rel="noopener">SIL OFL</a>
           </div>
         </div>
       </div>
-      <div class="take"><b>提醒</b>課程素材庫與字型包的取用方式在課堂上示範，不對外開放連結。</div>
+      <div class="take"><b>出處與補充</b>在下方講義，按 N 鍵。授權與版本以你使用當天的官方頁面為準，本頁整理於 2026 年 9 月 16 日。</div>
     </div>
   </section>
 
-  
-
   </div></div>
 
+  <div class="hint">← → 換頁　M 目錄　N 講義　F 全螢幕</div>
   <div class="ctrl">
     <button id="prev" aria-label="上一張">‹</button>
     <span class="cnt" id="cnt">1 / 1</span>
     <button id="next" aria-label="下一張">›</button>
     <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+    <button id="toNotes" title="講義（N）">講義 ↓</button>
+    <button id="full" title="全螢幕（F）">⛶</button>
   </div>
   <div class="prog" id="prog"></div>
 
@@ -619,17 +655,145 @@
   </div>
 </div>
 
+
+<!-- ============ 講義區 ============ -->
+<main class="notes" id="notes">
+  <div class="notes-head">
+    <div class="eyebrow">Week 12 · 講義</div>
+    <h2>美術動畫開發工具</h2>
+    <p>投影片講的是骨架，這裡放肉：每一段的展開說明、老師的課堂規矩、每一個工具的授權頁與 Unity 手冊頁的出處、延伸閱讀，以及交作業前的自我檢核。</p>
+  </div>
+
+  <section class="sec">
+    <span class="kicker">導讀</span>
+    <h2>這週在解決什麼問題</h2>
+    <p>引擎定了，素材要跟上。畫得出來不等於用得了：圖畫好了直接丟進引擎，尺寸不一、命名亂七八糟，後面每次改都要重找。這週把從畫圖到進引擎的整條路接起來，每個工具的授權頁都開過，下週做雛型就照這兩張表走。</p>
+    <p>三個詞先講清楚。<strong>工具鏈</strong>是一張素材從產出、加工到匯入的三站路，任何一節接不上整條就卡住。<strong>規格表</strong>是尺寸基準、檔案格式、命名規則、存放位置四項，開工前訂好、全組照做。<strong>授權頁</strong>是工具官方自己寫的授權條款頁，不是別人寫的教學；Aseprite、Krita、Blender、Spine 這四個的授權頁 2026 年 9 月 16 日逐頁開過，內容差很多。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">§1</span>
+    <h2>先想流程</h2>
+    <p>一張圖要走三站：產出（畫、生成、或從素材庫拿，決定風格）、加工（去背、裁切、統一尺寸、排圖集、命名，最常被省略）、匯入（進引擎、設定匯入參數、實際放到畫面上看，這一站才知道對不對）。每年都斷在兩類地方：格式問題（存成不支援透明的格式、去背邊緣有白色殘留、3D 模型貼圖沒一起帶出來）與規格問題（同一組角色三種尺寸、像素圖被縮放後糊掉、模型單位不對進去大小差十倍）。解法是開工前訂規格表，每個人照著做。</p>
+    <p>規格表四項：尺寸基準（一個角色多少像素高、一個圖磚多大、Unity 的 Pixels Per Unit 設多少，全組同一個數字）、檔案格式（2D 用支援透明的 PNG，3D 統一輸出格式與座標軸）、命名規則（類別加名稱加版本，全部小寫英數，不用中文檔名）、存放位置（共用雲端資料夾的固定路徑）。訂完貼在看板最上面。</p>
+  </section>
+
+  <section class="sec cyan">
+    <span class="kicker">§2</span>
+    <h2>2D 工具：四個授權頁各寫什麼</h2>
+    <table>
+      <thead><tr><th>工具</th><th>授權頁怎麼寫</th><th>版本與價格（2026-09-16）</th></tr></thead>
+      <tbody>
+        <tr><td>Aseprite<a href="#src-1">[1]</a></td><td>2016 年 8 月起改授權：原始碼公開，可自行編譯供個人使用，不可再散布編譯版；用它做的素材可用於任何個人或商業產品；DRM-free</td><td>GitHub 最新 v1.3.18.5（2026-09-09）；官網最低 19.99 美元附 Steam key；Steam NT$377</td></tr>
+        <tr><td>Krita<a href="#src-2">[2]</a></td><td>GPL 第 3 版；可為任何目的免費使用，包括商業創作與學校安裝；「你用 Krita 做的東西是你的財產」</td><td>5.3.3（2026-07-29）；官網下載免費，Steam 等商店付費版只多自動更新與贊助</td></tr>
+        <tr><td>Spine<a href="#src-3">[3]</a></td><td>每位使用者一份授權；Education 版只限認可學校、不可做商業產品；年營收或募資達 50 萬美元要 Enterprise；買 Essential 以上才可整合 Spine Runtimes 並散布</td><td>定價頁當天 Essential 69 美元（原價標 99）、Professional 379 美元（原價標 449）、Enterprise 基本價 2,499 美元加每人 379 美元</td></tr>
+        <tr><td>Unity 2D Animation 套件<a href="#src-8">[8]</a></td><td>Unity 內建套件，手冊寫「快速為 2D 角色綁骨與製作動畫」</td><td>跟 Unity 6 一起裝，不另外收費</td></tr>
+      </tbody>
+    </table>
+    <p>像素風走 Aseprite：動畫時間軸、洋蔥皮、色盤管理都是為像素設計的，能直接輸出圖集與動畫。陷阱是看起來省，但動畫最花時間，一個八方向走路循環就要幾十張圖。手繪風走 Krita：手繪工具之間差異沒有想像中大，換工具的學習成本比工具差異大，全組同一套比較好互相支援；最難的是三個人畫出一致線條，開畫前先回頭核對第 4 週的三個錨。動畫是 2D 最大的坑：逐格最好看也最貴，骨架動畫把一套圖切成零件靠旋轉位移做動作，改起來快；先用 Unity 內建的 2D Animation 套件做待機與移動，夠用再談 Spine，因為 Spine 是每人一份的付費授權，而且 Education 版做的東西不能拿去賣。</p>
+    <p>場景不要一張張畫。Unity 手冊：在場景建立 Tilemap，用 Tile Palette 視窗把由 Sprite 做成的圖磚畫上去，「在場景上繪製圖磚，建立 2D 專案的遊戲世界與關卡」。<a href="#src-7">[7]</a> 要調整關卡佈局拖一拖就好；代價是圖磚要先設計得夠通用，能任意組合而不露破綻。平台、俯視、等角都適用，純劇情向的視覺小說才不需要。</p>
+    <h3>2025–2026 現況：Unity 6 匯入 2D 圖要設兩件事</h3>
+    <p>以下出自 Unity 6.5（6000.5）手冊。要當 Sprite 用的圖，Texture Type 設「Sprite (2D and UI)」，手冊把它列為第一步。<strong>Pixels Per Unit</strong> 的定義是「Sprite 圖中對應到世界空間一個單位的像素數」，全專案只能有一個值。<strong>Filter Mode</strong> 選 Point (no filter) 時手冊寫「貼圖近看呈方塊狀」，像素風要的正是這個。<a href="#src-6">[6]</a> 像素糊掉的原因九成是 Filter Mode 留在預設的 Bilinear，或每張圖的 Pixels Per Unit 不一樣。</p>
+  </section>
+
+  <section class="sec grape">
+    <span class="kicker">§3</span>
+    <h2>3D 工具</h2>
+    <p><strong>Blender</strong>：授權頁寫 GNU GPL，可為任何目的免費使用，包括藝術家、工作室做動畫與 VFX、遊戲美術做商業遊戲；「你用 Blender 做的東西是你的財產」，含 .blend 檔。下載頁最新版 5.2.2 LTS，2026 年 9 月 15 日。<a href="#src-4">[4]</a> 建模、UV、材質、綁骨、動畫、算圖一套全包，介面複雜但中文教學非常多。對專題的建議：只學你需要的那幾個功能，想把 Blender 學完再開工，這學期就結束了。</p>
+    <p>不會建模也能做 3D。組件式：用預先做好的模組拼出建築與場景，不用學建模，風格被零件庫決定，要挑一致的用。生成式：第 6 週講過的 Tripo，文字或圖轉模型，開發者文件寫無貼圖約 40 秒、含貼圖約 120 秒，輸出 Mesh 加 PBR，支援四邊形網格。<a href="#src-5">[5]</a> 適合道具與場景物件。混用是常態：主角自己做、道具用生成、場景用組件，把力氣花在玩家看最久的東西上。</p>
+    <p>模型進引擎前檢查五項：單位（一單位等於一公尺嗎，角色比場景大十倍最常見）、朝向與樞紐（正面朝哪、原點在腳底還是身體中心，全專案統一）、材質（貼圖有沒有連上、管線對不對，霧霧的多半是這裡）、面數（生成或掃描來的常常過高，先減面）、授權紀錄（來源、日期、提示詞記進素材帳本）。做成檢查表之後每個模型幾分鐘就跑完。</p>
+    <div class="scene">
+      <span class="who">假設情境</span>
+      <p>一組做 2D 平台遊戲，美術兩個人各自畫。一個用 Aseprite 畫 32 像素高的主角，另一個用 Krita 畫 400 像素高的敵人，兩邊都沒問 Pixels Per Unit。匯進 Unity 之後敵人比主角大十倍，縮小以後又糊掉，因為 Filter Mode 還是 Bilinear。回頭補規格表：角色一律 32 像素高、PPU 32、Point (no filter)、PNG、檔名 chr_名稱_v01。敵人整張重畫。如果第一天就有這張表，這兩天是省下來的。</p>
+    </div>
+  </section>
+
+  <section class="sec lemon">
+    <span class="kicker">§4</span>
+    <h2>資源怎麼配</h2>
+    <p>課程素材庫分三級：第一級可以直接發布，是 CC0 那一批，例如 Kenney 素材包頁授權欄標 CC0 的，<a href="#src-11">[11]</a> 免署名可商用；<a href="#src-12">[12]</a> 第二級課堂使用可以，是課程採購的套件，專題展示沒問題，對外發行前先問我；第三級只能看不能用，是授權未確認的那些，當參考可以，不要放進專案。每拿一件就填第 8 週的素材帳本。</p>
+    <p>字型是最容易出事的。「網路上找得到免費下載」不等於可以商用，中文字型尤其要逐支看授權。安全的一類是 SIL Open Font License：官網寫可用於書籍、海報、作品、Logo、網站，不需致謝，可自由修改與再散布，可在特定條件下打包進 App 或軟體。<a href="#src-10">[10]</a> 台灣的例子是 justfont 的 jf open 粉圓，OFL 1.1，免費、免署名、可用於商業專案，只要不把字型本身當商品賣。<a href="#src-9">[9]</a> 用之前確認三件事：能不能商用、要不要署名、能不能內嵌進遊戲。</p>
+    <p>力氣要花在哪：自己做玩家會盯著看的（主角與主要角色、關鍵場景與過場、核心玩法的視覺回饋），借用玩家只當背景的（環境物件、介面圖示與按鈕、通用音效與環境音）。判準是這個東西玩家會看幾秒，看不到三秒的一律考慮借用。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">§5</span>
+    <h2>本週交付</h2>
+    <p>交工具鏈表加素材規格表：一頁 A4，PDF，檔名「組別代號_W12_工具與規格」；工具鏈表寫每種素材由誰負責、用什麼工具、授權頁網址、輸出什麼格式；另外附一件用你們的工具鏈實際做出的素材，從產出走到匯入引擎；截止第 13 週上課前，2026 年 12 月 3 日 08:00。及格是四項規格都有具體內容；好是有一個素材真的從工具走到引擎裡、看得到畫面；退件的三種常見樣子是尺寸寫「看情況」、命名規則用中文、沒有實際匯入過。</p>
+  </section>
+
+  <section class="sec grape">
+    <span class="kicker">老師的課堂規矩</span>
+    <h2>規格要是數字，鏈要走通一次</h2>
+    <p>我驗工具鏈的三條規矩。第一，每個工具的授權欄要寫官方授權頁網址與查看日期；Spine Education 版做的商業作品、盜版 Aseprite，我一律不收，Aseprite 最低 19.99 美元，一組買一套的錢省不得。第二，規格表的尺寸要是數字，寫「看情況」「大概」的退件；Unity 的 Pixels Per Unit 全專案只能有一個值，第 13 週雛型會直接檢查。第三，沒有實際走通一次的工具鏈不算交，一個素材從工具走到引擎畫面上，截圖給我。AI 生成的模型與圖片照第 6 週的規矩記帳本；程序畫出來的色塊只能標 placeholder，不能當美術成果。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">出處</span>
+    <h2>本週引用的資料</h2>
+    <p>每一條都在 2026-09-16 打開確認過。工具的版本與價格會變，引用時以你使用當天的官方頁面為準。網址失效請告訴我，我會換。</p>
+    <ol class="src">
+      <li id="src-1"><span class="ti">Aseprite〈FAQ〉；〈Buy〉；Steam 商店頁；GitHub Releases</span><span class="meta">Igara Studio · FAQ 未標日期；v1.3.18.5 2026-09-09 · 原始碼公開不可再散布編譯版；素材可商用；最低 19.99 美元；Steam NT$377 · 查證 2026-09-16</span><a href="https://www.aseprite.org/faq/" target="_blank" rel="noopener">https://www.aseprite.org/faq/</a>　<a href="https://www.aseprite.org/buy/" target="_blank" rel="noopener">https://www.aseprite.org/buy/</a>　<a href="https://store.steampowered.com/app/431730/Aseprite/?l=tchinese" target="_blank" rel="noopener">https://store.steampowered.com/app/431730/Aseprite/?l=tchinese</a>　<a href="https://github.com/aseprite/aseprite/releases" target="_blank" rel="noopener">https://github.com/aseprite/aseprite/releases</a></li>
+      <li id="src-2"><span class="ti">Krita〈License〉；〈Download〉</span><span class="meta">Krita Foundation／KDE · 授權頁未標日期；5.3.3 2026-07-29 · GPL v3、作品歸創作者 · 查證 2026-09-16</span><a href="https://krita.org/en/about/license/" target="_blank" rel="noopener">https://krita.org/en/about/license/</a>　<a href="https://krita.org/en/download/" target="_blank" rel="noopener">https://krita.org/en/download/</a></li>
+      <li id="src-3"><span class="ti">Esoteric Software〈Spine: Purchase〉</span><span class="meta">Esoteric Software · 頁面未標日期 · Essential 69、Professional 379、Enterprise 2,499 加每人 379 美元；Education 不可商用 · 查證 2026-09-16</span><a href="https://esotericsoftware.com/spine-purchase" target="_blank" rel="noopener">https://esotericsoftware.com/spine-purchase</a></li>
+      <li id="src-4"><span class="ti">Blender〈License〉；〈Download〉</span><span class="meta">Blender Foundation · 授權頁未標日期；5.2.2 LTS 2026-09-15 · GPL、作品歸創作者 · 查證 2026-09-16</span><a href="https://www.blender.org/about/license/" target="_blank" rel="noopener">https://www.blender.org/about/license/</a>　<a href="https://www.blender.org/download/" target="_blank" rel="noopener">https://www.blender.org/download/</a></li>
+      <li id="src-5"><span class="ti">Tripo〈Tripo H3.1〉開發者文件</span><span class="meta">Tripo（VAST） · 頁面未標日期 · 文字、圖片轉 3D；約 40 秒、約 120 秒 · 查證 2026-09-15（第 6 週）</span><a href="https://developers.tripo3d.ai/en/models/v3-1" target="_blank" rel="noopener">https://developers.tripo3d.ai/en/models/v3-1</a></li>
+      <li id="src-6"><span class="ti">Unity〈Sprite (2D and UI) texture Import Settings window reference〉；〈Import a sprite or spritesheet texture〉</span><span class="meta">Unity 6.5（6000.5）手冊 · 頁面未標日期 · Texture Type、Pixels Per Unit、Filter Mode Point · 查證 2026-09-16</span><a href="https://docs.unity3d.com/6000.5/Documentation/Manual/texture-type-sprite.html" target="_blank" rel="noopener">https://docs.unity3d.com/6000.5/Documentation/Manual/texture-type-sprite.html</a>　<a href="https://docs.unity3d.com/6000.5/Documentation/Manual/sprite/import-images-sprites/import-images-sprites-landing.html" target="_blank" rel="noopener">https://docs.unity3d.com/6000.5/Documentation/Manual/sprite/import-images-sprites/import-images-sprites-landing.html</a></li>
+      <li id="src-7"><span class="ti">Unity〈Tilemaps〉</span><span class="meta">Unity 6.5（6000.5）手冊 · 頁面未標日期 · Tilemap 與 Tile Palette · 查證 2026-09-16</span><a href="https://docs.unity3d.com/6000.5/Documentation/Manual/tilemaps/tilemaps-landing.html" target="_blank" rel="noopener">https://docs.unity3d.com/6000.5/Documentation/Manual/tilemaps/tilemaps-landing.html</a></li>
+      <li id="src-8"><span class="ti">Unity〈2D Animation package〉手冊</span><span class="meta">Unity Technologies · 頁面未標日期 · 為 2D 角色綁骨與製作動畫 · 查證 2026-09-16</span><a href="https://docs.unity3d.com/Packages/com.unity.2d.animation@latest" target="_blank" rel="noopener">https://docs.unity3d.com/Packages/com.unity.2d.animation@latest</a></li>
+      <li id="src-9"><span class="ti">justfont〈open-huninn-font〉（jf open 粉圓）</span><span class="meta">justfont · 頁面未標日期 · SIL OFL 1.1；免費、免署名、可商用 · 查證 2026-09-16</span><a href="https://github.com/justfont/open-huninn-font" target="_blank" rel="noopener">https://github.com/justfont/open-huninn-font</a></li>
+      <li id="src-10"><span class="ti">SIL International〈SIL Open Font License〉</span><span class="meta">SIL International · 頁面未標日期 · 可用於作品與網站、不需致謝、可修改再散布 · 查證 2026-09-16</span><a href="https://openfontlicense.org/" target="_blank" rel="noopener">https://openfontlicense.org/</a></li>
+      <li id="src-11"><span class="ti">Kenney〈Tiny Town〉素材包頁</span><span class="meta">Kenney · 頁面未標日期 · 授權欄標 Creative Commons CC0，以各素材包頁為準 · 查證 2026-09-16</span><a href="https://kenney.nl/assets/tiny-town" target="_blank" rel="noopener">https://kenney.nl/assets/tiny-town</a></li>
+      <li id="src-12"><span class="ti">Creative Commons〈CC0〉</span><span class="meta">Creative Commons · 頁面未標日期 · 拋棄著作權、不要求署名 · 查證 2026-09-16</span><a href="https://creativecommons.org/public-domain/cc0/" target="_blank" rel="noopener">https://creativecommons.org/public-domain/cc0/</a></li>
+    </ol>
+  </section>
+
+  <section class="sec cyan">
+    <span class="kicker">補充資訊</span>
+    <h2>延伸閱讀與提醒</h2>
+    <ul>
+      <li><strong>Aseprite 可以自己編譯，但不能分給同學。</strong>FAQ 寫 2016 年 8 月起不可再散布編譯版；<a href="#src-1">[1]</a> 一組一套 19.99 美元附 Steam key，四台電腦用同一個帳號的 Steam 版最省事。</li>
+      <li><strong>Krita 的付費版不是不同軟體。</strong>下載頁寫商店付費版只多自動更新、扣掉平台抽成後贊助開發；<a href="#src-2">[2]</a> 官網直接下載就是完整版。</li>
+      <li><strong>Spine 的 Education 版有商用限制。</strong>購買頁寫學生與教職員只能作教育與非商業用途，不可用來做商業產品；<a href="#src-3">[3]</a> 專題想上 itch.io 收費就不能用它。</li>
+      <li><strong>Blender 的 LTS 版適合專題。</strong>下載頁的 5.2.2 標 LTS，<a href="#src-4">[4]</a> 全組統一裝同一個 LTS，學期中不要升版。</li>
+      <li><strong>Pixels Per Unit 與圖磚大小要一起訂。</strong>手冊定義 PPU 是一個世界單位對應的像素數；<a href="#src-6">[6]</a> 圖磚 32 像素配 PPU 32，一個圖磚剛好一個單位，Tilemap 的格子才對得齊。<a href="#src-7">[7]</a></li>
+      <li><strong>OFL 字型打包進遊戲有條件。</strong>SIL 官網寫「可在特定條件下打包進 App 或軟體」，<a href="#src-10">[10]</a> 細則看授權全文，帳本裡記字型名、版本、授權頁網址。</li>
+      <li><strong>Kenney 看素材包頁，不看首頁。</strong>各素材包頁的授權欄才標 CC0，<a href="#src-11">[11]</a> 第 8 週講過的規矩這裡一樣適用。</li>
+    </ul>
+  </section>
+
+  <section class="sec lemon">
+    <span class="kicker">本週檢核</span>
+    <h2>交作業前自己打勾</h2>
+    <ul class="check">
+      <li>規格表四項都是具體內容：角色像素高與 PPU 是數字、格式是 PNG 或指定的 3D 格式、命名全小寫英數、存放位置是固定路徑。</li>
+      <li>工具鏈表每一列都有負責人、工具、授權頁網址與查看日期、輸出格式。</li>
+      <li>用到的付費工具（Aseprite、Spine）寫了誰的授權、哪一版；沒有用 Education 版做要販售的東西。</li>
+      <li>字型寫了名稱、授權（例如 OFL 1.1）、能不能內嵌。</li>
+      <li>有一個素材真的從工具走到引擎畫面上，附了截圖；像素風的 Filter Mode 是 Point。</li>
+      <li>AI 生成的素材有記來源、日期、提示詞；程序色塊標了 placeholder。</li>
+      <li>檔名「組別代號_W12_工具與規格.pdf」，一頁 A4，2026-12-03 08:00 前交。</li>
+    </ul>
+  </section>
+
+  <p class="version">2026-09-16 翻新：版型改為典籍金箔、新增講義區、工具授權與版本改引 2026 年官方頁、出處逐條查證。前一版：2026-09-13。</p>
+</main>
+
+<a class="backtop" id="backtop" href="#deck">↑ 回投影片</a>
 <script>
 (function () {
   /* ★ 每週只改這一行 ★ */
+  var COURSE_LABEL = '專題企畫';
   var WEEK_LABEL = '第 12 週 · 美術動畫開發工具';
 
+  var deck = document.getElementById('deck');
   var stage = document.getElementById('stage');
   var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
   var cnt = document.getElementById('cnt');
   var prog = document.getElementById('prog');
   var toc = document.getElementById('toc');
   var tgrid = document.getElementById('tgrid');
+  var backtop = document.getElementById('backtop');
   var cur = 0;
 
   document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
@@ -637,7 +801,7 @@
   slides.forEach(function (s, i) {
     var f = document.createElement('div');
     f.className = 'foot';
-    f.innerHTML = '<span>專題企畫|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    f.innerHTML = '<span>' + COURSE_LABEL + '|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
     s.appendChild(f);
   });
 
@@ -646,12 +810,12 @@
     var eb = s.querySelector('.eyebrow');
     var part = '開場';
     if (eb) {
-      var m = eb.textContent.match(/PART\s*(\d)/i);
-      if (m) part = 'PART ' + m[1];
+      var m = eb.textContent.match(/Part\s*(\d)/i);
+      if (m) part = 'Part ' + m[1];
       else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
     }
     var h = s.querySelector('h1, h2');
-    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent.replace(/\d+$/, '') : '') });
   });
   Object.keys(groups).forEach(function (k) {
     var col = document.createElement('div');
@@ -679,35 +843,57 @@
   function toggleToc(on) {
     toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
   }
+  function atDeck() { return window.scrollY < 40; }
+  function toNotes() { document.getElementById('notes').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  function toggleFull() {
+    if (document.fullscreenElement) { document.exitFullscreen(); return; }
+    if (deck.requestFullscreen) deck.requestFullscreen();
+  }
 
   document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
   document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
   document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
   document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+  document.getElementById('toNotes').addEventListener('click', toNotes);
+  document.getElementById('full').addEventListener('click', toggleFull);
 
   document.addEventListener('keydown', function (e) {
+    if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
     if (e.key === 'Escape') { toggleToc(false); return; }
     if (toc.classList.contains('on')) return;
     switch (e.key) {
-      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
-      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
-      case 'Home': go(0); break;
-      case 'End': go(slides.length - 1); break;
+      case 'ArrowRight': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'ArrowDown': case ' ': if (atDeck()) { e.preventDefault(); go(cur + 1); } break;
+      case 'ArrowUp': if (atDeck()) { e.preventDefault(); go(cur - 1); } break;
+      case 'Home': if (atDeck()) go(0); break;
+      case 'End': if (atDeck()) go(slides.length - 1); break;
       case 'm': case 'M': toggleToc(); break;
+      case 'n': case 'N': toNotes(); break;
+      case 'f': case 'F': toggleFull(); break;
     }
   });
 
   function fit() {
-    var w = window.innerWidth, h = window.innerHeight;
+    var w = deck.clientWidth, h = deck.clientHeight;
     if (!w || !h) { requestAnimationFrame(fit); return; }
-    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+    stage.style.transform = 'scale(' + Math.min((w - 48) / 1300, (h - 88) / 740) + ')';
   }
   window.addEventListener('resize', fit);
   window.addEventListener('load', fit);
+  document.addEventListener('fullscreenchange', fit);
   fit();
+
+  window.addEventListener('scroll', function () {
+    backtop.classList.toggle('show', window.scrollY > deck.clientHeight * 0.6);
+  }, { passive: true });
 
   var m = location.hash.match(/^#s(\d+)$/);
   go(m ? +m[1] - 1 : 0);
+  if (!m && location.hash) {
+    var target = document.querySelector(location.hash.replace(/[^#\w-]/g, ''));
+    if (target) setTimeout(function () { target.scrollIntoView({ block: 'start' }); }, 50);
+  }
 })();
 </script>
 </body>

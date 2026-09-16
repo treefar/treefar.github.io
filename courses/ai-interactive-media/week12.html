@@ -3,164 +3,219 @@
 <head>
 <meta charset="utf-8">
 <title>第 12 週|動態影像與媒體製作</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;1,300;1,400&family=Noto+Serif+TC:wght@300;400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  /* ============ 版型：水彩由灰轉彩（style-library gris-watercolor，色值取自 styles/gris-watercolor.json）============ */
   * { box-sizing: border-box; }
-  #app {
-    position: fixed; inset: 0; overflow: hidden;
-    background: var(--bg);
-    font-family: var(--body);
-    color: var(--ink);
-    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
-    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
-    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
-    --bg: #F5F4EC; --bg2: #EFEEE2;
-    --panel: #FDFCF6; --panel2: #EDECDF;
-    --ink: #232B21; --sub: #67705E;
-    --accent: #2F6B4F; --accent-rgb: 47,107,79;
-    --accent2: #BC4F2C;
-    --line: rgba(35,43,33,.16);
-    --link: #2F6B4F;
-    --r: 4px;
+  :root {
+    --bg: #ece5d9; --bg2: #e3dbcc; --surface: #fffdf6; --surface2: #e3dbcc;
+    --ink: #2c2823; --ink2: #564e43; --muted: #756c5e; --line: #d8cfbd;
+    --blue: #2f7596; --red: #bd564a; --green: #6f9266; --yellow: #dbab44; --grey: #9a948a;
+    --wash-blue: #7da8bd; --wash-rose: #d59289; --wash-gold: #e6c97e; --wash-sage: #a3bd9b; --wash-grey: #b9b3a8;
+    --c: var(--blue); --c-soft: var(--wash-blue);
+    --body: 'Noto Serif TC', 'Cormorant', Georgia, 'PMingLiU', serif;
+    --sans: 'Noto Sans TC', 'Microsoft JhengHei', system-ui, sans-serif;
+    --disp: 'Noto Serif TC', 'Cormorant', Georgia, serif;
+    --num: 'Cormorant', 'Noto Serif TC', serif;
   }
-  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
-  #app a:hover { opacity: .85; }
-  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-weight: 300; }
+  a { color: var(--c); text-underline-offset: 4px; text-decoration-thickness: 1px; }
+  :focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+  b, strong { font-weight: 500; }
 
+  /* ---------- 投影區 ---------- */
+  #deck { position: relative; height: 100vh; min-height: 560px; overflow: hidden; background: var(--bg2); }
   .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
-  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
-  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
-  .slide.active { display: flex; }
-  .slide::before {
-    content: ""; position: absolute; inset: 24px; pointer-events: none;
-    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
-  }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; background: var(--bg); box-shadow: 0 30px 70px -34px rgba(50,42,34,.5); overflow: hidden; }
+  .slide { position: absolute; inset: 0; padding: 56px 110px 72px; display: none; flex-direction: column; }
+  .slide.active { display: flex; animation: fadein .6s ease both; }
+  @keyframes fadein { from { opacity: 0 } to { opacity: 1 } }
+  /* 章節換色：只換 --c 與 --c-soft */
+  .slide.p-blue, .slide[data-c="blue"] { --c: var(--blue); --c-soft: var(--wash-blue); }
+  .slide.p-red, .slide[data-c="red"] { --c: var(--red); --c-soft: var(--wash-rose); }
+  .slide.p-green, .slide[data-c="green"] { --c: var(--green); --c-soft: var(--wash-sage); }
+  .slide.p-yellow, .slide[data-c="yellow"] { --c: var(--yellow); --c-soft: var(--wash-gold); }
+  .slide.p-grey, .slide[data-c="grey"] { --c: var(--grey); --c-soft: var(--wash-grey); }
+  /* 水彩暈染 */
+  .slide::before { content: ""; position: absolute; inset: 0; pointer-events: none; background:
+    radial-gradient(ellipse 520px 380px at 84% 20%, color-mix(in srgb, var(--c-soft) 34%, transparent), transparent 70%),
+    radial-gradient(ellipse 420px 300px at 10% 90%, color-mix(in srgb, var(--c-soft) 20%, transparent), transparent 70%); }
+  .slide > * { position: relative; }
 
-  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
-  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
-  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
-  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+  .eyebrow { font-family: var(--sans); font-weight: 500; font-size: 16px; letter-spacing: .34em; text-transform: uppercase; color: var(--c); display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+  .eyebrow::before { content: ""; width: 40px; height: 1px; background: var(--c); flex: 0 0 auto; }
+  h1 { font-family: var(--disp); font-size: 88px; line-height: 1.15; margin: 0; font-weight: 400; letter-spacing: .02em; text-wrap: balance; }
+  h2 { font-family: var(--disp); font-size: 54px; line-height: 1.2; margin: 0 0 22px; font-weight: 400; text-wrap: balance; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 18px; }
 
-  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
-  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
-  .sub { color: var(--sub); }
+  .slide ul { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 16px; font-size: 27px; line-height: 1.6; }
+  .slide ul ul { margin-top: 6px; gap: 6px; font-size: 22px; color: var(--ink2); }
+  .slide li::marker { color: var(--c); }
+  .sub { color: var(--ink2); }
   .small { font-size: 18px; }
-  .num { font-variant-numeric: tabular-nums; }
+  .num { font-family: var(--num); font-variant-numeric: tabular-nums; }
 
-  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
-  .cards { display: grid; gap: 18px; }
+  /* 這套不用卡片：分區靠 1px 紙緣線與留白 */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 56px; align-items: stretch; }
+  .cards { display: grid; gap: 0 40px; }
   .c2 { grid-template-columns: repeat(2, 1fr); }
   .c3 { grid-template-columns: repeat(3, 1fr); }
   .c4 { grid-template-columns: repeat(4, 1fr); }
   .c5 { grid-template-columns: repeat(5, 1fr); }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
-  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
-  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
-  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+  .card { background: transparent; border: 0; border-top: 1px solid var(--c); padding: 18px 0 14px; min-width: 0; display: flex; flex-direction: column; justify-content: flex-start; }
+  .card.pink, .card.cyan, .card.grape, .card.lemon { background: transparent; }
+  .card h3 { font-family: var(--disp); font-size: 27px; margin: 0 0 10px; font-weight: 400; line-height: 1.3; }
+  .card p, .card li { font-size: 22px; line-height: 1.6; margin: 0; color: var(--ink2); }
+  .card ul { padding-left: 1.05em; gap: 8px; font-size: 22px; }
+  .card .who { display: block; font-family: var(--sans); font-weight: 500; font-size: 14px; letter-spacing: .24em; text-transform: uppercase; color: var(--c); margin-bottom: 10px; }
+  .cols > .card h3 { font-size: 29px; }
+  .cols > .card p, .cols > .card li { font-size: 24px; }
 
-  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
-  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+  /* 結語：用 lede 大字，不用框 */
+  .take { margin-top: auto; display: flex; gap: 18px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 16px; font-size: 24px; line-height: 1.55; }
+  .take b { font-family: var(--sans); color: var(--c); font-size: 14px; letter-spacing: .24em; text-transform: uppercase; white-space: nowrap; font-weight: 500; }
 
-  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
+  .foot { position: absolute; left: 110px; right: 110px; bottom: 30px; display: flex; justify-content: space-between; font-family: var(--sans); font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
 
+  /* 封面與章節頁：同一張紙，只是暈染更重、字更大 */
   .cover, .part { justify-content: center; }
-  .cover .eyebrow { margin-bottom: 26px; }
-  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
-  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
-  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
-  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
-  .part h2 { font-size: 56px; }
-  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+  .cover::before, .part::before { background:
+    radial-gradient(ellipse 700px 520px at 80% 25%, color-mix(in srgb, var(--c-soft) 48%, transparent), transparent 70%),
+    radial-gradient(ellipse 520px 380px at 12% 88%, color-mix(in srgb, var(--c-soft) 30%, transparent), transparent 70%); }
+  .cover .eyebrow { margin-bottom: 30px; }
+  .cover-sub { font-size: 30px; color: var(--ink2); margin: 26px 0 0; line-height: 1.6; max-width: 26em; }
+  .cover-meta { margin-top: 44px; display: flex; gap: 28px; flex-wrap: wrap; font-family: var(--sans); font-size: 13px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
+  .part-num { font-family: var(--num); font-style: italic; font-size: 132px; line-height: 1; margin-bottom: 6px; color: var(--c); font-weight: 300; }
+  .part h2 { font-size: 64px; }
+  .part-sub { font-size: 28px; color: var(--ink2); margin: 18px 0 0; max-width: 30em; line-height: 1.65; }
 
-  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
-  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
-  .kv dd { margin: 0; }
-  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
-  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
-  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
-  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
-  .lk::after { content: " ↗"; font-size: 12px; }
+  /* fact-row：左小標右正文 */
+  .kv { display: grid; grid-template-columns: 230px 1fr; gap: 0 24px; font-size: 25px; line-height: 1.55; border-top: 1px solid var(--line); align-content: start; }
+  .kv dt { font-family: var(--sans); font-weight: 500; font-size: 15px; letter-spacing: .22em; text-transform: uppercase; color: var(--c); padding: 20px 0 14px; border-bottom: 1px solid var(--line); }
+  .kv dd { margin: 0; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px 26px; align-items: center; }
+  .chip { font-family: var(--sans); font-weight: 500; font-size: 17px; letter-spacing: .12em; padding: 6px 0; border-bottom: 1px solid var(--c); background: none; color: var(--ink); }
+  .chip.hot { color: var(--c); }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px 26px; }
+  .lk { display: inline-block; padding: 6px 0; border-bottom: 1px solid var(--c); font-family: var(--sans); font-size: 17px; text-decoration: none; color: var(--ink); font-weight: 500; }
+  .lk:hover { color: var(--c); }
+  .lk::after { content: " ↗"; font-size: 12px; color: var(--c); }
   .flow { display: flex; align-items: stretch; gap: 0; }
-  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
-  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
-  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
-  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
-  .bar i { display: block; height: 100%; background: var(--accent); }
-  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
-  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
-  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
-  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
-  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
-  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
-  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
-  .tl { display: flex; flex-direction: column; gap: 18px; }
-  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
-  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
-  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+  .flow .step { flex: 1; border-top: 1px solid var(--c); padding: 18px 22px 12px 0; min-width: 0; display: flex; flex-direction: column; justify-content: flex-start; }
+  .flow .step h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 8px; font-weight: 400; }
+  .flow .step p { font-size: 22px; line-height: 1.6; margin: 0; color: var(--ink2); }
+  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-family: var(--num); font-style: italic; font-size: 36px; color: var(--c); font-weight: 300; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 16px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 27px; line-height: 1.55; display: flex; gap: 18px; }
+  .qlist p::before { content: counter(q, upper-roman); font-family: var(--num); font-style: italic; color: var(--c); font-weight: 400; flex: 0 0 auto; min-width: 1.4em; }
+  .grp h3 { font-family: var(--sans); font-weight: 500; font-size: 14px; letter-spacing: .24em; text-transform: uppercase; color: var(--c); margin: 0 0 12px; }
+  .card p.big, .cols > .card p.big { font-family: var(--num); font-size: 120px; line-height: 1; font-weight: 300; color: var(--c); margin: 0; }
+  .card p.big small { font-family: var(--sans); font-size: 15px; letter-spacing: .22em; text-transform: uppercase; line-height: 1.5; color: var(--muted); font-weight: 500; display: block; margin-top: 12px; }
 
-  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
-  .content > .cards,
-  .content > .cols,
-  .content > .flow,
-  .content > .kv,
-  .content > .prob { flex: 1 1 auto; }
+  .content > .cards, .content > .cols, .content > .flow { flex: 0 0 auto; margin-top: auto; margin-bottom: auto; }
+  .content > .kv { flex: 1 1 auto; }
+  .cards .card { min-height: 180px; }
+  .cols > .card { min-height: 220px; }
   .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
-  .content > .qlist,
-  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
-  .content > .biblio { flex: 0 0 auto; }
-  .cols > .card { justify-content: flex-start; }
 
-  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
-  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
-  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
-  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
-  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  sup.fn { font-family: var(--sans); font-size: 12px; line-height: 1; vertical-align: top; margin-left: 4px; position: relative; top: -2px; }
+  sup.fn a { display: inline-block; border: 1px solid var(--c); color: var(--c); border-radius: 50%; height: 20px; line-height: 18px; min-width: 20px; padding: 0 5px; text-align: center; text-decoration: none; font-weight: 500; }
+
+  .ctrl { position: absolute; right: 16px; bottom: 14px; display: flex; gap: 8px; align-items: center; z-index: 30; }
+  .ctrl button { font-family: var(--sans); border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 14px; height: 32px; min-width: 34px; padding: 0 10px; border-radius: 2px; cursor: pointer; }
+  .ctrl button:hover { border-color: var(--c); color: var(--c); }
+  .ctrl .cnt { font-family: var(--num); font-size: 15px; color: var(--muted); padding: 0 6px; font-variant-numeric: tabular-nums; }
+  .prog { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--c); width: 0; z-index: 30; transition: width .3s ease; }
+  .hint { position: absolute; left: 16px; bottom: 16px; z-index: 30; font-family: var(--sans); font-size: 12px; letter-spacing: .12em; color: var(--muted); }
+
+  .toc { position: absolute; inset: 0; background: rgba(236,229,217,.97); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
   .toc.on { display: block; }
-  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
-  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
-  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
-  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
-  .toc button:hover { background: var(--panel2); }
-  .toc button.here { color: var(--accent2); font-weight: 700; }
-  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
-  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+  .toc h2 { font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 26px; }
+  .toc h3 { font-family: var(--sans); color: var(--c); font-size: 13px; letter-spacing: .24em; text-transform: uppercase; margin: 0 0 10px; font-weight: 500; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 17px; padding: 6px 8px; cursor: pointer; font-family: var(--body); font-weight: 300; }
+  .toc button:hover { color: var(--c); }
+  .toc button.here { color: var(--c); font-weight: 500; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 13px; color: var(--muted); font-family: var(--sans); }
+
+  /* ---------- 講義區 ---------- */
+  .notes { max-width: 900px; margin: 0 auto; padding: 72px 20px 110px; }
+  .notes-head { margin-bottom: 56px; }
+  .notes-head .eyebrow { margin-bottom: 14px; }
+  .notes-head h2 { font-size: 46px; margin: 0 0 14px; }
+  .notes-head p { color: var(--ink2); font-size: 20px; line-height: 1.75; margin: 0; max-width: 34em; }
+  .sec { background: transparent; border: 0; border-top: 1px solid var(--line); padding: 34px 0 20px; margin: 0 0 26px; --c: var(--blue); }
+  .sec.cyan { --c: var(--green); } .sec.grape { --c: var(--red); } .sec.lemon { --c: var(--yellow); }
+  .sec h2 { font-size: 32px; margin: 0 0 16px; }
+  .sec h3 { font-family: var(--disp); font-size: 23px; margin: 28px 0 10px; font-weight: 500; }
+  .sec p, .sec li { font-size: 19px; line-height: 1.9; color: var(--ink2); margin: 0 0 14px; }
+  .sec li { margin: 0 0 6px; }
+  .sec strong { color: var(--ink); font-weight: 500; }
+  .sec .kicker { display: inline-block; font-family: var(--sans); font-size: 12px; letter-spacing: .34em; text-transform: uppercase; color: var(--c); margin-bottom: 12px; font-weight: 500; }
+  .sec .kicker::before { content: "—"; margin-right: 10px; }
+  .sec table { width: 100%; border-collapse: collapse; font-size: 18px; margin: 8px 0 16px; }
+  .sec th, .sec td { text-align: left; padding: 12px 12px 12px 0; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.65; }
+  .sec th { font-family: var(--sans); font-size: 13px; letter-spacing: .22em; text-transform: uppercase; color: var(--c); font-weight: 500; }
+  .scene { border-left: 1px solid var(--c); padding: 6px 0 6px 22px; margin: 18px 0 22px; }
+  .scene .who { font-family: var(--sans); font-size: 12px; letter-spacing: .24em; text-transform: uppercase; color: var(--c); font-weight: 500; display: block; margin-bottom: 6px; }
+  .scene p { margin: 0; }
+  ol.src { padding-left: 1.6em; counter-reset: s; list-style: none; }
+  ol.src li { counter-increment: s; position: relative; padding-left: 6px; margin-bottom: 16px; line-height: 1.7; }
+  ol.src li::before { content: counter(s); position: absolute; left: -1.7em; top: .3em; font-family: var(--num); font-style: italic; font-size: 16px; color: var(--c); border: 1px solid var(--c); border-radius: 50%; min-width: 22px; height: 22px; line-height: 20px; text-align: center; }
+  ol.src li:target { background: color-mix(in srgb, var(--c-soft) 22%, transparent); }
+  ol.src .ti { color: var(--ink); font-weight: 500; }
+  ol.src .meta { display: block; font-family: var(--sans); font-size: 14px; color: var(--muted); }
+  ol.src a { word-break: break-all; font-size: 14px; font-family: var(--sans); }
+  .check { counter-reset: c; list-style: none; padding: 0; }
+  .check li { counter-increment: c; display: flex; gap: 14px; align-items: baseline; }
+  .check li::before { content: "☐"; color: var(--c); font-size: 20px; flex: 0 0 auto; }
+  .backtop { position: fixed; right: 18px; bottom: 18px; z-index: 50; font-family: var(--sans); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink); background: var(--surface); border: 1px solid var(--line); padding: 10px 16px; text-decoration: none; display: none; }
+  .backtop.show { display: inline-block; }
+  .version { font-family: var(--sans); font-size: 13px; letter-spacing: .1em; color: var(--muted); margin-top: 40px; }
+
+  @media (max-width: 720px) { .notes { padding: 40px 16px 80px; } .notes-head h2 { font-size: 32px; } .kv { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .slide.active { animation: none; } .prog { transition: none; } }
+  @media print { #deck, .backtop { display: none; } .notes { max-width: none; padding: 0; } .sec { break-inside: avoid; } }
 </style>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
 </head>
 <body>
-<div id="app" data-deck="b">
+
+<div id="deck" data-deck="gris-watercolor">
   <div class="stagewrap"><div class="stage" id="stage">
 
-  <!-- 1 AI 與動態影像製作 -->
-<section class="slide cover">
+
+
+<!-- 1 封面 -->
+  <section class="slide cover">
     <div class="eyebrow">人工智慧與互動媒體特論 · 設計創新與經營研究所</div>
     <h1>AI 與動態影像製作</h1>
-    <p class="cover-sub">影片生成、動態設計與自動剪輯：從 Sora 的七個月起落，到 Netflix 的第一格 GenAI 畫面，看懂 2026 年 7 月的動態影像版圖。</p>
-    <div class="cover-meta"><span>第 12 週</span><span>論文導讀與案例討論</span><span>授課：鄧樹遠</span></div>
+    <p class="cover-sub">影片生成、動態設計與自動剪輯：從 Sora 2 七個月的起落，到 Netflix 的第一格生成畫面與剪輯台裡的五個模型，看懂 2026 年 9 月的動態影像版圖。</p>
+    <div class="cover-meta"><span>第 12 週</span><span>授課：鄧樹遠</span><span>投影片 ＋ 下方講義</span></div>
   </section>
 
-  <!-- 2 九十分鐘，五段路 -->
-<section class="slide">
+  <!-- 2 本週地圖 -->
+  <section class="slide">
     <div class="eyebrow">Week 12 · 本週地圖</div>
     <h2>九十分鐘，五段路</h2>
     <div class="content">
       <div class="cards c5">
-        <div class="card"><span class="who">PART 1</span><h3>原理直觀</h3><p class="sub">240 格連戲，為何這麼難</p></div>
-        <div class="card"><span class="who">PART 2</span><h3>模型版圖</h3><p class="sub">Sora 退場後的新格局</p></div>
-        <div class="card"><span class="who">PART 3</span><h3>剪輯工作流</h3><p class="sub">AI 進駐剪輯台的日常</p></div>
-        <div class="card"><span class="who">PART 4</span><h3>產業現場</h3><p class="sub">里程碑與爭議一次看</p></div>
-        <div class="card"><span class="who">PART 5</span><h3>論文導讀</h3><p class="sub">綜述地圖＋Sora 解剖</p></div>
+        <div class="card"><span class="who">Part 1</span><h3>原理直觀</h3><p class="sub">240 格連戲，為何這麼難</p></div>
+        <div class="card"><span class="who">Part 2</span><h3>模型版圖</h3><p class="sub">Sora 退場後的新格局</p></div>
+        <div class="card"><span class="who">Part 3</span><h3>剪輯工作流</h3><p class="sub">AI 進駐剪輯台的日常</p></div>
+        <div class="card"><span class="who">Part 4</span><h3>產業現場</h3><p class="sub">里程碑與爭議一次看</p></div>
+        <div class="card"><span class="who">Part 5</span><h3>論文與交付</h3><p class="sub">綜述地圖加 Sora 解剖</p></div>
       </div>
       <div class="take"><b>本週目標</b>看懂影片生成「能做什麼、還不能做什麼」，並能對任何一支 AI 影片說出它是怎麼被做出來的。</div>
     </div>
   </section>
 
-  <!-- 3 從空間到時間 -->
-<section class="slide">
+  <!-- 3 承接 -->
+  <section class="slide">
     <div class="eyebrow">承接第 11 週 · AI 在空間與環境設計</div>
     <h2>從空間到時間</h2>
     <div class="content">
@@ -184,82 +239,75 @@
           </ul>
         </div>
       </div>
+      <div class="take"><b>先做五分鐘</b>依學號順序，三位同學分享上週的孿生規格書：誰付錢那一欄寫了什麼。</div>
     </div>
   </section>
 
-  <!-- 4 影片生成的原理直觀 -->
-<section class="slide part">
+  <!-- 4 PART 1 -->
+  <section class="slide part p-blue">
     <div class="part-num">01</div>
-    <div class="eyebrow">PART 1</div>
+    <div class="eyebrow">Part 1</div>
     <h2>影片生成的原理直觀</h2>
     <p class="part-sub">圖像生成已經解決「一張圖」，影片要的是幾百張圖彼此連戲。這一段把「時空一致性」講到直觀：難在哪、模型怎麼繞。</p>
   </section>
 
-  <!-- 5 一秒 24 格，每格都要連戲 -->
-<section class="slide">
-    <div class="eyebrow">PART 1 · 影片生成原理</div>
+  <!-- 5 240 格 -->
+  <section class="slide" data-c="blue">
+    <div class="eyebrow">Part 1 · 影片生成原理</div>
     <h2>一秒 24 格，每格都要連戲</h2>
     <div class="content">
-      <div class="chips">
-        <span class="sub">一支 10 秒短片 ＝</span>
-        <span class="chip num">24 格／秒</span><span class="sub">×</span><span class="chip num">10 秒</span><span class="sub">＝</span>
-        <span class="chip hot num">240 張必須連戲的圖</span>
+      <div class="cards c3">
+        <div class="card"><p class="big">24<small>格 / 秒</small></p></div>
+        <div class="card"><p class="big">×10<small>秒</small></p></div>
+        <div class="card"><p class="big">240<small>張必須連戲的圖</small></p></div>
       </div>
-      <ul>
-        <li>逐格獨立生成的下場：臉一直變、光線跳動、物件閃現又消失</li>
-        <li>「連戲」在片場靠場記，在模型裡靠時間一致性（temporal consistency）</li>
-        <li>觀眾對時間錯誤極度敏感：單格穿幫就出戲，靜態圖沒有這種風險</li>
-        <li>這是影片生成成熟度落後圖像生成約兩年的根本原因</li>
-      </ul>
+      <div class="take"><b>直觀</b>逐格獨立生成的下場是臉一直變、光線跳動、物件閃現又消失；片場靠場記連戲，模型靠時間一致性。單格穿幫就出戲，靜態圖沒有這種風險。</div>
     </div>
   </section>
 
-  <!-- 6 把時間當作第三個維度 -->
-<section class="slide">
-    <div class="eyebrow">PART 1 · 影片生成原理</div>
+  <!-- 6 第三維 -->
+  <section class="slide" data-c="blue">
+    <div class="eyebrow">Part 1 · 影片生成原理</div>
     <h2>把時間當作第三個維度</h2>
     <div class="content">
       <div class="flow">
-        <div class="step"><h3>1. 壓縮</h3><p>影片先壓進潛在空間，空間與時間一起降維</p></div>
+        <div class="step"><h3>1. 壓縮</h3><p>影片先壓進潛在空間，空間與時間一起降維。</p></div>
         <div class="arr">→</div>
-        <div class="step"><h3>2. 切塊</h3><p>切成時空區塊（spacetime patches），像 token 一樣排隊進 Transformer</p></div>
+        <div class="step"><h3>2. 切塊</h3><p>切成時空區塊，像 token 一樣排隊進 Transformer。</p></div>
         <div class="arr">→</div>
-        <div class="step"><h3>3. 去噪</h3><p>擴散模型對整段時空一起去噪，主流骨幹是 DiT（Diffusion Transformer）</p></div>
+        <div class="step"><h3>3. 去噪</h3><p>擴散模型對整段時空一起去噪；主流骨幹是 DiT。<sup class="fn"><a href="#src-20">20</a></sup></p></div>
       </div>
-      <ul>
-        <li>第 4 週的擴散原理原封不動，只是「雕」的對象從一張圖變成一段時空</li>
-        <li>2025 年後的新標配：原生音訊——對白、環境音與畫面單次生成、天生對齊</li>
-      </ul>
-      <div class="take"><b>假設情境</b>假設只想改角色袖口，前後鏡格卻一起漂移；這是因為每一格都和整段綁在一起。</div>
+      <div class="take"><b>假設情境</b>只想改角色袖口，前後鏡格卻一起漂移：因為每一格都和整段綁在一起。第 4 週的擴散原理原封不動，只是雕的對象從一張圖變成一段時空。</div>
     </div>
   </section>
 
-  <!-- 7 時空一致性為何這麼難 -->
-<section class="slide">
-    <div class="eyebrow">PART 1 · 影片生成原理</div>
+  <!-- 7 三難 -->
+  <section class="slide" data-c="blue">
+    <div class="eyebrow">Part 1 · 影片生成原理</div>
     <h2>時空一致性為何這麼難</h2>
     <div class="content">
       <div class="cards c3">
         <div class="card"><h3>身分漂移</h3><p>角色轉身回來換了一張臉；物件出鏡再入鏡，顏色與形狀悄悄變了。</p></div>
         <div class="card"><h3>物理直覺</h3><p>模型沒有物理引擎，只有統計直覺：液體、布料、手指、輪子最容易穿幫。</p></div>
-        <div class="card"><h3>成本爆炸</h3><p>解析度 × 影格率 × 長度三軸相乘，算力與記憶體隨秒數暴漲。</p></div>
+        <div class="card"><h3>成本爆炸</h3><p>解析度、影格率、長度三軸相乘，算力與記憶體隨秒數暴漲。</p></div>
       </div>
+      <div class="take"><b>對照</b>2026 年的官方頁還在講「8 秒」「15 秒」，就是成本那一軸的證據。<sup class="fn"><a href="#src-5">5</a></sup><sup class="fn"><a href="#src-7">7</a></sup></div>
     </div>
   </section>
 
-  <!-- 8 2026 年中：能與不能 -->
-<section class="slide">
-    <div class="eyebrow">PART 1 · 影片生成原理</div>
-    <h2>2026 年中：能與不能</h2>
+  <!-- 8 能與不能 -->
+  <section class="slide" data-c="blue">
+    <div class="eyebrow">Part 1 · 2025–2026 現況</div>
+    <h2>2026 年 9 月：能與不能</h2>
     <div class="content">
       <div class="cols">
         <div class="card">
           <span class="who">已經可以</span>
           <h3>鏡頭級的生產力</h3>
           <ul>
-            <li>10–60 秒短鏡頭，含原生音訊與對白</li>
-            <li>參照圖鎖住角色、場景與產品外觀</li>
-            <li>廣告 b-roll、前期 previz、社群短片量產</li>
+            <li>8 到 15 秒短鏡頭，含原生音訊與對白<sup class="fn"><a href="#src-5">5</a></sup><sup class="fn"><a href="#src-7">7</a></sup></li>
+            <li>剪輯軟體內直接生成，不用來回匯出<sup class="fn"><a href="#src-9">9</a></sup></li>
+            <li>廣告素材、前期 previz、社群短片</li>
           </ul>
         </div>
         <div class="card">
@@ -275,380 +323,320 @@
     </div>
   </section>
 
-  <!-- 9 2026 影片模型版圖 -->
-<section class="slide part">
+  <!-- 9 PART 2 -->
+  <section class="slide part p-red">
     <div class="part-num">02</div>
-    <div class="eyebrow">PART 2</div>
+    <div class="eyebrow">Part 2</div>
     <h2>2026 影片模型版圖</h2>
-    <p class="part-sub">Sora 退場、Veo 走向免費普及、Runway 登上盲測榜首、Kling 出手追擊——版圖三個月一變，這一段教你看懂每一家的「定位語言」。</p>
+    <p class="part-sub">Sora 退場、Veo 進了 Google 全家桶、Runway 登上盲測榜首、Kling 出手追擊。版圖三個月一變，這一段教你看懂每一家的「定位語言」。只引官方頁。</p>
   </section>
 
-  <!-- 10 Sora 2：七個月的起落 -->
-<section class="slide">
-    <div class="eyebrow">PART 2 · 模型版圖 · OpenAI</div>
+  <!-- 10 Sora -->
+  <section class="slide" data-c="red">
+    <div class="eyebrow">Part 2 · 模型版圖 · OpenAI</div>
     <h2>Sora 2：七個月的起落</h2>
     <div class="content">
-      <div class="tl">
-        <div class="ev"><b>2025/9/30</b><span>Sora 2 發布＋社群 iOS app：cameo 功能把你和朋友放進影片</span></div>
-        <div class="ev"><b>2025/10</b><span>版權風暴：MPA 與日本抗議 opt-out 設計，Altman 承諾改 opt-in</span></div>
-        <div class="ev"><b>2025/11</b><span>下載量衝上單月 330 萬次高峰，其後活躍使用者一路下滑</span></div>
-        <div class="ev"><b>2026/3/24</b><span>宣布退場：4/26 關閉 app 與網頁；據報日燒百萬美元、總營收僅約 210 萬</span></div>
-        <div class="ev"><b>2026/9/24</b><span>API 將終止；OpenAI 將算力轉向程式開發與企業產品線</span></div>
-      </div>
-      <div class="linkrow">
-        <a class="lk" href="https://openai.com/index/sora-2/" target="_blank" rel="noopener">Sora 2 發布</a>
-        <a class="lk" href="https://help.openai.com/en/articles/20001152-what-to-know-about-the-sora-discontinuation" target="_blank" rel="noopener">官方退場說明</a>
-      </div>
+      <dl class="kv">
+        <dt>2025-09-30</dt><dd>Sora 2 與 iOS app 在美國、加拿大推出；cameo 把你放進生成場景；原生音景與對白。<sup class="fn"><a href="#src-1">1</a></sup></dd>
+        <dt>2025-10-06</dt><dd>MPA 聲明：防止侵權是 OpenAI 的責任，不是權利人的。<sup class="fn"><a href="#src-3">3</a></sup></dd>
+        <dt>2026-04-26</dt><dd>網頁與 app 關閉；API 2026-09-24 終止；逾期資料永久刪除。<sup class="fn"><a href="#src-2">2</a></sup></dd>
+        <dt>注意</dt><dd>OpenAI 官方頁擋抓取，日期以媒體轉述為據；「日燒百萬」類數字我沒查到來源，不寫。</dd>
+      </dl>
     </div>
   </section>
 
-  <!-- 11 Veo 3.1：從旗艦到免費普及 -->
-<section class="slide">
-    <div class="eyebrow">PART 2 · 模型版圖 · Google</div>
-    <h2>Veo 3.1：從旗艦到免費普及</h2>
+  <!-- 11 Veo -->
+  <section class="slide" data-c="red">
+    <div class="eyebrow">Part 2 · 模型版圖 · Google</div>
+    <h2>Veo 3.1：進了全家桶</h2>
     <div class="content">
       <dl class="kv">
-        <dt>發布</dt><dd class="num">2025 年 10 月；2026 年 1 月加入原生 4K 輸出</dd>
-        <dt>家族</dt><dd>Veo 3.1／Fast／Lite 三檔（2026/4），原生音訊全系標配</dd>
-        <dt>敘事</dt><dd>Scene Extension 場景延伸讓連續敘事超過 60 秒；支援 9:16 直式</dd>
-        <dt>普及</dt><dd class="num">2026/4/2 起 Google Vids 向所有 Google 帳號開放免費生成</dd>
+        <dt>版本</dt><dd>官方頁目前版本 Veo 3.1。<sup class="fn"><a href="#src-5">5</a></sup></dd>
+        <dt>音訊</dt><dd>音效、環境音與對白「全部原生生成」。<sup class="fn"><a href="#src-5">5</a></sup></dd>
+        <dt>規格</dt><dd>1080p 與 4K 輸出；基準 8 秒；Scene Extension 用上一鏡的最後一秒接下去。<sup class="fn"><a href="#src-5">5</a></sup></dd>
+        <dt>管道</dt><dd>Gemini、Flow、Google Vids、AI Studio、Gemini API。<sup class="fn"><a href="#src-5">5</a></sup></dd>
       </dl>
-      <div class="linkrow">
-        <a class="lk" href="https://deepmind.google/models/veo/" target="_blank" rel="noopener">Veo 官方頁</a>
-      </div>
     </div>
   </section>
 
-  <!-- 12 Runway Gen-4.5：6 -->
-<section class="slide">
-    <div class="eyebrow">PART 2 · 模型版圖 · Runway</div>
-    <h2>Runway Gen-4.5：60 秒連戲</h2>
+  <!-- 12 Runway -->
+  <section class="slide" data-c="red">
+    <div class="eyebrow">Part 2 · 模型版圖 · Runway</div>
+    <h2>Runway Gen-4.5：盲測榜首</h2>
     <div class="content">
       <dl class="kv">
-        <dt>發布</dt><dd class="num">2025 年 12 月發表，2026 年初全面開放</dd>
-        <dt>連戲</dt><dd>角色一致的生成長度從 10 秒拉到 60 秒，直指敘事短片</dd>
-        <dt>音訊</dt><dd>對白、環境音、配樂與畫面一次生成的多模態輸出</dd>
-        <dt>評價</dt><dd>2026 年初在 Video Arena 盲測登頂，超車 Veo 3.1 與 Sora 2 Pro</dd>
+        <dt>2025-12-01</dt><dd>發表；主張「前所未有的物理準確與視覺精度」。<sup class="fn"><a href="#src-6">6</a></sup></dd>
+        <dt>角色</dt><dd>Expressive Characters：細膩情緒、自然手勢與臉部細節。<sup class="fn"><a href="#src-6">6</a></sup></dd>
+        <dt>榜單</dt><dd>Artificial Analysis 盲測 Elo 1,247 第一；Veo 3 為 1,226、Kling 2.5 為 1,225、Sora 2 Pro 為 1,206。<sup class="fn"><a href="#src-6">6</a></sup></dd>
+        <dt>注意</dt><dd>榜單數字取自 Runway 自己的發表頁；官方頁沒寫長度與音訊，我不補。</dd>
       </dl>
-      <div class="linkrow">
-        <a class="lk" href="https://runwayml.com/research/introducing-runway-gen-4.5" target="_blank" rel="noopener">Gen-4.5 發表</a>
-      </div>
     </div>
   </section>
 
-  <!-- 13 Kling 3.0：像導演一樣分 -->
-<section class="slide">
-    <div class="eyebrow">PART 2 · 模型版圖 · 快手</div>
+  <!-- 13 Kling -->
+  <section class="slide" data-c="red">
+    <div class="eyebrow">Part 2 · 模型版圖 · 快手</div>
     <h2>Kling 3.0：像導演一樣分鏡</h2>
     <div class="content">
       <dl class="kv">
-        <dt>發布</dt><dd class="num">2026/2/5 快手發表 3.0 家族（Video／Image 各含 Omni 版）</dd>
-        <dt>規格</dt><dd>原生 4K、最高 60fps、單段 15 秒、多語言原生音訊</dd>
-        <dt>導演式</dt><dd>能規劃多鏡頭序列，而不是一鏡到底：先分鏡、再生成</dd>
-        <dt>規模</dt><dd class="num">全球逾 6,000 萬創作者、累計產出逾 6 億支影片</dd>
+        <dt>2026-02-05</dt><dd>3.0 家族：Video 3.0、Video 3.0 Omni、Image 3.0、Image 3.0 Omni。<sup class="fn"><a href="#src-7">7</a></sup></dd>
+        <dt>規格</dt><dd>影片最長 15 秒；英中日韓西多語言原生音訊；影像 2K 與 4K。<sup class="fn"><a href="#src-7">7</a></sup></dd>
+        <dt>導演式</dt><dd>多鏡頭分鏡（multi-shot storyboarding）：先分鏡再生成，不是一鏡到底。<sup class="fn"><a href="#src-7">7</a></sup></dd>
+        <dt>規模</dt><dd>自 2024-06 上線：逾 6,000 萬創作者、逾 6 億支影片、逾 3 萬企業客戶。<sup class="fn"><a href="#src-7">7</a></sup></dd>
       </dl>
-      <div class="linkrow">
-        <a class="lk" href="https://ir.kuaishou.com/news-releases/news-release-details/kling-ai-launches-30-model-ushering-era-where-everyone-can-be" target="_blank" rel="noopener">Kling 3.0 新聞稿</a>
-      </div>
     </div>
   </section>
 
-  <!-- 14 影像團隊的選型思考 -->
-<section class="slide">
-    <div class="eyebrow">PART 2 · 模型版圖</div>
+  <!-- 14 選型 -->
+  <section class="slide" data-c="red">
+    <div class="eyebrow">Part 2 · 模型版圖</div>
     <h2>影像團隊的選型思考</h2>
     <div class="content">
-      <dl class="kv" style="grid-template-columns:300px 1fr">
-        <dt>前期 previz、氣氛片</dt><dd>任一模型皆可，速度與成本優先（Fast／Lite／Turbo 檔）</dd>
-        <dt>角色要連戲的短片</dt><dd>Gen-4.5 的 60 秒一致性，或 Kling 3.0 的多鏡頭規劃</dd>
-        <dt>影音一體社群內容</dt><dd>Veo 3.1（生態整合、直式）與 Kling 3.0（量產邏輯）</dd>
-        <dt>平台風險管理</dt><dd>Sora 的教訓：工作流別綁死單一模型，素材與提示要可攜</dd>
+      <dl class="kv">
+        <dt>前期 previz</dt><dd>任一模型皆可，速度與成本優先。</dd>
+        <dt>要連戲的短片</dt><dd>看角色一致性與多鏡頭規劃，不看單鏡頭好不好看。</dd>
+        <dt>影音一體</dt><dd>原生音訊已是標配：Veo 3.1 與 Kling 3.0 都寫在官方頁上。<sup class="fn"><a href="#src-5">5</a></sup><sup class="fn"><a href="#src-7">7</a></sup></dd>
+        <dt>平台風險</dt><dd>Sora 的教訓：工作流別綁死單一模型，素材與提示要可攜。<sup class="fn"><a href="#src-2">2</a></sup></dd>
       </dl>
     </div>
   </section>
 
-  <!-- 15 動態設計與自動剪輯 -->
-<section class="slide part">
+  <!-- 15 PART 3 -->
+  <section class="slide part p-green">
     <div class="part-num">03</div>
-    <div class="eyebrow">PART 3</div>
+    <div class="eyebrow">Part 3</div>
     <h2>動態設計與自動剪輯</h2>
-    <p class="part-sub">生成只是素材，作品是剪出來的。這一段看 AI 如何進駐剪輯台與動態設計的日常工作流：它吃掉哪些時間，留下哪些判斷。</p>
+    <p class="part-sub">生成只是素材，作品是剪出來的。這一段看 AI 如何進駐剪輯台的日常工作流：它吃掉哪些時間，留下哪些判斷。</p>
   </section>
 
-  <!-- 16 剪輯軟體長出的 AI -->
-<section class="slide">
-    <div class="eyebrow">PART 3 · 剪輯與動態設計</div>
+  <!-- 16 剪輯軟體 -->
+  <section class="slide" data-c="green">
+    <div class="eyebrow">Part 3 · 2025–2026 現況</div>
     <h2>剪輯軟體長出的 AI</h2>
     <div class="content">
-      <ul>
-        <li>Premiere Pro 2026 年版：自動色彩匹配、場景邊界偵測、語音轉文字全面強化</li>
-        <li>DaVinci Resolve 21（2026/6）：AI 影像修復與進階場景偵測入列</li>
-        <li>兩大剪輯平台的共同姿態：AI 當「助理剪輯」，吃掉找素材、對字幕的機械時間</li>
-        <li>業界估計：調色、轉寫、場景偵測自動化可省下約四成剪輯工時</li>
-      </ul>
+      <dl class="kv">
+        <dt>2025-04</dt><dd>Premiere：Generative Extend 正式版、Media Intelligence。<sup class="fn"><a href="#src-8">8</a></sup></dd>
+        <dt>2026-09-10</dt><dd>Premiere 26.5：時間軸內生影片與音效；Paper Edit 組粗剪。<sup class="fn"><a href="#src-9">9</a></sup></dd>
+        <dt>可選模型</dt><dd>報導：Firefly、Veo、Kling、Runway、Luma。<sup class="fn"><a href="#src-10">10</a></sup></dd>
+        <dt>2026-04</dt><dd>Resolve 21 公測：IntelliSearch、CineFocus、Slate ID。<sup class="fn"><a href="#src-11">11</a></sup><sup class="fn"><a href="#src-12">12</a></sup></dd>
+      </dl>
     </div>
   </section>
 
-  <!-- 17 自動剪輯的生態系 -->
-<section class="slide">
-    <div class="eyebrow">PART 3 · 剪輯與動態設計</div>
+  <!-- 17 生態系 -->
+  <section class="slide" data-c="green">
+    <div class="eyebrow">Part 3 · 剪輯與動態設計</div>
     <h2>自動剪輯的生態系</h2>
     <div class="content">
       <div class="cards c3">
-        <div class="card"><h3>AutoCut</h3><p>Premiere 與 Resolve 的 AI 外掛：靜音自動剪除、動態字幕等十項自動化打包。</p></div>
-        <div class="card"><h3>Imagen Video</h3><p>NAB 2026 亮相：AI 調色直接接進 Premiere 與 Resolve 的既有管線。</p></div>
-        <div class="card"><h3>短片量產線</h3><p>長片自動切短片、自動字卡與封面——社群通路營運的標配裝備。</p></div>
+        <div class="card"><h3>外掛型</h3><p>AutoCut：Premiere 與 Resolve 的外掛，靜音剪除、動態字幕、多機位切換、短片抽取打包。<sup class="fn"><a href="#src-13">13</a></sup></p></div>
+        <div class="card"><h3>內建型</h3><p>剪輯軟體自己長出來：Paper Edit、IntelliSearch，把找素材與對字幕的機械時間吃掉。<sup class="fn"><a href="#src-9">9</a></sup><sup class="fn"><a href="#src-11">11</a></sup></p></div>
+        <div class="card"><h3>短片量產線</h3><p>長片自動切短片、自動字卡與封面：社群通路營運的標配裝備。</p></div>
       </div>
-      <div class="linkrow">
-        <a class="lk" href="https://www.autocut.com/en/" target="_blank" rel="noopener">AutoCut 官方</a>
-      </div>
+      <div class="take"><b>共同姿態</b>AI 當「助理剪輯」；節奏與終審還在人手上。</div>
     </div>
   </section>
 
-  <!-- 18 一條 AI 影像製作工作流 -->
-<section class="slide">
-    <div class="eyebrow">PART 3 · 剪輯與動態設計</div>
+  <!-- 18 工作流 -->
+  <section class="slide" data-c="green">
+    <div class="eyebrow">Part 3 · 剪輯與動態設計</div>
     <h2>一條 AI 影像製作工作流</h2>
     <div class="content">
       <div class="flow">
-        <div class="step"><h3>前期</h3><p>LLM 協作腳本與分鏡；圖像模型出概念板與氣氛稿</p></div>
+        <div class="step"><h3>前期</h3><p>LLM 協作腳本與分鏡；圖像模型出概念板與氣氛稿。</p></div>
         <div class="arr">→</div>
-        <div class="step"><h3>生成</h3><p>影片模型逐鏡出候選素材；參照圖鎖定角色與場景</p></div>
+        <div class="step"><h3>生成</h3><p>影片模型逐鏡出候選素材；參照圖鎖定角色與場景。</p></div>
         <div class="arr">→</div>
-        <div class="step"><h3>後期</h3><p>自動粗剪、AI 調色與字幕；人工掌節奏與終審</p></div>
+        <div class="step"><h3>後期</h3><p>自動粗剪、AI 調色與字幕；人工掌節奏與終審。</p></div>
       </div>
-      <ul>
-        <li>生成單位是「鏡頭」，作品單位是「序列」：結構、節奏與敘事仍由人組裝</li>
-        <li>每一段都要留人工否決點：模型輸出永遠是候選，不是定稿</li>
-      </ul>
+      <div class="take"><b>原則</b>生成單位是「鏡頭」，作品單位是「序列」；每一段都留人工否決點，模型輸出永遠是候選，不是定稿。</div>
     </div>
   </section>
 
-  <!-- 19 影視產業：採用與爭議 -->
-<section class="slide part">
+  <!-- 19 PART 4 -->
+  <section class="slide part p-yellow">
     <div class="part-num">04</div>
-    <div class="eyebrow">PART 4</div>
+    <div class="eyebrow">Part 4</div>
     <h2>影視產業：採用與爭議</h2>
     <p class="part-sub">2025 到 2026，影視產業對 AI 的態度從幕後偷用變成公開策略，輿論戰也從嘲諷升級成制度戰。里程碑與爭議，一次看完。</p>
   </section>
 
-  <!-- 20 Netflix：第一格 GenA -->
-<section class="slide">
-    <div class="eyebrow">PART 4 · 產業現場 · 里程碑</div>
-    <h2>Netflix：第一格 GenAI 畫面</h2>
+  <!-- 20 Netflix -->
+  <section class="slide" data-c="yellow">
+    <div class="eyebrow">Part 4 · 產業現場 · 里程碑</div>
+    <h2>Netflix：第一格生成畫面</h2>
     <div class="content">
       <dl class="kv">
-        <dt>作品</dt><dd>《El Eternauta》（阿根廷科幻影集，2025/4 上線）</dd>
-        <dt>里程碑</dt><dd>Netflix 官方承認的首個 GenAI 正片畫面：建築倒塌的災難鏡頭</dd>
-        <dt>效率</dt><dd>共同執行長 Sarandos：比傳統 VFX 流程快 10 倍、成本更低</dd>
-        <dt>後續</dt><dd>Netflix 再收購 AI 製片新創 InterPositive，把工具收進片廠</dd>
+        <dt>作品</dt><dd>阿根廷影集《El Eternauta》：建築倒塌鏡頭，Netflix 首次在正片使用生成式 AI 畫面。<sup class="fn"><a href="#src-14">14</a></sup></dd>
+        <dt>效率</dt><dd>共同執行長 Sarandos：比傳統 VFX 工具快 10 倍、成本更低；「真人做真工作，只是工具更好」。<sup class="fn"><a href="#src-14">14</a></sup></dd>
+        <dt>2025-10</dt><dd>「全力投入」但不為新奇而新奇；另用於減齡與前期服裝、布景構想。<sup class="fn"><a href="#src-15">15</a></sup></dd>
+        <dt>2026-06</dt><dd>Lionsgate 入股 Runway，擴展 2024 年合作，以既有 IP 做短篇劇集。<sup class="fn"><a href="#src-16">16</a></sup></dd>
       </dl>
-      <div class="linkrow">
-        <a class="lk" href="https://techcrunch.com/2025/07/18/netflix-starts-using-genai-in-its-shows-and-films/" target="_blank" rel="noopener">TechCrunch 報導</a>
-      </div>
     </div>
   </section>
 
-  <!-- 21 好萊塢的兩種押注 -->
-<section class="slide">
-    <div class="eyebrow">PART 4 · 產業現場 · 片廠</div>
-    <h2>好萊塢的兩種押注</h2>
-    <div class="content">
-      <div class="cols">
-        <div class="card">
-          <span class="who">LIONSGATE × RUNWAY</span>
-          <h3>深度綁定管線</h3>
-          <ul>
-            <li>2024 首開先例：授權片庫訓練客製模型</li>
-            <li>2026/6 直接入股 Runway，共同開發 AI 短篇系列</li>
-            <li>好萊塢第一個設 Chief AI Officer 的片廠（2026/2）</li>
-          </ul>
-        </div>
-        <div class="card">
-          <span class="who">OPENAI · CRITTERZ</span>
-          <h3>低成本長片樣板</h3>
-          <ul>
-            <li>首部以 OpenAI 生成式工具為主力製作的動畫長片</li>
-            <li>預算據報導壓在 3,000 萬美元以下，遠低於動畫大片</li>
-            <li>賭注：證明 AI 管線撐得起院線規格</li>
-          </ul>
-        </div>
-      </div>
-      <div class="linkrow">
-        <a class="lk" href="https://variety.com/2026/film/news/lionsgate-equity-stake-runway-ai-franchises-for-ai-show-1236775590/" target="_blank" rel="noopener">Variety：入股報導</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- 22 版權戰線：opt-out 之爭 -->
-<section class="slide">
-    <div class="eyebrow">PART 4 · 產業現場 · 版權</div>
+  <!-- 21 版權 -->
+  <section class="slide" data-c="yellow">
+    <div class="eyebrow">Part 4 · 產業現場 · 版權</div>
     <h2>版權戰線：opt-out 之爭</h2>
     <div class="content">
       <ul>
-        <li>Sora 2 上線即可生成受版權保護的角色，採 opt-out：權利人要自己登記退出</li>
-        <li>MPA 主席 Rivkin（2025/10）：防止侵權是 OpenAI 的責任，不是權利人的</li>
-        <li>日本 CODA（代表 Kadokawa、Bandai Namco 等）發函要求停止以會員內容訓練</li>
-        <li>日本政府正式要求改採 opt-in：先取得授權、才能使用（2025/10）</li>
-        <li>Altman 讓步承諾轉向 opt-in——輿論與政府壓力直接改寫了平台規則</li>
+        <li>Sora 2 採 opt-out：權利人要自己登記排除，否則角色可被生成。<sup class="fn"><a href="#src-4">4</a></sup></li>
+        <li>MPA 主席 Rivkin（2025-10-06）：防止侵權「仍是他們的責任，不是權利人的」。<sup class="fn"><a href="#src-3">3</a></sup></li>
+        <li>日本 IP 與 AI 戰略擔當大臣（2025-10）：已要求 OpenAI 不得侵權，動漫是「不可替代的寶藏」。<sup class="fn"><a href="#src-4">4</a></sup></li>
+        <li>半年後產品退場：規則之爭沒有判決，市場先給了答案。<sup class="fn"><a href="#src-2">2</a></sup></li>
       </ul>
-      <div class="linkrow">
-        <a class="lk" href="https://www.cnbc.com/2025/10/07/openais-sora-2-must-stop-allowing-copyright-infringement-mpa-says.html" target="_blank" rel="noopener">CNBC：MPA 聲明</a>
-        <a class="lk" href="https://www.japantimes.co.jp/business/2025/10/16/companies/japan-opt-in-model-sora2/" target="_blank" rel="noopener">Japan Times</a>
-      </div>
     </div>
   </section>
 
-  <!-- 23 Tilly Norwood：AI -->
-<section class="slide">
-    <div class="eyebrow">PART 4 · 案例討論</div>
+  <!-- 22 Tilly -->
+  <section class="slide" data-c="yellow">
+    <div class="eyebrow">Part 4 · 案例討論</div>
     <h2>Tilly Norwood：AI 演員風暴</h2>
     <div class="content">
-      <div class="tl">
-        <div class="ev"><b>2025</b><span>Particle 6 創辦人 Eline van der Velden 推出「首位 AI 女演員」</span></div>
-        <div class="ev"><b>2025/9–10</b><span>好萊塢反彈；SAG-AFTRA：訓練自無數演員的表演，未經同意也未補償</span></div>
-        <div class="ev"><b>2026/7</b><span>宣布主演長片《Misaligned》：舞台是雲端裡的「Tillyverse」</span></div>
-        <div class="ev"><b>2026</b><span>SAG-AFTRA 推「Tilly 稅」提案：合成演員每次出演都要付版稅成本</span></div>
-        <div class="ev"><b>2026</b><span>NRG 調查：觀眾對 AI 演員接受度仍低，製作方照樣往前走</span></div>
-      </div>
-      <div class="qlist">
-        <p>AI 演員的「表演」從哪裡來？若來自無數真人演員的資料，補償該怎麼設計？</p>
-        <p>「Tilly 稅」讓合成演員變貴、也變合法：這是工會的勝利，還是讓步？</p>
-      </div>
-      <div class="linkrow">
-        <a class="lk" href="https://variety.com/2026/film/global/ai-actor-tilly-norwood-movie-debut-misaligned-1236802325/" target="_blank" rel="noopener">Variety</a>
-        <a class="lk" href="https://deadline.com/2026/07/tilly-norwood-ai-actor-misaligned-1236974639/" target="_blank" rel="noopener">Deadline</a>
-        <a class="lk" href="https://www.thewrap.com/industry-news/tech/ai-actors-synthetic-tilly-norwood-nrg-research-study/" target="_blank" rel="noopener">TheWrap：觀眾調查</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- 24 論文導讀 -->
-<section class="slide part">
-    <div class="part-num">05</div>
-    <div class="eyebrow">PART 5</div>
-    <h2>論文導讀</h2>
-    <p class="part-sub">一篇 ACM 大綜述畫出技術地圖，一篇 Sora 解剖示範「模型會退場，分析會留下」。兩篇都直接接住今天的案例。</p>
-  </section>
-
-  <!-- 25 影片擴散模型的技術地圖 -->
-<section class="slide">
-    <div class="eyebrow">PART 5 · 論文導讀 ①</div>
-    <h2>影片擴散模型的技術地圖</h2>
-    <div class="content">
-      <div class="biblio">
-        <span class="ti">A Survey on Video Diffusion Models</span>
-        Xing, Z., Feng, Q., Chen, H., Dai, Q., Hu, H., Xu, H., Wu, Z., &amp; Jiang, Y.-G.（2025）。<i>ACM Computing Surveys</i>, 57(2), 1–42。
-        <a href="https://doi.org/10.1145/3696415" target="_blank" rel="noopener">doi.org/10.1145/3696415</a>
-      </div>
       <dl class="kv">
-        <dt>研究問題</dt><dd>擴散模型如何從單張圖像跨進影片？各技術路線走到哪裡？</dd>
-        <dt>方法</dt><dd>系統性綜述：整理影片擴散模型的技術譜系、資料集與評測基準</dd>
-        <dt>範圍</dt><dd>三類任務：影片生成、影片編輯、影片理解</dd>
+        <dt>2025-09</dt><dd>Particle6 推出「AI 女演員」Tilly Norwood，由 Eline Van der Velden 領導。<sup class="fn"><a href="#src-17">17</a></sup></dd>
+        <dt>工會</dt><dd>SAG-AFTRA：它「沒有可汲取的人生經驗、沒有情感」，是「用偷來的表演讓演員失業」。<sup class="fn"><a href="#src-17">17</a></sup></dd>
+        <dt>2026-03</dt><dd>NRG 調查：56% 認為 AI 演員永遠不會和人類一樣好，7% 認為已達人類水準。<sup class="fn"><a href="#src-18">18</a></sup></dd>
+        <dt>討論</dt><dd>10 倍速 VFX 被接受、AI 演員被抵制：界線畫在哪裡？</dd>
       </dl>
     </div>
   </section>
 
-  <!-- 26 發現：短期不會消失的瓶頸 -->
-<section class="slide">
-    <div class="eyebrow">PART 5 · 論文導讀 ①</div>
-    <h2>發現：短期不會消失的瓶頸</h2>
+  <!-- 23 課堂規矩 -->
+  <section class="slide" data-c="yellow">
+    <div class="eyebrow">Part 4 · 老師的課堂規矩</div>
+    <h2>交 AI 影片，我先看三件事</h2>
+    <div class="content">
+      <ul>
+        <li>模型規格只引官方頁或官方新聞稿；榜單數字要寫「廠商自述」，不可寫成「公認」。</li>
+        <li>每支影片附「鏡頭表」：哪一鏡用哪個模型、提示詞、生成日期、人工改了什麼。</li>
+        <li>用到真人肖像或既有角色要說明授權；opt-out 不是授權。</li>
+        <li>分析破綻要指到秒數與影格，不接受「整體感覺不自然」。</li>
+      </ul>
+      <div class="take"><b>一句話</b>我評的不是畫面多逼真，是你能不能說出它是怎麼被做出來的。</div>
+    </div>
+  </section>
+
+  <!-- 24 PART 5 -->
+  <section class="slide part p-grey">
+    <div class="part-num">05</div>
+    <div class="eyebrow">Part 5</div>
+    <h2>論文導讀與本週交付</h2>
+    <p class="part-sub">一篇 ACM 綜述畫出技術地圖，一篇 Sora 解剖示範「模型會退場，分析會留下」。兩篇都直接接住今天的案例。</p>
+  </section>
+
+  <!-- 25 論文① -->
+  <section class="slide" data-c="grey">
+    <div class="eyebrow">Part 5 · 論文導讀 ①</div>
+    <h2>影片擴散模型的技術地圖</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>書目</dt><dd>Xing、Feng、Chen、Dai、Hu、Xu、Wu、Jiang（2025）。〈A Survey on Video Diffusion Models〉。<i>ACM Computing Surveys</i>, 57(2), 1–42。<sup class="fn"><a href="#src-19">19</a></sup></dd>
+        <dt>問題</dt><dd>擴散模型如何從單張圖像跨進影片？</dd>
+        <dt>範圍</dt><dd>三類任務：影片生成、影片編輯、其他影片理解任務。<sup class="fn"><a href="#src-19">19</a></sup></dd>
+        <dt>主張</dt><dd>擴散模型正取代 GAN 與自迴歸 Transformer；文末討論挑戰與趨勢。<sup class="fn"><a href="#src-19">19</a></sup></dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 26 論文① 用法 -->
+  <section class="slide" data-c="grey">
+    <div class="eyebrow">Part 5 · 論文導讀 ①</div>
+    <h2>怎麼用這張地圖</h2>
     <div class="content">
       <div class="cards c3">
-        <div class="card"><h3>資料瓶頸</h3><p>高品質「影片—文字」配對資料遠比圖像稀缺，是各路線共同的天花板。</p></div>
-        <div class="card"><h3>時間一致性</h3><p>長影片生成與時間一致性被點名為核心開放問題，正是 PART 1 的難點。</p></div>
-        <div class="card"><h3>評測缺口</h3><p>FVD 等自動指標與人類審美不對齊：「好影片」還沒有公認的量尺。</p></div>
+        <div class="card"><h3>定位工具</h3><p>今天講的每個模型都能放進「生成」那一類；剪輯軟體的 Generative Extend 是「編輯」。</p></div>
+        <div class="card"><h3>找挑戰</h3><p>摘要說文末討論該領域的挑戰；拿它對照 Part 1 的三難，看哪些是模型問題、哪些是資料問題。</p></div>
+        <div class="card"><h3>追清單</h3><p>作者維護的模型清單比任何新聞都完整；引用時回到各模型的原始論文。</p></div>
       </div>
-      <ul>
-        <li>對設計的啟示：工具版本一直換，但資料、一致性、評測三個瓶頸會留在原地</li>
-      </ul>
+      <div class="take"><b>注意</b>ACM 全文頁擋抓取，我以 arXiv 摘要核對；v1 寫的具體瓶頸條目我沒能對到原文，拿掉了。</div>
     </div>
   </section>
 
-  <!-- 27 快讀：Sora 的學術解剖 -->
-<section class="slide">
-    <div class="eyebrow">PART 5 · 論文導讀 ②</div>
+  <!-- 27 論文② -->
+  <section class="slide" data-c="grey">
+    <div class="eyebrow">Part 5 · 論文導讀 ②</div>
     <h2>快讀：Sora 的學術解剖</h2>
     <div class="content">
-      <div class="biblio">
-        <span class="ti">Sora: A Review on Background, Technology, Limitations, and Opportunities of Large Vision Models</span>
-        Liu, Y., Zhang, K., Li, Y., Yan, Z., Gao, C., Chen, R., … Sun, L.（2024）。arXiv 預印本。
-        <a href="https://arxiv.org/abs/2402.17177" target="_blank" rel="noopener">arxiv.org/abs/2402.17177</a>
-      </div>
-      <ul>
-        <li>方法：逆向拆解 Sora 技術報告：DiT 骨幹、時空 patch 與資料重述策略</li>
-        <li>定位：「影片模型作為世界模擬器」論述的第一波學術回應</li>
-        <li>它點名的局限——物理因果、長時序、可控性——成了 Sora 產品退場的伏筆</li>
-      </ul>
+      <dl class="kv">
+        <dt>書目</dt><dd>Liu、Zhang、Li 等（2024）。〈Sora: A Review on Background, Technology, Limitations, and Opportunities…〉。arXiv 2402.17177。<sup class="fn"><a href="#src-20">20</a></sup></dd>
+        <dt>方法</dt><dd>逆向工程分析 Sora 技術報告與「世界模擬器」的技術基礎。<sup class="fn"><a href="#src-20">20</a></sup></dd>
+        <dt>局限</dt><dd>點名安全與偏見等部署挑戰；應用面談影視、教育、行銷。<sup class="fn"><a href="#src-20">20</a></sup></dd>
+        <dt>為什麼讀</dt><dd>產品退場了，分析還在；學會拆技術報告比記住誰當紅有用。</dd>
+      </dl>
     </div>
   </section>
 
-  <!-- 28 把案例變成你的判斷力 -->
-<section class="slide">
-    <div class="eyebrow">Week 12 · 課堂討論與課後任務</div>
-    <h2>把案例變成你的判斷力</h2>
+  <!-- 28 交付 -->
+  <section class="slide" data-c="grey">
+    <div class="eyebrow">Part 5 · 交付規格</div>
+    <h2>這週要交什麼</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>交付物</dt><dd>選一支 2025 至 2026 年公開的 AI 生成短片，找出三處時空一致性破綻或藏拙手法。</dd>
+        <dt>分析</dt><dd>300 字：創作者用了哪些策略繞開模型弱點？每處破綻指到秒數。</dd>
+        <dt>附件</dt><dd>影片連結、三張標時間碼的截圖；模型名稱只引官方頁或創作者自述。</dd>
+        <dt>格式</dt><dd>一頁 PDF，檔名「學號_W12_破綻分析」，附 AI 揭露；下週分享 5 分鐘。</dd>
+      </dl>
+      <div class="take"><b>退件</b>沒有時間碼；「整體不自然」代替具體破綻；模型名稱憑猜。</div>
+    </div>
+  </section>
+
+  <!-- 29 收尾 -->
+  <section class="slide">
+    <div class="eyebrow">Week 12 · 收尾</div>
+    <h2>回去想這三題</h2>
     <div class="content">
       <div class="qlist">
         <p>Sora 2 從發布到關閉只有七個月：若你的工作室把管線押在單一模型上，退場備案該長什麼樣？</p>
         <p>Netflix 的 10 倍速 VFX 被接受，Tilly Norwood 卻被抵制：同樣是 AI 進影視，界線畫在哪裡？</p>
         <p>你的研究或畢製若用影片生成，時空一致性的哪個弱點會先咬到你？打算怎麼繞開？</p>
       </div>
-      <div class="card">
-        <h3>課後任務（下週開場分享，約 5 分鐘）</h3>
-        <p>選一支 2025–2026 的 AI 生成廣告或短片，逐鏡頭找出三處時空一致性破綻（或藏拙手法），寫 300 字：創作者用了哪些策略繞開模型弱點？</p>
-      </div>
+      <div class="take"><b>下週預告</b>創意發想與提示工程：把本週的鏡頭表反過來用，從提示詞設計出可控的產出。</div>
     </div>
   </section>
 
-  <!-- 29 本週資源，一頁帶走 -->
-<section class="slide">
-    <div class="eyebrow">Week 12 · 本週資源彙整</div>
-    <h2>本週資源，一頁帶走</h2>
+  <!-- 30 資源彙整 -->
+  <section class="slide">
+    <div class="eyebrow">Week 12 · 資源彙整</div>
+    <h2>本週資源</h2>
     <div class="content">
       <div class="cols">
         <div class="grp">
-          <h3>模型官方</h3>
+          <h3>模型與工具官方</h3>
           <div class="linkrow">
-            <a class="lk" href="https://openai.com/index/sora-2/" target="_blank" rel="noopener">Sora 2 發布</a>
-            <a class="lk" href="https://help.openai.com/en/articles/20001152-what-to-know-about-the-sora-discontinuation" target="_blank" rel="noopener">Sora 退場說明</a>
-            <a class="lk" href="https://deepmind.google/models/veo/" target="_blank" rel="noopener">Veo 官方頁</a>
-            <a class="lk" href="https://runwayml.com/research/introducing-runway-gen-4.5" target="_blank" rel="noopener">Gen-4.5 發表</a>
-            <a class="lk" href="https://ir.kuaishou.com/news-releases/news-release-details/kling-ai-launches-30-model-ushering-era-where-everyone-can-be" target="_blank" rel="noopener">Kling 3.0 新聞稿</a>
-          </div>
-          <h3 style="margin-top:18px">剪輯與工作流</h3>
-          <div class="linkrow">
-            <a class="lk" href="https://www.autocut.com/en/" target="_blank" rel="noopener">AutoCut 官方</a>
+            <a class="lk" href="https://deepmind.google/models/veo/" target="_blank" rel="noopener">Veo</a>
+            <a class="lk" href="https://runway.com/research/introducing-runway-gen-4.5" target="_blank" rel="noopener">Runway Gen-4.5</a>
+            <a class="lk" href="https://www.globenewswire.com/news-release/2026/02/05/3232837/0/en/kling-ai-launches-3-0-model-ushering-in-an-era-where-everyone-can-be-a-director.html" target="_blank" rel="noopener">Kling 3.0 新聞稿</a>
+            <a class="lk" href="https://www.blackmagicdesign.com/products/davinciresolve/whatsnew" target="_blank" rel="noopener">DaVinci Resolve 21</a>
+            <a class="lk" href="https://www.autocut.com/en/" target="_blank" rel="noopener">AutoCut</a>
           </div>
         </div>
         <div class="grp">
-          <h3>產業案例</h3>
+          <h3>產業與論文</h3>
           <div class="linkrow">
+            <a class="lk" href="https://www.motionpictures.org/press/mpa-issues-statement-on-openais-recent-release-of-sora-2/" target="_blank" rel="noopener">MPA 聲明</a>
             <a class="lk" href="https://techcrunch.com/2025/07/18/netflix-starts-using-genai-in-its-shows-and-films/" target="_blank" rel="noopener">Netflix 首例</a>
-            <a class="lk" href="https://variety.com/2026/film/news/lionsgate-equity-stake-runway-ai-franchises-for-ai-show-1236775590/" target="_blank" rel="noopener">Lionsgate 入股</a>
-            <a class="lk" href="https://deadline.com/2026/07/tilly-norwood-ai-actor-misaligned-1236974639/" target="_blank" rel="noopener">Tilly 主演長片</a>
-            <a class="lk" href="https://www.cnbc.com/2025/10/07/openais-sora-2-must-stop-allowing-copyright-infringement-mpa-says.html" target="_blank" rel="noopener">MPA 聲明</a>
-            <a class="lk" href="https://www.japantimes.co.jp/business/2025/10/16/companies/japan-opt-in-model-sora2/" target="_blank" rel="noopener">日本要求 opt-in</a>
-          </div>
-          <h3 style="margin-top:18px">本週論文</h3>
-          <div class="linkrow">
-            <a class="lk" href="https://doi.org/10.1145/3696415" target="_blank" rel="noopener">論文① 影片擴散綜述</a>
+            <a class="lk" href="https://doi.org/10.1145/3696415" target="_blank" rel="noopener">論文① 綜述</a>
             <a class="lk" href="https://arxiv.org/abs/2402.17177" target="_blank" rel="noopener">論文② Sora 評論</a>
           </div>
         </div>
       </div>
-      <div class="take"><b>本週檢核</b>任選一支 AI 影片：你能指出生成、編輯與人工決策各發生在哪一段嗎？</div>
+      <div class="take"><b>出處與補充</b>在下方講義，按 N 鍵。每一條數字的來源與查證日期都在那裡。</div>
     </div>
   </section>
 
-  
-
   </div></div>
 
+  <div class="hint">← → 換頁　M 目錄　N 講義　F 全螢幕</div>
   <div class="ctrl">
     <button id="prev" aria-label="上一張">‹</button>
     <span class="cnt" id="cnt">1 / 1</span>
     <button id="next" aria-label="下一張">›</button>
     <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+    <button id="toNotes" title="講義（N）">講義 ↓</button>
+    <button id="full" title="全螢幕（F）">⛶</button>
   </div>
   <div class="prog" id="prog"></div>
 
@@ -659,17 +647,161 @@
   </div>
 </div>
 
+<!-- ============ 講義區 ============ -->
+<main class="notes" id="notes">
+<div class="notes-head">
+    <div class="eyebrow">Week 12 · 講義</div>
+    <h2>AI 與動態影像製作</h2>
+    <p>投影片講的是骨架，這裡放肉：時空一致性為什麼難、四家模型只引官方頁的規格與日期、剪輯軟體 2025 至 2026 年長出的 AI 功能、Netflix 與 Lionsgate 的採用、MPA 與日本政府的版權立場、Tilly Norwood 的工會聲明與觀眾調查、兩篇論文的書目與摘要，以及交作業前的自我檢核。</p>
+  </div>
+
+  <section class="sec">
+    <span class="kicker">導讀</span>
+    <h2>這週在解決什麼問題</h2>
+    <p>上週的空間是一種狀態，錯了可以改；這週的影片是一條過程，每一格都受前面所有格約束，錯誤會累積、會傳播，觀眾一眼看見。這週要建立的判斷力是：對任何一支 AI 影片，說得出它是怎麼被做出來的，以及它在哪一格會穿幫。</p>
+    <p>三個關鍵詞先講清楚。<strong>時空一致性</strong>是影片生成的核心難題：一秒 24 格、十秒 240 張圖必須彼此連戲，角色不能轉身換臉、物件不能出鏡變色。<strong>原生音訊</strong>是 2025 年後的標配，畫面與音效、對白一次生成、天生對齊，Veo 3.1 與 Kling 3.0 的官方頁都寫明。<sup class="fn"><a href="#src-5">5</a></sup><sup class="fn"><a href="#src-7">7</a></sup> <strong>opt-out</strong>是 Sora 2 的版權設計：權利人要自己登記排除，MPA 與日本政府都反對，半年後產品退場。<sup class="fn"><a href="#src-3">3</a></sup><sup class="fn"><a href="#src-4">4</a></sup><sup class="fn"><a href="#src-2">2</a></sup></p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">§1</span>
+    <h2>原理直觀：把時間當作第三個維度</h2>
+    <p>逐格獨立生成的下場是臉一直變、光線跳動、物件閃現又消失；片場靠場記連戲，模型靠時間一致性。主流做法把時間當第三個維度：影片先壓進潛在空間，空間與時間一起降維；切成時空區塊，像 token 一樣排隊進 Transformer；擴散模型對整段時空一起去噪，主流骨幹是 DiT（Diffusion Transformer）。Liu 等人的 Sora 評論就是用逆向工程拆這套架構。<sup class="fn"><a href="#src-20">20</a></sup> 第 4 週的擴散原理原封不動，只是雕的對象從一張圖變成一段時空，所以只想改角色袖口，前後鏡格會一起漂移。</p>
+    <p>難在三件事。身分漂移：角色轉身回來換了一張臉，物件出鏡再入鏡顏色與形狀悄悄變了。物理直覺：模型沒有物理引擎，只有統計直覺，液體、布料、手指、輪子最容易穿幫。成本爆炸：解析度、影格率、長度三軸相乘，算力與記憶體隨秒數暴漲；2026 年的官方頁還在講 Veo 的 8 秒基準與 Kling 的 15 秒上限，就是這一軸的證據。<sup class="fn"><a href="#src-5">5</a></sup><sup class="fn"><a href="#src-7">7</a></sup> 所以 2026 年 9 月的能與不能很清楚：能做鏡頭級的生產力（8 到 15 秒短鏡頭含原生音訊、剪輯軟體內直接生成、廣告素材與 previz），還做不到作品級的可靠性（長片級跨場景連續性、精準走位與鏡頭調度、每次都一樣的可重複性）。</p>
+  </section>
+
+  <section class="sec grape">
+    <span class="kicker">§2</span>
+    <h2>模型版圖：四家，只引官方頁</h2>
+    <table>
+      <thead><tr><th>時間</th><th>發生什麼</th><th>來源</th></tr></thead>
+      <tbody>
+        <tr><td>2025-09-30</td><td>Sora 2 與 iOS app 在美國、加拿大推出；cameo 把使用者放進生成場景（含驗證流程）；原生音景、同步語音與音效</td><td>Notebookcheck（二手，OpenAI 官方頁擋抓取）<sup class="fn"><a href="#src-1">1</a></sup></td></tr>
+        <tr><td>2025-10-06</td><td>MPA 聲明：防止侵權「仍是他們的責任，不是權利人的」</td><td>MPA 官方<sup class="fn"><a href="#src-3">3</a></sup></td></tr>
+        <tr><td>2025-12-01</td><td>Runway Gen-4.5 發表：Artificial Analysis 盲測 Elo 1,247 第一，Veo 3 為 1,226、Kling 2.5 為 1,225、Sora 2 Pro 為 1,206</td><td>Runway 官方<sup class="fn"><a href="#src-6">6</a></sup></td></tr>
+        <tr><td>2026-02-05</td><td>Kling 3.0 家族：影片最長 15 秒、多語言原生音訊、影像 2K／4K、多鏡頭分鏡；逾 6,000 萬創作者、逾 6 億支影片</td><td>快手新聞稿<sup class="fn"><a href="#src-7">7</a></sup></td></tr>
+        <tr><td>2026-04-26</td><td>Sora 網頁與 app 關閉；API 2026-09-24 終止</td><td>The Decoder（二手）<sup class="fn"><a href="#src-2">2</a></sup></td></tr>
+        <tr><td>2026-09（查證時）</td><td>Veo 官方頁：目前版本 3.1，音效、環境音與對白全部原生生成，1080p 與 4K，基準 8 秒，Scene Extension 用上一鏡最後一秒接下去；可經 Gemini、Flow、Vids、AI Studio、API 使用</td><td>DeepMind 官方<sup class="fn"><a href="#src-5">5</a></sup></td></tr>
+      </tbody>
+    </table>
+    <p>每一家的定位語言不同。OpenAI 賣的是社群與 cameo，最後因為版權與商業模式退場；Google 賣的是通路，Veo 進了 Gemini 與 Vids；Runway 賣的是盲測榜首與物理準確，但榜單數字取自它自己的發表頁；快手賣的是規模與導演式分鏡。選型思考四條：前期 previz 任一模型皆可，速度與成本優先；要連戲的短片看角色一致性與多鏡頭規劃；影音一體已是標配；平台風險管理記住 Sora 的教訓，工作流別綁死單一模型，素材與提示要可攜。v1 教材寫的 Sora 下載量與燒錢數字、Veo 的免費開放日期與 Fast／Lite 檔、Gen-4.5 的 60 秒、Kling 的 60fps，我都沒開到官方頁，全部拿掉。</p>
+  </section>
+
+  <section class="sec cyan">
+    <span class="kicker">§3</span>
+    <h2>剪輯工作流：AI 進駐剪輯台</h2>
+    <p>剪輯軟體自己長出 AI。Adobe 2025 年 4 月 2 日的新聞：Premiere Pro 的 Generative Extend 正式版支援 4K 與直式、輸出含 Content Credentials，Media Intelligence 依物件、地點、鏡位與詮釋資料搜素材，字幕翻譯 27 種語言。<sup class="fn"><a href="#src-8">8</a></sup> 2026 年 9 月 10 日的 Premiere 26.5：Generative Media Tool 讓你「不離開 Premiere」就以文字生成影片與音效，模型含 Adobe Firefly 與合作夥伴模型；Paper Edit 從逐字稿組粗剪；Generative Extend 擴到 360p 至 4K、任意長寬比。<sup class="fn"><a href="#src-9">9</a></sup> IBC 2026 的報導把合作夥伴模型點名：Google Veo、Kling、Runway、Luma 加上 Firefly，五個模型直接掛在工具列，另有測試中的 Generate Soundscape 與 Generate Music。<sup class="fn"><a href="#src-10">10</a></sup> Blackmagic 的 DaVinci Resolve 21 在 2026 年 4 月 NAB 公測，官方 What's New 頁列 IntelliSearch（搜人物與內容）、CineFocus（定焦點與景深）、Speech Generator、Face Age Transformer、Slate ID（自動讀場記板）、UltraSharpen、Motion Deblur。<sup class="fn"><a href="#src-11">11</a></sup><sup class="fn"><a href="#src-12">12</a></sup> v1 寫的「省下四成剪輯工時」我沒查到來源，不寫。</p>
+    <p>外掛生態以 AutoCut 為例：官方頁寫支援 Premiere Pro 2023 至 2026 與 DaVinci Resolve 18.6 以上，工具含自動字幕、靜音剪除、多機位切換、自動縮放、短片抽取、自動 B-roll、章節與重新構圖。<sup class="fn"><a href="#src-13">13</a></sup> 三種型態的共同姿態是 AI 當「助理剪輯」，吃掉找素材、對字幕、切短片的機械時間，節奏與終審還在人手上。一條可用的工作流：前期用 LLM 協作腳本與分鏡、圖像模型出概念板；生成階段影片模型逐鏡出候選素材、參照圖鎖定角色與場景；後期自動粗剪、AI 調色與字幕、人工掌節奏與終審。生成單位是「鏡頭」，作品單位是「序列」，每一段都留人工否決點。</p>
+    <div class="scene">
+      <span class="who">假設情境</span>
+      <p>一個小組要做 30 秒的系上招生短片，決定全用生成。第一版把 30 秒當一個提示丟進去，出來的是主角三次換臉。第二版拆成六個 5 秒鏡頭、用同一張參照圖鎖角色、在剪輯軟體裡用 Generative Extend 補每鏡的頭尾，再自己剪節奏。第二版能用，第一版不能，差別不在模型，在他們把「作品單位」從鏡頭改回序列。</p>
+    </div>
+  </section>
+
+  <section class="sec lemon">
+    <span class="kicker">§4</span>
+    <h2>產業現場：採用與爭議</h2>
+    <p>採用面看兩家。TechCrunch 2025 年 7 月 18 日報導 Netflix 首次在正片使用生成式 AI 畫面：阿根廷影集《El Eternauta》的建築倒塌鏡頭，共同執行長 Sarandos 說比傳統 VFX 工具快 10 倍、成本更低，「real people doing real work with better tools」；<sup class="fn"><a href="#src-14">14</a></sup> 同年 10 月 21 日的報導寫 Netflix「全力投入」但不為新奇而新奇，用例還包括《Happy Gilmore 2》開場減齡與《Billionaires' Bunker》前期服裝與布景構想。<sup class="fn"><a href="#src-15">15</a></sup> IBC 2026 年 6 月 17 日報導 Lionsgate 取得 Runway 未披露的股權，擴展 2024 年宣布的合作，Lionsgate 已在前期可視化、分鏡與最終畫面使用 Runway 工具，兩家將以 Lionsgate 既有 IP 推出短篇劇集系列。<sup class="fn"><a href="#src-16">16</a></sup></p>
+    <p>爭議面看版權與演員。Sora 2 採 opt-out，權利人要自己登記排除；<sup class="fn"><a href="#src-4">4</a></sup> MPA 主席 Rivkin 在 2025 年 10 月 6 日的官方聲明說 OpenAI「must acknowledge it remains their responsibility – not rightsholders' – to prevent infringement」；<sup class="fn"><a href="#src-3">3</a></sup> 日本 IP 與 AI 戰略擔當大臣木內稔在記者會說已要求 OpenAI 不得從事任何可能構成侵權的行為，動漫是「irreplaceable treasures」。<sup class="fn"><a href="#src-4">4</a></sup> 演員面，NBC News 2025 年 9 月 30 日報導 Particle6 推出的 AI 女演員 Tilly Norwood，由 Eline Van der Velden 領導；SAG-AFTRA 聲明「It has no life experience to draw from, no emotion」，並指它「using stolen performances to put actors out of work」。<sup class="fn"><a href="#src-17">17</a></sup> TheWrap 2026 年 3 月 16 日引 NRG 調查：56% 受訪者認為 AI 演員永遠不會和人類一樣好，7% 認為已達人類水準，樣本數未載。<sup class="fn"><a href="#src-18">18</a></sup> v1 寫的 Tilly 主演長片、「Tilly 稅」、CODA 發函、OpenAI 動畫長片預算，我都被付費牆擋住，不寫。討論題留給你們：同樣是 AI 進影視，10 倍速 VFX 被接受、AI 演員被抵制，界線畫在哪裡？</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">§5</span>
+    <h2>論文導讀與本週交付</h2>
+    <p>第一篇是 Xing、Feng、Chen、Dai、Hu、Xu、Wu、Jiang 的〈A Survey on Video Diffusion Models〉，《ACM Computing Surveys》第 57 卷第 2 期 1 至 42 頁，2025 年 2 月 28 日。<sup class="fn"><a href="#src-19">19</a></sup> arXiv 摘要：整理影片生成、影片編輯與其他影片理解三類任務，指出擴散模型正在取代 GAN 與自迴歸 Transformer，文末討論該領域的挑戰與未來趨勢，並在 GitHub 維護模型清單。怎麼用：今天講的每個模型都放進「生成」那一類，剪輯軟體的 Generative Extend 是「編輯」；拿它討論的挑戰對照 Part 1 的三難；引用時回到各模型的原始論文。ACM 全文頁擋抓取，v1 寫的「資料瓶頸」「FVD 與人類審美不對齊」我沒能對到原文，拿掉了。</p>
+    <p>第二篇是 Liu、Zhang、Li 等人的〈Sora: A Review on Background, Technology, Limitations, and Opportunities of Large Vision Models〉，arXiv 2402.17177，2024 年 2 月 27 日提交。<sup class="fn"><a href="#src-20">20</a></sup> 以逆向工程分析 Sora 技術報告的架構與時空處理，討論「世界模擬器」的技術基礎、部署上的安全與偏見等局限，以及影視、教育、行銷的應用。為什麼在產品退場後還要讀：模型會退場，分析會留下；學會拆技術報告，比記住哪個模型當紅有用。</p>
+    <h3>本週交付：三處破綻</h3>
+    <p>選一支 2025 至 2026 年公開的 AI 生成廣告或短片，逐鏡頭找出三處時空一致性破綻或藏拙手法，寫 300 字：創作者用了哪些策略繞開模型弱點？每處破綻指到秒數。附影片連結、三張標了時間碼的截圖；若知道用哪個模型，只引官方頁或創作者自述。一頁 PDF，檔名「學號_W12_破綻分析」，附 AI 使用揭露；下週開場分享約 5 分鐘。退件條件：沒有時間碼；「整體不自然」代替具體破綻；模型名稱憑猜。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">老師的課堂規矩</span>
+    <h2>交 AI 影片，我先看三件事</h2>
+    <p>第一條，模型規格只引官方頁或官方新聞稿；盲測榜單這種數字要寫「廠商自述」，不可寫成「公認」，因為 Runway 的 Elo 就是從它自己的發表頁抄的。第二條，每支影片附「鏡頭表」：哪一鏡用哪個模型、提示詞、生成日期、人工改了什麼；沒有鏡頭表的影片我當成不知道怎麼做出來的。第三條，用到真人肖像或既有角色要說明授權來源，opt-out 不是授權，這是 MPA 與日本政府都講過的立場。第四條，分析破綻要指到秒數與影格，不接受「整體感覺不自然」。我評的不是畫面多逼真，是你能不能說出它是怎麼被做出來的。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">出處</span>
+    <h2>本週引用的資料</h2>
+    <p>每一條都在 2026-09-16 打開確認過。OpenAI 官方頁（openai.com、help.openai.com）對抓取工具回 403，Sora 的兩個日期以媒體轉述為據並標二手；Variety、Deadline 轉導付費牆的條目一律不寫；出版社全文頁擋抓取者以 Crossref 書目與 arXiv 摘要核對。網址失效請告訴我，我會換。</p>
+    <ol class="src">
+      <li id="src-1"><span class="ti">Notebookcheck〈OpenAI launches Sora 2: AI videos get real physics and user cameos〉</span><span class="meta">Notebookcheck · 2025-09-30 · 二手媒體（OpenAI 官方頁 403）· 發布日期、cameo、原生音訊 · 查證 2026-09-16</span><a href="https://www.notebookcheck.net/OpenAI-launches-Sora-2-AI-videos-get-real-physics-and-user-cameos.1128408.0.html" target="_blank" rel="noopener">https://www.notebookcheck.net/OpenAI-launches-Sora-2-AI-videos-get-real-physics-and-user-cameos.1128408.0.html</a></li>
+      <li id="src-2"><span class="ti">The Decoder〈OpenAI sets two-stage Sora shutdown with app closing April 2026 and API following in September〉</span><span class="meta">The Decoder · 2026-03-28 · 二手媒體（OpenAI 說明頁 403）· 04-26 關閉、09-24 API 終止 · 查證 2026-09-16</span><a href="https://the-decoder.com/openai-sets-two-stage-sora-shutdown-with-app-closing-april-2026-and-api-following-in-september/" target="_blank" rel="noopener">https://the-decoder.com/openai-sets-two-stage-sora-shutdown-with-app-closing-april-2026-and-api-following-in-september/</a></li>
+      <li id="src-3"><span class="ti">Motion Picture Association〈MPA Issues Statement on OpenAI's Recent Release of Sora 2〉</span><span class="meta">MPA 官方聲明 · 2025-10-06 · not rightsholders' · 查證 2026-09-16</span><a href="https://www.motionpictures.org/press/mpa-issues-statement-on-openais-recent-release-of-sora-2/" target="_blank" rel="noopener">https://www.motionpictures.org/press/mpa-issues-statement-on-openais-recent-release-of-sora-2/</a></li>
+      <li id="src-4"><span class="ti">Engadget〈Japan asks OpenAI not to infringe on 'irreplaceable' manga and anime content〉</span><span class="meta">Engadget · 2025-10-15 · 二手媒體（Japan Times 403）· 木內稔原句、opt-out · 查證 2026-09-16</span><a href="https://www.engadget.com/ai/japan-asks-openai-not-to-infringe-on-irreplaceable-manga-and-anime-content-120008580.html" target="_blank" rel="noopener">https://www.engadget.com/ai/japan-asks-openai-not-to-infringe-on-irreplaceable-manga-and-anime-content-120008580.html</a></li>
+      <li id="src-5"><span class="ti">Google DeepMind〈Veo〉官方頁</span><span class="meta">DeepMind 官方 · 頁面未標日期 · Veo 3.1、原生音訊、4K、8 秒、Scene Extension · 查證 2026-09-16</span><a href="https://deepmind.google/models/veo/" target="_blank" rel="noopener">https://deepmind.google/models/veo/</a></li>
+      <li id="src-6"><span class="ti">Runway Research〈Introducing Runway Gen-4.5〉</span><span class="meta">Runway 官方 · 2025-12-01 · Elo 1,247 與對照分數（廠商自述）· 查證 2026-09-16</span><a href="https://runway.com/research/introducing-runway-gen-4.5" target="_blank" rel="noopener">https://runway.com/research/introducing-runway-gen-4.5</a></li>
+      <li id="src-7"><span class="ti">Kling AI〈Kling AI Launches 3.0 Model, Ushering in an Era Where Everyone Can Be a Director〉</span><span class="meta">快手 Kling AI 官方新聞稿（GlobeNewswire）· 2026-02-05 · 15 秒、多語言音訊、多鏡頭分鏡、6,000 萬創作者 · 查證 2026-09-16</span><a href="https://www.globenewswire.com/news-release/2026/02/05/3232837/0/en/kling-ai-launches-3-0-model-ushering-in-an-era-where-everyone-can-be-a-director.html" target="_blank" rel="noopener">https://www.globenewswire.com/news-release/2026/02/05/3232837/0/en/kling-ai-launches-3-0-model-ushering-in-an-era-where-everyone-can-be-a-director.html</a></li>
+      <li id="src-8"><span class="ti">Adobe News〈New AI innovation in industry〉</span><span class="meta">Adobe 官方 · 2025-04-02 · Generative Extend、Media Intelligence、27 種語言 · 查證 2026-09-16</span><a href="https://news.adobe.com/news/2025/04/new-ai-innovation-in-industry" target="_blank" rel="noopener">https://news.adobe.com/news/2025/04/new-ai-innovation-in-industry</a></li>
+      <li id="src-9"><span class="ti">Adobe Community〈What's New in Adobe Premiere 26.5 – September 2026〉</span><span class="meta">Adobe 官方公告 · 2026-09-10 · Generative Media Tool、Paper Edit · 查證 2026-09-16</span><a href="https://community.adobe.com/announcements-727/what-s-new-in-adobe-premiere-26-5-september-2026-1641187" target="_blank" rel="noopener">https://community.adobe.com/announcements-727/what-s-new-in-adobe-premiere-26-5-september-2026-1641187</a></li>
+      <li id="src-10"><span class="ti">Broadcast〈IBC 2026: Adobe builds GenAI directly into Premiere &amp; After Effects〉</span><span class="meta">Broadcast · 2026-09-15 · 二手媒體 · 五個可選模型 · 查證 2026-09-16</span><a href="https://www.broadcastnow.co.uk/post-and-vfx/ibc-2026-adobe-builds-genai-directly-into-premiere-and-after-effects/5220433.article" target="_blank" rel="noopener">https://www.broadcastnow.co.uk/post-and-vfx/ibc-2026-adobe-builds-genai-directly-into-premiere-and-after-effects/5220433.article</a></li>
+      <li id="src-11"><span class="ti">Blackmagic Design〈DaVinci Resolve – What's New〉</span><span class="meta">Blackmagic Design 官方 · 頁面未標日期 · Resolve 21 AI 功能 · 查證 2026-09-16</span><a href="https://www.blackmagicdesign.com/products/davinciresolve/whatsnew" target="_blank" rel="noopener">https://www.blackmagicdesign.com/products/davinciresolve/whatsnew</a></li>
+      <li id="src-12"><span class="ti">CGW〈Blackmagic Design announces DaVinci Resolve 21〉</span><span class="meta">Computer Graphics World（轉載新聞稿）· 2026-04-13 · 二手 · NAB 2026 公測 · 查證 2026-09-16</span><a href="https://www.cgw.com/Press-Center/NAB/2026/Blackmagic-Design-announces-DaVinci-Resolve-21.aspx" target="_blank" rel="noopener">https://www.cgw.com/Press-Center/NAB/2026/Blackmagic-Design-announces-DaVinci-Resolve-21.aspx</a></li>
+      <li id="src-13"><span class="ti">AutoCut 官方頁</span><span class="meta">AutoCut · 頁面未標日期 · 廠商自述：支援版本與工具清單 · 查證 2026-09-16</span><a href="https://www.autocut.com/en/" target="_blank" rel="noopener">https://www.autocut.com/en/</a></li>
+      <li id="src-14"><span class="ti">TechCrunch〈Netflix starts using GenAI in its shows and films〉</span><span class="meta">TechCrunch · 2025-07-18 · 二手媒體 · El Eternauta、10 倍 · 查證 2026-09-16</span><a href="https://techcrunch.com/2025/07/18/netflix-starts-using-genai-in-its-shows-and-films/" target="_blank" rel="noopener">https://techcrunch.com/2025/07/18/netflix-starts-using-genai-in-its-shows-and-films/</a></li>
+      <li id="src-15"><span class="ti">TechCrunch〈Netflix goes 'all in' on generative AI as entertainment industry remains divided〉</span><span class="meta">TechCrunch · 2025-10-21 · 二手媒體 · 查證 2026-09-16</span><a href="https://techcrunch.com/2025/10/21/netflix-goes-all-in-on-generative-ai-as-entertainment-industry-remains-divided/" target="_blank" rel="noopener">https://techcrunch.com/2025/10/21/netflix-goes-all-in-on-generative-ai-as-entertainment-industry-remains-divided/</a></li>
+      <li id="src-16"><span class="ti">IBC〈Lionsgate takes stake in AI firm Runway〉</span><span class="meta">IBC · 2026-06-17 · 二手媒體（Variety 付費牆）· 查證 2026-09-16</span><a href="https://www.ibc.org/artificial-intelligence/news/lionsgate-takes-stake-in-ai-firm-runway/22794" target="_blank" rel="noopener">https://www.ibc.org/artificial-intelligence/news/lionsgate-takes-stake-in-ai-firm-runway/22794</a></li>
+      <li id="src-17"><span class="ti">NBC News〈Tilly Norwood, fully AI 'actor,' blasted by actors union SAG-AFTRA〉</span><span class="meta">NBC News · 2025-09-30 · 二手媒體（SAG-AFTRA 官方頁 403）· Particle6、聲明原句 · 查證 2026-09-16</span><a href="https://www.nbcnews.com/pop-culture/pop-culture-news/tilly-norwood-fully-ai-actor-blasted-actors-union-sag-aftra-devaluing-rcna234685" target="_blank" rel="noopener">https://www.nbcnews.com/pop-culture/pop-culture-news/tilly-norwood-fully-ai-actor-blasted-actors-union-sag-aftra-devaluing-rcna234685</a></li>
+      <li id="src-18"><span class="ti">TheWrap〈AI actors, synthetic performers: NRG research study〉</span><span class="meta">TheWrap · 2026-03-16 · 二手媒體 · 56%、7%，樣本數未載 · 查證 2026-09-16</span><a href="https://www.thewrap.com/industry-news/tech/ai-actors-synthetic-tilly-norwood-nrg-research-study/" target="_blank" rel="noopener">https://www.thewrap.com/industry-news/tech/ai-actors-synthetic-tilly-norwood-nrg-research-study/</a></li>
+      <li id="src-19"><span class="ti">Xing, Z., Feng, Q., Chen, H., Dai, Q., Hu, H., Xu, H., Wu, Z. &amp; Jiang, Y.-G.〈A Survey on Video Diffusion Models〉</span><span class="meta">ACM Computing Surveys, 57(2), 1–42 · 2025-02-28 · Crossref 書目、摘要見 arXiv 2310.10647 · 查證 2026-09-16</span><a href="https://doi.org/10.1145/3696415" target="_blank" rel="noopener">https://doi.org/10.1145/3696415</a></li>
+      <li id="src-20"><span class="ti">Liu, Y., Zhang, K., Li, Y., … Sun, L.〈Sora: A Review on Background, Technology, Limitations, and Opportunities of Large Vision Models〉</span><span class="meta">arXiv 2402.17177 · 2024-02-27 提交 · 預印本 · 查證 2026-09-16</span><a href="https://arxiv.org/abs/2402.17177" target="_blank" rel="noopener">https://arxiv.org/abs/2402.17177</a></li>
+    </ol>
+  </section>
+
+  <section class="sec cyan">
+    <span class="kicker">補充資訊</span>
+    <h2>延伸閱讀與這一週刪掉的東西</h2>
+    <h3>這一週刪掉的東西，以及為什麼</h3>
+    <ul>
+      <li><strong>Sora「單月下載 330 萬」「日燒百萬美元、營收 210 萬」「Altman 承諾改 opt-in」</strong>：未開到來源，不寫。</li>
+      <li><strong>Veo「2025-10 發布、2026-01 加 4K、Fast／Lite、超過 60 秒、Vids 免費開放」</strong>：官方頁未載，只寫官方頁有的。<sup class="fn"><a href="#src-5">5</a></sup></li>
+      <li><strong>Gen-4.5「60 秒連戲、音訊一次生成」、Kling「原生 4K 影片、60fps」</strong>：官方頁與新聞稿未載，不寫。<sup class="fn"><a href="#src-6">6</a></sup><sup class="fn"><a href="#src-7">7</a></sup></li>
+      <li><strong>「省下四成剪輯工時」「Imagen Video NAB 2026」「Resolve 21 於 2026/6」</strong>：前兩者無來源；Resolve 21 新聞稿為 2026-04-13。<sup class="fn"><a href="#src-12">12</a></sup></li>
+      <li><strong>Netflix「收購 InterPositive」、Lionsgate「Chief AI Officer」、OpenAI 動畫長片預算</strong>：未開到來源，不寫。</li>
+      <li><strong>Tilly「主演長片《Misaligned》」「Tilly 稅」、CODA 發函</strong>：Variety 與 Deadline 轉導付費牆，不寫。</li>
+      <li><strong>論文①「資料瓶頸」「FVD 與人類審美不對齊」</strong>：全文頁 403，摘要只寫「討論挑戰」，改寫。<sup class="fn"><a href="#src-19">19</a></sup></li>
+    </ul>
+    <h3>延伸閱讀</h3>
+    <ul>
+      <li>Veo 官方頁的 Scene Extension 說明只有兩句，讀完就懂為什麼「8 秒」是基準而不是上限。<sup class="fn"><a href="#src-5">5</a></sup></li>
+      <li>Runway 的發表頁把盲測方法寫在榜單旁邊，拿它練習分辨「廠商自述的第三方數字」。<sup class="fn"><a href="#src-6">6</a></sup></li>
+      <li>MPA 的聲明只有幾段，是本週版權討論最短的一手材料。<sup class="fn"><a href="#src-3">3</a></sup></li>
+      <li>Liu 等人的 Sora 評論可以當「怎麼讀一份技術報告」的範本，模型退場後仍然適用。<sup class="fn"><a href="#src-20">20</a></sup></li>
+    </ul>
+  </section>
+
+  <section class="sec lemon">
+    <span class="kicker">本週檢核</span>
+    <h2>交作業前自己打勾</h2>
+    <ul class="check">
+      <li>選了一支 2025 至 2026 年公開的 AI 生成廣告或短片，附了連結。</li>
+      <li>找出三處時空一致性破綻或藏拙手法，每處都指到秒數。</li>
+      <li>附了三張標了時間碼的截圖。</li>
+      <li>300 字寫了創作者繞開模型弱點的策略。</li>
+      <li>若寫了模型名稱，只引官方頁或創作者自述，沒有憑猜。</li>
+      <li>文末有 AI 使用揭露四欄。</li>
+      <li>檔名是「學號_W12_破綻分析.pdf」，一頁；準備好 5 分鐘分享。</li>
+    </ul>
+  </section>
+
+  <p class="version">2026-09-16 翻新：版型改為水彩由灰轉彩、新增講義區、影片模型規格只引官方頁或官方新聞稿、Sora 時間線改以可開啟來源並標二手、剪輯軟體功能更新至 2026 年 9 月、刪除付費牆後與無來源的數字。前一版：2026-09-13。</p>
+</main>
+
+<a class="backtop" id="backtop" href="#deck">↑ 回投影片</a>
+
 <script>
 (function () {
   /* ★ 每週只改這一行 ★ */
+  var COURSE_LABEL = '人工智慧與互動媒體特論';
   var WEEK_LABEL = '第 12 週 · 動態影像與媒體製作';
 
+  var deck = document.getElementById('deck');
   var stage = document.getElementById('stage');
   var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
   var cnt = document.getElementById('cnt');
   var prog = document.getElementById('prog');
   var toc = document.getElementById('toc');
   var tgrid = document.getElementById('tgrid');
+  var backtop = document.getElementById('backtop');
   var cur = 0;
 
   document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
@@ -677,7 +809,7 @@
   slides.forEach(function (s, i) {
     var f = document.createElement('div');
     f.className = 'foot';
-    f.innerHTML = '<span>人工智慧與互動媒體特論|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    f.innerHTML = '<span>' + COURSE_LABEL + '|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
     s.appendChild(f);
   });
 
@@ -686,12 +818,12 @@
     var eb = s.querySelector('.eyebrow');
     var part = '開場';
     if (eb) {
-      var m = eb.textContent.match(/PART\s*(\d)/i);
-      if (m) part = 'PART ' + m[1];
+      var m = eb.textContent.match(/Part\s*(\d)/i);
+      if (m) part = 'Part ' + m[1];
       else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
     }
     var h = s.querySelector('h1, h2');
-    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent.replace(/\d+$/, '') : '') });
   });
   Object.keys(groups).forEach(function (k) {
     var col = document.createElement('div');
@@ -719,35 +851,57 @@
   function toggleToc(on) {
     toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
   }
+  function atDeck() { return window.scrollY < 40; }
+  function toNotes() { document.getElementById('notes').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  function toggleFull() {
+    if (document.fullscreenElement) { document.exitFullscreen(); return; }
+    if (deck.requestFullscreen) deck.requestFullscreen();
+  }
 
   document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
   document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
   document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
   document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+  document.getElementById('toNotes').addEventListener('click', toNotes);
+  document.getElementById('full').addEventListener('click', toggleFull);
 
   document.addEventListener('keydown', function (e) {
+    if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
     if (e.key === 'Escape') { toggleToc(false); return; }
     if (toc.classList.contains('on')) return;
     switch (e.key) {
-      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
-      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
-      case 'Home': go(0); break;
-      case 'End': go(slides.length - 1); break;
+      case 'ArrowRight': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'ArrowDown': case ' ': if (atDeck()) { e.preventDefault(); go(cur + 1); } break;
+      case 'ArrowUp': if (atDeck()) { e.preventDefault(); go(cur - 1); } break;
+      case 'Home': if (atDeck()) go(0); break;
+      case 'End': if (atDeck()) go(slides.length - 1); break;
       case 'm': case 'M': toggleToc(); break;
+      case 'n': case 'N': toNotes(); break;
+      case 'f': case 'F': toggleFull(); break;
     }
   });
 
   function fit() {
-    var w = window.innerWidth, h = window.innerHeight;
+    var w = deck.clientWidth, h = deck.clientHeight;
     if (!w || !h) { requestAnimationFrame(fit); return; }
-    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+    stage.style.transform = 'scale(' + Math.min((w - 48) / 1300, (h - 88) / 740) + ')';
   }
   window.addEventListener('resize', fit);
   window.addEventListener('load', fit);
+  document.addEventListener('fullscreenchange', fit);
   fit();
+
+  window.addEventListener('scroll', function () {
+    backtop.classList.toggle('show', window.scrollY > deck.clientHeight * 0.6);
+  }, { passive: true });
 
   var m = location.hash.match(/^#s(\d+)$/);
   go(m ? +m[1] - 1 : 0);
+  if (!m && location.hash) {
+    var target = document.querySelector(location.hash.replace(/[^#\w-]/g, ''));
+    if (target) setTimeout(function () { target.scrollIntoView({ block: 'start' }); }, 50);
+  }
 })();
 </script>
 </body>

@@ -3,173 +3,227 @@
 <head>
 <meta charset="utf-8">
 <title>第 18 週|期末評量</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;1,300;1,400&family=Noto+Serif+TC:wght@300;400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  /* ============ 版型：水彩由灰轉彩（style-library gris-watercolor，色值取自 styles/gris-watercolor.json）============ */
   * { box-sizing: border-box; }
-  #app {
-    position: fixed; inset: 0; overflow: hidden;
-    background: var(--bg);
-    font-family: var(--body);
-    color: var(--ink);
-    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
-    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
-    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
-    --bg: #F5F4EC; --bg2: #EFEEE2;
-    --panel: #FDFCF6; --panel2: #EDECDF;
-    --ink: #232B21; --sub: #67705E;
-    --accent: #2F6B4F; --accent-rgb: 47,107,79;
-    --accent2: #BC4F2C;
-    --line: rgba(35,43,33,.16);
-    --link: #2F6B4F;
-    --r: 4px;
+  :root {
+    --bg: #ece5d9; --bg2: #e3dbcc; --surface: #fffdf6; --surface2: #e3dbcc;
+    --ink: #2c2823; --ink2: #564e43; --muted: #756c5e; --line: #d8cfbd;
+    --blue: #2f7596; --red: #bd564a; --green: #6f9266; --yellow: #dbab44; --grey: #9a948a;
+    --wash-blue: #7da8bd; --wash-rose: #d59289; --wash-gold: #e6c97e; --wash-sage: #a3bd9b; --wash-grey: #b9b3a8;
+    --c: var(--blue); --c-soft: var(--wash-blue);
+    --body: 'Noto Serif TC', 'Cormorant', Georgia, 'PMingLiU', serif;
+    --sans: 'Noto Sans TC', 'Microsoft JhengHei', system-ui, sans-serif;
+    --disp: 'Noto Serif TC', 'Cormorant', Georgia, serif;
+    --num: 'Cormorant', 'Noto Serif TC', serif;
   }
-  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
-  #app a:hover { opacity: .85; }
-  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-weight: 300; }
+  a { color: var(--c); text-underline-offset: 4px; text-decoration-thickness: 1px; }
+  :focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+  b, strong { font-weight: 500; }
 
+  /* ---------- 投影區 ---------- */
+  #deck { position: relative; height: 100vh; min-height: 560px; overflow: hidden; background: var(--bg2); }
   .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
-  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
-  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
-  .slide.active { display: flex; }
-  .slide::before {
-    content: ""; position: absolute; inset: 24px; pointer-events: none;
-    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
-  }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; background: var(--bg); box-shadow: 0 30px 70px -34px rgba(50,42,34,.5); overflow: hidden; }
+  .slide { position: absolute; inset: 0; padding: 56px 110px 72px; display: none; flex-direction: column; }
+  .slide.active { display: flex; animation: fadein .6s ease both; }
+  @keyframes fadein { from { opacity: 0 } to { opacity: 1 } }
+  /* 章節換色：只換 --c 與 --c-soft */
+  .slide.p-blue, .slide[data-c="blue"] { --c: var(--blue); --c-soft: var(--wash-blue); }
+  .slide.p-red, .slide[data-c="red"] { --c: var(--red); --c-soft: var(--wash-rose); }
+  .slide.p-green, .slide[data-c="green"] { --c: var(--green); --c-soft: var(--wash-sage); }
+  .slide.p-yellow, .slide[data-c="yellow"] { --c: var(--yellow); --c-soft: var(--wash-gold); }
+  .slide.p-grey, .slide[data-c="grey"] { --c: var(--grey); --c-soft: var(--wash-grey); }
+  /* 水彩暈染 */
+  .slide::before { content: ""; position: absolute; inset: 0; pointer-events: none; background:
+    radial-gradient(ellipse 520px 380px at 84% 20%, color-mix(in srgb, var(--c-soft) 34%, transparent), transparent 70%),
+    radial-gradient(ellipse 420px 300px at 10% 90%, color-mix(in srgb, var(--c-soft) 20%, transparent), transparent 70%); }
+  .slide > * { position: relative; }
 
-  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
-  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
-  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
-  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+  .eyebrow { font-family: var(--sans); font-weight: 500; font-size: 16px; letter-spacing: .34em; text-transform: uppercase; color: var(--c); display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+  .eyebrow::before { content: ""; width: 40px; height: 1px; background: var(--c); flex: 0 0 auto; }
+  h1 { font-family: var(--disp); font-size: 88px; line-height: 1.15; margin: 0; font-weight: 400; letter-spacing: .02em; text-wrap: balance; }
+  h2 { font-family: var(--disp); font-size: 54px; line-height: 1.2; margin: 0 0 22px; font-weight: 400; text-wrap: balance; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 18px; }
 
-  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
-  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
-  .sub { color: var(--sub); }
+  .slide ul { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 16px; font-size: 27px; line-height: 1.6; }
+  .slide ul ul { margin-top: 6px; gap: 6px; font-size: 22px; color: var(--ink2); }
+  .slide li::marker { color: var(--c); }
+  .sub { color: var(--ink2); }
   .small { font-size: 18px; }
-  .num { font-variant-numeric: tabular-nums; }
+  .num { font-family: var(--num); font-variant-numeric: tabular-nums; }
 
-  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
-  .cards { display: grid; gap: 18px; }
+  /* 這套不用卡片：分區靠 1px 紙緣線與留白 */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 56px; align-items: stretch; }
+  .cards { display: grid; gap: 0 40px; }
   .c2 { grid-template-columns: repeat(2, 1fr); }
   .c3 { grid-template-columns: repeat(3, 1fr); }
   .c4 { grid-template-columns: repeat(4, 1fr); }
   .c5 { grid-template-columns: repeat(5, 1fr); }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
-  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
-  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
-  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+  .card { background: transparent; border: 0; border-top: 1px solid var(--c); padding: 18px 0 14px; min-width: 0; display: flex; flex-direction: column; justify-content: flex-start; }
+  .card.pink, .card.cyan, .card.grape, .card.lemon { background: transparent; }
+  .card h3 { font-family: var(--disp); font-size: 27px; margin: 0 0 10px; font-weight: 400; line-height: 1.3; }
+  .card p, .card li { font-size: 22px; line-height: 1.6; margin: 0; color: var(--ink2); }
+  .card ul { padding-left: 1.05em; gap: 8px; font-size: 22px; }
+  .card .who { display: block; font-family: var(--sans); font-weight: 500; font-size: 14px; letter-spacing: .24em; text-transform: uppercase; color: var(--c); margin-bottom: 10px; }
+  .cols > .card h3 { font-size: 29px; }
+  .cols > .card p, .cols > .card li { font-size: 24px; }
 
-  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
-  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+  /* 結語：用 lede 大字，不用框 */
+  .take { margin-top: auto; display: flex; gap: 18px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 16px; font-size: 24px; line-height: 1.55; }
+  .take b { font-family: var(--sans); color: var(--c); font-size: 14px; letter-spacing: .24em; text-transform: uppercase; white-space: nowrap; font-weight: 500; }
 
-  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
+  .foot { position: absolute; left: 110px; right: 110px; bottom: 30px; display: flex; justify-content: space-between; font-family: var(--sans); font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
 
+  /* 封面與章節頁：同一張紙，只是暈染更重、字更大 */
   .cover, .part { justify-content: center; }
-  .cover .eyebrow { margin-bottom: 26px; }
-  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
-  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
-  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
-  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
-  .part h2 { font-size: 56px; }
-  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+  .cover::before, .part::before { background:
+    radial-gradient(ellipse 700px 520px at 80% 25%, color-mix(in srgb, var(--c-soft) 48%, transparent), transparent 70%),
+    radial-gradient(ellipse 520px 380px at 12% 88%, color-mix(in srgb, var(--c-soft) 30%, transparent), transparent 70%); }
+  .cover .eyebrow { margin-bottom: 30px; }
+  .cover-sub { font-size: 30px; color: var(--ink2); margin: 26px 0 0; line-height: 1.6; max-width: 26em; }
+  .cover-meta { margin-top: 44px; display: flex; gap: 28px; flex-wrap: wrap; font-family: var(--sans); font-size: 13px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
+  .part-num { font-family: var(--num); font-style: italic; font-size: 132px; line-height: 1; margin-bottom: 6px; color: var(--c); font-weight: 300; }
+  .part h2 { font-size: 64px; }
+  .part-sub { font-size: 28px; color: var(--ink2); margin: 18px 0 0; max-width: 30em; line-height: 1.65; }
 
-  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
-  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
-  .kv dd { margin: 0; }
-  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
-  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
-  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
-  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
-  .lk::after { content: " ↗"; font-size: 12px; }
+  /* fact-row：左小標右正文 */
+  .kv { display: grid; grid-template-columns: 230px 1fr; gap: 0 24px; font-size: 25px; line-height: 1.55; border-top: 1px solid var(--line); align-content: start; }
+  .kv dt { font-family: var(--sans); font-weight: 500; font-size: 15px; letter-spacing: .22em; text-transform: uppercase; color: var(--c); padding: 20px 0 14px; border-bottom: 1px solid var(--line); }
+  .kv dd { margin: 0; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px 26px; align-items: center; }
+  .chip { font-family: var(--sans); font-weight: 500; font-size: 17px; letter-spacing: .12em; padding: 6px 0; border-bottom: 1px solid var(--c); background: none; color: var(--ink); }
+  .chip.hot { color: var(--c); }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px 26px; }
+  .lk { display: inline-block; padding: 6px 0; border-bottom: 1px solid var(--c); font-family: var(--sans); font-size: 17px; text-decoration: none; color: var(--ink); font-weight: 500; }
+  .lk:hover { color: var(--c); }
+  .lk::after { content: " ↗"; font-size: 12px; color: var(--c); }
   .flow { display: flex; align-items: stretch; gap: 0; }
-  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
-  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
-  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
-  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
-  .bar i { display: block; height: 100%; background: var(--accent); }
-  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
-  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
-  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
-  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
-  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
-  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
-  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
-  .tl { display: flex; flex-direction: column; gap: 18px; }
-  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
-  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
-  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+  .flow .step { flex: 1; border-top: 1px solid var(--c); padding: 18px 22px 12px 0; min-width: 0; display: flex; flex-direction: column; justify-content: flex-start; }
+  .flow .step h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 8px; font-weight: 400; }
+  .flow .step p { font-size: 22px; line-height: 1.6; margin: 0; color: var(--ink2); }
+  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-family: var(--num); font-style: italic; font-size: 36px; color: var(--c); font-weight: 300; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 16px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 27px; line-height: 1.55; display: flex; gap: 18px; }
+  .qlist p::before { content: counter(q, upper-roman); font-family: var(--num); font-style: italic; color: var(--c); font-weight: 400; flex: 0 0 auto; min-width: 1.4em; }
+  .grp h3 { font-family: var(--sans); font-weight: 500; font-size: 14px; letter-spacing: .24em; text-transform: uppercase; color: var(--c); margin: 0 0 12px; }
+  .card p.big, .cols > .card p.big { font-family: var(--num); font-size: 120px; line-height: 1; font-weight: 300; color: var(--c); margin: 0; }
+  .card p.big small { font-family: var(--sans); font-size: 15px; letter-spacing: .22em; text-transform: uppercase; line-height: 1.5; color: var(--muted); font-weight: 500; display: block; margin-top: 12px; }
 
-  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
-  .content > .cards,
-  .content > .cols,
-  .content > .flow,
-  .content > .kv,
-  .content > .prob { flex: 1 1 auto; }
+  .content > .cards, .content > .cols, .content > .flow { flex: 0 0 auto; margin-top: auto; margin-bottom: auto; }
+  .content > .kv { flex: 1 1 auto; }
+  .cards .card { min-height: 180px; }
+  .cols > .card { min-height: 220px; }
   .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
-  .content > .qlist,
-  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
-  .content > .biblio { flex: 0 0 auto; }
-  .cols > .card { justify-content: flex-start; }
 
-  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
-  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
-  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
-  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
-  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  sup.fn { font-family: var(--sans); font-size: 12px; line-height: 1; vertical-align: top; margin-left: 4px; position: relative; top: -2px; }
+  sup.fn a { display: inline-block; border: 1px solid var(--c); color: var(--c); border-radius: 50%; height: 20px; line-height: 18px; min-width: 20px; padding: 0 5px; text-align: center; text-decoration: none; font-weight: 500; }
+
+  .ctrl { position: absolute; right: 16px; bottom: 14px; display: flex; gap: 8px; align-items: center; z-index: 30; }
+  .ctrl button { font-family: var(--sans); border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 14px; height: 32px; min-width: 34px; padding: 0 10px; border-radius: 2px; cursor: pointer; }
+  .ctrl button:hover { border-color: var(--c); color: var(--c); }
+  .ctrl .cnt { font-family: var(--num); font-size: 15px; color: var(--muted); padding: 0 6px; font-variant-numeric: tabular-nums; }
+  .prog { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--c); width: 0; z-index: 30; transition: width .3s ease; }
+  .hint { position: absolute; left: 16px; bottom: 16px; z-index: 30; font-family: var(--sans); font-size: 12px; letter-spacing: .12em; color: var(--muted); }
+
+  .toc { position: absolute; inset: 0; background: rgba(236,229,217,.97); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
   .toc.on { display: block; }
-  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
-  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
-  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
-  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
-  .toc button:hover { background: var(--panel2); }
-  .toc button.here { color: var(--accent2); font-weight: 700; }
-  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
-  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+  .toc h2 { font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 26px; }
+  .toc h3 { font-family: var(--sans); color: var(--c); font-size: 13px; letter-spacing: .24em; text-transform: uppercase; margin: 0 0 10px; font-weight: 500; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 17px; padding: 6px 8px; cursor: pointer; font-family: var(--body); font-weight: 300; }
+  .toc button:hover { color: var(--c); }
+  .toc button.here { color: var(--c); font-weight: 500; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 13px; color: var(--muted); font-family: var(--sans); }
+
+  /* ---------- 講義區 ---------- */
+  .notes { max-width: 900px; margin: 0 auto; padding: 72px 20px 110px; }
+  .notes-head { margin-bottom: 56px; }
+  .notes-head .eyebrow { margin-bottom: 14px; }
+  .notes-head h2 { font-size: 46px; margin: 0 0 14px; }
+  .notes-head p { color: var(--ink2); font-size: 20px; line-height: 1.75; margin: 0; max-width: 34em; }
+  .sec { background: transparent; border: 0; border-top: 1px solid var(--line); padding: 34px 0 20px; margin: 0 0 26px; --c: var(--blue); }
+  .sec.cyan { --c: var(--green); } .sec.grape { --c: var(--red); } .sec.lemon { --c: var(--yellow); }
+  .sec h2 { font-size: 32px; margin: 0 0 16px; }
+  .sec h3 { font-family: var(--disp); font-size: 23px; margin: 28px 0 10px; font-weight: 500; }
+  .sec p, .sec li { font-size: 19px; line-height: 1.9; color: var(--ink2); margin: 0 0 14px; }
+  .sec li { margin: 0 0 6px; }
+  .sec strong { color: var(--ink); font-weight: 500; }
+  .sec .kicker { display: inline-block; font-family: var(--sans); font-size: 12px; letter-spacing: .34em; text-transform: uppercase; color: var(--c); margin-bottom: 12px; font-weight: 500; }
+  .sec .kicker::before { content: "—"; margin-right: 10px; }
+  .sec table { width: 100%; border-collapse: collapse; font-size: 18px; margin: 8px 0 16px; }
+  .sec th, .sec td { text-align: left; padding: 12px 12px 12px 0; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.65; }
+  .sec th { font-family: var(--sans); font-size: 13px; letter-spacing: .22em; text-transform: uppercase; color: var(--c); font-weight: 500; }
+  .scene { border-left: 1px solid var(--c); padding: 6px 0 6px 22px; margin: 18px 0 22px; }
+  .scene .who { font-family: var(--sans); font-size: 12px; letter-spacing: .24em; text-transform: uppercase; color: var(--c); font-weight: 500; display: block; margin-bottom: 6px; }
+  .scene p { margin: 0; }
+  ol.src { padding-left: 1.6em; counter-reset: s; list-style: none; }
+  ol.src li { counter-increment: s; position: relative; padding-left: 6px; margin-bottom: 16px; line-height: 1.7; }
+  ol.src li::before { content: counter(s); position: absolute; left: -1.7em; top: .3em; font-family: var(--num); font-style: italic; font-size: 16px; color: var(--c); border: 1px solid var(--c); border-radius: 50%; min-width: 22px; height: 22px; line-height: 20px; text-align: center; }
+  ol.src li:target { background: color-mix(in srgb, var(--c-soft) 22%, transparent); }
+  ol.src .ti { color: var(--ink); font-weight: 500; }
+  ol.src .meta { display: block; font-family: var(--sans); font-size: 14px; color: var(--muted); }
+  ol.src a { word-break: break-all; font-size: 14px; font-family: var(--sans); }
+  .check { counter-reset: c; list-style: none; padding: 0; }
+  .check li { counter-increment: c; display: flex; gap: 14px; align-items: baseline; }
+  .check li::before { content: "☐"; color: var(--c); font-size: 20px; flex: 0 0 auto; }
+  .backtop { position: fixed; right: 18px; bottom: 18px; z-index: 50; font-family: var(--sans); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink); background: var(--surface); border: 1px solid var(--line); padding: 10px 16px; text-decoration: none; display: none; }
+  .backtop.show { display: inline-block; }
+  .version { font-family: var(--sans); font-size: 13px; letter-spacing: .1em; color: var(--muted); margin-top: 40px; }
+
+  @media (max-width: 720px) { .notes { padding: 40px 16px 80px; } .notes-head h2 { font-size: 32px; } .kv { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .slide.active { animation: none; } .prog { transition: none; } }
+  @media print { #deck, .backtop { display: none; } .notes { max-width: none; padding: 0; } .sec { break-inside: avoid; } }
 </style>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
 </head>
 <body>
-<div id="app" data-deck="b">
+
+<div id="deck" data-deck="gris-watercolor">
   <div class="stagewrap"><div class="stage" id="stage">
 
-  <!-- 1 期末評量與學期回顧 -->
-<section class="slide cover">
+  <!-- 1 封面 -->
+  <section class="slide cover">
     <div class="eyebrow">人工智慧與互動媒體特論 · 設計創新與經營研究所</div>
     <h1>期末評量與學期回顧</h1>
-    <p class="cover-sub">十八週的最後一堂課：確認繳交規格與評分標準，用每週一句話回顧走過的路，然後帶著能力清單與資源地圖出發。</p>
-    <div class="cover-meta"><span>第 18 週</span><span>期末評量週</span><span>授課：鄧樹遠</span></div>
+    <p class="cover-sub">十八週的最後一堂課：確認繳交規格與評分標準，跑完 AI 揭露的最後檢查，用一句話走完每一週，然後帶著能力清單與訊息源出發。</p>
+    <div class="cover-meta"><span>第 18 週</span><span>期末評量週</span><span>授課：鄧樹遠</span><span>投影片 ＋ 下方講義</span></div>
   </section>
 
-  <!-- 2 九十分鐘，三段路 -->
-<section class="slide">
+  <!-- 2 本週地圖 -->
+  <section class="slide">
     <div class="eyebrow">Week 18 · 本週地圖</div>
-    <h2>九十分鐘，三段路</h2>
+    <h2>九十分鐘，四段路</h2>
     <div class="content">
-      <div class="cards c3">
-        <div class="card"><span class="who">PART 1</span><h3>繳交與評分</h3><p class="sub">規格、期限、rubric 與揭露最終檢查</p></div>
-        <div class="card"><span class="who">PART 2</span><h3>十八週回顧</h3><p class="sub">每週一句話走完一學期，對照能力指標</p></div>
-        <div class="card"><span class="who">PART 3</span><h3>走出教室之後</h3><p class="sub">延伸資源、致謝與課程問卷</p></div>
+      <div class="cards c4">
+        <div class="card"><span class="who">Part 1</span><h3>繳交與評分</h3><p class="sub">規格、期限、五面向配分</p></div>
+        <div class="card"><span class="who">Part 2</span><h3>AI 揭露最終檢查</h3><p class="sub">交出去前的五個勾</p></div>
+        <div class="card"><span class="who">Part 3</span><h3>十八週回顧</h3><p class="sub">每週一句話，對照交付物與能力</p></div>
+        <div class="card"><span class="who">Part 4</span><h3>走出教室之後</h3><p class="sub">第一手訊息源與學術社群</p></div>
       </div>
       <div class="take"><b>本週目標</b>離開教室時：知道報告怎麼交、會被怎麼評，並且說得出這學期自己長出了哪些能力。</div>
     </div>
   </section>
 
-  <!-- 3 從門診到繳交 -->
-<section class="slide">
+  <!-- 3 承接上週 -->
+  <section class="slide">
     <div class="eyebrow">承接第 17 週 · 個別指導</div>
     <h2>從門診到繳交</h2>
     <div class="content">
       <div class="cols">
         <div class="card">
           <span class="who">上週你帶走的</span>
-          <h3>個別指導的三件事</h3>
+          <h3>門診的三件事</h3>
           <ul>
-            <li>報告架構範本，各章比重已對過</li>
-            <li>文獻整理工作流：Zotero 與引用格式</li>
-            <li>門診解答：圖表規範與 AI 揭露疑義</li>
+            <li>五章骨架與圖表規則，各章比重已對過</li>
+            <li>文獻工作流：Zotero 10、Crossref、AI 文獻工具</li>
+            <li>議定的下一個完成時間，48 小時內回報過</li>
           </ul>
         </div>
         <div class="card">
@@ -177,7 +231,7 @@
           <h3>繳交前的三個確認</h3>
           <ul>
             <li>抄下繳交規格與期限，寫進行事曆</li>
-            <li>對照期末 rubric，做最後一輪自評</li>
+            <li>對照期末配分表，做最後一輪自評</li>
             <li>跑完 AI 協作揭露的最終檢查清單</li>
           </ul>
         </div>
@@ -185,192 +239,241 @@
     </div>
   </section>
 
-  <!-- 4 繳交與評分 -->
-<section class="slide part">
+  <!-- 4 PART 1 -->
+  <section class="slide part p-blue">
     <div class="part-num">01</div>
-    <div class="eyebrow">PART 1</div>
+    <div class="eyebrow">Part 1</div>
     <h2>繳交與評分</h2>
-    <p class="part-sub">期末書面報告：結合個人設計領域之 AI 與互動媒體專題研究。這一段把規格、配分與揭露檢查一次講清楚，交出去不再猜謎。</p>
+    <p class="part-sub">期末書面報告：結合個人設計領域的 AI 與互動媒體專題研究。這一段把規格、配分與看的重點一次講清楚，交出去不再猜。</p>
   </section>
 
-  <!-- 5 繳交規格與期限 -->
-<section class="slide">
-    <div class="eyebrow">PART 1 · 繳交規格</div>
+  <!-- 5 繳交規格 -->
+  <section class="slide" data-c="blue">
+    <div class="eyebrow">Part 1 · 繳交規格</div>
     <h2>繳交規格與期限</h2>
     <div class="content">
-      <dl class="kv" style="grid-template-columns:180px 1fr">
-        <dt>繳交期限</dt><dd>＿＿＿＿＿＿＿＿＿＿（教師課堂公布）</dd>
-        <dt>繳交方式</dt><dd>＿＿＿＿＿＿＿＿＿＿（教師課堂公布）</dd>
-        <dt>格式與字數</dt><dd>＿＿＿＿＿＿＿＿＿＿（教師課堂公布）</dd>
-        <dt>檔名規則</dt><dd>＿＿＿＿＿＿＿＿＿＿（教師課堂公布）</dd>
+      <dl class="kv">
+        <dt>主題</dt><dd>結合個人設計領域之 AI 與互動媒體專題研究；第 16 週提案 v2 的展開版。</dd>
+        <dt>繳交物三件</dt><dd>報告本體、AI 協作揭露頁、參考文獻；三件合成一個 PDF。</dd>
+        <dt>期限與方式</dt><dd>＿＿＿＿＿＿＿＿（教師課堂公布，以平台時間為準）。</dd>
+        <dt>格式與檔名</dt><dd>＿＿＿＿＿＿＿＿（教師課堂公布）；遲交與補交規定依課堂公布。</dd>
       </dl>
+    </div>
+  </section>
+
+  <!-- 6 配分 -->
+  <section class="slide" data-c="blue">
+    <div class="eyebrow">Part 1 · 期末配分</div>
+    <h2>五個面向，報告本身合計 100%</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>15%</dt><dd>問題意識與專題定位</dd>
+        <dt>20%</dt><dd>文獻基礎與理論框架</dd>
+        <dt>25%</dt><dd>專題執行與 AI 協作</dd>
+        <dt>25%</dt><dd>分析發現與設計啟示</dd>
+        <dt>15%</dt><dd>結構格式與 AI 揭露</dd>
+      </dl>
+      <div class="take"><b>權重</b>期末報告佔學期總成績 40%；執行與分析合佔一半。</div>
+    </div>
+  </section>
+
+  <!-- 7 每個面向看什麼 -->
+  <section class="slide" data-c="blue">
+    <div class="eyebrow">Part 1 · 每個面向我看什麼</div>
+    <h2>配分表背後的五個問題</h2>
+    <div class="content">
       <ul>
-        <li>主題：結合個人設計領域之 AI 與互動媒體專題研究</li>
-        <li>繳交物三件：報告本體、AI 協作揭露頁、參考文獻</li>
-        <li>遲交與補交規定，依課堂公布為準</li>
+        <li>問題意識：研究問題能不能用一句話說出來？它接得回你的母領域嗎？</li>
+        <li>文獻基礎：有分群、有缺口；每一筆都查得到。</li>
+        <li>專題執行：AI 用在哪個環節、為什麼是那個環節、你怎麼驗證它的輸出。</li>
+        <li>分析發現：證據有日期與來源，結論回答研究問題，限制寫得誠實。</li>
+        <li>結構格式：五章齊全、圖表編號在上、APA 第 7 版、揭露頁四欄。</li>
       </ul>
     </div>
   </section>
 
-  <!-- 6 期末 rubric：面向與配分 -->
-<section class="slide">
-    <div class="eyebrow">PART 1 · 期末評分 rubric</div>
-    <h2>期末 rubric：面向與配分</h2>
-    <div class="content">
-      <p class="sub" style="margin:0">期末報告佔學期總成績 40%；下表為報告本身的配分（合計 100%）。</p>
-      <div class="prob" style="grid-template-columns:250px 1fr 84px">
-        <span class="chip">問題意識與專題定位</span><div class="bar"><i style="width:15%"></i></div><span class="pv">15%</span>
-        <span class="chip">文獻基礎與理論框架</span><div class="bar"><i style="width:20%"></i></div><span class="pv">20%</span>
-        <span class="chip hot">專題執行與 AI 協作</span><div class="bar"><i style="width:25%"></i></div><span class="pv">25%</span>
-        <span class="chip hot">分析發現與設計啟示</span><div class="bar"><i style="width:25%"></i></div><span class="pv">25%</span>
-        <span class="chip">結構格式與 AI 揭露</span><div class="bar"><i style="width:15%"></i></div><span class="pv">15%</span>
-      </div>
-    </div>
+  <!-- 8 PART 2 -->
+  <section class="slide part p-red">
+    <div class="part-num">02</div>
+    <div class="eyebrow">Part 2</div>
+    <h2>AI 揭露最終檢查</h2>
+    <p class="part-sub">揭露頁是這門課十八週唯一每週都出現的東西。交出去前用五個勾把它關掉。</p>
   </section>
 
-  <!-- 7 AI 揭露最終檢查清單 -->
-<section class="slide">
-    <div class="eyebrow">PART 1 · AI 協作揭露</div>
+  <!-- 9 檢查清單 -->
+  <section class="slide" data-c="red">
+    <div class="eyebrow">Part 2 · 五個勾</div>
     <h2>AI 揭露最終檢查清單</h2>
     <div class="content">
       <ul>
-        <li>揭露頁四欄齊全：工具與版本、用途與範圍、提示概要、人工處理</li>
-        <li>AI 給的每一筆書目，都已用 DOI 或資料庫逐筆查證</li>
-        <li>AI 生成或修改過的圖表，已逐張標註工具與修改程度</li>
-        <li>揭露內容與實際使用一致：被當面問到任何一段都答得出來</li>
-        <li>AI 不列為作者、文責由本人承擔（COPE 立場，整學期通用）</li>
+        <li>揭露頁四欄齊全：工具與版本、用途與範圍、提示概要、人工處理。</li>
+        <li>AI 給的每一筆書目，都用 Crossref 或 DOI 逐筆查過。<sup class="fn"><a href="#src-12">12</a></sup></li>
+        <li>AI 生成或修改過的圖表，逐張標工具與修改程度。</li>
+        <li>揭露內容與實際使用一致：被當面問到任何一段都答得出來。</li>
+        <li>AI 不列為作者，文責由本人承擔；這是出版倫理的通則。<sup class="fn"><a href="#src-1">1</a></sup></li>
       </ul>
-      <div class="linkrow">
-        <a class="lk" href="https://publicationethics.org/" target="_blank" rel="noopener">COPE 官方網站</a>
-      </div>
-      <div class="take"><b>假設情境</b>如果截止前小組只剩半小時，先逐條勾完繳交要求，再處理裝飾性調整。</div>
     </div>
   </section>
 
-  <!-- 8 十八週學期回顧 -->
-<section class="slide part">
-    <div class="part-num">02</div>
-    <div class="eyebrow">PART 2</div>
-    <h2>十八週學期回顧</h2>
-    <p class="part-sub">每週一句話，兩張走完一學期。這不只是感性收尾，也是你寫期末報告時的速查索引：忘了哪週講什麼，回來看這兩頁。</p>
-  </section>
-
-  <!-- 9 上半學期：打地基 -->
-<section class="slide">
-    <div class="eyebrow">PART 2 · 學期回顧</div>
-    <h2>上半學期：打地基</h2>
+  <!-- 10 最後一小時 -->
+  <section class="slide" data-c="red">
+    <div class="eyebrow">Part 2 · 假設情境</div>
+    <h2>截止前只剩一小時</h2>
     <div class="content">
-      <div class="cols">
-        <div class="tl">
-          <div class="ev"><b>W1</b><span>智財座標與課程規則：AI 生成物權利歸誰</span></div>
-          <div class="ev"><b>W2</b><span>概論：從達特茅斯畫到 teamLab 的應用地圖</span></div>
-          <div class="ev"><b>W3</b><span>機器學習基礎：三種學習方式與資料集</span></div>
-          <div class="ev"><b>W4</b><span>生成式 AI：猜下一個字，從雜訊雕出影像</span></div>
-          <div class="ev"><b>W5</b><span>視覺傳達：品牌識別與版面自動化</span></div>
-        </div>
-        <div class="tl">
-          <div class="ev"><b>W6</b><span>產品設計：Generative Design 長出造型</span></div>
-          <div class="ev"><b>W7</b><span>互動基礎：感測技術與 HCI 經典概念</span></div>
-          <div class="ev"><b>W8</b><span>互動裝置：即時運算驅動的沉浸式空間</span></div>
-          <div class="ev"><b>W9</b><span>期中評量：寫作規格、APA 與 AI 揭露</span></div>
-        </div>
+      <div class="flow">
+        <div class="step"><h3>前 20 分鐘</h3><p>逐條勾繳交要求：三件齊全、檔名、格式、頁碼。</p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>中 20 分鐘</h3><p>把整份參考文獻貼進 Simple Text Query，沒回 DOI 的先刪。<sup class="fn"><a href="#src-12">12</a></sup></p></div>
+        <div class="arr">→</div>
+        <div class="step"><h3>後 20 分鐘</h3><p>重讀揭露頁，套出版社的固定句型補完整；裝飾性調整一律放棄。<sup class="fn"><a href="#src-2">2</a></sup></p></div>
       </div>
+      <div class="take"><b>順序的理由</b>三件事都會被退件，但只有前兩件是「零分」等級；先關掉會退件的，再談好不好看。</div>
     </div>
   </section>
 
-  <!-- 10 下半學期：接領域 -->
-<section class="slide">
-    <div class="eyebrow">PART 2 · 學期回顧</div>
-    <h2>下半學期：接領域</h2>
+  <!-- 11 PART 3 -->
+  <section class="slide part p-green">
+    <div class="part-num">03</div>
+    <div class="eyebrow">Part 3</div>
+    <h2>十八週回顧</h2>
+    <p class="part-sub">每週一句話，三張走完一學期。這不只是感性收尾，也是寫期末報告的速查索引：忘了哪週講什麼、交了什麼，回來看這三頁。</p>
+  </section>
+
+  <!-- 12 W1–W6 -->
+  <section class="slide" data-c="green">
+    <div class="eyebrow">Part 3 · 第 1 到 6 週 · 打地基</div>
+    <h2>上半學期（一）</h2>
     <div class="content">
-      <div class="cols">
-        <div class="tl">
-          <div class="ev"><b>W10</b><span>沉浸式媒體：XR 與空間運算的交會</span></div>
-          <div class="ev"><b>W11</b><span>空間設計：數位孿生與 AI 輔助建築</span></div>
-          <div class="ev"><b>W12</b><span>動態影像：文字生影片改寫製作流程</span></div>
-          <div class="ev"><b>W13</b><span>創意發想：提示工程把直覺變成方法</span></div>
-          <div class="ev"><b>W14</b><span>倫理與智財：訴訟、深偽與訓練偏見</span></div>
-        </div>
-        <div class="tl">
-          <div class="ev"><b>W15</b><span>未來趨勢：代理式 AI 與世界模型</span></div>
-          <div class="ev"><b>W16</b><span>提案工作坊：一頁提案與同儕回饋</span></div>
-          <div class="ev"><b>W17</b><span>個別指導：架構、文獻與問題門診</span></div>
-          <div class="ev"><b>W18</b><span>今天：繳交、回顧，然後出發</span></div>
-        </div>
-      </div>
+      <ul>
+        <li>W1 智財與課程導論：誰是作者、怎麼揭露；交查證短文</li>
+        <li>W2 AI 與互動媒體概論：從歷史到應用地圖；交迴圈圖</li>
+        <li>W3 人工智慧基礎概念：三種學習、資料集；交分類器</li>
+        <li>W4 生成式 AI 導論：原理、規模、對齊；交模型比較</li>
+        <li>W5 視覺傳達與平面設計：定調與守門；交品牌資產</li>
+        <li>W6 產品與工業設計：目標、約束、材料、製程；交產品拆解</li>
+      </ul>
     </div>
   </section>
 
-  <!-- 11 完成這門課，你能做什麼 -->
-<section class="slide">
-    <div class="eyebrow">PART 2 · 課程能力指標</div>
+  <!-- 13 W7–W12 -->
+  <section class="slide" data-c="green">
+    <div class="eyebrow">Part 3 · 第 7 到 12 週 · 接領域</div>
+    <h2>上半學期（二）與下半學期（一）</h2>
+    <div class="content">
+      <ul>
+        <li>W7 互動媒體設計基礎：鴻溝與回饋迴圈；交互動診斷</li>
+        <li>W8 互動裝置與空間設計：四層管線；交管線圖</li>
+        <li>W9 期中評量：三段結構、APA、揭露三要素；交期中報告</li>
+        <li>W10 沉浸式媒體與 XR：從提示到可用資產；交生成資產</li>
+        <li>W11 空間建築與環境設計：數位孿生四欄；交孿生規格書</li>
+        <li>W12 動態影像與媒體製作：破綻與藏拙；交破綻分析</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 14 W13–W18 -->
+  <section class="slide" data-c="green">
+    <div class="eyebrow">Part 3 · 第 13 到 18 週 · 收攏</div>
+    <h2>下半學期（二）</h2>
+    <div class="content">
+      <ul>
+        <li>W13 創意發想與提示工程：可重複的提示資產；交提示資產卡</li>
+        <li>W14 倫理智財與偏見：訴訟、標示、刻板印象；交倫理體檢</li>
+        <li>W15 未來趨勢：代理式 AI、世界模型、職能重分配；交「2031 年的一天」</li>
+        <li>W16 期末專題提案：一頁提案與同儕回饋；交提案 v2 與候選文獻</li>
+        <li>W17 個別指導：五章骨架、文獻工作流、門診；交門診後修訂與回報</li>
+        <li>W18 今天：繳交、回顧，然後出發</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 15 能力指標 -->
+  <section class="slide" data-c="green">
+    <div class="eyebrow">Part 3 · 交付物對照能力指標</div>
     <h2>完成這門課，你能做什麼</h2>
     <div class="content">
       <div class="cards c4">
-        <div class="card"><span class="who">指標一</span><h3>文獻識讀</h3><p class="sub">能查證並評讀 AI 與設計研究，判斷證據品質</p></div>
-        <div class="card"><span class="who">指標二</span><h3>案例分析</h3><p class="sub">能用理論框架拆解產業案例，接回設計脈絡</p></div>
-        <div class="card"><span class="who">指標三</span><h3>AI 協作</h3><p class="sub">能規劃負責任的 AI 工作流，並完整揭露</p></div>
-        <div class="card"><span class="who">指標四</span><h3>跨域整合</h3><p class="sub">能把 AI 能力接回母領域的真實問題</p></div>
+        <div class="card"><span class="who">指標一</span><h3>文獻識讀</h3><p class="sub">查證與評讀研究，判斷證據品質；看 W1、W9、W17 與期末文獻章</p></div>
+        <div class="card"><span class="who">指標二</span><h3>案例分析</h3><p class="sub">用框架拆產業案例；看 W8、W12、W14 與期中報告</p></div>
+        <div class="card"><span class="who">指標三</span><h3>AI 協作</h3><p class="sub">負責任的工作流與揭露；看每一份繳交物的揭露欄</p></div>
+        <div class="card"><span class="who">指標四</span><h3>跨域整合</h3><p class="sub">把 AI 接回母領域；看 W5 到 W13 的領域週與期末專題</p></div>
       </div>
-      <ul>
-        <li>這四項在第 1 週承諾過；期末報告正是它們的總驗收</li>
-        <li>寫報告自評或日後履歷，都可以逐項對照著寫</li>
-      </ul>
+      <div class="take"><b>用法</b>這四項第 1 週承諾過；寫報告自評或日後履歷，逐項對照著寫。</div>
     </div>
   </section>
 
-  <!-- 12 走出教室之後 -->
-<section class="slide part">
-    <div class="part-num">03</div>
-    <div class="eyebrow">PART 3</div>
+  <!-- 16 老師的課堂規矩 -->
+  <section class="slide" data-c="green">
+    <div class="eyebrow">Part 3 · 老師的課堂規矩</div>
+    <h2>評量週我怎麼評</h2>
+    <div class="content">
+      <ul>
+        <li>先看揭露頁與參考文獻，再讀正文；書目查不到的，正文不進入評分。</li>
+        <li>五個面向各自給分，不用總印象分；分數旁一定寫一句「為什麼」。</li>
+        <li>誠信問題不是扣分題：揭露與實際使用明顯不符，整份重新處理。</li>
+        <li>被當面問到報告任何一段，答得出來才算你的；答不出來我會再問一次。</li>
+      </ul>
+      <div class="take"><b>一句話</b>我評的是你的判斷有沒有證據，不是你用了多少 AI。</div>
+    </div>
+  </section>
+
+  <!-- 17 PART 4 -->
+  <section class="slide part p-yellow">
+    <div class="part-num">04</div>
+    <div class="eyebrow">Part 4</div>
     <h2>走出教室之後</h2>
     <p class="part-sub">課程會結束，領域不會。兩類資源：官方訊息源與學術社群，讓你在沒有課表之後，仍然跟得上版圖的變化。</p>
   </section>
 
-  <!-- 13 追第一手，不追二手 -->
-<section class="slide">
-    <div class="eyebrow">PART 3 · 延伸資源 · 官方訊息源</div>
+  <!-- 18 追第一手 -->
+  <section class="slide" data-c="yellow">
+    <div class="eyebrow">Part 4 · 官方訊息源</div>
     <h2>追第一手，不追二手</h2>
     <div class="content">
       <ul>
-        <li>模型發布看官方部落格：定位語言、限制與定價，二手報導常漏掉後兩者</li>
-        <li>OpenAI、Anthropic、Google 三大陣營的官方頁，每月掃一次即可</li>
-        <li>arXiv 預印本：cs.HC 與 cs.AI 分類，先讀摘要再決定要不要細讀</li>
-        <li>訂閱策略：挑兩三個來源就好，貴在持續，不在數量</li>
+        <li>模型發布看官方公告頁：定位語言、限制與定價，二手報導常漏掉後兩者。</li>
+        <li>Anthropic 的 Newsroom、Google DeepMind 的 News 頁，每月掃一次即可。<sup class="fn"><a href="#src-9">9</a></sup><sup class="fn"><a href="#src-10">10</a></sup></li>
+        <li>Google 產品公告在 News from Google；OpenAI 官方頁對抓取工具擋 403，本週不列。<sup class="fn"><a href="#src-11">11</a></sup></li>
+        <li>訂閱策略：挑兩三個來源就好，貴在持續，不在數量。</li>
       </ul>
-      <div class="linkrow">
-        <a class="lk" href="https://openai.com/" target="_blank" rel="noopener">OpenAI</a>
-        <a class="lk" href="https://www.anthropic.com/" target="_blank" rel="noopener">Anthropic</a>
-        <a class="lk" href="https://blog.google/" target="_blank" rel="noopener">Google 官方部落格</a>
-        <a class="lk" href="https://deepmind.google/" target="_blank" rel="noopener">Google DeepMind</a>
-        <a class="lk" href="https://arxiv.org/" target="_blank" rel="noopener">arXiv</a>
-      </div>
     </div>
   </section>
 
-  <!-- 14 三個值得追蹤的學術社群 -->
-<section class="slide">
-    <div class="eyebrow">PART 3 · 延伸資源 · 會議與社群</div>
+  <!-- 19 arXiv 現況 -->
+  <section class="slide" data-c="yellow">
+    <div class="eyebrow">Part 4 · 2025–2026 現況 · arXiv</div>
+    <h2>一天有多少新稿</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">arXiv cs.HC 人機互動 · 2026-09-15</span>
+          <p class="big">80<small>篇新稿<sup class="fn"><a href="#src-7">7</a></sup></small></p>
+        </div>
+        <div class="card">
+          <span class="who">arXiv cs.AI 人工智慧 · 同一天</span>
+          <p class="big">408<small>篇新稿<sup class="fn"><a href="#src-8">8</a></sup></small></p>
+        </div>
+      </div>
+      <div class="take"><b>意思是</b>你不可能讀完。先讀摘要再決定要不要細讀；cs.HC 一天的量還追得上，cs.AI 只能靠關鍵字訂閱。</div>
+    </div>
+  </section>
+
+  <!-- 20 學術社群 -->
+  <section class="slide" data-c="yellow">
+    <div class="eyebrow">Part 4 · 會議與社群</div>
     <h2>三個值得追蹤的學術社群</h2>
     <div class="content">
-      <ul>
-        <li>ACM CHI：人機互動頂級會議；CHI 2027 於匹茲堡（2027/5/10–14）</li>
-        <li>ACM SIGGRAPH：電腦圖學與互動技術；2026 場下週（7/19–23）在洛杉磯登場</li>
-        <li>DRS 設計研究學會：設計研究者的老牌國際社群，DRS2026 於愛丁堡</li>
-        <li>進階用法：把會議論文集當期刊訂閱，每年掃一輪標題就能看見領域風向</li>
-      </ul>
-      <div class="linkrow">
-        <a class="lk" href="https://chi2027.acm.org/" target="_blank" rel="noopener">CHI 2027 官方</a>
-        <a class="lk" href="https://sigchi.org/" target="_blank" rel="noopener">ACM SIGCHI</a>
-        <a class="lk" href="https://www.siggraph.org/" target="_blank" rel="noopener">ACM SIGGRAPH</a>
-        <a class="lk" href="https://www.designresearchsociety.org/" target="_blank" rel="noopener">DRS 學會</a>
-        <a class="lk" href="https://drs2026.thedrs.org/" target="_blank" rel="noopener">DRS2026</a>
+      <div class="cards c3">
+        <div class="card"><span class="who">ACM SIGCHI</span><h3>人機互動</h3><p>CHI 2027 於 2027 年 5 月 10 至 14 日在匹茲堡舉行。<sup class="fn"><a href="#src-3">3</a></sup><sup class="fn"><a href="#src-4">4</a></sup></p></div>
+        <div class="card"><span class="who">DRS</span><h3>設計研究學會</h3><p>每兩年一次大會，DRS2026 在愛丁堡；論文集自 1971 年起收在數位圖書館。<sup class="fn"><a href="#src-5">5</a></sup><sup class="fn"><a href="#src-6">6</a></sup></p></div>
+        <div class="card"><span class="who">IASDR</span><h3>設計研究聯盟</h3><p>2025 年 12 月的 IASDR2025 在台北舉行，論文集已上線；離你最近的一場。<sup class="fn"><a href="#src-6">6</a></sup></p></div>
       </div>
+      <div class="take"><b>進階用法</b>把會議論文集當期刊訂閱，每年掃一輪標題就能看見領域風向。</div>
     </div>
   </section>
 
-  <!-- 15 謝謝你們，也請留下意見 -->
-<section class="slide">
+  <!-- 21 致謝與問卷 -->
+  <section class="slide">
     <div class="eyebrow">Week 18 · 致謝與課程問卷</div>
     <h2>謝謝你們，也請留下意見</h2>
     <div class="content">
@@ -378,31 +481,84 @@
         <div class="card">
           <span class="who">致謝</span>
           <h3>這門課最好的素材是你們</h3>
-          <p>十八週的討論、每週開場的五分鐘分享、彼此的提案回饋，讓每個案例都接上了真實的設計現場。期待在各位的期末報告裡，看到屬於你們母領域的答案。</p>
+          <p>十八週的討論、每週開場的五分鐘分享、彼此的提案回饋，讓每個案例都接上了真實的設計現場。期待在期末報告裡看到屬於你們母領域的答案。</p>
         </div>
         <div class="card">
           <span class="who">課程問卷</span>
           <h3>匿名回饋，直接影響下一屆</h3>
           <ul>
-            <li>問卷連結：＿＿＿＿＿＿＿＿（課堂公布）</li>
-            <li>填答期間：＿＿＿＿＿＿＿＿（課堂公布）</li>
+            <li>問卷連結與填答期間：課堂公布</li>
             <li>最想聽的兩題：哪一週最有用、哪一週該重做</li>
           </ul>
         </div>
       </div>
-      <div class="take"><b>本週檢核</b>下次遇到陌生 AI 工具，你會先查哪一項、測哪一步、留下什麼紀錄？</div>
     </div>
   </section>
 
-  
+  <!-- 22 收尾 -->
+  <section class="slide">
+    <div class="eyebrow">Week 18 · 收尾</div>
+    <h2>離開教室前回答這三題</h2>
+    <div class="content">
+      <div class="qlist">
+        <p>下次遇到陌生的 AI 工具，你會先查哪一項、測哪一步、留下什麼紀錄？</p>
+        <p>十八週裡哪一份交付物讓你的母領域問題變得更清楚？為什麼是那一份？</p>
+        <p>期末報告交出去之後，你打算追哪兩個訊息源、哪一個社群？</p>
+      </div>
+      <div class="card">
+        <span class="who">課後任務</span>
+        <p>依課堂公布的期限與方式繳交期末報告；填寫課程問卷；把你的揭露頁與參考文獻留一份，下一門課還會用到。</p>
+      </div>
+      <div class="take"><b>課程結束</b>沒有下週預告。有問題用課程信箱，附具體段落與頁碼。</div>
+    </div>
+  </section>
+
+  <!-- 23 資源彙整 -->
+  <section class="slide">
+    <div class="eyebrow">Week 18 · 資源彙整</div>
+    <h2>本週資源</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="grp">
+          <h3>揭露與查證</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://jpl-nasa.libguides.com/blog/Authorship-and-AI-Tools" target="_blank" rel="noopener">COPE 立場（轉載）</a>
+            <a class="lk" href="https://www.elsevier.com/about/policies-and-standards/generative-ai-policies-for-journals" target="_blank" rel="noopener">Elsevier AI 聲明句型</a>
+            <a class="lk" href="https://apps.crossref.org/simpleTextQuery" target="_blank" rel="noopener">Crossref Simple Text Query</a>
+          </div>
+          <h3 style="margin-top:18px">官方訊息源</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://www.anthropic.com/news" target="_blank" rel="noopener">Anthropic Newsroom</a>
+            <a class="lk" href="https://deepmind.google/blog/" target="_blank" rel="noopener">Google DeepMind</a>
+            <a class="lk" href="https://blog.google/" target="_blank" rel="noopener">News from Google</a>
+          </div>
+        </div>
+        <div class="grp">
+          <h3>預印本與社群</h3>
+          <div class="linkrow">
+            <a class="lk" href="https://arxiv.org/list/cs.HC/recent" target="_blank" rel="noopener">arXiv cs.HC</a>
+            <a class="lk" href="https://arxiv.org/list/cs.AI/recent" target="_blank" rel="noopener">arXiv cs.AI</a>
+            <a class="lk" href="https://chi2027.acm.org/" target="_blank" rel="noopener">CHI 2027</a>
+            <a class="lk" href="https://sigchi.org/" target="_blank" rel="noopener">ACM SIGCHI</a>
+            <a class="lk" href="https://www.designresearchsociety.org/cpages/conferences" target="_blank" rel="noopener">DRS 會議</a>
+            <a class="lk" href="https://dl.designresearchsociety.org/conference-volumes/" target="_blank" rel="noopener">DRS 數位圖書館</a>
+          </div>
+        </div>
+      </div>
+      <div class="take"><b>出處與補充</b>在下方講義，按 N 鍵。十八週交付物總表、每一條日期的來源與查證日期都在那裡。</div>
+    </div>
+  </section>
 
   </div></div>
 
+  <div class="hint">← → 換頁　M 目錄　N 講義　F 全螢幕</div>
   <div class="ctrl">
     <button id="prev" aria-label="上一張">‹</button>
     <span class="cnt" id="cnt">1 / 1</span>
     <button id="next" aria-label="下一張">›</button>
     <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+    <button id="toNotes" title="講義（N）">講義 ↓</button>
+    <button id="full" title="全螢幕（F）">⛶</button>
   </div>
   <div class="prog" id="prog"></div>
 
@@ -413,17 +569,166 @@
   </div>
 </div>
 
+<!-- ============ 講義區 ============ -->
+<main class="notes" id="notes">
+  <div class="notes-head">
+    <div class="eyebrow">Week 18 · 講義</div>
+    <h2>期末評量與學期回顧</h2>
+    <p>投影片講的是骨架，這裡放肉：繳交規格與配分表的細則、每個面向我看什麼、AI 揭露最終檢查的做法、十八週交付物總表與能力指標的對應、評量週的規矩、訊息源與學術社群的查證結果，以及交出去之前的自我檢核。</p>
+  </div>
+
+  <section class="sec">
+    <span class="kicker">導讀</span>
+    <h2>這週在解決什麼問題</h2>
+    <p>這是最後一堂課，不上新內容。要做的是三件事：把繳交規格與配分講到沒有模糊空間；把 AI 揭露頁用五個勾關掉；把十八週的主題與交付物排成一張表，讓你寫期末報告時有索引可查、寫自評或履歷時有能力指標可對。最後留一段給沒有課表之後的你：追哪些第一手訊息源、進哪些學術社群。</p>
+    <p>三個關鍵詞先講清楚。<strong>配分表（rubric）</strong>是把「好不好」拆成五個可各自打分的面向，每個面向有它看的重點。<strong>AI 協作揭露頁</strong>是報告末、參考文獻前的一頁，四欄：工具與版本、用途與範圍、提示概要、人工處理；本課從第 1 週用到今天。<strong>能力指標</strong>是第 1 週承諾的四種能力：文獻識讀、案例分析、AI 協作、跨域整合，期末報告是它們的總驗收。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">§1</span>
+    <h2>繳交與評分：規格、配分、我看什麼</h2>
+    <p>主題是「結合個人設計領域之 AI 與互動媒體專題研究」，也就是第 16 週一頁提案 v2 的展開版。繳交物三件：報告本體、AI 協作揭露頁、參考文獻，合成一個 PDF。期限、方式、格式與檔名由課堂公布，遲交與補交規定也一樣；這些每學期不同，教材不寫死。期末報告佔學期總成績 40%，報告本身的配分如下。</p>
+    <table>
+      <thead><tr><th>面向</th><th>配分</th><th>我看什麼</th></tr></thead>
+      <tbody>
+        <tr><td>問題意識與專題定位</td><td>15%</td><td>研究問題能不能用一句話說出來；它接不接得回你的母領域</td></tr>
+        <tr><td>文獻基礎與理論框架</td><td>20%</td><td>有分群、有缺口；每一筆都查得到；框架用得出來而不是擺著</td></tr>
+        <tr><td>專題執行與 AI 協作</td><td>25%</td><td>AI 用在哪個環節、為什麼是那個環節、你怎麼驗證它的輸出</td></tr>
+        <tr><td>分析發現與設計啟示</td><td>25%</td><td>證據有日期與來源；結論回答研究問題；限制寫得誠實</td></tr>
+        <tr><td>結構格式與 AI 揭露</td><td>15%</td><td>五章齊全、圖表編號在上、APA 第 7 版、揭露頁四欄與實際一致</td></tr>
+      </tbody>
+    </table>
+    <p>執行與分析合佔一半。那是你花最多時間的地方，也是我看最久的地方；前兩個面向決定「值不值得做」，後一個面向決定「能不能被信任」。格式面向只有 15%，但它裡面有一條不是扣分題：揭露與實際使用明顯不符，整份重新處理，第 9 週講過，期末一樣。</p>
+  </section>
+
+  <section class="sec grape">
+    <span class="kicker">§2</span>
+    <h2>AI 揭露最終檢查：五個勾</h2>
+    <p>第一，揭露頁四欄齊全：工具與版本、用途與範圍、提示概要、人工處理。第二，AI 給的每一筆書目都用 Crossref 或 DOI 逐筆查過；最快的做法是把整份參考文獻貼進 Crossref 的 Simple Text Query，它會比對後回傳對應的 DOI 連結，一次最多 1,000 筆，沒回 DOI 的先刪。<sup class="fn"><a href="#src-12">12</a></sup> 第三，AI 生成或修改過的圖表逐張標工具與修改程度。第四，揭露內容與實際使用一致，被當面問到任何一段都答得出來。第五，AI 不列為作者、文責由本人承擔；這是出版倫理委員會 COPE 的立場，作者要在方法或類似章節揭露用了哪個工具、怎麼用，並對內容負完全責任。<sup class="fn"><a href="#src-1">1</a></sup></p>
+    <p>不知道揭露怎麼下筆的，Elsevier 給投稿者的固定句型可以直接翻成中文放進揭露頁：「在準備本文的過程中，作者使用了［工具］以［目的］。使用後作者已審閱並視需要修改內容，並對內容負完全責任。」再補上工具版本與環節就是四欄。<sup class="fn"><a href="#src-2">2</a></sup></p>
+    <div class="scene">
+      <span class="who">假設情境</span>
+      <p>截止前只剩一小時。前 20 分鐘逐條勾繳交要求：三件齊全、檔名、格式、頁碼。中 20 分鐘把整份參考文獻貼進 Simple Text Query，沒回 DOI 的先刪。後 20 分鐘重讀揭露頁，套固定句型補完整；裝飾性調整一律放棄。順序的理由：三件事都會被退件，但只有前兩件是「零分」等級，先關掉會退件的，再談好不好看。</p>
+    </div>
+  </section>
+
+  <section class="sec cyan">
+    <span class="kicker">§3</span>
+    <h2>十八週回顧：主題、交付物、能力指標</h2>
+    <p>這張表從本課各週教材抓出來，交付物名稱照各週規格。寫期末報告時，忘了哪週講什麼、交了什麼，回來看這一張；寫自評時，對照最右欄的能力指標。</p>
+    <table>
+      <thead><tr><th>週</th><th>主題與一句話</th><th>交付物</th><th>指標</th></tr></thead>
+      <tbody>
+        <tr><td>W1</td><td>智財與課程導論：誰是作者、怎麼揭露</td><td>學號_W1_查證短文</td><td>一、三</td></tr>
+        <tr><td>W2</td><td>AI 與互動媒體概論：從歷史到應用地圖</td><td>學號_W2_迴圈圖</td><td>二</td></tr>
+        <tr><td>W3</td><td>人工智慧基礎概念：三種學習、資料集</td><td>學號_W3_分類器</td><td>三</td></tr>
+        <tr><td>W4</td><td>生成式 AI 導論：原理、規模、對齊</td><td>學號_W4_模型比較</td><td>一、三</td></tr>
+        <tr><td>W5</td><td>視覺傳達與平面設計：定調與守門</td><td>學號_W5_品牌資產</td><td>三、四</td></tr>
+        <tr><td>W6</td><td>產品與工業設計：目標、約束、材料、製程</td><td>學號_W6_產品拆解</td><td>三、四</td></tr>
+        <tr><td>W7</td><td>互動媒體設計基礎：鴻溝與回饋迴圈</td><td>學號_W7_互動診斷</td><td>二、四</td></tr>
+        <tr><td>W8</td><td>互動裝置與空間設計：四層管線</td><td>學號_W8_管線圖</td><td>二、四</td></tr>
+        <tr><td>W9</td><td>期中評量：三段結構、APA、揭露三要素</td><td>學號_姓名_期中報告</td><td>一、二、三</td></tr>
+        <tr><td>W10</td><td>沉浸式媒體與 XR：從提示到可用資產</td><td>學號_W10_生成資產</td><td>三、四</td></tr>
+        <tr><td>W11</td><td>空間建築與環境設計：數位孿生四欄</td><td>學號_W11_孿生規格書</td><td>二、四</td></tr>
+        <tr><td>W12</td><td>動態影像與媒體製作：破綻與藏拙</td><td>學號_W12_破綻分析</td><td>二、三</td></tr>
+        <tr><td>W13</td><td>創意發想與提示工程：可重複的提示資產</td><td>學號_W13_提示資產卡</td><td>三</td></tr>
+        <tr><td>W14</td><td>倫理智財與偏見：訴訟、標示、刻板印象</td><td>學號_W14_倫理體檢</td><td>一、三</td></tr>
+        <tr><td>W15</td><td>未來趨勢：代理式 AI、世界模型、職能重分配</td><td>300 字「2031 年的一天」＋四欄題目草稿</td><td>一、四</td></tr>
+        <tr><td>W16</td><td>期末專題提案：一頁提案與同儕回饋</td><td>提案 v2 ＋ 3 筆候選文獻</td><td>一、四</td></tr>
+        <tr><td>W17</td><td>個別指導：五章骨架、文獻工作流、門診</td><td>門診後修訂稿與 48 小時回報</td><td>一、三</td></tr>
+        <tr><td>W18</td><td>期末評量：繳交、回顧，然後出發</td><td>期末報告三件</td><td>一至四</td></tr>
+      </tbody>
+    </table>
+    <p>四個指標的對應：指標一「文獻識讀」看 W1、W9、W17 與期末的文獻章；指標二「案例分析」看 W8、W12、W14 與期中報告；指標三「AI 協作」看每一份繳交物的揭露欄，因為它每週都在；指標四「跨域整合」看 W5 到 W13 的領域週與期末專題。第 1 週的說法是指標一、二看期中，指標三看全部繳交物，指標四看期末，這張表只是把它拆細。</p>
+  </section>
+
+  <section class="sec lemon">
+    <span class="kicker">§4</span>
+    <h2>走出教室之後：訊息源與社群</h2>
+    <p>模型發布看官方公告頁，因為二手報導常漏掉限制與定價。Anthropic 的公告頁叫 Newsroom，查證日最新一則是 2026-09-01 的模型發布；<sup class="fn"><a href="#src-9">9</a></sup> Google DeepMind 的 News 頁最新一則是 2026 年 9 月的 Gemini 3.8 Flash 公告；<sup class="fn"><a href="#src-10">10</a></sup> Google 產品公告在 News from Google。<sup class="fn"><a href="#src-11">11</a></sup> OpenAI 官方頁對抓取工具擋 403，本課從第 14 週起就不引，這週資源頁也不列；你自己用瀏覽器開得了就去看。訂閱策略是挑兩三個來源持續掃，不在數量。</p>
+    <p>預印本的量先有個概念：arXiv 人機互動分類 cs.HC 在 2026-09-15 一天列出 80 篇新稿，人工智慧分類 cs.AI 同一天 408 篇。<sup class="fn"><a href="#src-7">7</a></sup><sup class="fn"><a href="#src-8">8</a></sup> 這兩個數字每天變，寫在這裡是要你看量級：cs.HC 一天的標題還掃得完，cs.AI 只能靠關鍵字訂閱。先讀摘要再決定要不要細讀，和第 17 週的文獻工作流是同一套。</p>
+    <p>學術社群三個。ACM SIGCHI 自述是「對人機互動的研究、教育與實務應用有興趣的學生與專業人士的國際社群」，CHI 2027 於 2027 年 5 月 10 至 14 日在匹茲堡舉行。<sup class="fn"><a href="#src-3">3</a></sup><sup class="fn"><a href="#src-4">4</a></sup> 設計研究學會 DRS 每兩年辦一次大會，DRS2024 在波士頓、DRS2026 在愛丁堡（2026 年 6 月 8 至 12 日），DRS2028 主辦地截至查證日未公布；論文集自 1971 年起收在 DRS 數位圖書館，最新一冊是 2025 年 12 月在台北舉行的 IASDR2025 論文集，是離你最近的一場國際設計研究會議。<sup class="fn"><a href="#src-5">5</a></sup><sup class="fn"><a href="#src-6">6</a></sup> v1 提到的 SIGGRAPH 日期我這次開不了官方頁，整句刪掉；你要查就開 siggraph.org。進階用法：把會議論文集當期刊訂閱，每年掃一輪標題就能看見領域風向。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">老師的課堂規矩</span>
+    <h2>評量週我怎麼評</h2>
+    <p>第一，先看揭露頁與參考文獻，再讀正文。書目查不到的，正文不進入評分；這不是為了刁難，是因為查不到的書目讓我沒辦法判斷你的文獻章是讀來的還是生成的。第二，五個面向各自給分，不用總印象分，分數旁一定寫一句「為什麼」，你拿到的是五句話不是一個數字。第三，誠信問題不是扣分題：揭露與實際使用明顯不符，整份重新處理，第 9 週就講過。第四，被當面問到報告任何一段，答得出來才算你的；答不出來我會換個方式再問一次，還是答不出來，那一段就不算。我評的是你的判斷有沒有證據，不是你用了多少 AI。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">出處</span>
+    <h2>本週引用的資料</h2>
+    <p>每一條都在 2026-09-16 打開確認過；COPE 與 Elsevier 條目沿用第 9 週、Crossref 沿用第 17 週，標「沿用」。COPE 官方頁與 OpenAI 新聞頁 403，SIGGRAPH 官方站轉址後未取得內容，一律不引。網址失效請告訴我，我會換。</p>
+    <ol class="src">
+      <li id="src-1"><span class="ti">JPL Library〈COPE Position Statement on Authorship and AI Tools〉</span><span class="meta">JPL Library 轉載 COPE（二手；COPE 官方頁 403）· 2023-06-04 · cannot be listed as an author · 沿用第 9 週 · 查證 2026-09-16</span><a href="https://jpl-nasa.libguides.com/blog/Authorship-and-AI-Tools" target="_blank" rel="noopener">https://jpl-nasa.libguides.com/blog/Authorship-and-AI-Tools</a></li>
+      <li id="src-2"><span class="ti">Elsevier〈Generative AI policies for journals〉</span><span class="meta">Elsevier 官方 · 頁面未標日期 · 固定聲明句型 · 沿用第 9 週 · 查證 2026-09-16</span><a href="https://www.elsevier.com/about/policies-and-standards/generative-ai-policies-for-journals" target="_blank" rel="noopener">https://www.elsevier.com/about/policies-and-standards/generative-ai-policies-for-journals</a></li>
+      <li id="src-3"><span class="ti">CHI 2027 官方網站</span><span class="meta">ACM SIGCHI 官方 · 頁面未標日期 · Pittsburgh, 10–14 May, 2027 · 查證 2026-09-16</span><a href="https://chi2027.acm.org/" target="_blank" rel="noopener">https://chi2027.acm.org/</a></li>
+      <li id="src-4"><span class="ti">ACM SIGCHI 首頁</span><span class="meta">ACM SIGCHI 官方 · 頁面未標日期 · 自述與 2026 年專門會議清單 · 查證 2026-09-16</span><a href="https://sigchi.org/" target="_blank" rel="noopener">https://sigchi.org/</a></li>
+      <li id="src-5"><span class="ti">Design Research Society〈Conferences〉；DRS2026 官方站</span><span class="meta">DRS 官方 · 頁面未標日期 · 每兩年一次、DRS2024 波士頓、DRS2026 愛丁堡 2026-06-08 至 06-12 · 查證 2026-09-16</span><a href="https://www.designresearchsociety.org/cpages/conferences" target="_blank" rel="noopener">https://www.designresearchsociety.org/cpages/conferences</a>　<a href="https://drs2026.thedrs.org/" target="_blank" rel="noopener">https://drs2026.thedrs.org/</a></li>
+      <li id="src-6"><span class="ti">DRS Digital Library〈Conference Volumes〉</span><span class="meta">DRS 官方 · 頁面未標日期 · 自 1971 年出版論文集；最新為 IASDR2025 台北（2025-12）· 查證 2026-09-16</span><a href="https://dl.designresearchsociety.org/conference-volumes/" target="_blank" rel="noopener">https://dl.designresearchsociety.org/conference-volumes/</a></li>
+      <li id="src-7"><span class="ti">arXiv〈Human-Computer Interaction (cs.HC) – recent〉</span><span class="meta">arXiv 官方 · 2026-09-15 當日 80 篇（每日變動）· 查證 2026-09-16</span><a href="https://arxiv.org/list/cs.HC/recent" target="_blank" rel="noopener">https://arxiv.org/list/cs.HC/recent</a></li>
+      <li id="src-8"><span class="ti">arXiv〈Artificial Intelligence (cs.AI) – recent〉</span><span class="meta">arXiv 官方 · 2026-09-15 當日 408 篇（每日變動）· 查證 2026-09-16</span><a href="https://arxiv.org/list/cs.AI/recent" target="_blank" rel="noopener">https://arxiv.org/list/cs.AI/recent</a></li>
+      <li id="src-9"><span class="ti">Anthropic〈Newsroom〉</span><span class="meta">Anthropic 官方 · 最新一則 2026-09-01 · 查證 2026-09-16</span><a href="https://www.anthropic.com/news" target="_blank" rel="noopener">https://www.anthropic.com/news</a></li>
+      <li id="src-10"><span class="ti">Google DeepMind〈News〉</span><span class="meta">Google DeepMind 官方 · 最新一則 2026-09 · 查證 2026-09-16</span><a href="https://deepmind.google/blog/" target="_blank" rel="noopener">https://deepmind.google/blog/</a></li>
+      <li id="src-11"><span class="ti">Google〈News from Google〉</span><span class="meta">Google 官方 · 頁面未標日期 · 產品與技術公告 · 查證 2026-09-16</span><a href="https://blog.google/" target="_blank" rel="noopener">https://blog.google/</a></li>
+      <li id="src-12"><span class="ti">Crossref〈Simple Text Query〉</span><span class="meta">Crossref 官方 · 頁面未標日期 · 貼上參考文獻回傳 DOI、最多 1,000 筆 · 沿用第 17 週 · 查證 2026-09-16</span><a href="https://apps.crossref.org/simpleTextQuery" target="_blank" rel="noopener">https://apps.crossref.org/simpleTextQuery</a></li>
+    </ol>
+  </section>
+
+  <section class="sec cyan">
+    <span class="kicker">補充資訊</span>
+    <h2>延伸閱讀與這一週刪掉的東西</h2>
+    <h3>這一週刪掉的東西，以及為什麼</h3>
+    <ul>
+      <li><strong>v1「SIGGRAPH 2026 場下週 7/19–23 在洛杉磯」</strong>：在 9 月已是過去式，官方站轉址後開不了，日期與地點整句不寫。</li>
+      <li><strong>v1 資源頁的 OpenAI 連結</strong>：官方新聞頁 403，本課規則是開不了的連結不留。</li>
+      <li><strong>v1「DRS2026 於愛丁堡」當作未來式</strong>：會議已於 2026 年 6 月舉行，改寫為已辦與 DRS2028 未公布。<sup class="fn"><a href="#src-5">5</a></sup></li>
+      <li><strong>期末配分、40%、三件繳交物、期限與檔名</strong>：課程內部規則，照 v1 沿用，沒有新增任何評分規則。</li>
+    </ul>
+    <h3>延伸閱讀</h3>
+    <ul>
+      <li>DRS 數位圖書館可以免費下載歷年論文集，IASDR2025 台北那一冊有不少台灣設計研究者的論文，適合當母領域文獻的起點。<sup class="fn"><a href="#src-6">6</a></sup></li>
+      <li>CHI 2027 官方站會陸續公布徵稿與截止日，研究所要投的人現在就記下網址。<sup class="fn"><a href="#src-3">3</a></sup></li>
+      <li>Simple Text Query 不只交作業用，投稿前把參考文獻整段貼一次，是最便宜的書目健檢。<sup class="fn"><a href="#src-12">12</a></sup></li>
+      <li>Elsevier 的聲明句型翻成中文後，可以直接當你下一門課的揭露頁模板。<sup class="fn"><a href="#src-2">2</a></sup></li>
+    </ul>
+  </section>
+
+  <section class="sec lemon">
+    <span class="kicker">本週檢核</span>
+    <h2>交出去前自己打勾</h2>
+    <ul class="check">
+      <li>三件繳交物齊全：報告本體、AI 協作揭露頁、參考文獻，合成一個 PDF；檔名與格式依課堂公布。</li>
+      <li>研究問題寫成一句話放在緒論；五章齊全，每章各回答一個問題。</li>
+      <li>參考文獻整份貼過 Simple Text Query，沒回 DOI 的已刪；DOI 一律 https://doi.org/ 開頭。</li>
+      <li>圖表編號與標題在上方、內文點名、來源或 AI 標示齊全。</li>
+      <li>揭露頁四欄齊全，AI 文獻工具也列進去，內容與實際使用一致。</li>
+      <li>對照五個面向各自問過自己「為什麼」，答不出來的那一面向先補。</li>
+      <li>期限與方式已寫進行事曆；課程問卷已填。</li>
+    </ul>
+  </section>
+
+  <p class="version">2026-09-16 翻新：版型改為水彩由灰轉彩、新增講義區、十八週回顧改為主題＋交付物＋能力指標總表（資料取自各週 v2 教材）、訊息源與學術社群逐條查證並刪除過期的 SIGGRAPH 日期與 403 的 OpenAI 連結、arXiv 新稿量更新至 2026-09-15、配分與繳交規則照 v1 沿用不新增。前一版：2026-09-13。</p>
+
+</main>
+
+<a class="backtop" id="backtop" href="#deck">↑ 回投影片</a>
+
 <script>
 (function () {
   /* ★ 每週只改這一行 ★ */
+  var COURSE_LABEL = '人工智慧與互動媒體特論';
   var WEEK_LABEL = '第 18 週 · 期末評量';
 
+  var deck = document.getElementById('deck');
   var stage = document.getElementById('stage');
   var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
   var cnt = document.getElementById('cnt');
   var prog = document.getElementById('prog');
   var toc = document.getElementById('toc');
   var tgrid = document.getElementById('tgrid');
+  var backtop = document.getElementById('backtop');
   var cur = 0;
 
   document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
@@ -431,7 +736,7 @@
   slides.forEach(function (s, i) {
     var f = document.createElement('div');
     f.className = 'foot';
-    f.innerHTML = '<span>人工智慧與互動媒體特論|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    f.innerHTML = '<span>' + COURSE_LABEL + '|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
     s.appendChild(f);
   });
 
@@ -440,12 +745,12 @@
     var eb = s.querySelector('.eyebrow');
     var part = '開場';
     if (eb) {
-      var m = eb.textContent.match(/PART\s*(\d)/i);
-      if (m) part = 'PART ' + m[1];
+      var m = eb.textContent.match(/Part\s*(\d)/i);
+      if (m) part = 'Part ' + m[1];
       else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
     }
     var h = s.querySelector('h1, h2');
-    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent.replace(/\d+$/, '') : '') });
   });
   Object.keys(groups).forEach(function (k) {
     var col = document.createElement('div');
@@ -473,35 +778,57 @@
   function toggleToc(on) {
     toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
   }
+  function atDeck() { return window.scrollY < 40; }
+  function toNotes() { document.getElementById('notes').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  function toggleFull() {
+    if (document.fullscreenElement) { document.exitFullscreen(); return; }
+    if (deck.requestFullscreen) deck.requestFullscreen();
+  }
 
   document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
   document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
   document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
   document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+  document.getElementById('toNotes').addEventListener('click', toNotes);
+  document.getElementById('full').addEventListener('click', toggleFull);
 
   document.addEventListener('keydown', function (e) {
+    if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
     if (e.key === 'Escape') { toggleToc(false); return; }
     if (toc.classList.contains('on')) return;
     switch (e.key) {
-      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
-      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
-      case 'Home': go(0); break;
-      case 'End': go(slides.length - 1); break;
+      case 'ArrowRight': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'ArrowDown': case ' ': if (atDeck()) { e.preventDefault(); go(cur + 1); } break;
+      case 'ArrowUp': if (atDeck()) { e.preventDefault(); go(cur - 1); } break;
+      case 'Home': if (atDeck()) go(0); break;
+      case 'End': if (atDeck()) go(slides.length - 1); break;
       case 'm': case 'M': toggleToc(); break;
+      case 'n': case 'N': toNotes(); break;
+      case 'f': case 'F': toggleFull(); break;
     }
   });
 
   function fit() {
-    var w = window.innerWidth, h = window.innerHeight;
+    var w = deck.clientWidth, h = deck.clientHeight;
     if (!w || !h) { requestAnimationFrame(fit); return; }
-    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+    stage.style.transform = 'scale(' + Math.min((w - 48) / 1300, (h - 88) / 740) + ')';
   }
   window.addEventListener('resize', fit);
   window.addEventListener('load', fit);
+  document.addEventListener('fullscreenchange', fit);
   fit();
+
+  window.addEventListener('scroll', function () {
+    backtop.classList.toggle('show', window.scrollY > deck.clientHeight * 0.6);
+  }, { passive: true });
 
   var m = location.hash.match(/^#s(\d+)$/);
   go(m ? +m[1] - 1 : 0);
+  if (!m && location.hash) {
+    var target = document.querySelector(location.hash.replace(/[^#\w-]/g, ''));
+    if (target) setTimeout(function () { target.scrollIntoView({ block: 'start' }); }, 50);
+  }
 })();
 </script>
 </body>

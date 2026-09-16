@@ -3,145 +3,231 @@
 <head>
 <meta charset="utf-8">
 <title>第 9 週|世界觀與故事背景</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Zen+Maru+Gothic:wght@500;700;900&family=Baloo+2:wght@600;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
-  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  /* ============ 版型：糖果流行（style-library muse-dash，色值取自 styles/muse-dash.json）============ */
   * { box-sizing: border-box; }
-  #app {
-    position: fixed; inset: 0; overflow: hidden;
-    background: var(--bg);
-    font-family: var(--body);
-    color: var(--ink);
-    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
-    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
-    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
-    --bg: #F5F4EC; --bg2: #EFEEE2;
-    --panel: #FDFCF6; --panel2: #EDECDF;
-    --ink: #232B21; --sub: #67705E;
-    --accent: #2F6B4F; --accent-rgb: 47,107,79;
-    --accent2: #BC4F2C;
-    --line: rgba(35,43,33,.16);
-    --link: #2F6B4F;
-    --r: 4px;
+  :root {
+    --bg: #fff4fa; --bg2: #eefaff;
+    --surface: #ffffff; --surface2: #eefaff;
+    --ink: #2b1b3d; --ink2: #6b5a7e; --muted: #6b5a7e;
+    --accent: #ff3d97; --accent2: #1fd0d6;
+    --pink-soft: #ff7fb8; --coral: #ff7a7a; --cyan-deep: #0fb6c4;
+    --grape: #8b54e6; --grape-deep: #6f3fd6; --lemon: #ffd23f; --sky: #49b8ff;
+    --dot-pink: rgba(255,61,151,.13); --dot-cyan: rgba(31,208,214,.16);
+    --body: 'Noto Sans TC', 'Microsoft JhengHei', 'PingFang TC', 'Segoe UI', sans-serif;
+    --disp: 'Fredoka', 'Zen Maru Gothic', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+    --num: 'Baloo 2', 'Fredoka', 'Noto Sans TC', sans-serif;
+    --r-sm: 14px; --r-md: 22px; --r-lg: 34px;
+    --bw: 4px;
+    --sh-sm: 4px 4px 0 var(--ink); --sh-md: 7px 7px 0 var(--ink);
   }
-  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
-  #app a:hover { opacity: .85; }
-  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-weight: 500; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 2px; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
+  /* ---------- 投影區 ---------- */
+  #deck {
+    position: relative; height: 100vh; min-height: 560px; overflow: hidden;
+    background: var(--bg2);
+    background-image: radial-gradient(var(--dot-cyan) 2.4px, transparent 2.6px);
+    background-size: 26px 26px;
+  }
   .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
-  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
-  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
-  .slide.active { display: flex; }
-  .slide::before {
-    content: ""; position: absolute; inset: 24px; pointer-events: none;
-    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
+  .stage {
+    width: 1280px; height: 720px; position: relative; flex: 0 0 auto;
+    background: var(--bg);
+    background-image: radial-gradient(var(--dot-pink) 2.4px, transparent 2.6px);
+    background-size: 26px 26px;
+    border: var(--bw) solid var(--ink); border-radius: 26px;
+    box-shadow: 10px 10px 0 var(--ink);
+    overflow: hidden;
   }
+  .slide { position: absolute; inset: 0; padding: 44px 60px 74px; display: none; flex-direction: column; }
+  .slide.active { display: flex; animation: pop .42s cubic-bezier(.2,.9,.3,1.2) both; }
+  @keyframes pop { 0% { transform: scale(.96); opacity: 0 } 60% { transform: scale(1.01); opacity: 1 } 100% { transform: none } }
 
-  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
-  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
-  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
-  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+  .eyebrow { font-family: var(--disp); font-size: 18px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+  h1 { font-family: var(--disp); font-size: 80px; line-height: 1.12; margin: 0; font-weight: 700; text-wrap: balance; }
+  h2 { font-family: var(--disp); font-size: 54px; line-height: 1.18; margin: 0 0 18px; font-weight: 700; text-wrap: balance; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 18px; padding-right: 8px; }
 
-  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
-  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
-  .sub { color: var(--sub); }
+  .slide ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 16px; font-size: 26px; line-height: 1.55; }
+  .slide ul ul { margin-top: 6px; gap: 6px; font-size: 22px; color: var(--ink2); }
+  .slide li::marker { color: var(--accent); }
+  .sub { color: var(--ink2); }
   .small { font-size: 18px; }
-  .num { font-variant-numeric: tabular-nums; }
+  .num { font-family: var(--num); font-variant-numeric: tabular-nums; }
 
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
-  .cards { display: grid; gap: 18px; }
+  .cards { display: grid; gap: 20px; }
   .c2 { grid-template-columns: repeat(2, 1fr); }
   .c3 { grid-template-columns: repeat(3, 1fr); }
   .c4 { grid-template-columns: repeat(4, 1fr); }
   .c5 { grid-template-columns: repeat(5, 1fr); }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
-  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
-  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
-  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
-
-  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
-  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
-
-  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
-
-  .cover, .part { justify-content: center; }
-  .cover .eyebrow { margin-bottom: 26px; }
-  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
-  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
-  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
-  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
-  .part h2 { font-size: 56px; }
-  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
-
-  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
-  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
-  .kv dd { margin: 0; }
-  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
-  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
-  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
-  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
-  .lk::after { content: " ↗"; font-size: 12px; }
-  .flow { display: flex; align-items: stretch; gap: 0; }
-  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
-  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
-  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
-  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
-  .bar i { display: block; height: 100%; background: var(--accent); }
-  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
-  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
-  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
-  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
-  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
-  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
-  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
-  .tl { display: flex; flex-direction: column; gap: 18px; }
-  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
-  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
-  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
-
-  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
-  .content > .cards,
-  .content > .cols,
-  .content > .flow,
-  .content > .kv,
-  .content > .prob { flex: 1 1 auto; }
-  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
-  .content > .qlist,
-  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
-  .content > .biblio { flex: 0 0 auto; }
+  .card {
+    background: var(--surface); border: var(--bw) solid var(--ink); border-radius: var(--r-md);
+    box-shadow: var(--sh-md); padding: 18px 22px; min-width: 0;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .card.pink { background: #ffe3f0; } .card.cyan { background: #dff8f9; } .card.grape { background: #ece2ff; } .card.lemon { background: #fff4c7; }
+  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 10px; font-weight: 700; line-height: 1.25; }
+  .card p, .card li { font-size: 22px; line-height: 1.5; margin: 0; }
+  .card ul { padding-left: 1.1em; gap: 8px; font-size: 22px; }
+  .card .who { display: block; font-family: var(--disp); font-size: 16px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; font-weight: 600; }
+  .card.cyan .who { color: var(--cyan-deep); } .card.grape .who { color: var(--grape-deep); } .card.lemon .who { color: #9a7400; }
   .cols > .card { justify-content: flex-start; }
 
-  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
-  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
-  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
-  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
-  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 3px solid var(--ink); padding-top: 12px; font-size: 22px; line-height: 1.5; }
+  .take b { font-family: var(--disp); color: var(--accent); font-size: 17px; letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; font-weight: 700; }
+
+  .foot { position: absolute; left: 60px; right: 60px; bottom: 22px; display: flex; justify-content: space-between; font-family: var(--disp); font-size: 16px; letter-spacing: .06em; color: var(--ink2); }
+
+  /* 封面與章節頁：整片彩色 radial-gradient ＋ 白色半色調點，文字反白 */
+  .cover, .part { justify-content: center; color: #fff; }
+  .cover { background: radial-gradient(circle at 25% 30%, var(--pink-soft), var(--accent) 65%); }
+  .part.p-cyan { background: radial-gradient(circle at 70% 30%, #86ecf0, var(--accent2) 65%); }
+  .part.p-grape { background: radial-gradient(circle at 40% 65%, #b79af5, var(--grape) 65%); }
+  .part.p-pink { background: radial-gradient(circle at 25% 30%, var(--pink-soft), var(--accent) 65%); }
+  .part.p-sky { background: radial-gradient(circle at 70% 60%, #9ad6ff, var(--sky) 65%); }
+  .part.p-coral { background: radial-gradient(circle at 30% 40%, #ffa3a3, var(--coral) 65%); }
+  .cover::after, .part::after { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(rgba(255,255,255,.35) 2.4px, transparent 2.6px); background-size: 26px 26px; }
+  .cover > *:not(.foot), .part > *:not(.foot) { position: relative; z-index: 1; }
+  .cover .foot, .part .foot { z-index: 1; }
+  .cover .eyebrow, .part .eyebrow { color: #fff; margin-bottom: 22px; }
+  .cover .foot, .part .foot { color: #fff; }
+  .cover-sub { font-size: 30px; margin: 26px 0 0; line-height: 1.6; max-width: 30em; font-weight: 500; }
+  .cover-meta { margin-top: 40px; display: flex; gap: 12px; flex-wrap: wrap; font-family: var(--disp); font-size: 17px; }
+  .cover-meta span { border: 3px solid #fff; border-radius: 999px; padding: 6px 16px; }
+  .part-num { font-family: var(--num); font-size: 150px; line-height: 1; margin-bottom: 4px; font-weight: 800; color: transparent; -webkit-text-stroke: 4px #fff; }
+  .part h2 { font-size: 60px; }
+  .part-sub { font-size: 28px; margin: 18px 0 0; max-width: 32em; line-height: 1.6; font-weight: 500; }
+
+  .kv { display: grid; grid-template-columns: 250px 1fr; gap: 16px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
+  .kv dt { font-family: var(--disp); color: var(--accent); font-weight: 700; font-size: 22px; }
+  .kv dd { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .chip { font-family: var(--disp); padding: 6px 16px; border: 3px solid var(--ink); background: var(--surface2); border-radius: 999px; font-size: 21px; font-weight: 600; }
+  .chip.hot { background: var(--lemon); }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lk { display: inline-block; border: 3px solid var(--ink); background: var(--surface); box-shadow: var(--sh-sm); padding: 6px 16px; border-radius: 999px; font-size: 18px; text-decoration: none; color: var(--ink); font-weight: 600; }
+  .lk::after { content: " ↗"; font-size: 12px; }
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .flow .step { flex: 1; background: var(--surface); border: var(--bw) solid var(--ink); border-radius: var(--r-md); box-shadow: var(--sh-md); padding: 18px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 8px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.5; margin: 0; color: var(--ink2); }
+  .flow .arr { flex: 0 0 48px; display: flex; align-items: center; justify-content: center; font-family: var(--num); font-size: 30px; color: var(--accent); font-weight: 800; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 16px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.5; display: flex; gap: 14px; }
+  .qlist p::before { content: "Q" counter(q); font-family: var(--num); color: var(--accent); font-weight: 800; flex: 0 0 auto; }
+  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .08em; color: var(--accent); margin: 0 0 10px; font-weight: 700; }
+  .card p.big, .cols > .card p.big { font-family: var(--num); font-size: 88px; line-height: 1.05; font-weight: 800; color: var(--accent); margin: 0; }
+  .card p.big small { font-family: var(--disp); font-size: 22px; line-height: 1.4; color: var(--ink2); font-weight: 600; display: block; margin-top: 10px; }
+
+  /* 貼紙卡不撐滿高度：卡片依內容高度，整組在標題與底列之間置中 */
+  .content > .cards, .content > .cols, .content > .flow { flex: 0 0 auto; margin-top: auto; margin-bottom: auto; }
+  .content > .kv { flex: 1 1 auto; }
+  .cards .card { min-height: 200px; }
+  .cols > .card { min-height: 240px; }
+  .cols > .card h3 { font-size: 28px; }
+  .cols > .card p, .cols > .card li { font-size: 24px; }
+  .cols > .card ul { gap: 10px; }
+  .c3 .card p { font-size: 23px; }
+  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .qlist { flex: 1 1 auto; justify-content: space-evenly; }
+
+  /* 投影片上的出處記號 */
+  sup.fn { font-family: var(--num); font-size: 13px; line-height: 1; vertical-align: top; margin-left: 4px; position: relative; top: -2px; }
+  sup.fn a { display: inline-block; background: var(--ink); color: #fff; border-radius: 999px; height: 20px; line-height: 20px; min-width: 20px; padding: 0 6px; text-align: center; text-decoration: none; font-weight: 800; }
+  .cover sup.fn a, .part sup.fn a { background: #fff; color: var(--ink); }
+
+  /* 控制列 */
+  .ctrl { position: absolute; right: 16px; bottom: 14px; display: flex; gap: 6px; align-items: center; z-index: 30; }
+  .ctrl button { font-family: var(--disp); border: 3px solid var(--ink); background: var(--surface); color: var(--ink); font-size: 15px; height: 34px; min-width: 36px; padding: 0 10px; border-radius: 999px; cursor: pointer; box-shadow: 3px 3px 0 var(--ink); font-weight: 600; }
+  .ctrl button:hover { transform: translateY(-2px); box-shadow: 5px 5px 0 var(--ink); }
+  .ctrl button:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--ink); }
+  .ctrl .cnt { font-family: var(--num); font-size: 14px; color: var(--ink2); padding: 0 6px; font-variant-numeric: tabular-nums; }
+  .prog { position: absolute; left: 0; bottom: 0; height: 5px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
+  .hint { position: absolute; left: 16px; bottom: 16px; z-index: 30; font-family: var(--disp); font-size: 13px; color: var(--ink2); }
+
+  .toc { position: absolute; inset: 0; background: rgba(255,244,250,.96); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
   .toc.on { display: block; }
-  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
-  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
-  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
-  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
-  .toc button:hover { background: var(--panel2); }
-  .toc button.here { color: var(--accent2); font-weight: 700; }
-  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
-  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
- .eyebrow{font-size:18px}.slide h2{font-size:48px}.slide ul{font-size:26px}.slide ul ul{font-size:22px}.small{font-size:18px}.card h3{font-size:26px}.card p,.card li,.card ul{font-size:22px}.card .who{font-size:16px}.take{font-size:22px}.take b{font-size:17px}.foot{font-size:16px}.cover-sub{font-size:30px}.part-sub{font-size:28px}.kv{font-size:24px}.kv dt{font-size:21px}.chip{font-size:23px}.lk{font-size:18px}.flow .step h3{font-size:24px}.flow .step p{font-size:21px}.prob,.biblio{font-size:23px}.biblio .ti{font-size:27px}.qlist p{font-size:26px}.tl .ev{font-size:23px}.grp h3{font-size:20px}
+  .toc h2 { font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 26px; }
+  .toc h3 { font-family: var(--disp); color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 10px; cursor: pointer; border-radius: 10px; font-family: var(--body); font-weight: 500; }
+  .toc button:hover { background: var(--surface2); }
+  .toc button.here { color: var(--accent); font-weight: 700; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--ink2); }
+
+  /* ---------- 講義區 ---------- */
+  .notes { max-width: 960px; margin: 0 auto; padding: 56px 20px 96px; }
+  .notes-head { text-align: center; margin-bottom: 40px; }
+  .notes-head .eyebrow { margin-bottom: 10px; }
+  .notes-head h2 { font-size: 44px; margin: 0 0 12px; }
+  .notes-head p { color: var(--ink2); font-size: 18px; margin: 0; }
+  .sec { background: var(--surface); border: var(--bw) solid var(--ink); border-radius: var(--r-md); box-shadow: var(--sh-md); padding: 28px 32px; margin: 0 0 30px; }
+  .sec h2 { font-size: 30px; margin: 0 0 14px; }
+  .sec h3 { font-family: var(--disp); font-size: 21px; margin: 24px 0 8px; font-weight: 700; }
+  .sec p, .sec li { font-size: 18px; line-height: 1.85; color: var(--ink2); margin: 0 0 12px; }
+  .sec li { margin: 0 0 6px; }
+  .sec strong { color: var(--ink); font-weight: 700; }
+  .sec .kicker { display: inline-block; font-family: var(--disp); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: #fff; background: var(--accent); border-radius: 999px; padding: 4px 12px; margin-bottom: 12px; font-weight: 700; }
+  .sec.cyan .kicker { background: var(--cyan-deep); } .sec.grape .kicker { background: var(--grape); } .sec.lemon .kicker { background: #9a7400; }
+  .sec table { width: 100%; border-collapse: collapse; font-size: 17px; margin: 8px 0 16px; }
+  .sec th, .sec td { text-align: left; padding: 10px 12px; border-bottom: 2px solid #efe6f2; vertical-align: top; line-height: 1.6; }
+  .sec th { font-family: var(--disp); font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+  .scene { background: var(--surface2); border: 3px dashed var(--ink); border-radius: var(--r-sm); padding: 14px 18px; margin: 14px 0 18px; }
+  .scene .who { font-family: var(--disp); font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--cyan-deep); font-weight: 700; display: block; margin-bottom: 4px; }
+  .scene p { margin: 0; }
+  ol.src { padding-left: 1.4em; counter-reset: s; list-style: none; }
+  ol.src li { counter-increment: s; position: relative; padding-left: 8px; margin-bottom: 14px; line-height: 1.7; }
+  ol.src li::before { content: counter(s); position: absolute; left: -1.5em; top: .35em; font-family: var(--num); font-size: 13px; font-weight: 800; background: var(--ink); color: #fff; border-radius: 999px; min-width: 22px; height: 22px; line-height: 22px; text-align: center; }
+  ol.src li:target { background: #fff4c7; border-radius: 10px; }
+  ol.src .ti { color: var(--ink); font-weight: 700; }
+  ol.src .meta { display: block; font-size: 15px; color: var(--muted); }
+  ol.src a { word-break: break-all; font-size: 15px; }
+  .check { counter-reset: c; list-style: none; padding: 0; }
+  .check li { counter-increment: c; display: flex; gap: 12px; align-items: baseline; }
+  .check li::before { content: "☐"; color: var(--accent); font-size: 22px; flex: 0 0 auto; }
+  .backtop { position: fixed; right: 18px; bottom: 18px; z-index: 50; font-family: var(--disp); font-size: 15px; font-weight: 700; color: var(--ink); background: var(--lemon); border: 3px solid var(--ink); border-radius: 999px; padding: 8px 16px; text-decoration: none; box-shadow: 4px 4px 0 var(--ink); display: none; }
+  .backtop.show { display: inline-block; }
+  .version { text-align: center; font-size: 14px; color: var(--muted); margin-top: 30px; }
+
+  @media (max-width: 720px) {
+    .notes { padding: 40px 16px 80px; }
+    .sec { padding: 20px 18px; }
+    .notes-head h2 { font-size: 32px; }
+    .kv { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .slide.active { animation: none; }
+    .prog { transition: none; }
+    .ctrl button:hover { transform: none; }
+  }
+  @media print {
+    #deck, .backtop { display: none; }
+    .notes { max-width: none; padding: 0; }
+    .sec { box-shadow: none; break-inside: avoid; }
+  }
 </style>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
 </head>
 <body>
-<div id="app" data-deck="b">
-  <div class="stagewrap"><div class="stage" id="stage">
 
-  <!-- 1 封面 -->
+<div id="deck" data-deck="muse-dash">
+  <div class="stagewrap"><div class="stage" id="stage">
+<!-- 1 封面 -->
   <section class="slide cover">
     <div class="eyebrow">遊戲企畫 · 動畫與遊戲設計系</div>
     <h1>設定要能長出玩法</h1>
     <p class="cover-sub">世界觀寫兩萬字但遊戲裡看不到，等於白寫。這堂課講怎麼讓設定直接變成規則與限制，而不是寫成一本沒人看的小說。</p>
-    <div class="cover-meta"><span>第 9 週</span><span>授課：鄧樹遠</span></div>
+    <div class="cover-meta"><span>第 9 週</span><span>授課：鄧樹遠</span><span>投影片 ＋ 下方講義</span></div>
   </section>
 
   <!-- 2 本週地圖 -->
@@ -150,17 +236,17 @@
     <h2>九十分鐘，五段路</h2>
     <div class="content">
       <div class="cards c5">
-        <div class="card"><span class="who">PART 1</span><h3>劇情不是本體</h3><p class="sub">遊戲才是</p></div>
-        <div class="card"><span class="who">PART 2</span><h3>世界觀怎麼建</h3><p class="sub">四個問題就夠</p></div>
-        <div class="card"><span class="who">PART 3</span><h3>角色怎麼寫</h3><p class="sub">矛盾比完美好用</p></div>
-        <div class="card"><span class="who">PART 4</span><h3>怎麼寫進企畫書</h3><p class="sub">兩頁的紀律</p></div>
-        <div class="card"><span class="who">PART 5</span><h3>本週交付</h3><p class="sub">世界觀四題與角色關係</p></div>
+        <div class="card pink"><span class="who">Part 1</span><h3>劇情不是本體</h3><p class="sub">遊戲才是</p></div>
+        <div class="card cyan"><span class="who">Part 2</span><h3>世界觀怎麼建</h3><p class="sub">四個問題就夠</p></div>
+        <div class="card grape"><span class="who">Part 3</span><h3>角色怎麼寫</h3><p class="sub">矛盾比完美好用</p></div>
+        <div class="card lemon"><span class="who">Part 4</span><h3>怎麼寫進企畫書</h3><p class="sub">兩頁的紀律</p></div>
+        <div class="card"><span class="who">Part 5</span><h3>本週交付</h3><p class="sub">世界觀四題與角色關係</p></div>
       </div>
       <div class="take"><b>本週目標</b>離開教室時，你要有一組角色關係，而且那組關係本身就能長出玩法。</div>
     </div>
   </section>
 
-  <!-- 3 承接上週 -->
+  <!-- 3 承接 -->
   <section class="slide">
     <div class="eyebrow">承接第 8 週 · 期中一頁企畫提案</div>
     <h2>從一頁展開成一本</h2>
@@ -175,7 +261,7 @@
             <li>五分鐘講得完</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card cyan">
           <span class="who">接下來十週</span>
           <h3>把一頁展開成十五頁</h3>
           <ul>
@@ -189,32 +275,32 @@
     </div>
   </section>
 
-  <!-- 4 PART 1 章節頁 -->
-  <section class="slide part">
+  <!-- 4 PART 1 -->
+  <section class="slide part p-pink">
     <div class="part-num">01</div>
-    <div class="eyebrow">PART 1</div>
+    <div class="eyebrow">Part 1</div>
     <h2>劇情不是本體</h2>
     <p class="part-sub">遊戲的劇情跟寫小說不同。本體是遊戲，劇情是為遊戲服務的，除非你做的是視覺小說。</p>
   </section>
 
-  <!-- 5 先寫故事的問題 -->
+  <!-- 5 四個問題 -->
   <section class="slide">
-    <div class="eyebrow">PART 1 · 常見誤區</div>
+    <div class="eyebrow">Part 1 · 常見誤區</div>
     <h2>先寫故事會出四個問題</h2>
     <div class="content">
       <div class="cards c4">
-        <div class="card"><span class="who">問題一</span><h3>複雜到做不出來</h3><p class="sub">故事一複雜就呈現不了</p></div>
-        <div class="card"><span class="who">問題二</span><h3>過場動畫吃成本</h3><p class="sub">每段過場都是額外製作量</p></div>
-        <div class="card"><span class="who">問題三</span><h3>對話拖慢節奏</h3><p class="sub">玩家多半不是為看故事來的</p></div>
-        <div class="card"><span class="who">問題四</span><h3>被故事綁住</h3><p class="sub">受限於劇情，玩法沒空間</p></div>
+        <div class="card pink"><span class="who">問題一</span><h3>複雜到做不出來</h3><p class="sub">故事一複雜就呈現不了</p></div>
+        <div class="card cyan"><span class="who">問題二</span><h3>過場動畫吃成本</h3><p class="sub">每段過場都是額外製作量</p></div>
+        <div class="card lemon"><span class="who">問題三</span><h3>對話拖慢節奏</h3><p class="sub">玩家多半不是為看故事來的</p></div>
+        <div class="card grape"><span class="who">問題四</span><h3>被故事綁住</h3><p class="sub">受限於劇情，玩法沒空間</p></div>
       </div>
-      <div class="take"><b>文件順序</b>先寫清楚玩家怎麼玩，再補故事如何支撐這個玩法。</div>
+      <div class="take"><b>文件順序</b>先寫清楚玩家怎麼玩，再補故事如何支撐這個玩法。MDA 把敘事列為八種樂趣之一，是之一，不是全部。<sup class="fn"><a href="#src-9">9</a></sup></div>
     </div>
   </section>
 
-  <!-- 6 好的順序 -->
+  <!-- 6 正確順序 -->
   <section class="slide">
-    <div class="eyebrow">PART 1 · 正確順序</div>
+    <div class="eyebrow">Part 1 · 正確順序</div>
     <h2>好的遊戲敘事這樣長</h2>
     <div class="content">
       <div class="flow">
@@ -228,13 +314,13 @@
     </div>
   </section>
 
-  <!-- 7 小關係大於大世界 -->
+  <!-- 7 小關係 -->
   <section class="slide">
-    <div class="eyebrow">PART 1 · 寫作起點</div>
+    <div class="eyebrow">Part 1 · 寫作起點</div>
     <h2>抓準一個小小的角色關係</h2>
     <div class="content">
       <div class="cols">
-        <div class="card">
+        <div class="card pink">
           <span class="who">學生常做的</span>
           <h3>先建一個大世界</h3>
           <ul>
@@ -243,7 +329,7 @@
             <li>時間全花在設定，玩法還沒開始想</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card cyan">
           <span class="who">我建議的</span>
           <h3>先抓兩個人的關係</h3>
           <ul>
@@ -253,21 +339,21 @@
           </ul>
         </div>
       </div>
-      <div class="take"><b>這點非常重要</b>小關係做得深，比大世界做得淺，在企畫書裡讀起來說服力高太多。</div>
+      <div class="take"><b>企畫書裡的差別</b>小關係做得深，比大世界做得淺，讀起來說服力高太多。</div>
     </div>
   </section>
 
-  <!-- 8 PART 2 章節頁 -->
-  <section class="slide part">
+  <!-- 8 PART 2 -->
+  <section class="slide part p-cyan">
     <div class="part-num">02</div>
-    <div class="eyebrow">PART 2</div>
+    <div class="eyebrow">Part 2</div>
     <h2>世界觀怎麼建</h2>
     <p class="part-sub">世界觀頁要回答一件事：這個世界如何讓核心玩法成立。</p>
   </section>
 
-  <!-- 9 世界觀四問 -->
+  <!-- 9 必答四題 -->
   <section class="slide">
-    <div class="eyebrow">PART 2 · 必答四題</div>
+    <div class="eyebrow">Part 2 · 必答四題</div>
     <h2>世界觀先回答這四題</h2>
     <div class="content">
       <dl class="kv">
@@ -280,13 +366,13 @@
     </div>
   </section>
 
-  <!-- 10 設定要長出操作 -->
+  <!-- 10 長出操作 -->
   <section class="slide">
-    <div class="eyebrow">PART 2 · 支撐關係</div>
+    <div class="eyebrow">Part 2 · 支撐關係</div>
     <h2>設定要能長出操作</h2>
     <div class="content">
       <div class="cols">
-        <div class="card">
+        <div class="card pink">
           <span class="who">長不出玩法</span>
           <h3>純背景設定</h3>
           <ul>
@@ -295,7 +381,7 @@
             <li>玩家玩起來完全感覺不到</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card cyan">
           <span class="who">長得出玩法</span>
           <h3>會變成規則的設定</h3>
           <ul>
@@ -309,61 +395,76 @@
     </div>
   </section>
 
-  <!-- 11 兩種路線 -->
+  <!-- 11 公開案例 -->
   <section class="slide">
-    <div class="eyebrow">PART 2 · 路線選擇</div>
+    <div class="eyebrow">Part 2 · 公開案例</div>
+    <h2>商店頁一句設定，就是一條規則</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>《Papers, Please》</dt><dd>剛打完仗的邊境，你是移民官，只靠文件決定誰能入境<sup class="fn"><a href="#src-3">3</a></sup></dd>
+        <dt>《Baba Is You》</dt><dd>你要遵守的規則，就是關卡裡可以推的方塊<sup class="fn"><a href="#src-4">4</a></sup></dd>
+        <dt>《Outer Wilds》</dt><dd>整個太陽系困在無盡的時間迴圈裡<sup class="fn"><a href="#src-5">5</a></sup></dd>
+        <dt>《Obra Dinn》</dt><dd>1807 年一艘 1802 年失蹤的船漂回港，船上沒有人；你是保險調查員<sup class="fn"><a href="#src-6">6</a></sup></dd>
+      </dl>
+      <div class="take"><b>共同點</b>四句都能翻成玩家的操作：檢查文件、推規則方塊、在迴圈裡記住線索、用推理填名單。</div>
+    </div>
+  </section>
+
+  <!-- 12 傳統型與腦洞型 -->
+  <section class="slide">
+    <div class="eyebrow">Part 2 · 路線選擇</div>
     <h2>傳統型與腦洞型</h2>
     <div class="content">
       <div class="cols">
-        <div class="card">
+        <div class="card lemon">
           <span class="who">傳統型</span>
           <h3>套路穩，靠執行取勝</h3>
           <ul>
-            <li>英雄旅程、復仇、成長、拯救世界</li>
+            <li>英雄旅程、復仇、成長、拯救世界；Vogler 的十二階段就是這一路<sup class="fn"><a href="#src-8">8</a></sup></li>
             <li>讀者一看就懂，不用花力氣解釋</li>
             <li>缺點是要靠角色與演出才拉得開差距</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card grape">
           <span class="who">腦洞型</span>
           <h3>設定奇，靠概念取勝</h3>
           <ul>
             <li>一個沒人做過的規則或世界</li>
             <li>光是概念就能被記住</li>
-            <li>缺點是解釋成本高，容易講不清楚</li>
+            <li>缺點是解釋成本高；規則沒被理解，就不能拿來解決衝突<sup class="fn"><a href="#src-7">7</a></sup></li>
           </ul>
         </div>
       </div>
-      <div class="take"><b>對企畫書的影響</b>腦洞型在提案時佔便宜，因為它的勾子就在設定本身，不用等玩到才懂。</div>
+      <div class="take"><b>對企畫書的影響</b>腦洞型在提案時佔便宜，因為它的亮點就在設定本身，不用等玩到才懂。</div>
     </div>
   </section>
 
-  <!-- 12 取材 -->
+  <!-- 13 取材 -->
   <section class="slide">
-    <div class="eyebrow">PART 2 · 取材</div>
+    <div class="eyebrow">Part 2 · 取材</div>
     <h2>從哪裡找腦洞</h2>
     <div class="content">
       <ul>
         <li>獵奇作品：找那種讓你不舒服但忘不掉的反差設定。</li>
         <li>哲學題材：找「某個定義被鬆動」的瞬間，例如什麼算人、什麼算活著。</li>
         <li>規則電影：開場就講完規則、之後整部都在推演它的那種。那就是關卡設計。</li>
-        <li>非虛構的領域：法律程序、醫療流程、賽事規則，裡面都有現成的系統。</li>
+        <li>非虛構的領域：法律程序、醫療流程、賽事規則、保險理賠，裡面都有現成的系統。</li>
       </ul>
       <div class="take"><b>取材原則</b>不要找劇情來抄，要找「規則」跟「反差」。那兩樣才搬得進遊戲。</div>
     </div>
   </section>
 
-  <!-- 13 PART 3 章節頁 -->
-  <section class="slide part">
+  <!-- 14 PART 3 -->
+  <section class="slide part p-grape">
     <div class="part-num">03</div>
-    <div class="eyebrow">PART 3</div>
+    <div class="eyebrow">Part 3</div>
     <h2>角色怎麼寫</h2>
     <p class="part-sub">角色表除了背景資料，還要寫一組會影響選擇的矛盾或限制。</p>
   </section>
 
-  <!-- 14 角色設定表 -->
+  <!-- 15 設定表 -->
   <section class="slide">
-    <div class="eyebrow">PART 3 · 設定表</div>
+    <div class="eyebrow">Part 3 · 設定表</div>
     <h2>角色設定表的四個必填</h2>
     <div class="content">
       <dl class="kv">
@@ -376,13 +477,13 @@
     </div>
   </section>
 
-  <!-- 15 矛盾的情感 -->
+  <!-- 16 矛盾 -->
   <section class="slide">
-    <div class="eyebrow">PART 3 · 矛盾</div>
+    <div class="eyebrow">Part 3 · 矛盾</div>
     <h2>原型加一層矛盾</h2>
     <div class="content">
       <div class="cols">
-        <div class="card">
+        <div class="card pink">
           <span class="who">平的角色</span>
           <h3>只有立場</h3>
           <ul>
@@ -391,7 +492,7 @@
             <li>讀者沒有情感投入的空隙</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card cyan">
           <span class="who">立體的角色</span>
           <h3>立場加上矛盾情感</h3>
           <ul>
@@ -405,13 +506,13 @@
     </div>
   </section>
 
-  <!-- 16 關係決定玩法 -->
+  <!-- 17 翻譯成操作 -->
   <section class="slide">
-    <div class="eyebrow">PART 3 · 關鍵轉化</div>
+    <div class="eyebrow">Part 3 · 關鍵轉化</div>
     <h2>把關係翻譯成操作</h2>
     <div class="content">
       <div class="cols">
-        <div class="card">
+        <div class="card lemon">
           <span class="who">關係</span>
           <h3>兩人之間的不對等</h3>
           <ul>
@@ -420,7 +521,7 @@
             <li>一個知道真相，一個不知道</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card grape">
           <span class="who">操作</span>
           <h3>不對等變成機制</h3>
           <ul>
@@ -434,66 +535,96 @@
     </div>
   </section>
 
-  <!-- 17 PART 4 章節頁 -->
-  <section class="slide part">
+  <!-- 18 PART 4 -->
+  <section class="slide part p-sky">
     <div class="part-num">04</div>
-    <div class="eyebrow">PART 4</div>
+    <div class="eyebrow">Part 4</div>
     <h2>怎麼寫進企畫書</h2>
     <p class="part-sub">企畫書不是小說。世界觀那一章有嚴格的篇幅紀律，超過就是在浪費讀者的時間。</p>
   </section>
 
-  <!-- 18 兩頁的紀律 -->
+  <!-- 19 篇幅 -->
   <section class="slide">
-    <div class="eyebrow">PART 4 · 篇幅</div>
+    <div class="eyebrow">Part 4 · 篇幅</div>
     <h2>世界觀章節只給兩頁</h2>
     <div class="content">
       <ul>
         <li>第一頁：世界觀四題的答案，加一張世界示意圖或關係圖。</li>
         <li>第二頁：兩到三個主要角色的設定表，加那組不對等關係。</li>
         <li>寫不完的設定放附錄，不放正文。多數讀者不會翻附錄，那沒關係。</li>
-        <li>企畫書裡的世界觀章節如果比玩法章節長，那是警訊。</li>
+        <li>世界觀章節如果比玩法章節長，那是警訊。</li>
       </ul>
       <div class="take"><b>篇幅限制是刻意的</b>壓縮的過程就是找核心的過程。寫得下兩頁，代表你知道重點在哪。</div>
     </div>
   </section>
 
-  <!-- 19 怎麼判斷該寫什麼 -->
+  <!-- 20 取捨 -->
   <section class="slide">
-    <div class="eyebrow">PART 4 · 取捨</div>
+    <div class="eyebrow">Part 4 · 取捨</div>
     <h2>哪些設定該寫進正文</h2>
     <div class="content">
       <div class="cards c3">
-        <div class="card">
-          <span class="who">一定要寫</span>
-          <h3>會變成規則的</h3>
-          <p>直接對應到玩法限制的設定。這種每一條都要寫清楚。</p>
-        </div>
-        <div class="card">
-          <span class="who">可以寫</span>
-          <h3>影響美術方向的</h3>
-          <p>決定畫風、色調、建築樣式的設定。用來給美術方向。</p>
-        </div>
-        <div class="card">
-          <span class="who">不要寫</span>
-          <h3>玩家看不到的</h3>
-          <p>三百年前的戰爭史、沒出場的角色家譜。放附錄或直接不寫。</p>
-        </div>
+        <div class="card cyan"><span class="who">一定要寫</span><h3>會變成規則的</h3><p>直接對應到玩法限制的設定。這種每一條都要寫清楚。</p></div>
+        <div class="card lemon"><span class="who">可以寫</span><h3>影響美術方向的</h3><p>決定畫風、色調、建築樣式的設定。用來給美術方向。</p></div>
+        <div class="card pink"><span class="who">不要寫</span><h3>玩家看不到的</h3><p>三百年前的戰爭史、沒出場的角色家譜。放附錄或直接不寫。</p></div>
       </div>
       <div class="take"><b>檢查方式</b>問「這條設定玩家在遊戲裡看得到嗎」。看不到的就不進正文。</div>
     </div>
   </section>
 
-  <!-- 20 PART 5 章節頁 -->
-  <section class="slide part">
+  <!-- 21 2025–2026 現況 -->
+  <section class="slide">
+    <div class="eyebrow">Part 4 · 2025–2026 現況</div>
+    <h2>台灣做得到的設定，與現成的工具</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card pink">
+          <span class="who">赤燭遊戲的兩款</span>
+          <ul>
+            <li>《返校》：1960 年代戒嚴時期的台灣，加台灣民間信仰<sup class="fn"><a href="#src-1">1</a></sup></li>
+            <li>《九日》（2024）：自創「道龐克」，賽博龐克撞上道教<sup class="fn"><a href="#src-2">2</a></sup></li>
+            <li>兩款的設定都一句講完，都看得到</li>
+          </ul>
+        </div>
+        <div class="card cyan">
+          <span class="who">寫分支敘事的免費工具</span>
+          <ul>
+            <li>ink：MIT 授權，文字優先的腳本語言<sup class="fn"><a href="#src-10">10</a></sup></li>
+            <li>Yarn Spinner：支援 Unity、Godot、Unreal<sup class="fn"><a href="#src-11">11</a></sup></li>
+            <li>Twine：GPL-3.0，做非線性故事的編輯器<sup class="fn"><a href="#src-12">12</a></sup></li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>這週用不到工具</b>先把四題與角色關係寫對；工具是之後想做原型的人的事。</div>
+    </div>
+  </section>
+
+  <!-- 22 老師的課堂規矩 -->
+  <section class="slide">
+    <div class="eyebrow">Part 4 · 老師的課堂規矩</div>
+    <h2>設定在我這裡怎麼算數</h2>
+    <div class="content">
+      <ul>
+        <li>每一條設定我都會問「玩家在哪裡看得到」。答不出來的，這學期就不要寫。</li>
+        <li>世界觀章節超過兩頁，我只讀前兩頁。第三頁起當作附錄，不評分。</li>
+        <li>角色表沒有「矛盾」那一欄，整份退回。外觀寫三百字、矛盾寫零字的，最常見。</li>
+        <li>兩個角色的不對等要翻成一個操作，寫不出操作就代表關係還沒想好。</li>
+      </ul>
+      <div class="take"><b>我的判斷</b>設定寫得多的組不一定強，設定跟玩法接得上的組才強。</div>
+    </div>
+  </section>
+
+  <!-- 23 PART 5 -->
+  <section class="slide part p-coral">
     <div class="part-num">05</div>
-    <div class="eyebrow">PART 5</div>
+    <div class="eyebrow">Part 5</div>
     <h2>本週交付</h2>
     <p class="part-sub">世界觀四題加兩個角色設定。這份會直接變成企畫書的第四章。</p>
   </section>
 
-  <!-- 21 交付規格 -->
+  <!-- 24 交付規格 -->
   <section class="slide">
-    <div class="eyebrow">PART 5 · 交付規格</div>
+    <div class="eyebrow">Part 5 · 交付規格</div>
     <h2>這週要交什麼</h2>
     <div class="content">
       <dl class="kv">
@@ -506,33 +637,21 @@
     </div>
   </section>
 
-  <!-- 22 檢核與退件 -->
+  <!-- 25 檢核 -->
   <section class="slide">
-    <div class="eyebrow">PART 5 · 檢核標準</div>
+    <div class="eyebrow">Part 5 · 檢核標準</div>
     <h2>什麼樣算過關</h2>
     <div class="content">
       <div class="cards c3">
-        <div class="card">
-          <span class="who">及格</span>
-          <h3>四題都答得出來</h3>
-          <p>核心規則、代價、誰受影響、玩家位置，各有具體答案。</p>
-        </div>
-        <div class="card">
-          <span class="who">好</span>
-          <h3>關係能翻成操作</h3>
-          <p>兩個角色的不對等，寫得出對應的一個具體遊戲操作。</p>
-        </div>
-        <div class="card">
-          <span class="who">退件</span>
-          <h3>常見的三種</h3>
-          <p>寫了五千字世界史；角色只有外觀沒有矛盾；設定跟玩法接不起來。</p>
-        </div>
+        <div class="card cyan"><span class="who">及格</span><h3>四題都答得出來</h3><p>核心規則、代價、誰受影響、玩家位置，各有具體答案。</p></div>
+        <div class="card lemon"><span class="who">好</span><h3>關係能翻成操作</h3><p>兩個角色的不對等，寫得出對應的一個具體遊戲操作。</p></div>
+        <div class="card pink"><span class="who">退件</span><h3>常見的三種</h3><p>寫了五千字世界史；角色只有外觀沒有矛盾；設定跟玩法接不起來。</p></div>
       </div>
       <div class="take"><b>驗收方式</b>我會問「這條設定玩家看得到嗎」。答不出來的設定，這學期就不要寫。</div>
     </div>
   </section>
 
-  <!-- 23 課堂討論與資源 -->
+  <!-- 26 收尾 -->
   <section class="slide">
     <div class="eyebrow">Week 09 · 收尾</div>
     <h2>回去做這三件事</h2>
@@ -542,7 +661,7 @@
         <p>兩個主角之間的不對等是什麼？它能變成什麼操作？</p>
         <p>如果劇情全部拿掉，你的遊戲還成立嗎？不成立的話問題在玩法還是劇情？</p>
       </div>
-      <div class="card">
+      <div class="card grape">
         <span class="who">課後任務</span>
         <p>把世界觀規則寫成一句話貼在你的工作檔最上面。之後每次加設定就對照一次。</p>
       </div>
@@ -550,42 +669,43 @@
     </div>
   </section>
 
-  <!-- 24 資源彙整 -->
+  <!-- 27 資源彙整 -->
   <section class="slide">
     <div class="eyebrow">Week 09 · 資源彙整</div>
     <h2>本週資源</h2>
     <div class="content">
       <div class="cols">
         <div class="grp">
-          <h3>敘事參考</h3>
+          <h3>敘事工具（都免費）</h3>
           <div class="linkrow">
-            <a class="lk" href="https://www.inklestudios.com/ink/" target="_blank" rel="noopener">Ink 敘事語言</a>
-            <a class="lk" href="https://twinery.org/" target="_blank" rel="noopener">Twine</a>
+            <a class="lk" href="https://www.inklestudios.com/ink/" target="_blank" rel="noopener">ink 敘事語言</a>
+            <a class="lk" href="https://github.com/klembot/twinejs" target="_blank" rel="noopener">Twine</a>
             <a class="lk" href="https://www.yarnspinner.dev/" target="_blank" rel="noopener">Yarn Spinner</a>
           </div>
         </div>
         <div class="grp">
-          <h3>作品與市場</h3>
+          <h3>設定長出規則的公開案例</h3>
           <div class="linkrow">
-            <a class="lk" href="https://store.steampowered.com/" target="_blank" rel="noopener">Steam</a>
-            <a class="lk" href="https://itch.io/" target="_blank" rel="noopener">itch.io</a>
-            <a class="lk" href="https://www.incgmedia.com/spotlight/11-taiwan-indie-games-must-play" target="_blank" rel="noopener">台灣獨立遊戲盤點</a>
+            <a class="lk" href="https://store.steampowered.com/app/555220/Detention/" target="_blank" rel="noopener">返校</a>
+            <a class="lk" href="https://store.steampowered.com/app/1809540/Nine_Sols/" target="_blank" rel="noopener">九日</a>
+            <a class="lk" href="https://store.steampowered.com/app/239030/Papers_Please/" target="_blank" rel="noopener">Papers, Please</a>
+            <a class="lk" href="https://store.steampowered.com/app/653530/Return_of_the_Obra_Dinn/" target="_blank" rel="noopener">Obra Dinn</a>
           </div>
         </div>
       </div>
-      <div class="take"><b>交付範圍</b>敘事工具不列入本週交付；有興趣再自行延伸閱讀。</div>
+      <div class="take"><b>出處與補充</b>在下方講義，按 N 鍵。六款案例的商店頁原句、Sanderson 第一定律、工具授權與查證日期都在講義區。</div>
     </div>
   </section>
-
-  
-
   </div></div>
 
+  <div class="hint">← → 換頁　M 目錄　N 講義　F 全螢幕</div>
   <div class="ctrl">
     <button id="prev" aria-label="上一張">‹</button>
     <span class="cnt" id="cnt">1 / 1</span>
     <button id="next" aria-label="下一張">›</button>
     <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+    <button id="toNotes" title="講義（N）">講義 ↓</button>
+    <button id="full" title="全螢幕（F）">⛶</button>
   </div>
   <div class="prog" id="prog"></div>
 
@@ -596,17 +716,153 @@
   </div>
 </div>
 
+<!-- ============ 講義區 ============ -->
+<main class="notes" id="notes">
+<div class="notes-head">
+    <div class="eyebrow">Week 09 · 講義</div>
+    <h2>世界觀與故事背景</h2>
+    <p>投影片講的是骨架，這裡放肉：每一段的展開說明、六款公開案例的商店頁原句、Sanderson 第一定律與 Vogler 十二階段的出處、三個免費敘事工具的授權、老師的課堂規矩，以及交作業前的自我檢核。</p>
+  </div>
+
+  <section class="sec">
+    <span class="kicker">導讀</span>
+    <h2>這週在解決什麼問題</h2>
+    <p>期中那一頁過了，接下來十週要把一頁展開成十五頁。今天展開的是世界觀與角色，下週是玩法系統。展開的紀律只有一條：每寫一章就回頭對照期中那一頁，跟定位牴觸的內容再喜歡也要砍。這週最常見的失敗不是寫不出來，是寫太多，而且寫的東西在遊戲裡看不到。</p>
+    <p>三個詞先講清楚。<strong>世界觀（Worldbuilding）</strong>在這門課裡不是背景資料的總稱，是「這個世界跟現實不同的那條規則，以及它的代價」；能變成操作與限制的才算。<strong>角色的矛盾</strong>是他想要的跟他害怕的在哪裡打架，這一欄決定他會怎麼做選擇。<strong>不對等關係</strong>是兩個角色之間的落差（一個看得見一個看不見、一個能戰鬥一個只能被保護），本週要把它翻成一個具體的遊戲操作。全程用這三個詞，不換名字。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">§1</span>
+    <h2>劇情不是本體，先寫玩法再寫故事</h2>
+    <p>遊戲的劇情跟寫小說不同。本體是遊戲，劇情是為遊戲服務的，除非你做的是視覺小說。先寫故事會出四個問題：故事一複雜就呈現不了；每段過場動畫都是額外製作量；對話拖慢節奏，玩家多半不是為看故事來的；被劇情綁住，玩法沒有空間。MDA 論文列的八種樂趣裡，敘事（Narrative）與幻想（Fantasy）各是一種，跟挑戰、探索、表達並列，<a href="#src-9">[9]</a> 它是選項之一，不是遊戲的預設本體。文件順序因此固定：先寫清楚玩家怎麼玩，再補故事如何支撐這個玩法。</p>
+    <p>好的遊戲敘事的生長順序是：先帶出世界觀（這個世界的規則是什麼、跟現實差在哪，規則就是玩法的來源），再帶出角色特質（誰住在這裡、他要什麼、他怕什麼，特質決定他會怎麼行動），最後才是旅程（他怎麼完成這趟旅程，這一段可以參考常見套路）。世界觀決定能做什麼、角色決定為什麼做，旅程只是把它們串起來的線。</p>
+    <p>寫作起點：抓準一個小小的角色關係。學生常做的是先建一個大世界，五個國家、三百年歷史、十二個種族，寫了兩萬字，遊戲裡看得到的不到一成，時間全花在設定，玩法還沒開始想。我建議的是先抓兩個人的關係：兩個角色、一組張力、一個非解決不可的問題，從那組關係長出劇情，也長出玩法，世界觀只寫支撐這組關係需要的部分。小關係做得深，比大世界做得淺，在企畫書裡讀起來說服力高太多。</p>
+  </section>
+
+  <section class="sec cyan">
+    <span class="kicker">§2</span>
+    <h2>世界觀四題，以及設定怎麼長出操作</h2>
+    <p>世界觀頁只回答一件事：這個世界如何讓核心玩法成立。四題：核心規則（這個世界有什麼跟現實不同的規則，一句話講完）、規則的代價（用這條規則要付出什麼，沒有代價的規則沒有張力）、誰受影響（這條規則讓誰得利、讓誰受苦，衝突從這裡來）、玩家的位置（玩家在這個世界裡是誰，能不能改變這條規則）。四題答完，你應該看得到玩法的形狀；看不到就是規則訂得不夠具體。判準只有一句：把設定唸給會寫程式的人聽，他能想像要寫什麼功能，這條設定才算數。「這是一個魔法衰退的年代」長不出功能；「用一次魔法，就少一段記憶」長得出。</p>
+    <h3>六款公開案例：商店頁一句設定就是一條規則</h3>
+    <table>
+      <thead><tr><th>作品</th><th>商店頁寫的設定（節錄）</th><th>它變成什麼操作</th></tr></thead>
+      <tbody>
+        <tr><td>《Papers, Please》</td><td>剛結束六年戰爭的邊境，玩家是移民官，只靠旅客的文件與檢查、搜身、指紋系統「決定誰能進入 Arstotzka」<a href="#src-3">[3]</a></td><td>核對文件、蓋章、放行或逮捕</td></tr>
+        <tr><td>《Baba Is You》</td><td>「你要遵守的規則，就是關卡裡的方塊」<a href="#src-4">[4]</a></td><td>推動規則方塊改寫規則</td></tr>
+        <tr><td>《Outer Wilds》</td><td>「一個困在無盡時間迴圈裡的太陽系」<a href="#src-5">[5]</a></td><td>迴圈內探索，知識帶到下一輪</td></tr>
+        <tr><td>《Return of the Obra Dinn》</td><td>1802 年出港失蹤，1807 年漂回港「看不到任何船員」，你是保險調查員；「以探索與邏輯推理為基礎」<a href="#src-6">[6]</a></td><td>推理每個人的身分與下場</td></tr>
+        <tr><td>《返校》</td><td>「1960 年代戒嚴時期的台灣」，融入台灣民間信仰與神話<a href="#src-1">[1]</a></td><td>橫向探索鬧鬼的校園、解謎</td></tr>
+        <tr><td>《九日》</td><td>「當賽博龐克撞上道教」的道龐克，古代外星種族的土地、斬殺九位 Sols<a href="#src-2">[2]</a></td><td>彈反為主的動作戰鬥</td></tr>
+      </tbody>
+    </table>
+    <p>六句都是商店頁自己寫的，你可以去核對。共同點是每一句都能翻成玩家的操作，而且都只押一條規則，沒有列三百年史。《Outer Wilds》的迴圈長度、《Obra Dinn》的船員人數，商店頁都沒寫，這裡也不寫。</p>
+    <h3>傳統型與腦洞型</h3>
+    <p>傳統型套路穩、靠執行取勝：英雄旅程、復仇、成長、拯救世界。Christopher Vogler 的《The Writer's Journey》詳述的就是「十二階段、取材自神話的方法」，用神話、童話與經典電影舉例；<a href="#src-8">[8]</a> 讀者一看就懂，不用花力氣解釋，缺點是要靠角色與演出才拉得開差距。腦洞型設定奇、靠概念取勝：一個沒人做過的規則或世界，光是概念就能被記住，缺點是解釋成本高。奇幻作家 Brandon Sanderson 2007 年提出的第一定律講的就是這個代價：「作者用魔法解決衝突的能力，與讀者對該魔法的理解程度成正比」；<a href="#src-7">[7]</a> 換成遊戲的話，規則沒被玩家理解，就不能拿它來設計關卡。腦洞型在提案時佔便宜，因為它的亮點就在設定本身，不用等玩到才懂；但四題裡的「代價」要寫得特別清楚。</p>
+    <p>從哪裡找腦洞：獵奇作品（讓你不舒服但忘不掉的反差設定）、哲學題材（某個定義被鬆動的瞬間，什麼算人、什麼算活著）、規則電影（開場就講完規則、之後整部都在推演它的那種，那就是關卡設計）、非虛構的領域（法律程序、醫療流程、賽事規則、保險理賠，裡面都有現成的系統；《Obra Dinn》的保險調查員就是這一類）。不要找劇情來抄，要找「規則」跟「反差」，那兩樣才搬得進遊戲。</p>
+  </section>
+
+  <section class="sec grape">
+    <span class="kicker">§3</span>
+    <h2>角色四欄、矛盾，與把關係翻譯成操作</h2>
+    <p>角色設定表四個必填：他要什麼（一個具體的目標，不是「找回自我」這種抽象的）、他怕什麼（怕的東西決定他會迴避什麼，也決定他何時會崩潰）、他的矛盾（他想要的跟他害怕的在哪裡打架）、外觀與辨識度（一句話能講出他的視覺特徵，讓美術有方向）。第三欄是重點：讀者看得出他會如何做選擇，靠的是矛盾，不是背景。</p>
+    <p>平的角色只有立場：好人做好事、壞人做壞事，行為完全可以預測，讀者沒有情感投入的空隙。立體的角色是立場加上矛盾情感：他想保護的人正是他傷害過的、他愈接近目標愈害怕被拆穿，讀企畫書的人會替他緊張。成本很低，在原型上加一句「他其實還怕著什麼」，角色立刻活起來。</p>
+    <p>本週的關鍵轉化是把關係翻譯成操作。兩人之間的不對等（一個看得見一個看不見、一個能戰鬥一個只能被保護、一個知道真相一個不知道）可以直接變成機制（切換形態解不同的謎、護送與掩護的緊張感、玩家知道而角色不知道的資訊差）。寫出你兩個角色之間的不對等，並把它翻成一個具體操作，這就是本週的核心作業。</p>
+    <div class="scene">
+      <span class="who">假設情境</span>
+      <p>一組的世界觀寫了四頁：三個王國、兩場戰爭、一份神祇名單。問「玩家在哪裡看得到」，只答得出開場動畫。回去改成一條規則：「在這個城裡，說謊的人會短暫失去影子。」代價是被看見影子消失的人會被排斥；受影響的是靠說謊維生的人；玩家是能看見影子消失的抓謊人。兩個角色的不對等：玩家看得見，搭檔看不見但擅長套話。操作：搭檔負責問，玩家負責在對話的當下盯著影子。四頁縮成半頁，但這半頁長得出一個系統。</p>
+    </div>
+  </section>
+
+  <section class="sec lemon">
+    <span class="kicker">§4</span>
+    <h2>寫進企畫書：兩頁、取捨、台灣的例子與工具</h2>
+    <p>世界觀章節只給兩頁。第一頁是世界觀四題的答案，加一張世界示意圖或關係圖；第二頁是兩到三個主要角色的設定表，加那組不對等關係。寫不完的設定放附錄，不放正文，多數讀者不會翻附錄，那沒關係。世界觀章節如果比玩法章節長，那是警訊。取捨的標準分三層：會變成規則的一定要寫，每一條都寫清楚；影響美術方向的（畫風、色調、建築樣式）可以寫；玩家看不到的（三百年前的戰爭史、沒出場的角色家譜）不要寫。檢查方式一句話：「這條設定玩家在遊戲裡看得到嗎」。</p>
+    <p>台灣做得到什麼樣的設定，赤燭遊戲的兩款是現成的例子。《返校》的商店頁一句話：「1960 年代戒嚴時期的台灣」，加台灣民間信仰與神話；<a href="#src-1">[1]</a> 《九日》2024 年 5 月推出，商店頁自創「道龐克（Taopunk）」一詞，「當賽博龐克撞上道教」，把科幻元素跟東方神話融合。<a href="#src-2">[2]</a> 兩款的設定都一句講完、都看得到、都長出了玩法（一款是探索解謎的恐怖，一款是彈反為主的動作），而且題材都來自你們身邊。</p>
+    <p>想做分支敘事原型的人，有三個免費工具，這週用不到，先知道就好。ink 是 inkle 的敘事腳本語言，自述「標記，不是程式」，文字優先、程式碼插在文字裡，ink 與編輯器 Inky、Unity 整合外掛都以 MIT 授權免費提供，inkle 自家的《80 Days》《Sorcery!》用它寫的。<a href="#src-10">[10]</a> Yarn Spinner 是給寫作者與程式設計師共用的對話工具，支援 Unity、Godot（C# 與 GDScript）、Unreal，官方頁列了超過 70 款使用作品，含《DREDGE》《Night in the Woods》《A Short Hike》。<a href="#src-11">[11]</a> Twine 是做「互動、非線性故事」的編輯器，GPL-3.0 授權，有瀏覽器版與桌面版。<a href="#src-12">[12]</a> 版本號與發布日期這裡刻意不寫，因為各站抓回的日期彼此矛盾，用之前自己去官方頁看。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">老師的課堂規矩</span>
+    <h2>設定在我這裡怎麼算數</h2>
+    <p>這章我改作業的方式就是這四條，先講給你們聽：</p>
+    <ul>
+      <li><strong>每一條設定我都會問「玩家在哪裡看得到」。</strong>答不出來的，這學期就不要寫。不是設定不好，是它不屬於企畫書正文。</li>
+      <li><strong>世界觀章節超過兩頁，我只讀前兩頁。</strong>第三頁起當作附錄，不評分。你要的東西沒放在前兩頁，是你的排序問題。</li>
+      <li><strong>角色表沒有「矛盾」那一欄，整份退回。</strong>外觀寫三百字、矛盾寫零字的最常見；美術方向可以晚點補，矛盾不行。</li>
+      <li><strong>兩個角色的不對等要翻成一個操作。</strong>寫不出操作，代表關係還沒想好，回到 §3 重寫。</li>
+    </ul>
+    <p>我的判斷是：設定寫得多的組不一定強，設定跟玩法接得上的組才強。下週玩法系統那一章，會直接從你這週的那個操作長出來。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">出處</span>
+    <h2>本週引用的資料</h2>
+    <p>每一條都在 2026-09-15 打開確認過。網址失效請告訴我，我會換。</p>
+    <ol class="src">
+      <li id="src-1"><span class="ti">RedCandleGames《返校 Detention》Steam 商店頁</span><span class="meta">Steam 商店 · 推出 2017-01-12 · 「set in 1960s Taiwan under martial law」 · 查證 2026-09-15</span><a href="https://store.steampowered.com/app/555220/Detention/" target="_blank" rel="noopener">https://store.steampowered.com/app/555220/Detention/</a></li>
+      <li id="src-2"><span class="ti">RedCandleGames《九日 Nine Sols》Steam 商店頁</span><span class="meta">Steam 商店 · 推出 2024-05-28 · 「When cyberpunk clashes with Taoism」、「Taopunk」 · 查證 2026-09-15</span><a href="https://store.steampowered.com/app/1809540/Nine_Sols/" target="_blank" rel="noopener">https://store.steampowered.com/app/1809540/Nine_Sols/</a></li>
+      <li id="src-3"><span class="ti">Lucas Pope／3909《Papers, Please》Steam 商店頁</span><span class="meta">Steam 商店 · 推出 2013-08-08 · 「decide who can enter Arstotzka」 · 查證 2026-09-15</span><a href="https://store.steampowered.com/app/239030/Papers_Please/" target="_blank" rel="noopener">https://store.steampowered.com/app/239030/Papers_Please/</a></li>
+      <li id="src-4"><span class="ti">Hempuli Oy《Baba Is You》Steam 商店頁</span><span class="meta">Steam 商店 · 推出 2019-03-13 · 「the rules you have to follow are present as blocks」 · 查證 2026-09-15</span><a href="https://store.steampowered.com/app/736260/Baba_Is_You/" target="_blank" rel="noopener">https://store.steampowered.com/app/736260/Baba_Is_You/</a></li>
+      <li id="src-5"><span class="ti">Mobius Digital／Annapurna Interactive《Outer Wilds》Steam 商店頁</span><span class="meta">Steam 商店 · Steam 版推出 2020-06-18 · 「a solar system trapped in an endless time loop」；迴圈長度頁面未載 · 查證 2026-09-15</span><a href="https://store.steampowered.com/app/753640/Outer_Wilds/" target="_blank" rel="noopener">https://store.steampowered.com/app/753640/Outer_Wilds/</a></li>
+      <li id="src-6"><span class="ti">Lucas Pope／3909《Return of the Obra Dinn》Steam 商店頁</span><span class="meta">Steam 商店 · 推出 2018-10-18 · 1802 年出港、1807 年漂回港「no visible crew」、保險調查員、「exploration and logical deduction」 · 查證 2026-09-15</span><a href="https://store.steampowered.com/app/653530/Return_of_the_Obra_Dinn/" target="_blank" rel="noopener">https://store.steampowered.com/app/653530/Return_of_the_Obra_Dinn/</a></li>
+      <li id="src-7"><span class="ti">Sanderson, B.〈Sanderson's First Law〉</span><span class="meta">作者本人網站 · 2007-02 · 「DIRECTLY PROPORTIONAL to how well the reader understands said magic」 · 查證 2026-09-15</span><a href="https://www.brandonsanderson.com/blogs/blog/sandersons-first-law" target="_blank" rel="noopener">https://www.brandonsanderson.com/blogs/blog/sandersons-first-law</a></li>
+      <li id="src-8"><span class="ti">Vogler, C.《The Writer's Journey – 25th Anniversary Edition: Mythic Structure for Writers》</span><span class="meta">Michael Wiese Productions 出版社書目頁 · 頁面未標日期 · 「a twelve-stage, myth-inspired method」 · 查證 2026-09-15</span><a href="https://mwp.com/product/writers-journey-25th-anniversary-edition-mythic-structure-writers/" target="_blank" rel="noopener">https://mwp.com/product/writers-journey-25th-anniversary-edition-mythic-structure-writers/</a></li>
+      <li id="src-9"><span class="ti">Hunicke, R., LeBlanc, M. & Zubek, R.〈MDA: A Formal Approach to Game Design and Game Research〉</span><span class="meta">原論文 PDF（Northwestern 大學 Hunicke 網頁）· GDC 2001–2004 工作坊 · 八種樂趣含 Narrative、Fantasy · 查證 2026-09-15</span><a href="https://users.cs.northwestern.edu/~hunicke/MDA.pdf" target="_blank" rel="noopener">https://users.cs.northwestern.edu/~hunicke/MDA.pdf</a></li>
+      <li id="src-10"><span class="ti">inkle〈ink – narrative scripting language for games〉</span><span class="meta">inkle 官方頁 · 頁面未標日期 · 「freely available under the MIT license」、《80 Days》《Sorcery!》 · 查證 2026-09-15</span><a href="https://www.inklestudios.com/ink/" target="_blank" rel="noopener">https://www.inklestudios.com/ink/</a></li>
+      <li id="src-11"><span class="ti">Yarn Spinner 官方頁</span><span class="meta">Secret Lab · 頁面未標日期 · 支援 Unity、Godot、Unreal；「plan, write, integrate, and test dialogue」；使用作品超過 70 款 · 查證 2026-09-15</span><a href="https://www.yarnspinner.dev/" target="_blank" rel="noopener">https://www.yarnspinner.dev/</a></li>
+      <li id="src-12"><span class="ti">Klimas, C.〈klembot/twinejs〉GitHub 倉庫</span><span class="meta">GitHub · 頁面未標日期 · 「a tool for telling interactive, nonlinear stories」、GPL-3.0；twinery.org 本站對抓取工具回 403，改引倉庫 · 查證 2026-09-15</span><a href="https://github.com/klembot/twinejs" target="_blank" rel="noopener">https://github.com/klembot/twinejs</a></li>
+    </ol>
+  </section>
+
+  <section class="sec cyan">
+    <span class="kicker">補充資訊</span>
+    <h2>延伸閱讀與工具</h2>
+    <h3>去商店頁抄六句設定</h3>
+    <ul>
+      <li><strong>練習方法。</strong>打開講義表格裡的六款商店頁，把「設定」那句抄下來，再自己寫一句「它變成什麼操作」。寫不出操作的那款，看看是不是你沒玩過；玩過還寫不出，就是那句設定跟玩法接得不緊。</li>
+      <li><strong>反向練習。</strong>拿你自己的世界觀四題，寫成商店頁簡短描述那種長度（第 7 週說過，只有幾百個字元）。塞不進去的，多半是「玩家看不到」的那一類。</li>
+    </ul>
+    <h3>下週玩法系統要用的東西</h3>
+    <ul>
+      <li><strong>那個操作</strong>就是下週的起點。下週會從一個操作長成一個循環，從一個循環長成一套系統，寫到別人做得出來的程度。</li>
+      <li><strong>Sanderson 第一定律</strong>下週還會回來：<a href="#src-7">[7]</a> 規則要被理解才能拿來設計，這在寫規則文件時就是「例外情況要寫清楚」。</li>
+    </ul>
+  </section>
+
+  <section class="sec lemon">
+    <span class="kicker">本週檢核</span>
+    <h2>交作業前自己打勾</h2>
+    <ul class="check">
+      <li>核心規則一句話講完，而且跟現實明顯不同。</li>
+      <li>規則的代價寫出來了，用這條規則要付出什麼。</li>
+      <li>寫出了誰得利、誰受苦，衝突從這裡來。</li>
+      <li>玩家的位置寫清楚了：他是誰，能不能改變這條規則。</li>
+      <li>每一條設定都答得出「玩家在遊戲裡哪裡看得到」。</li>
+      <li>兩個角色各有四欄，「矛盾」那一欄不是空的。</li>
+      <li>兩人的不對等寫成一句話，並且翻成了一個具體操作。</li>
+      <li>兩頁 A4 以內，檔名是「學號_W9_世界觀與角色.pdf」，下週上課前交。</li>
+    </ul>
+  </section>
+
+  <p class="version">2026-09-15 翻新：版型改為糖果流行、新增講義區、案例改用可查證的六款公開上市作品商店頁、Sanderson 第一定律與 Vogler 書目查證、敘事工具改引官方頁並刪除無法確認的版本號。前一版：2026-09-13。</p>
+</main>
+
+<a class="backtop" id="backtop" href="#deck">↑ 回投影片</a>
+
 <script>
 (function () {
   /* ★ 每週只改這一行 ★ */
+  var COURSE_LABEL = '遊戲企畫';
   var WEEK_LABEL = '第 9 週 · 世界觀與故事背景';
 
+  var deck = document.getElementById('deck');
   var stage = document.getElementById('stage');
   var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
   var cnt = document.getElementById('cnt');
   var prog = document.getElementById('prog');
   var toc = document.getElementById('toc');
   var tgrid = document.getElementById('tgrid');
+  var backtop = document.getElementById('backtop');
   var cur = 0;
 
   document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
@@ -614,7 +870,7 @@
   slides.forEach(function (s, i) {
     var f = document.createElement('div');
     f.className = 'foot';
-    f.innerHTML = '<span>遊戲企畫|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    f.innerHTML = '<span>' + COURSE_LABEL + '|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
     s.appendChild(f);
   });
 
@@ -623,12 +879,12 @@
     var eb = s.querySelector('.eyebrow');
     var part = '開場';
     if (eb) {
-      var m = eb.textContent.match(/PART\s*(\d)/i);
-      if (m) part = 'PART ' + m[1];
+      var m = eb.textContent.match(/Part\s*(\d)/i);
+      if (m) part = 'Part ' + m[1];
       else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
     }
     var h = s.querySelector('h1, h2');
-    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent.replace(/\d+$/, '') : '') });
   });
   Object.keys(groups).forEach(function (k) {
     var col = document.createElement('div');
@@ -656,35 +912,57 @@
   function toggleToc(on) {
     toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
   }
+  function atDeck() { return window.scrollY < 40; }
+  function toNotes() { document.getElementById('notes').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  function toggleFull() {
+    if (document.fullscreenElement) { document.exitFullscreen(); return; }
+    if (deck.requestFullscreen) deck.requestFullscreen();
+  }
 
   document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
   document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
   document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
   document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+  document.getElementById('toNotes').addEventListener('click', toNotes);
+  document.getElementById('full').addEventListener('click', toggleFull);
 
   document.addEventListener('keydown', function (e) {
+    if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
     if (e.key === 'Escape') { toggleToc(false); return; }
     if (toc.classList.contains('on')) return;
     switch (e.key) {
-      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
-      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
-      case 'Home': go(0); break;
-      case 'End': go(slides.length - 1); break;
+      case 'ArrowRight': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'ArrowDown': case ' ': if (atDeck()) { e.preventDefault(); go(cur + 1); } break;
+      case 'ArrowUp': if (atDeck()) { e.preventDefault(); go(cur - 1); } break;
+      case 'Home': if (atDeck()) go(0); break;
+      case 'End': if (atDeck()) go(slides.length - 1); break;
       case 'm': case 'M': toggleToc(); break;
+      case 'n': case 'N': toNotes(); break;
+      case 'f': case 'F': toggleFull(); break;
     }
   });
 
   function fit() {
-    var w = window.innerWidth, h = window.innerHeight;
+    var w = deck.clientWidth, h = deck.clientHeight;
     if (!w || !h) { requestAnimationFrame(fit); return; }
-    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+    stage.style.transform = 'scale(' + Math.min((w - 48) / 1300, (h - 88) / 740) + ')';
   }
   window.addEventListener('resize', fit);
   window.addEventListener('load', fit);
+  document.addEventListener('fullscreenchange', fit);
   fit();
+
+  window.addEventListener('scroll', function () {
+    backtop.classList.toggle('show', window.scrollY > deck.clientHeight * 0.6);
+  }, { passive: true });
 
   var m = location.hash.match(/^#s(\d+)$/);
   go(m ? +m[1] - 1 : 0);
+  if (!m && location.hash) {
+    var target = document.querySelector(location.hash.replace(/[^#\w-]/g, ''));
+    if (target) setTimeout(function () { target.scrollIntoView({ block: 'start' }); }, 50);
+  }
 })();
 </script>
 </body>

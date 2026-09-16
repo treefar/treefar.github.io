@@ -3,437 +3,428 @@
 <head>
 <meta charset="utf-8">
 <title>第 13 週|創意發想與提示工程</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;1,300;1,400&family=Noto+Serif+TC:wght@300;400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  /* ============ 版型：水彩由灰轉彩（style-library gris-watercolor，色值取自 styles/gris-watercolor.json）============ */
   * { box-sizing: border-box; }
-  #app {
-    position: fixed; inset: 0; overflow: hidden;
-    background: var(--bg);
-    font-family: var(--body);
-    color: var(--ink);
-    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
-    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
-    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
-    --bg: #F5F4EC; --bg2: #EFEEE2;
-    --panel: #FDFCF6; --panel2: #EDECDF;
-    --ink: #232B21; --sub: #67705E;
-    --accent: #2F6B4F; --accent-rgb: 47,107,79;
-    --accent2: #BC4F2C;
-    --line: rgba(35,43,33,.16);
-    --link: #2F6B4F;
-    --r: 4px;
+  :root {
+    --bg: #ece5d9; --bg2: #e3dbcc; --surface: #fffdf6; --surface2: #e3dbcc;
+    --ink: #2c2823; --ink2: #564e43; --muted: #756c5e; --line: #d8cfbd;
+    --blue: #2f7596; --red: #bd564a; --green: #6f9266; --yellow: #dbab44; --grey: #9a948a;
+    --wash-blue: #7da8bd; --wash-rose: #d59289; --wash-gold: #e6c97e; --wash-sage: #a3bd9b; --wash-grey: #b9b3a8;
+    --c: var(--blue); --c-soft: var(--wash-blue);
+    --body: 'Noto Serif TC', 'Cormorant', Georgia, 'PMingLiU', serif;
+    --sans: 'Noto Sans TC', 'Microsoft JhengHei', system-ui, sans-serif;
+    --disp: 'Noto Serif TC', 'Cormorant', Georgia, serif;
+    --num: 'Cormorant', 'Noto Serif TC', serif;
   }
-  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
-  #app a:hover { opacity: .85; }
-  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-weight: 300; }
+  a { color: var(--c); text-underline-offset: 4px; text-decoration-thickness: 1px; }
+  :focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+  b, strong { font-weight: 500; }
 
+  /* ---------- 投影區 ---------- */
+  #deck { position: relative; height: 100vh; min-height: 560px; overflow: hidden; background: var(--bg2); }
   .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
-  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
-  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
-  .slide.active { display: flex; }
-  .slide::before {
-    content: ""; position: absolute; inset: 24px; pointer-events: none;
-    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
-  }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; background: var(--bg); box-shadow: 0 30px 70px -34px rgba(50,42,34,.5); overflow: hidden; }
+  .slide { position: absolute; inset: 0; padding: 56px 110px 72px; display: none; flex-direction: column; }
+  .slide.active { display: flex; animation: fadein .6s ease both; }
+  @keyframes fadein { from { opacity: 0 } to { opacity: 1 } }
+  /* 章節換色：只換 --c 與 --c-soft */
+  .slide.p-blue, .slide[data-c="blue"] { --c: var(--blue); --c-soft: var(--wash-blue); }
+  .slide.p-red, .slide[data-c="red"] { --c: var(--red); --c-soft: var(--wash-rose); }
+  .slide.p-green, .slide[data-c="green"] { --c: var(--green); --c-soft: var(--wash-sage); }
+  .slide.p-yellow, .slide[data-c="yellow"] { --c: var(--yellow); --c-soft: var(--wash-gold); }
+  .slide.p-grey, .slide[data-c="grey"] { --c: var(--grey); --c-soft: var(--wash-grey); }
+  /* 水彩暈染 */
+  .slide::before { content: ""; position: absolute; inset: 0; pointer-events: none; background:
+    radial-gradient(ellipse 520px 380px at 84% 20%, color-mix(in srgb, var(--c-soft) 34%, transparent), transparent 70%),
+    radial-gradient(ellipse 420px 300px at 10% 90%, color-mix(in srgb, var(--c-soft) 20%, transparent), transparent 70%); }
+  .slide > * { position: relative; }
 
-  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
-  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
-  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
-  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+  .eyebrow { font-family: var(--sans); font-weight: 500; font-size: 16px; letter-spacing: .34em; text-transform: uppercase; color: var(--c); display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+  .eyebrow::before { content: ""; width: 40px; height: 1px; background: var(--c); flex: 0 0 auto; }
+  h1 { font-family: var(--disp); font-size: 88px; line-height: 1.15; margin: 0; font-weight: 400; letter-spacing: .02em; text-wrap: balance; }
+  h2 { font-family: var(--disp); font-size: 54px; line-height: 1.2; margin: 0 0 22px; font-weight: 400; text-wrap: balance; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 18px; }
 
-  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
-  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
-  .sub { color: var(--sub); }
+  .slide ul { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 16px; font-size: 27px; line-height: 1.6; }
+  .slide ul ul { margin-top: 6px; gap: 6px; font-size: 22px; color: var(--ink2); }
+  .slide li::marker { color: var(--c); }
+  .sub { color: var(--ink2); }
   .small { font-size: 18px; }
-  .num { font-variant-numeric: tabular-nums; }
+  .num { font-family: var(--num); font-variant-numeric: tabular-nums; }
 
-  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
-  .cards { display: grid; gap: 18px; }
+  /* 這套不用卡片：分區靠 1px 紙緣線與留白 */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 56px; align-items: stretch; }
+  .cards { display: grid; gap: 0 40px; }
   .c2 { grid-template-columns: repeat(2, 1fr); }
   .c3 { grid-template-columns: repeat(3, 1fr); }
   .c4 { grid-template-columns: repeat(4, 1fr); }
   .c5 { grid-template-columns: repeat(5, 1fr); }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
-  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
-  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
-  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+  .card { background: transparent; border: 0; border-top: 1px solid var(--c); padding: 18px 0 14px; min-width: 0; display: flex; flex-direction: column; justify-content: flex-start; }
+  .card.pink, .card.cyan, .card.grape, .card.lemon { background: transparent; }
+  .card h3 { font-family: var(--disp); font-size: 27px; margin: 0 0 10px; font-weight: 400; line-height: 1.3; }
+  .card p, .card li { font-size: 22px; line-height: 1.6; margin: 0; color: var(--ink2); }
+  .card ul { padding-left: 1.05em; gap: 8px; font-size: 22px; }
+  .card .who { display: block; font-family: var(--sans); font-weight: 500; font-size: 14px; letter-spacing: .24em; text-transform: uppercase; color: var(--c); margin-bottom: 10px; }
+  .cols > .card h3 { font-size: 29px; }
+  .cols > .card p, .cols > .card li { font-size: 24px; }
 
-  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
-  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+  /* 結語：用 lede 大字，不用框 */
+  .take { margin-top: auto; display: flex; gap: 18px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 16px; font-size: 24px; line-height: 1.55; }
+  .take b { font-family: var(--sans); color: var(--c); font-size: 14px; letter-spacing: .24em; text-transform: uppercase; white-space: nowrap; font-weight: 500; }
 
-  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
+  .foot { position: absolute; left: 110px; right: 110px; bottom: 30px; display: flex; justify-content: space-between; font-family: var(--sans); font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
 
+  /* 封面與章節頁：同一張紙，只是暈染更重、字更大 */
   .cover, .part { justify-content: center; }
-  .cover .eyebrow { margin-bottom: 26px; }
-  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
-  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
-  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
-  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
-  .part h2 { font-size: 56px; }
-  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+  .cover::before, .part::before { background:
+    radial-gradient(ellipse 700px 520px at 80% 25%, color-mix(in srgb, var(--c-soft) 48%, transparent), transparent 70%),
+    radial-gradient(ellipse 520px 380px at 12% 88%, color-mix(in srgb, var(--c-soft) 30%, transparent), transparent 70%); }
+  .cover .eyebrow { margin-bottom: 30px; }
+  .cover-sub { font-size: 30px; color: var(--ink2); margin: 26px 0 0; line-height: 1.6; max-width: 26em; }
+  .cover-meta { margin-top: 44px; display: flex; gap: 28px; flex-wrap: wrap; font-family: var(--sans); font-size: 13px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
+  .part-num { font-family: var(--num); font-style: italic; font-size: 132px; line-height: 1; margin-bottom: 6px; color: var(--c); font-weight: 300; }
+  .part h2 { font-size: 64px; }
+  .part-sub { font-size: 28px; color: var(--ink2); margin: 18px 0 0; max-width: 30em; line-height: 1.65; }
 
-  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
-  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
-  .kv dd { margin: 0; }
-  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
-  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
-  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
-  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
-  .lk::after { content: " ↗"; font-size: 12px; }
+  /* fact-row：左小標右正文 */
+  .kv { display: grid; grid-template-columns: 230px 1fr; gap: 0 24px; font-size: 25px; line-height: 1.55; border-top: 1px solid var(--line); align-content: start; }
+  .kv dt { font-family: var(--sans); font-weight: 500; font-size: 15px; letter-spacing: .22em; text-transform: uppercase; color: var(--c); padding: 20px 0 14px; border-bottom: 1px solid var(--line); }
+  .kv dd { margin: 0; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px 26px; align-items: center; }
+  .chip { font-family: var(--sans); font-weight: 500; font-size: 17px; letter-spacing: .12em; padding: 6px 0; border-bottom: 1px solid var(--c); background: none; color: var(--ink); }
+  .chip.hot { color: var(--c); }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px 26px; }
+  .lk { display: inline-block; padding: 6px 0; border-bottom: 1px solid var(--c); font-family: var(--sans); font-size: 17px; text-decoration: none; color: var(--ink); font-weight: 500; }
+  .lk:hover { color: var(--c); }
+  .lk::after { content: " ↗"; font-size: 12px; color: var(--c); }
   .flow { display: flex; align-items: stretch; gap: 0; }
-  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
-  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
-  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
-  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
-  .bar i { display: block; height: 100%; background: var(--accent); }
-  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
-  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
-  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
-  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
-  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
-  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
-  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
-  .tl { display: flex; flex-direction: column; gap: 18px; }
-  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
-  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
-  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+  .flow .step { flex: 1; border-top: 1px solid var(--c); padding: 18px 22px 12px 0; min-width: 0; display: flex; flex-direction: column; justify-content: flex-start; }
+  .flow .step h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 8px; font-weight: 400; }
+  .flow .step p { font-size: 22px; line-height: 1.6; margin: 0; color: var(--ink2); }
+  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-family: var(--num); font-style: italic; font-size: 36px; color: var(--c); font-weight: 300; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 16px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 27px; line-height: 1.55; display: flex; gap: 18px; }
+  .qlist p::before { content: counter(q, upper-roman); font-family: var(--num); font-style: italic; color: var(--c); font-weight: 400; flex: 0 0 auto; min-width: 1.4em; }
+  .grp h3 { font-family: var(--sans); font-weight: 500; font-size: 14px; letter-spacing: .24em; text-transform: uppercase; color: var(--c); margin: 0 0 12px; }
+  .card p.big, .cols > .card p.big { font-family: var(--num); font-size: 120px; line-height: 1; font-weight: 300; color: var(--c); margin: 0; }
+  .card p.big small { font-family: var(--sans); font-size: 15px; letter-spacing: .22em; text-transform: uppercase; line-height: 1.5; color: var(--muted); font-weight: 500; display: block; margin-top: 12px; }
 
-  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
-  .content > .cards,
-  .content > .cols,
-  .content > .flow,
-  .content > .kv,
-  .content > .prob { flex: 1 1 auto; }
+  .content > .cards, .content > .cols, .content > .flow { flex: 0 0 auto; margin-top: auto; margin-bottom: auto; }
+  .content > .kv { flex: 1 1 auto; }
+  .cards .card { min-height: 180px; }
+  .cols > .card { min-height: 220px; }
   .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
-  .content > .qlist,
-  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
-  .content > .biblio { flex: 0 0 auto; }
-  .cols > .card { justify-content: flex-start; }
 
-  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
-  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
-  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
-  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
-  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  sup.fn { font-family: var(--sans); font-size: 12px; line-height: 1; vertical-align: top; margin-left: 4px; position: relative; top: -2px; }
+  sup.fn a { display: inline-block; border: 1px solid var(--c); color: var(--c); border-radius: 50%; height: 20px; line-height: 18px; min-width: 20px; padding: 0 5px; text-align: center; text-decoration: none; font-weight: 500; }
+
+  .ctrl { position: absolute; right: 16px; bottom: 14px; display: flex; gap: 8px; align-items: center; z-index: 30; }
+  .ctrl button { font-family: var(--sans); border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 14px; height: 32px; min-width: 34px; padding: 0 10px; border-radius: 2px; cursor: pointer; }
+  .ctrl button:hover { border-color: var(--c); color: var(--c); }
+  .ctrl .cnt { font-family: var(--num); font-size: 15px; color: var(--muted); padding: 0 6px; font-variant-numeric: tabular-nums; }
+  .prog { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--c); width: 0; z-index: 30; transition: width .3s ease; }
+  .hint { position: absolute; left: 16px; bottom: 16px; z-index: 30; font-family: var(--sans); font-size: 12px; letter-spacing: .12em; color: var(--muted); }
+
+  .toc { position: absolute; inset: 0; background: rgba(236,229,217,.97); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
   .toc.on { display: block; }
-  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
-  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
-  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
-  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
-  .toc button:hover { background: var(--panel2); }
-  .toc button.here { color: var(--accent2); font-weight: 700; }
-  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
-  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+  .toc h2 { font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 26px; }
+  .toc h3 { font-family: var(--sans); color: var(--c); font-size: 13px; letter-spacing: .24em; text-transform: uppercase; margin: 0 0 10px; font-weight: 500; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 17px; padding: 6px 8px; cursor: pointer; font-family: var(--body); font-weight: 300; }
+  .toc button:hover { color: var(--c); }
+  .toc button.here { color: var(--c); font-weight: 500; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 13px; color: var(--muted); font-family: var(--sans); }
+
+  /* ---------- 講義區 ---------- */
+  .notes { max-width: 900px; margin: 0 auto; padding: 72px 20px 110px; }
+  .notes-head { margin-bottom: 56px; }
+  .notes-head .eyebrow { margin-bottom: 14px; }
+  .notes-head h2 { font-size: 46px; margin: 0 0 14px; }
+  .notes-head p { color: var(--ink2); font-size: 20px; line-height: 1.75; margin: 0; max-width: 34em; }
+  .sec { background: transparent; border: 0; border-top: 1px solid var(--line); padding: 34px 0 20px; margin: 0 0 26px; --c: var(--blue); }
+  .sec.cyan { --c: var(--green); } .sec.grape { --c: var(--red); } .sec.lemon { --c: var(--yellow); }
+  .sec h2 { font-size: 32px; margin: 0 0 16px; }
+  .sec h3 { font-family: var(--disp); font-size: 23px; margin: 28px 0 10px; font-weight: 500; }
+  .sec p, .sec li { font-size: 19px; line-height: 1.9; color: var(--ink2); margin: 0 0 14px; }
+  .sec li { margin: 0 0 6px; }
+  .sec strong { color: var(--ink); font-weight: 500; }
+  .sec .kicker { display: inline-block; font-family: var(--sans); font-size: 12px; letter-spacing: .34em; text-transform: uppercase; color: var(--c); margin-bottom: 12px; font-weight: 500; }
+  .sec .kicker::before { content: "—"; margin-right: 10px; }
+  .sec table { width: 100%; border-collapse: collapse; font-size: 18px; margin: 8px 0 16px; }
+  .sec th, .sec td { text-align: left; padding: 12px 12px 12px 0; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.65; }
+  .sec th { font-family: var(--sans); font-size: 13px; letter-spacing: .22em; text-transform: uppercase; color: var(--c); font-weight: 500; }
+  .scene { border-left: 1px solid var(--c); padding: 6px 0 6px 22px; margin: 18px 0 22px; }
+  .scene .who { font-family: var(--sans); font-size: 12px; letter-spacing: .24em; text-transform: uppercase; color: var(--c); font-weight: 500; display: block; margin-bottom: 6px; }
+  .scene p { margin: 0; }
+  ol.src { padding-left: 1.6em; counter-reset: s; list-style: none; }
+  ol.src li { counter-increment: s; position: relative; padding-left: 6px; margin-bottom: 16px; line-height: 1.7; }
+  ol.src li::before { content: counter(s); position: absolute; left: -1.7em; top: .3em; font-family: var(--num); font-style: italic; font-size: 16px; color: var(--c); border: 1px solid var(--c); border-radius: 50%; min-width: 22px; height: 22px; line-height: 20px; text-align: center; }
+  ol.src li:target { background: color-mix(in srgb, var(--c-soft) 22%, transparent); }
+  ol.src .ti { color: var(--ink); font-weight: 500; }
+  ol.src .meta { display: block; font-family: var(--sans); font-size: 14px; color: var(--muted); }
+  ol.src a { word-break: break-all; font-size: 14px; font-family: var(--sans); }
+  .check { counter-reset: c; list-style: none; padding: 0; }
+  .check li { counter-increment: c; display: flex; gap: 14px; align-items: baseline; }
+  .check li::before { content: "☐"; color: var(--c); font-size: 20px; flex: 0 0 auto; }
+  .backtop { position: fixed; right: 18px; bottom: 18px; z-index: 50; font-family: var(--sans); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink); background: var(--surface); border: 1px solid var(--line); padding: 10px 16px; text-decoration: none; display: none; }
+  .backtop.show { display: inline-block; }
+  .version { font-family: var(--sans); font-size: 13px; letter-spacing: .1em; color: var(--muted); margin-top: 40px; }
+
+  @media (max-width: 720px) { .notes { padding: 40px 16px 80px; } .notes-head h2 { font-size: 32px; } .kv { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .slide.active { animation: none; } .prog { transition: none; } }
+  @media print { #deck, .backtop { display: none; } .notes { max-width: none; padding: 0; } .sec { break-inside: avoid; } }
 </style>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
 </head>
 <body>
-<div id="app" data-deck="b">
+
+<div id="deck" data-deck="gris-watercolor">
   <div class="stagewrap"><div class="stage" id="stage">
 
-  <!-- 1 創意發想與提示工程 -->
-<section class="slide cover">
+<!-- 1 封面 -->
+  <section class="slide cover">
     <div class="eyebrow">人工智慧與互動媒體特論 · 設計創新與經營研究所</div>
     <h1>創意發想與提示工程</h1>
-    <p class="cover-sub">生成式 AI 與創意發想：設計流程中的 AI 協作與提示工程實務。目標只有一個：讓你的提示詞從碰運氣的咒語，變成可交接的方法。</p>
-    <div class="cover-meta"><span>第 13 週</span><span>論文導讀與案例討論</span><span>授課：鄧樹遠</span></div>
+    <p class="cover-sub">生成式 AI 與創意發想：從三家官方指南的共識、脈絡工程的升級，到設計流程裡的人機分工。目標只有一個：讓你的提示從碰運氣的咒語，變成可交接的方法。</p>
+    <div class="cover-meta"><span>第 13 週</span><span>授課：鄧樹遠</span><span>投影片 ＋ 下方講義</span></div>
   </section>
 
-  <!-- 2 九十分鐘，五段路 -->
-<section class="slide">
+  <!-- 2 本週地圖 -->
+  <section class="slide">
     <div class="eyebrow">Week 13 · 本週地圖</div>
     <h2>九十分鐘，五段路</h2>
     <div class="content">
       <div class="cards c5">
-        <div class="card"><span class="who">PART 1</span><h3>提示工程的體系</h3><p class="sub">六種技術，一套語法</p></div>
-        <div class="card"><span class="who">PART 2</span><h3>從提示到脈絡</h3><p class="sub">一個名詞的三年演變</p></div>
-        <div class="card"><span class="who">PART 3</span><h3>人機協作三模式</h3><p class="sub">發散、收斂、評估</p></div>
-        <div class="card"><span class="who">PART 4</span><h3>團隊提示資產庫</h3><p class="sub">把個人手感變團隊資產</p></div>
-        <div class="card"><span class="who">PART 5</span><h3>論文導讀</h3><p class="sub">一篇普查，一篇警告</p></div>
+        <div class="card"><span class="who">Part 1</span><h3>提示工程體系</h3><p class="sub">五種技術，只引官方頁</p></div>
+        <div class="card"><span class="who">Part 2</span><h3>從提示到脈絡</h3><p class="sub">一個名詞的三年演變</p></div>
+        <div class="card"><span class="who">Part 3</span><h3>人機協作</h3><p class="sub">發散、收斂、評估</p></div>
+        <div class="card"><span class="who">Part 4</span><h3>提示資產庫</h3><p class="sub">把手感變團隊資產</p></div>
+        <div class="card"><span class="who">Part 5</span><h3>論文與交付</h3><p class="sub">一篇普查，一篇警告</p></div>
       </div>
-      <div class="take"><b>本週目標</b>離開教室時，你的提示是可重複、可測試、可交接的設計物，而不是一段祕密咒語。</div>
+      <div class="take"><b>本週目標</b>離開教室時，你的提示是可重複、可測試、可交接的設計物，不是一段祕密咒語。</div>
     </div>
   </section>
 
-  <!-- 3 伏筆回收：座標，不是咒語 -->
-<section class="slide">
-    <div class="eyebrow">承接第 4 週 · 生成式 AI 導論</div>
-    <h2>伏筆回收：座標，不是咒語</h2>
+  <!-- 3 承接 -->
+  <section class="slide">
+    <div class="eyebrow">承接第 12 週 · AI 與動態影像製作</div>
+    <h2>把鏡頭表反過來用</h2>
     <div class="content">
       <div class="cols">
         <div class="card">
-          <span class="who">第 4 週埋的伏筆</span>
-          <h3>提示詞是語意空間的座標</h3>
+          <span class="who">上週的世界</span>
+          <h3>從產出回推：這支影片怎麼做的</h3>
           <ul>
-            <li>文字與影像住進同一個語意空間</li>
-            <li>寫得具體，等於座標下得準</li>
-            <li>當時預告：第 13 週把原理變成方法</li>
+            <li>鏡頭表：哪一鏡用哪個模型、哪句提示</li>
+            <li>破綻指到秒數，分析可被重做</li>
+            <li>模型會退場，分析會留下</li>
           </ul>
         </div>
         <div class="card">
-          <span class="who">本週要做的事</span>
-          <h3>把下座標變成一套方法</h3>
+          <span class="who">本週的世界</span>
+          <h3>從提示出發：怎麼設計出可控產出</h3>
           <ul>
-            <li>第 5 到 12 週看遍各領域工具，都吃提示</li>
-            <li>本週回到方法本身：下得準、下得穩</li>
-            <li>最後一步：讓座標成為團隊共用的資產</li>
+            <li>第 4 週說提示是語意空間的座標</li>
+            <li>本週把下座標變成一套方法</li>
+            <li>最後讓座標成為團隊共用的資產</li>
           </ul>
         </div>
       </div>
+      <div class="take"><b>先做五分鐘</b>依學號順序，三位同學分享上週的破綻分析：三處破綻各在第幾秒。</div>
     </div>
   </section>
 
-  <!-- 4 提示工程的體系 -->
-<section class="slide part">
+  <!-- 4 PART 1 -->
+  <section class="slide part p-blue">
     <div class="part-num">01</div>
-    <div class="eyebrow">PART 1</div>
+    <div class="eyebrow">Part 1</div>
     <h2>提示工程的體系</h2>
-    <p class="part-sub">角色設定、結構化提示、少樣本示範、思維鏈、負向提示、迭代精修。六種技術都在降低歧義，差別在介入提示的不同位置。</p>
+    <p class="part-sub">角色、結構、範例、思維鏈、迭代。五種技術都在降低歧義，差別只在介入提示的位置。這一段每一條寫法都對到 OpenAI、Anthropic、Google 的官方指南頁。</p>
   </section>
 
-  <!-- 5 角色設定：先給模型一個身分 -->
-<section class="slide">
-    <div class="eyebrow">PART 1 · 提示工程體系</div>
+  <!-- 5 角色 -->
+  <section class="slide" data-c="blue">
+    <div class="eyebrow">Part 1 · 提示工程體系</div>
     <h2>角色設定：先給模型一個身分</h2>
     <div class="content">
-      <ul>
-        <li>指定身分、口吻與目標受眾，等於先把座標移進正確的語意區域</li>
-        <li>OpenAI 官方把 Identity 列為開發者訊息第一層：目的、風格、高層目標</li>
-        <li>對開放式任務效果最直接：文案語氣、審美立場、發想視角</li>
-        <li>提醒：「你是專家」不會讓錯的變對，角色影響風格多於事實</li>
-      </ul>
-      <div class="linkrow">
-        <a class="lk" href="https://developers.openai.com/api/docs/guides/prompt-engineering" target="_blank" rel="noopener">OpenAI 官方指南</a>
-      </div>
+      <dl class="kv">
+        <dt>OpenAI</dt><dd>開發者訊息第一層是 Identity：助理的目的、溝通風格、高層目標。<sup class="fn"><a href="#src-1">1</a></sup></dd>
+        <dt>Anthropic</dt><dd>在 system prompt 給角色，「一句話就有差」。<sup class="fn"><a href="#src-3">3</a></sup></dd>
+        <dt>用在哪</dt><dd>開放式任務最有感：文案語氣、審美立場、發想視角。</dd>
+        <dt>限制</dt><dd>「你是專家」不會讓錯的變對；角色影響風格多於事實。</dd>
+      </dl>
     </div>
   </section>
 
-  <!-- 6 結構化提示：三家官方的共識 -->
-<section class="slide">
-    <div class="eyebrow">PART 1 · 提示工程體系</div>
+  <!-- 6 結構 -->
+  <section class="slide" data-c="blue">
+    <div class="eyebrow">Part 1 · 提示工程體系</div>
     <h2>結構化提示：三家官方的共識</h2>
     <div class="content">
       <div class="cards c3">
-        <div class="card">
-          <span class="who">OPENAI</span>
-          <h3>訊息分層</h3>
-          <ul>
-            <li>身分、指令、禁止事項分層寫</li>
-            <li>用 XML 標籤標記內容邊界</li>
-          </ul>
-        </div>
-        <div class="card">
-          <span class="who">ANTHROPIC</span>
-          <h3>清楚直接</h3>
-          <ul>
-            <li>簡單直接的語言優先</li>
-            <li>XML 結構、角色、提示串接</li>
-          </ul>
-        </div>
-        <div class="card">
-          <span class="who">GOOGLE</span>
-          <h3>分隔一致</h3>
-          <ul>
-            <li>Markdown 或 XML 擇一用到底</li>
-            <li>模糊術語要先定義清楚</li>
-          </ul>
-        </div>
+        <div class="card"><span class="who">OpenAI</span><h3>訊息分層</h3><p>Identity 與 Instructions 分開寫；Markdown 標階層，XML 標邊界。<sup class="fn"><a href="#src-1">1</a></sup></p></div>
+        <div class="card"><span class="who">Anthropic</span><h3>清楚直接</h3><p>黃金法則：拿給沒脈絡的同事看，同事懂模型才懂；XML 分開指令、脈絡、輸入。<sup class="fn"><a href="#src-3">3</a></sup></p></div>
+        <div class="card"><span class="who">Google</span><h3>分隔一致</h3><p>XML 或 Markdown 擇一用到底；關鍵指令放前面，大量資料時放資料之後。<sup class="fn"><a href="#src-4">4</a></sup><sup class="fn"><a href="#src-5">5</a></sup></p></div>
       </div>
-      <ul>
-        <li>共識：把提示當文件排版。結構清楚，模型讀得懂，同事也讀得懂</li>
-      </ul>
+      <div class="take"><b>共識</b>把提示當文件排版：結構清楚，模型讀得懂，同事也讀得懂。</div>
     </div>
   </section>
 
-  <!-- 7 少樣本示範：例子勝過形容詞 -->
-<section class="slide">
-    <div class="eyebrow">PART 1 · 提示工程體系</div>
+  <!-- 7 少樣本 -->
+  <section class="slide" data-c="blue">
+    <div class="eyebrow">Part 1 · 提示工程體系</div>
     <h2>少樣本示範：例子勝過形容詞</h2>
     <div class="content">
       <ul>
-        <li>給 2 到 5 組「輸入與理想輸出」示範，直接定義格式、深度與風格</li>
-        <li>例子的異質性比數量重要：涵蓋邊界情況勝過堆同質範例</li>
-        <li>形容詞人人解讀不同，例子不會：「文青感」不如直接貼一段目標文字</li>
-        <li>圖像同理：參照圖與風格參數，就是圖像版的少樣本示範</li>
+        <li>Google：「建議永遠在提示裡放 few-shot 範例」，主要目的是示範回應格式。<sup class="fn"><a href="#src-4">4</a></sup></li>
+        <li>Anthropic：3 到 5 個，要相關、多樣、包在標籤裡。<sup class="fn"><a href="#src-3">3</a></sup></li>
+        <li>OpenAI：範例要「涵蓋多樣的輸入與對應輸出」。<sup class="fn"><a href="#src-1">1</a></sup></li>
+        <li>形容詞人人解讀不同，例子不會：「文青感」不如直接貼一段目標文字。</li>
+        <li>圖像同理：官方範例全用正面描述，「越具體，控制越多」。<sup class="fn"><a href="#src-7">7</a></sup></li>
       </ul>
     </div>
   </section>
 
-  <!-- 8 思維鏈：讓模型先想再答 -->
-<section class="slide">
-    <div class="eyebrow">PART 1 · 提示工程體系</div>
-    <h2>思維鏈：讓模型先想再答</h2>
+  <!-- 8 思維鏈 -->
+  <section class="slide" data-c="blue">
+    <div class="eyebrow">Part 1 · 2025–2026 現況</div>
+    <h2>思維鏈：從一句咒語到內建</h2>
     <div class="content">
-      <ul>
-        <li>加一句「一步一步想」，推理型任務表現顯著提升：零樣本思維鏈</li>
-        <li>價值在於推理攤開可審：錯在哪一步，看得見</li>
-        <li>2026 現況：旗艦模型多已內建思考；Google 建議 Gemini 3 保持預設參數</li>
-        <li>設計任務的用法：請模型先列評估準則，再依準則出方案</li>
-      </ul>
+      <dl class="kv">
+        <dt>2022-01</dt><dd>Wei 等人：給模型「一系列中間推理步驟」的示範，複雜推理顯著改善。<sup class="fn"><a href="#src-10">10</a></sup></dd>
+        <dt>2022-05</dt><dd>Kojima 等人：只加「Let's think step by step」，MultiArith 17.7% 升到 78.7%。<sup class="fn"><a href="#src-9">9</a></sup></dd>
+        <dt>2026-08</dt><dd>Gemini 3 指南：模型已內建推理，temperature 留在預設 1.0，指令精簡直接。<sup class="fn"><a href="#src-5">5</a></sup></dd>
+        <dt>設計用法</dt><dd>請模型先列評估準則，再依準則出方案；推理攤開，錯在哪一步看得見。</dd>
+      </dl>
     </div>
   </section>
 
-  <!-- 9 負向提示：說清楚不要什麼 -->
-<section class="slide">
-    <div class="eyebrow">PART 1 · 提示工程體系</div>
-    <h2>負向提示：說清楚不要什麼</h2>
+  <!-- 9 禁令與迭代 -->
+  <section class="slide" data-c="blue">
+    <div class="eyebrow">Part 1 · 提示工程體系</div>
+    <h2>禁令與迭代：提示是設計物</h2>
     <div class="content">
       <div class="cols">
         <div class="card">
-          <span class="who">圖像生成</span>
-          <h3>獨立的負向通道</h3>
+          <span class="who">禁令</span>
+          <h3>說清楚不要什麼</h3>
           <ul>
-            <li>擴散模型生態普遍提供負向欄位或參數</li>
-            <li>列出不要的物件、風格與品質瑕疵</li>
-            <li>呼應第 4 週：負向也是座標，把生成推離某個語意區域</li>
+            <li>OpenAI：Instructions 要寫「模型永遠不該做什麼」<sup class="fn"><a href="#src-1">1</a></sup></li>
+            <li>只說「不要 X」效果差，同時給「改做 Y」</li>
           </ul>
         </div>
         <div class="card">
-          <span class="who">文字模型</span>
-          <h3>禁令要搭配替代</h3>
+          <span class="who">迭代</span>
+          <h3>起草、測試、精修</h3>
           <ul>
-            <li>只說「不要做 X」效果差，同時給「改做 Y」</li>
-            <li>硬性禁令寫進系統層：OpenAI 的「永遠不做」清單</li>
-            <li>負面清單越長，模型越容易顧此失彼</li>
+            <li>Anthropic 的前提：先有成功標準與測試方法<sup class="fn"><a href="#src-2">2</a></sup></li>
+            <li>最常見的鏈：起草→依準則審→依審查修<sup class="fn"><a href="#src-3">3</a></sup></li>
           </ul>
         </div>
       </div>
-      <div class="take"><b>假設情境</b>假設小組四人各自生成角色，請把禁用造型與錯誤示例寫進共同提示，避免最後才發現彼此版本不一致。</div>
+      <div class="take"><b>原則</b>一次只動一個變因，固定測試輸入，記錄版本。</div>
     </div>
   </section>
 
-  <!-- 10 迭代精修：提示是設計物 -->
-<section class="slide">
-    <div class="eyebrow">PART 1 · 提示工程體系</div>
-    <h2>迭代精修：提示是設計物</h2>
-    <div class="content">
-      <div class="flow">
-        <div class="step"><h3>1. 起草</h3><p>最小可行提示：角色、任務、格式，先跑一次看落點</p></div>
-        <div class="arr">→</div>
-        <div class="step"><h3>2. 測試</h3><p>固定測試輸入，多模型、多次生成，比較穩定度</p></div>
-        <div class="arr">→</div>
-        <div class="step"><h3>3. 精修</h3><p>一次只動一個變因，記錄版本與效果差異</p></div>
-      </div>
-      <ul>
-        <li>OpenAI 六大策略的最後一條就是「系統性測試變更」：改動要可比較</li>
-        <li>第 4 週的「自建小考」，正是這個迴圈的個人版</li>
-      </ul>
-    </div>
-  </section>
-
-  <!-- 11 從提示到脈絡工程 -->
-<section class="slide part">
+  <!-- 10 PART 2 -->
+  <section class="slide part p-red">
     <div class="part-num">02</div>
-    <div class="eyebrow">PART 2</div>
+    <div class="eyebrow">Part 2</div>
     <h2>從提示到脈絡工程</h2>
     <p class="part-sub">2025 年起，業界的問題悄悄改變：不再是「怎麼寫一句好提示」，而是「模型在回答的當下，究竟看見了什麼」。</p>
   </section>
 
-  <!-- 12 2026 官方指南地圖 -->
-<section class="slide">
-    <div class="eyebrow">PART 2 · 官方指南現況</div>
-    <h2>2026 官方指南地圖</h2>
+  <!-- 11 指南地圖 -->
+  <section class="slide" data-c="red">
+    <div class="eyebrow">Part 2 · 2025–2026 現況</div>
+    <h2>2026 年 9 月：官方指南地圖</h2>
     <div class="content">
       <dl class="kv">
-        <dt>OpenAI</dt><dd>開發者文件六大策略，另在 Academy 開設提示基礎課程</dd>
-        <dt>Anthropic</dt><dd>平台文件涵蓋角色、XML、思維鏈，附 GitHub 互動式教學</dd>
-        <dt>Google</dt><dd>Gemini API 提示策略文件，並為 Gemini 3 出專屬提示指南</dd>
-        <dt>共同走向</dt><dd>指南重心從單句提示，擴大到代理與脈絡配置</dd>
+        <dt>OpenAI</dt><dd>開發者文件：訊息分層、Markdown 與 XML、few-shot、「把提示版本化進程式碼」。<sup class="fn"><a href="#src-1">1</a></sup></dd>
+        <dt>Anthropic</dt><dd>總覽頁加最佳實務頁，附 GitHub 九章互動教學。<sup class="fn"><a href="#src-2">2</a></sup><sup class="fn"><a href="#src-12">12</a></sup></dd>
+        <dt>Google</dt><dd>提示策略頁 2026-06-10 更新；Gemini 3 指南 2026-08-26 更新。<sup class="fn"><a href="#src-4">4</a></sup><sup class="fn"><a href="#src-5">5</a></sup></dd>
+        <dt>共同走向</dt><dd>指南重心從單句提示，擴大到工具、代理與脈絡配置。</dd>
       </dl>
-      <div class="linkrow">
-        <a class="lk" href="https://developers.openai.com/api/docs/guides/prompt-engineering" target="_blank" rel="noopener">OpenAI 指南</a>
-        <a class="lk" href="https://openai.com/academy/prompting/" target="_blank" rel="noopener">Academy 課程</a>
-        <a class="lk" href="https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/overview" target="_blank" rel="noopener">Anthropic 文件</a>
-        <a class="lk" href="https://ai.google.dev/gemini-api/docs/prompting-strategies" target="_blank" rel="noopener">Gemini 指南</a>
-        <a class="lk" href="https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/start/gemini-3-prompting-guide" target="_blank" rel="noopener">Gemini 3 指南</a>
-      </div>
     </div>
   </section>
 
-  <!-- 13 脈絡工程：座標升級成地圖 -->
-<section class="slide">
-    <div class="eyebrow">PART 2 · 脈絡工程</div>
+  <!-- 12 脈絡工程 -->
+  <section class="slide" data-c="red">
+    <div class="eyebrow">Part 2 · 脈絡工程</div>
     <h2>脈絡工程：座標升級成地圖</h2>
     <div class="content">
-      <ul>
-        <li>Karpathy（2025/6）：為下一步，把脈絡窗口填進剛好資訊的藝術與科學</li>
-        <li>提示只是其中一項：系統提示、對話史、檢索文件、工具定義都是脈絡</li>
-        <li>Anthropic：提示工程問句子怎麼寫，脈絡工程問什麼配置能導出想要的行為</li>
-        <li>心智模型：模型是 CPU、脈絡窗口是 RAM，你在做工作記憶的管理</li>
-      </ul>
-      <div class="linkrow">
-        <a class="lk" href="https://x.com/karpathy/status/1937902205765607626" target="_blank" rel="noopener">Karpathy 貼文</a>
-        <a class="lk" href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank" rel="noopener">Anthropic 文章</a>
-        <a class="lk" href="https://www.promptingguide.ai/guides/context-engineering-guide" target="_blank" rel="noopener">DAIR.AI 指南</a>
-      </div>
+      <dl class="kv">
+        <dt>提示工程</dt><dd>Anthropic 的定義：撰寫與組織指令以達最佳結果的方法。<sup class="fn"><a href="#src-6">6</a></sup></dd>
+        <dt>脈絡工程</dt><dd>在推理當下「策展與維護最佳的 token 集合」。<sup class="fn"><a href="#src-6">6</a></sup></dd>
+        <dt>範圍</dt><dd>系統提示、工具定義、外部資料、對話歷史，全部都是脈絡。<sup class="fn"><a href="#src-6">6</a></sup></dd>
+        <dt>心智模型</dt><dd>模型像處理器、脈絡視窗像工作記憶：你在做記憶管理，不只是寫句子。</dd>
+      </dl>
     </div>
   </section>
 
-  <!-- 14 個案：提示工程師的三年 -->
-<section class="slide">
-    <div class="eyebrow">PART 2 · 深度案例討論</div>
-    <h2>個案：提示工程師的三年</h2>
+  <!-- 13 個案 -->
+  <section class="slide" data-c="red">
+    <div class="eyebrow">Part 2 · 深度案例討論</div>
+    <h2>個案：一個名詞的三年</h2>
     <div class="content">
-      <div class="tl">
-        <div class="ev"><b>2022/11</b><span>ChatGPT 上線，咒語式技巧瘋傳，「提示工程師」成為新興職缺</span></div>
-        <div class="ev"><b>2024/6</b><span>The Prompt Report 盤點 58 種技術，為混亂術語建立分類學</span></div>
-        <div class="ev"><b>2025/6</b><span>Karpathy 公開支持改稱「脈絡工程」，官方陣營其後陸續發文跟進</span></div>
-        <div class="ev"><b>2026</b><span>討論繼續前進：harness engineering、提示資產治理成為新關鍵字</span></div>
-      </div>
-      <div class="qlist">
-        <p>「提示工程師」職缺退燒，但技能沒有消失：它去了哪裡？變成了誰的工作？</p>
-        <p>名詞三年換三輪，設計教育該教什麼，才不會畢業即過期？</p>
-      </div>
+      <dl class="kv">
+        <dt>2022-11</dt><dd>ChatGPT 以研究預覽推出，咒語式技巧瘋傳。<sup class="fn"><a href="#src-14">14</a></sup></dd>
+        <dt>2024-06</dt><dd>The Prompt Report 盤點 58 種技術，為混亂術語建分類。<sup class="fn"><a href="#src-8">8</a></sup></dd>
+        <dt>2025-09</dt><dd>Anthropic 發文區分兩者：提示工程管句子，脈絡工程管模型看見的全部 token。<sup class="fn"><a href="#src-6">6</a></sup></dd>
+        <dt>2026</dt><dd>三家指南都在講代理、工具與長脈絡；單句提示只是其中一節。<sup class="fn"><a href="#src-3">3</a></sup><sup class="fn"><a href="#src-5">5</a></sup></dd>
+      </dl>
+      <div class="take"><b>討論</b>名詞三年換三輪，設計教育該教什麼，才不會畢業即過期？</div>
     </div>
   </section>
 
-  <!-- 15 設計流程中的人機協作 -->
-<section class="slide part">
+  <!-- 14 PART 3 -->
+  <section class="slide part p-green">
     <div class="part-num">03</div>
-    <div class="eyebrow">PART 3</div>
+    <div class="eyebrow">Part 3</div>
     <h2>設計流程中的人機協作</h2>
-    <p class="part-sub">AI 可以插入設計流程的不同位置：發散時協助量產，收斂時整理材料，評估時提供第二意見。</p>
+    <p class="part-sub">AI 可以插進設計流程的不同位置：發散時量產、收斂時整理、評估時當第二意見。哪裡該讓、哪裡不能讓，這一段講清楚。</p>
   </section>
 
-  <!-- 16 雙鑽石裡的三個插槽 -->
-<section class="slide">
-    <div class="eyebrow">PART 3 · 協作模式</div>
+  <!-- 15 雙鑽石 -->
+  <section class="slide" data-c="green">
+    <div class="eyebrow">Part 3 · 協作模式</div>
     <h2>雙鑽石裡的三個插槽</h2>
     <div class="content">
       <div class="flow">
-        <div class="step"><h3>發散 Diverge</h3><p>量產異質選項：多角色、多限制、多風格，單價趨近於零</p></div>
+        <div class="step"><h3>發散</h3><p>量產異質選項：多角色、多限制、多風格，單價趨近於零。</p></div>
         <div class="arr">→</div>
-        <div class="step"><h3>收斂 Converge</h3><p>聚類、命名、初篩可交給 AI；投票與裁決留給團隊</p></div>
+        <div class="step"><h3>收斂</h3><p>聚類、命名、初篩可交給 AI；投票與裁決留給團隊。</p></div>
         <div class="arr">→</div>
-        <div class="step"><h3>評估 Evaluate</h3><p>依準則檢核、模擬使用者、唱反調，人做最終判斷</p></div>
+        <div class="step"><h3>評估</h3><p>依準則檢核、模擬使用者、唱反調；人做最終判斷。</p></div>
       </div>
-      <ul>
-        <li>2026 產業報告的共同觀察：先大幅發散、再刻意收斂，兩個動作都要完成</li>
-      </ul>
+      <div class="take"><b>第 3 週的提醒</b>Lee 等人發現既有 AI 設計工具多集中在後段「產生解法」，前段「定義問題」很少。<sup class="fn"><a href="#src-13">13</a></sup></div>
     </div>
   </section>
 
-  <!-- 17 發散：便宜的一百個主意 -->
-<section class="slide">
-    <div class="eyebrow">PART 3 · 協作模式</div>
+  <!-- 16 發散 -->
+  <section class="slide" data-c="green">
+    <div class="eyebrow">Part 3 · 協作模式</div>
     <h2>發散：便宜的一百個主意</h2>
     <div class="content">
       <ul>
-        <li>量是策略：先要 30 個方向再挑 3 個深化，探索成本趨近於零</li>
-        <li>異質性靠提示設計：換角色、換限制、換文化脈絡，避免首輪同質</li>
-        <li>第 4 週的溫度旋鈕與多模型比稿，就是發散期的標準操作</li>
-        <li>警訊：AI 讓個人更有創意，卻可能讓集體更相似（論文導讀詳談）</li>
+        <li>量是策略：先要 30 個方向再挑 3 個深化，探索成本趨近於零。</li>
+        <li>異質性靠提示設計：換角色、換限制、換文化脈絡，避免首輪同質。</li>
+        <li>第 4 週的多模型比稿，就是發散期的標準操作。</li>
+        <li>警訊：AI 讓個人更有創意，卻讓作品「彼此更相似」。<sup class="fn"><a href="#src-11">11</a></sup></li>
       </ul>
     </div>
   </section>
 
-  <!-- 18 收斂與評估：人握方向盤 -->
-<section class="slide">
-    <div class="eyebrow">PART 3 · 協作模式</div>
+  <!-- 17 收斂評估 -->
+  <section class="slide" data-c="green">
+    <div class="eyebrow">Part 3 · 協作模式</div>
     <h2>收斂與評估：人握方向盤</h2>
     <div class="content">
       <div class="cols">
@@ -443,7 +434,7 @@
           <ul>
             <li>AI 可以聚類、摘要、替選項命名</li>
             <li>投票、評分、取捨由團隊執行</li>
-            <li>AI 是發散的夥伴，不是達成共識的捷徑</li>
+            <li>AI 是發散的夥伴，不是共識的捷徑</li>
           </ul>
         </div>
         <div class="card">
@@ -459,205 +450,191 @@
     </div>
   </section>
 
-  <!-- 19 Figma 報告：速度與信心的落 -->
-<section class="slide">
-    <div class="eyebrow">PART 3 · 案例</div>
-    <h2>Figma 報告：速度與信心的落差</h2>
+  <!-- 18 Figma -->
+  <section class="slide" data-c="green">
+    <div class="eyebrow">Part 3 · 2025–2026 現況</div>
+    <h2>Figma 2026 報告：協作先於速度</h2>
     <div class="content">
       <dl class="kv">
-        <dt>調查</dt><dd>Figma 年度 AI 報告，2026 年版聚焦 AI 與協作</dd>
-        <dt>普及</dt><dd class="num">72% 設計師已在工作中使用生成式 AI 工具</dd>
-        <dt>落差</dt><dd class="num">91% 設計主管說工作變快，僅 15% 對產出更有信心</dd>
-        <dt>協作</dt><dd class="num">76% 的人至少一半工作發生在共享畫布上，角色邊界持續模糊</dd>
+        <dt>調查</dt><dd>2026-06-24 發布；8,403 份問卷、639 場訪談、十個市場。<sup class="fn"><a href="#src-15">15</a></sup></dd>
+        <dt>協作</dt><dd>41% 說 AI 有意義地改變了團隊協作方式，兩年前是 7%。<sup class="fn"><a href="#src-15">15</a></sup></dd>
+        <dt>畫布</dt><dd>76% 的產品建構者說至少一半工作發生在共享畫布上。<sup class="fn"><a href="#src-15">15</a></sup></dd>
+        <dt>設計</dt><dd>90% 說設計至少和 AI 之前一樣重要。<sup class="fn"><a href="#src-15">15</a></sup></dd>
       </dl>
-      <div class="linkrow">
-        <a class="lk" href="https://www.figma.com/blog/2026-ai-report/" target="_blank" rel="noopener">Figma AI 報告</a>
-        <a class="lk" href="https://www.figma.com/resource-library/ai-in-design/" target="_blank" rel="noopener">AI in Design</a>
-      </div>
     </div>
   </section>
 
-  <!-- 20 建立團隊提示資產庫 -->
-<section class="slide part">
+  <!-- 19 PART 4 -->
+  <section class="slide part p-yellow">
     <div class="part-num">04</div>
-    <div class="eyebrow">PART 4</div>
+    <div class="eyebrow">Part 4</div>
     <h2>建立團隊提示資產庫</h2>
     <p class="part-sub">好提示若只活在個人聊天紀錄裡，人一走，know-how 就跟著走。這一段把提示當成設計系統的元件來管理。</p>
   </section>
 
-  <!-- 21 提示為什麼需要一座圖書館 -->
-<section class="slide">
-    <div class="eyebrow">PART 4 · 提示資產庫</div>
+  <!-- 20 為什麼 -->
+  <section class="slide" data-c="yellow">
+    <div class="eyebrow">Part 4 · 提示資產庫</div>
     <h2>提示為什麼需要一座圖書館</h2>
     <div class="content">
       <div class="cards c3">
-        <div class="card"><h3>不重複造輪</h3><p>同款任務各自摸索提示，時間成本在團隊裡重複支出。</p></div>
+        <div class="card"><h3>不重複造輪</h3><p>同款任務各自摸索，時間成本在團隊裡重複支出。</p></div>
         <div class="card"><h3>品質可預期</h3><p>版本、測資、適用模型都有紀錄，換人執行結果不走樣。</p></div>
         <div class="card"><h3>知識留下來</h3><p>新人第一天就能用團隊最佳實務，離職不再帶走手感。</p></div>
       </div>
-      <ul>
-        <li>提示管理已是產品類別：版本、權限、評測、治理一站式服務</li>
-      </ul>
-      <div class="linkrow">
-        <a class="lk" href="https://www.glean.com/perspectives/steps-to-build-an-effective-prompt-library-for-collaboration" target="_blank" rel="noopener">Glean 建庫指南</a>
-      </div>
+      <div class="take"><b>官方立場</b>OpenAI 指南直接寫「把提示版本化進程式碼」，和其他程式一起管。<sup class="fn"><a href="#src-1">1</a></sup></div>
     </div>
   </section>
 
-  <!-- 22 一張提示資產卡的欄位 -->
-<section class="slide">
-    <div class="eyebrow">PART 4 · 提示資產庫</div>
+  <!-- 21 資產卡 -->
+  <section class="slide" data-c="yellow">
+    <div class="eyebrow">Part 4 · 提示資產庫</div>
     <h2>一張提示資產卡的欄位</h2>
     <div class="content">
       <dl class="kv">
-        <dt>基本資料</dt><dd>名稱、用途、負責人、最後更新日期</dd>
-        <dt>提示本體</dt><dd>角色設定、結構化模板、可替換的變數欄位</dd>
-        <dt>示範與測資</dt><dd>少樣本示範、固定測試輸入與理想輸出</dd>
-        <dt>環境註記</dt><dd>適用模型與版本、參數設定、已知失效情況</dd>
+        <dt>基本資料</dt><dd>名稱、用途、負責人、最後更新日期。</dd>
+        <dt>提示本體</dt><dd>角色設定、結構化模板、可替換的變數欄位。</dd>
+        <dt>示範與測資</dt><dd>少樣本示範、固定測試輸入與理想輸出。</dd>
+        <dt>環境註記</dt><dd>適用模型與版本、參數設定、已知失效情況。</dd>
       </dl>
     </div>
   </section>
 
-  <!-- 23 治理：資產庫的保鮮機制 -->
-<section class="slide">
-    <div class="eyebrow">PART 4 · 提示資產庫</div>
+  <!-- 22 治理 -->
+  <section class="slide" data-c="yellow">
+    <div class="eyebrow">Part 4 · 提示資產庫</div>
     <h2>治理：資產庫的保鮮機制</h2>
     <div class="content">
       <ul>
-        <li>版本控制：誰改了什麼、為什麼改，錯了可以回滾</li>
-        <li>定期評測：模型改版就重跑測資，失效提示要修或退役</li>
-        <li>權限與審核：共用提示誰能改、改動如何被檢視</li>
-        <li>第 4 週說過能力是長出來的：資產庫就是團隊版的「自建小考」</li>
-        <li>課堂連結：期末專題須附提示資產表，現在就開始累積</li>
+        <li>版本控制：誰改了什麼、為什麼改，錯了可以回滾。</li>
+        <li>定期評測：模型改版就重跑測資；失效提示要修或退役。</li>
+        <li>權限與審核：共用提示誰能改、改動如何被檢視。</li>
+        <li>第 4 週說能力是長出來的：資產庫就是團隊版的「自建小考」。</li>
+        <li>課堂連結：期末專題須附提示資產表，現在就開始累積。</li>
       </ul>
     </div>
   </section>
 
-  <!-- 24 論文導讀 -->
-<section class="slide part">
+  <!-- 23 課堂規矩 -->
+  <section class="slide" data-c="yellow">
+    <div class="eyebrow">Part 4 · 老師的課堂規矩</div>
+    <h2>交提示給我，先過四關</h2>
+    <div class="content">
+      <ul>
+        <li>提示寫法只引三家官方指南頁；部落格與課程平台的「祕技」不算出處。</li>
+        <li>每張資產卡附固定測試輸入與兩次以上的產出，我要看穩不穩，不看單次驚豔。</li>
+        <li>改版一次只動一個變因；同時改三處又說「效果變好」，我當作沒證據。</li>
+        <li>寫明模型名稱與日期；模型改版後失效不是你的錯，沒寫日期才是。</li>
+      </ul>
+      <div class="take"><b>一句話</b>我評的不是提示多漂亮，是同學拿去能不能重做出同樣的結果。</div>
+    </div>
+  </section>
+
+  <!-- 24 PART 5 -->
+  <section class="slide part p-grey">
     <div class="part-num">05</div>
-    <div class="eyebrow">PART 5</div>
-    <h2>論文導讀</h2>
+    <div class="eyebrow">Part 5</div>
+    <h2>論文導讀與本週交付</h2>
     <p class="part-sub">一篇把混亂的提示技術做成分類學；一篇用實驗提出警告：AI 幫個人加分的同時，可能讓集體變窄。</p>
   </section>
 
-  <!-- 25 58 種技術的第一次普查 -->
-<section class="slide">
-    <div class="eyebrow">PART 5 · 論文導讀 ①</div>
+  <!-- 25 論文① -->
+  <section class="slide" data-c="grey">
+    <div class="eyebrow">Part 5 · 論文導讀 ①</div>
     <h2>58 種技術的第一次普查</h2>
     <div class="content">
-      <div class="biblio">
-        <span class="ti">The Prompt Report: A Systematic Survey of Prompt Engineering Techniques</span>
-        Schulhoff, S., Ilie, M., Balepur, N., 等 31 位作者（2024）。arXiv 預印本 arXiv:2406.06608（2025 年 2 月更新至 v6）。
-        <a href="https://arxiv.org/abs/2406.06608" target="_blank" rel="noopener">arxiv.org/abs/2406.06608</a>
-      </div>
       <dl class="kv">
-        <dt>研究問題</dt><dd>提示工程術語衝突、定義破碎：到底有哪些技術？彼此是什麼關係？</dd>
-        <dt>方法</dt><dd>系統性回顧，對自然語言提示的整個文獻做統合分析</dd>
-        <dt>規模</dt><dd>33 個詞彙定義、58 種文字提示技術、40 種其他模態技術</dd>
+        <dt>書目</dt><dd>Schulhoff、Ilie、Balepur 等 31 位（2024）。〈The Prompt Report〉。arXiv 2406.06608，v6 2025-02-26。<sup class="fn"><a href="#src-8">8</a></sup></dd>
+        <dt>問題</dt><dd>術語衝突、定義破碎：到底有哪些技術？彼此什麼關係？</dd>
+        <dt>規模</dt><dd>33 個詞彙定義、58 種文字提示技術、40 種其他模態技術。<sup class="fn"><a href="#src-8">8</a></sup></dd>
+        <dt>用法</dt><dd>今天的角色、範例、思維鏈都能對號入座；附最佳實務，與三家指南互相印證。</dd>
       </dl>
     </div>
   </section>
 
-  <!-- 26 發現：分類有了，證據還缺 -->
-<section class="slide">
-    <div class="eyebrow">PART 5 · 論文導讀 ①</div>
-    <h2>發現：分類有了，證據還缺</h2>
-    <div class="content">
-      <ul>
-        <li>58 種技術歸成六大類：情境示範、零樣本、思維生成、分解、集成、自我批評</li>
-        <li>本週的角色、少樣本、思維鏈、迭代，都能在分類學中對號入座</li>
-        <li>動機正是術語亂象：同一招在不同論文有不同名字，溝通成本極高</li>
-        <li>並附最佳實務建議，與三家官方指南相互印證</li>
-      </ul>
-    </div>
-  </section>
-
-  <!-- 27 快讀：個人加分，集體變窄 -->
-<section class="slide">
-    <div class="eyebrow">PART 5 · 論文導讀 ②</div>
+  <!-- 26 論文② -->
+  <section class="slide" data-c="grey">
+    <div class="eyebrow">Part 5 · 論文導讀 ②</div>
     <h2>快讀：個人加分，集體變窄</h2>
     <div class="content">
-      <div class="biblio">
-        <span class="ti">Generative AI enhances individual creativity but reduces the collective diversity of novel content</span>
-        Doshi, A. R., &amp; Hauser, O. P.（2024）。<i>Science Advances</i>, 10(28), eadn5290。
-        <a href="https://doi.org/10.1126/sciadv.adn5290" target="_blank" rel="noopener">doi.org/10.1126/sciadv.adn5290</a>
-      </div>
-      <ul>
-        <li>方法：線上寫作實驗，部分寫作者可取得 LLM 提供的故事點子</li>
-        <li>發現：有 AI 點子的故事更有創意也更好讀，較不擅長者受益最大</li>
-        <li>代價：AI 輔助的故事彼此更相似。個人變強、集體變窄的社會兩難</li>
-      </ul>
+      <dl class="kv">
+        <dt>書目</dt><dd>Doshi 與 Hauser（2024）。〈Generative AI enhances individual creativity but reduces the collective diversity…〉。<i>Sci. Adv.</i> 10(28)。<sup class="fn"><a href="#src-11">11</a></sup></dd>
+        <dt>方法</dt><dd>線上寫作實驗，部分寫作者可取得 LLM 提供的故事點子。</dd>
+        <dt>發現</dt><dd>有 AI 點子的故事更有創意、更好讀，較不擅長者受益最大。</dd>
+        <dt>代價</dt><dd>AI 輔助的故事「彼此更相似」：個人變強、集體變窄。<sup class="fn"><a href="#src-11">11</a></sup></dd>
+      </dl>
     </div>
   </section>
 
-  <!-- 28 把今天的方法變成你的資產 -->
-<section class="slide">
-    <div class="eyebrow">Week 13 · 課堂討論與課後任務</div>
-    <h2>把今天的方法變成你的資產</h2>
+  <!-- 27 交付 -->
+  <section class="slide" data-c="grey">
+    <div class="eyebrow">Part 5 · 交付規格</div>
+    <h2>這週要交什麼</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>交付物</dt><dd>選一個你重複執行的設計任務，做成一張提示資產卡。</dd>
+        <dt>欄位</dt><dd>角色、結構化模板、兩個示範、固定測資與理想輸出、模型與日期、版本註記。</dd>
+        <dt>交換</dt><dd>與同學交換測試，寫 300 字失效觀察：哪裡走樣、為什麼。</dd>
+        <dt>格式</dt><dd>一頁 PDF，檔名「學號_W13_提示資產卡」，附 AI 揭露；下週分享 5 分鐘。</dd>
+      </dl>
+      <div class="take"><b>退件</b>沒有測資；只有一次產出；提示寫法引了非官方來源。</div>
+    </div>
+  </section>
+
+  <!-- 28 收尾 -->
+  <section class="slide">
+    <div class="eyebrow">Week 13 · 收尾</div>
+    <h2>回去想這三題</h2>
     <div class="content">
       <div class="qlist">
         <p>你最近一次成功的提示，是哪幾種技術的組合？寫成資產卡，欄位填得出來嗎？</p>
         <p>脈絡工程說「模型看見什麼」比「你說什麼」重要：設計簡報不也如此？兩者能互相學什麼？</p>
         <p>Doshi 與 Hauser 的同質化警告，換到你系上的發想工作坊，該怎麼預防？</p>
       </div>
-      <div class="card">
-        <h3>課後任務（下週開場分享，約 5 分鐘）</h3>
-        <p>選一個你重複執行的設計任務，做成一張提示資產卡（角色、結構化模板、兩個示範、測資與版本註記）；與同學交換測試，寫 300 字失效觀察。</p>
-      </div>
+      <div class="take"><b>下週預告</b>倫理、智財與偏見：提示寫得再好，產出能不能用，還要過法規與偏見這一關。</div>
     </div>
   </section>
 
-  <!-- 29 所有連結，一頁帶走 -->
-<section class="slide">
-    <div class="eyebrow">Week 13 · 本週資源彙整</div>
-    <h2>所有連結，一頁帶走</h2>
+  <!-- 29 資源彙整 -->
+  <section class="slide">
+    <div class="eyebrow">Week 13 · 資源彙整</div>
+    <h2>本週資源</h2>
     <div class="content">
       <div class="cols">
         <div class="grp">
           <h3>官方提示指南</h3>
           <div class="linkrow">
             <a class="lk" href="https://developers.openai.com/api/docs/guides/prompt-engineering" target="_blank" rel="noopener">OpenAI 指南</a>
-            <a class="lk" href="https://openai.com/academy/prompting/" target="_blank" rel="noopener">Academy 課程</a>
-            <a class="lk" href="https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/overview" target="_blank" rel="noopener">Anthropic 文件</a>
-            <a class="lk" href="https://ai.google.dev/gemini-api/docs/prompting-strategies" target="_blank" rel="noopener">Gemini 指南</a>
-            <a class="lk" href="https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/start/gemini-3-prompting-guide" target="_blank" rel="noopener">Gemini 3 指南</a>
-          </div>
-          <h3 style="margin-top:18px">脈絡工程</h3>
-          <div class="linkrow">
-            <a class="lk" href="https://x.com/karpathy/status/1937902205765607626" target="_blank" rel="noopener">Karpathy 貼文</a>
-            <a class="lk" href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank" rel="noopener">Anthropic 文章</a>
-            <a class="lk" href="https://www.promptingguide.ai/guides/context-engineering-guide" target="_blank" rel="noopener">DAIR.AI 指南</a>
+            <a class="lk" href="https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices" target="_blank" rel="noopener">Anthropic 最佳實務</a>
+            <a class="lk" href="https://ai.google.dev/gemini-api/docs/prompting-strategies" target="_blank" rel="noopener">Gemini 提示策略</a>
+            <a class="lk" href="https://ai.google.dev/gemini-api/docs/gemini-3" target="_blank" rel="noopener">Gemini 3 指南</a>
+            <a class="lk" href="https://github.com/anthropics/prompt-eng-interactive-tutorial" target="_blank" rel="noopener">互動式教學</a>
           </div>
         </div>
         <div class="grp">
-          <h3>協作與資產庫</h3>
+          <h3>脈絡、報告與論文</h3>
           <div class="linkrow">
-            <a class="lk" href="https://www.figma.com/blog/2026-ai-report/" target="_blank" rel="noopener">Figma AI 報告</a>
-            <a class="lk" href="https://www.figma.com/resource-library/ai-in-design/" target="_blank" rel="noopener">AI in Design</a>
-            <a class="lk" href="https://www.glean.com/perspectives/steps-to-build-an-effective-prompt-library-for-collaboration" target="_blank" rel="noopener">Glean 建庫指南</a>
-            <a class="lk" href="https://github.com/anthropics/prompt-eng-interactive-tutorial" target="_blank" rel="noopener">互動式教學</a>
-          </div>
-          <h3 style="margin-top:18px">本週論文</h3>
-          <div class="linkrow">
+            <a class="lk" href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank" rel="noopener">脈絡工程</a>
+            <a class="lk" href="https://www.figma.com/blog/2026-ai-report/" target="_blank" rel="noopener">Figma 2026 報告</a>
             <a class="lk" href="https://arxiv.org/abs/2406.06608" target="_blank" rel="noopener">論文① 普查</a>
             <a class="lk" href="https://doi.org/10.1126/sciadv.adn5290" target="_blank" rel="noopener">論文② 實驗</a>
           </div>
         </div>
       </div>
-      <div class="take"><b>本週檢核</b>你的提示是否附有輸入、限制、測試輸出與版本紀錄，能讓同學重做一次？</div>
+      <div class="take"><b>出處與補充</b>在下方講義，按 N 鍵。每一條寫法的來源與查證日期都在那裡。</div>
     </div>
   </section>
 
-  
-
   </div></div>
 
+  <div class="hint">← → 換頁　M 目錄　N 講義　F 全螢幕</div>
   <div class="ctrl">
     <button id="prev" aria-label="上一張">‹</button>
     <span class="cnt" id="cnt">1 / 1</span>
     <button id="next" aria-label="下一張">›</button>
     <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+    <button id="toNotes" title="講義（N）">講義 ↓</button>
+    <button id="full" title="全螢幕（F）">⛶</button>
   </div>
   <div class="prog" id="prog"></div>
 
@@ -668,17 +645,168 @@
   </div>
 </div>
 
+<!-- ============ 講義區 ============ -->
+<main class="notes" id="notes">
+<div class="notes-head">
+    <div class="eyebrow">Week 13 · 講義</div>
+    <h2>創意發想與提示工程</h2>
+    <p>投影片講的是骨架，這裡放肉：五種提示技術在三家官方指南頁的原文位置、脈絡工程的官方定義、雙鑽石裡三個插槽的分工與 Figma 2026 報告的數字、提示資產卡的欄位與治理、兩篇論文的書目與摘要，以及交作業前的自我檢核。</p>
+  </div>
+
+  <section class="sec">
+    <span class="kicker">導讀</span>
+    <h2>這週在解決什麼問題</h2>
+    <p>第 4 週說提示詞是語意空間的座標，第 5 到 12 週看遍各設計領域的工具，每一個都吃提示。這週回到方法本身：座標怎麼下得準、下得穩，最後怎麼變成團隊共用的資產。要建立的判斷力是：對任何一段提示，說得出它用了哪幾種技術、對到哪一頁官方指南、換個人重做會不會走樣。</p>
+    <p>三個關鍵詞先講清楚。<strong>提示工程</strong>（prompt engineering）依 Anthropic 的定義是「撰寫與組織 LLM 指令以達最佳結果的方法」；<strong>脈絡工程</strong>（context engineering）則是在推理當下「策展與維護最佳的 token 集合」，範圍含系統提示、工具定義、外部資料與對話歷史。<sup class="fn"><a href="#src-6">6</a></sup> <strong>提示資產卡</strong>是本週的交付物：一張把角色、模板、示範、測資、模型與版本寫在一起的卡片，目的是讓同學拿去能重做出同樣的結果。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">§1</span>
+    <h2>提示工程的體系：五種技術，只引官方頁</h2>
+    <p>角色設定。OpenAI 把開發者訊息分成兩層，第一層 Identity 寫助理的目的、溝通風格與高層目標，第二層 Instructions 寫模型該做什麼、「永遠不該做什麼」；開發者訊息「優先於使用者訊息」，前者是系統規則與商業邏輯，後者是輸入與設定。<sup class="fn"><a href="#src-1">1</a></sup> Anthropic 說在 system prompt 給角色「一句話就有差」。<sup class="fn"><a href="#src-3">3</a></sup> 我的補充：角色影響風格多於事實，「你是專家」不會讓錯的變對，開放式任務（文案語氣、審美立場、發想視角）最有感。</p>
+    <p>結構化提示是三家的共識。OpenAI 用 Markdown 標題與清單標示段落與階層、用 XML 標籤標示「一段內容從哪裡開始到哪裡結束」；<sup class="fn"><a href="#src-1">1</a></sup> Anthropic 的黃金法則是把提示拿給沒有脈絡的同事看，同事會困惑模型也會，並建議把指令、脈絡、輸入各包進自己的 XML 標籤，長文件放在提示最前面；<sup class="fn"><a href="#src-3">3</a></sup> Google 說分隔符 XML 或 Markdown 擇一用到底、關鍵指令放前面，Gemini 3 指南補一句：處理大量資料時把具體指令放在資料之後、提示末尾。<sup class="fn"><a href="#src-4">4</a></sup><sup class="fn"><a href="#src-5">5</a></sup> 結論是把提示當文件排版，結構清楚，模型讀得懂，同事也讀得懂。</p>
+    <p>少樣本示範（few-shot）是例子勝過形容詞。Google 的頁面直接寫「建議永遠在提示裡放 few-shot 範例」，加範例的主要目的之一是示範回應格式，範例的結構與格式要一致；<sup class="fn"><a href="#src-4">4</a></sup> Anthropic 建議 3 到 5 個，要相關、多樣（涵蓋邊界情況，避免模型學到不該學的規律）、包在標籤裡；<sup class="fn"><a href="#src-3">3</a></sup> OpenAI 說範例要「涵蓋多樣的輸入與對應輸出」。<sup class="fn"><a href="#src-1">1</a></sup> 形容詞人人解讀不同，例子不會：「文青感」不如直接貼一段目標文字。圖像同理，Gemini 影像文件的官方範例全用正面描述鏡位、主體、場景與光線，並說「你越具體，對結果的控制越多」。<sup class="fn"><a href="#src-7">7</a></sup></p>
+    <p>思維鏈（chain of thought）的三年。2022 年 1 月 Wei 等人示範：在範例裡給模型「一系列中間推理步驟」，複雜推理顯著改善；<sup class="fn"><a href="#src-10">10</a></sup> 同年 5 月 Kojima 等人只在題目前加一句「Let's think step by step」，以 InstructGPT 在 MultiArith 從 17.7% 升到 78.7%、GSM8K 從 10.4% 升到 40.7%。<sup class="fn"><a href="#src-9">9</a></sup> 到 2026 年 8 月的 Gemini 3 指南，推理已內建：官方強烈建議 temperature 留在預設 1.0，調低「可能導致迴圈或效能下降」，並說精簡直接的指令勝過複雜的提示工程。<sup class="fn"><a href="#src-5">5</a></sup> 思維鏈在設計任務的價值不在分數，在推理攤開可審：請模型先列評估準則、再依準則出方案，錯在哪一步看得見。</p>
+    <p>禁令與迭代。OpenAI 要你把「模型永遠不該做什麼」寫進 Instructions；<sup class="fn"><a href="#src-1">1</a></sup> 我的經驗是只說「不要 X」效果差，同時給「改做 Y」。迭代方面 Anthropic 的總覽頁把前提寫在最前面：先有清楚的成功標準、能對標準做實證測試的方法、一份想改進的第一版提示，並提醒不是每個失敗都該用提示工程解，有時換模型更省；<sup class="fn"><a href="#src-2">2</a></sup> 最佳實務頁說最常見的鏈是「起草 → 依準則審 → 依審查修」，每步一次呼叫，可以記錄、評估、分岔。<sup class="fn"><a href="#src-3">3</a></sup> 一次只動一個變因、固定測試輸入、記錄版本，這就是第 4 週「自建小考」的方法版。</p>
+  </section>
+
+  <section class="sec grape">
+    <span class="kicker">§2</span>
+    <h2>從提示到脈絡工程</h2>
+    <table>
+      <thead><tr><th>時間</th><th>發生什麼</th><th>來源</th></tr></thead>
+      <tbody>
+        <tr><td>2022-11-30</td><td>ChatGPT 以研究預覽推出，咒語式技巧開始瘋傳</td><td>OpenAI 官方頁（開啟受限）<sup class="fn"><a href="#src-14">14</a></sup></td></tr>
+        <tr><td>2024-06-06</td><td>The Prompt Report 提交：33 個詞彙、58 種文字技術、40 種其他模態技術</td><td>arXiv<sup class="fn"><a href="#src-8">8</a></sup></td></tr>
+        <tr><td>2025-09-29</td><td>Anthropic 發表〈Effective context engineering for AI agents〉，區分提示工程與脈絡工程</td><td>Anthropic 官方<sup class="fn"><a href="#src-6">6</a></sup></td></tr>
+        <tr><td>2026-06-10</td><td>Gemini 提示策略頁更新</td><td>Google 官方<sup class="fn"><a href="#src-4">4</a></sup></td></tr>
+        <tr><td>2026-08-26</td><td>Gemini 3 開發者指南更新：temperature 留 1.0、指令精簡</td><td>Google 官方<sup class="fn"><a href="#src-5">5</a></sup></td></tr>
+      </tbody>
+    </table>
+    <p>Anthropic 的兩個定義並排看：提示工程是「撰寫與組織 LLM 指令以達最佳結果的方法」，脈絡工程是「在推理時策展與維護最佳 token 集合的策略」，後者把系統提示、工具、外部資料與訊息歷史全部算進來，尤其在代理跨多輪、長時間運作時。<sup class="fn"><a href="#src-6">6</a></sup> 用第 4 週的比喻：提示是座標，脈絡是整張地圖；心智模型是模型像處理器、脈絡視窗像工作記憶，你在做記憶管理，不只是寫句子。2026 年 9 月三家指南的共同走向印證這點：OpenAI 有整節「Version prompts in code」，Anthropic 最佳實務頁一半篇幅在講工具使用、思考與代理系統，Google 為 Gemini 3 單獨出指南。<sup class="fn"><a href="#src-1">1</a></sup><sup class="fn"><a href="#src-3">3</a></sup><sup class="fn"><a href="#src-5">5</a></sup> 個案討論題：名詞三年換三輪，設計教育該教什麼才不會畢業即過期？我的答案是教「可測試的方法」而不是教「當紅的名詞」。v1 引的 Karpathy 貼文我開不了（x.com 回 402），改引 Anthropic 官方文章；「提示工程師職缺退燒」沒有可開啟的統計，只留作討論題，不寫數字。</p>
+  </section>
+
+  <section class="sec cyan">
+    <span class="kicker">§3</span>
+    <h2>設計流程中的人機協作</h2>
+    <p>雙鑽石模型裡有三個插槽。發散：量產異質選項，多角色、多限制、多風格，單價趨近於零；先要 30 個方向再挑 3 個深化，第 4 週的多模型比稿就是發散期的標準操作。收斂：聚類、摘要、替選項命名可以交給 AI，投票、評分、取捨由團隊執行，AI 是發散的夥伴、不是達成共識的捷徑。評估：給明確準則請 AI 當第二意見、請它列出方案最可能失敗的三個理由，最終判斷與責任在人。第 3 週讀過的 Lee、Law 與 Hoffman 提醒過：既有 AI 設計支援系統多集中在後段「產生解法」，前段「發現與定義問題」極少，所以發散插槽要自己刻意打開。<sup class="fn"><a href="#src-13">13</a></sup></p>
+    <p>發散的警訊來自本週論文②：Doshi 與 Hauser 的實驗發現有 AI 點子的故事被評為更有創意，但 AI 輔助的故事「彼此更相似」。<sup class="fn"><a href="#src-11">11</a></sup> 這是異質性要靠提示設計的理由：換角色、換限制、換文化脈絡，避免首輪同質。產業面看 Figma 2026 年 6 月 24 日的 AI 報告：8,403 份問卷、639 場質性訪談、十個市場；41% 受訪者說 AI 有意義地改變了團隊協作方式，兩年前是 7%；76% 的產品建構者說至少一半工作發生在共享畫布上；90% 說設計至少和 AI 之前一樣重要。<sup class="fn"><a href="#src-15">15</a></sup> 這是廠商自行調查，數字當「趨勢方向」看，不當精確估計。v1 寫的 72%、91%、15% 不在 2026 年報告頁，我拿掉了。</p>
+    <div class="scene">
+      <span class="who">假設情境</span>
+      <p>四人小組要為系上活動發想主視覺，各自用 AI 生 20 個方向，回來一比，八成長得像同一家設計公司的作品。第二輪改規則：每人先抽一個角色（策展人、國中生、退休教師、外國交換生）和一個限制（不能用人像、只能用一種顏色、必須能做成貼紙、必須能在三秒內讀懂），再生 10 個。第二輪的 40 個方向真的不一樣了。差別不在模型，在他們把異質性寫進了提示。</p>
+    </div>
+  </section>
+
+  <section class="sec lemon">
+    <span class="kicker">§4</span>
+    <h2>建立團隊提示資產庫</h2>
+    <p>好提示若只活在個人聊天紀錄裡，人一走 know-how 就跟著走。資產庫解三件事：不重複造輪（同款任務各自摸索，時間成本在團隊裡重複支出）、品質可預期（版本、測資、適用模型都有紀錄，換人執行結果不走樣）、知識留下來（新人第一天就能用團隊最佳實務）。這不是我發明的：OpenAI 指南有整節「Version prompts in code」，要你把提示和其他程式碼一起版本化管理。<sup class="fn"><a href="#src-1">1</a></sup></p>
+    <table>
+      <thead><tr><th>欄位</th><th>寫什麼</th><th>對應本週哪一段</th></tr></thead>
+      <tbody>
+        <tr><td>基本資料</td><td>名稱、用途、負責人、最後更新日期</td><td>治理</td></tr>
+        <tr><td>提示本體</td><td>角色設定、結構化模板、可替換的變數欄位</td><td>§1 角色、結構</td></tr>
+        <tr><td>示範與測資</td><td>少樣本示範、固定測試輸入與理想輸出</td><td>§1 少樣本、迭代</td></tr>
+        <tr><td>環境註記</td><td>適用模型與版本、參數設定、已知失效情況</td><td>§2 現況</td></tr>
+      </tbody>
+    </table>
+    <p>治理三件事：版本控制（誰改了什麼、為什麼改，錯了可以回滾）、定期評測（模型改版就重跑測資，失效提示要修或退役）、權限與審核（共用提示誰能改、改動如何被檢視）。第 4 週說能力是長出來的，資產庫就是團隊版的「自建小考」。期末專題須附提示資產表，現在就開始累積。v1 引的 Glean 建庫指南是廠商部落格，不在本週「只引官方指南頁」的規則內，我沒放進出處。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">§5</span>
+    <h2>論文導讀與本週交付</h2>
+    <p>第一篇是 Schulhoff、Ilie、Balepur 等 31 位作者的〈The Prompt Report: A Systematic Survey of Prompt Engineering Techniques〉，arXiv 2406.06608，2024 年 6 月 6 日提交，v6 為 2025 年 2 月 26 日。<sup class="fn"><a href="#src-8">8</a></sup> 研究問題是術語衝突、定義破碎：到底有哪些技術、彼此什麼關係；方法是對自然語言提示的文獻做系統性回顧，建立 33 個詞彙定義、58 種文字提示技術、40 種其他模態技術，並附最佳實務建議。今天講的角色、範例、思維鏈、鏈式提示都能在裡面對號入座，拿它和三家官方指南互相印證。v1 寫的六大類名稱，arXiv 摘要頁沒有，我沒寫。</p>
+    <p>第二篇是 Doshi 與 Hauser 的〈Generative AI enhances individual creativity but reduces the collective diversity of novel content〉，《Science Advances》第 10 卷第 28 期，eadn5290，2024 年 7 月 12 日。<sup class="fn"><a href="#src-11">11</a></sup> 線上寫作實驗，部分寫作者可取得 LLM 提供的故事點子；有 AI 點子的故事被評為更有創意、更好讀、更愉快，「尤其是較不擅長創作的寫作者」；但 AI 輔助的故事「彼此更相似」。作者稱之為社會兩難：個人更好、集體更窄。這篇是 Part 3 發散插槽的理論根據。</p>
+    <h3>本週交付：一張提示資產卡</h3>
+    <p>選一個你重複執行的設計任務，做成一張提示資產卡：角色、結構化模板、兩個示範、固定測資與理想輸出、模型名稱與日期、版本註記。與同學交換測試，寫 300 字失效觀察：哪裡走樣、為什麼。一頁 PDF，檔名「學號_W13_提示資產卡」，附 AI 使用揭露；下週開場分享約 5 分鐘。退件條件：沒有測資；只有一次產出；提示寫法引了非官方來源。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">老師的課堂規矩</span>
+    <h2>交提示給我，先過四關</h2>
+    <p>第一條，提示寫法只引 OpenAI、Anthropic、Google 三家官方指南頁；部落格、課程平台與社群流傳的「祕技」不算出處，因為它們沒有人負責更新。第二條，每張資產卡附固定測試輸入與兩次以上的產出，我要看穩不穩，不看單次驚豔；一次成功的提示在我這裡叫運氣。第三條，改版一次只動一個變因，同時改三處又說「效果變好」，我當作沒證據。第四條，寫明模型名稱與日期；模型改版後提示失效不是你的錯，沒寫日期才是。我評的不是提示多漂亮，是同學拿去能不能重做出同樣的結果。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">出處</span>
+    <h2>本週引用的資料</h2>
+    <p>每一條都在 2026-09-16 打開確認過。提示寫法只引三家官方指南頁；論文以 arXiv 摘要頁或 Crossref 書目核對；science.org 對抓取工具回 403，論文②以 Crossref 與 Semantic Scholar 摘要核對。網址失效請告訴我，我會換。</p>
+    <ol class="src">
+      <li id="src-1"><span class="ti">OpenAI〈Prompt engineering〉開發者文件</span><span class="meta">OpenAI 官方 · 頁面未標日期 · Identity／Instructions、開發者訊息優先、Markdown 與 XML、few-shot、Version prompts in code · 查證 2026-09-16</span><a href="https://developers.openai.com/api/docs/guides/prompt-engineering" target="_blank" rel="noopener">https://developers.openai.com/api/docs/guides/prompt-engineering</a></li>
+      <li id="src-2"><span class="ti">Anthropic〈Prompt engineering overview〉</span><span class="meta">Anthropic 官方 · 頁面未標日期 · 三個前提：成功標準、實證測試、第一版提示 · 查證 2026-09-16</span><a href="https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/overview" target="_blank" rel="noopener">https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/overview</a></li>
+      <li id="src-3"><span class="ti">Anthropic〈Prompting best practices〉</span><span class="meta">Anthropic 官方 · 頁面未標日期 · 黃金法則、3 到 5 個範例、XML 標籤、角色、Chain complex prompts · 查證 2026-09-16</span><a href="https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices" target="_blank" rel="noopener">https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices</a></li>
+      <li id="src-4"><span class="ti">Google AI for Developers〈Prompt design strategies | Gemini API〉</span><span class="meta">Google 官方 · 2026-06-10 更新 · always include few-shot examples、格式一致、分隔符擇一 · 查證 2026-09-16</span><a href="https://ai.google.dev/gemini-api/docs/prompting-strategies" target="_blank" rel="noopener">https://ai.google.dev/gemini-api/docs/prompting-strategies</a></li>
+      <li id="src-5"><span class="ti">Google AI for Developers〈Gemini 3 developer guide〉</span><span class="meta">Google 官方 · 2026-08-26 更新 · temperature 預設 1.0、精簡直接、指令放資料之後 · 查證 2026-09-16</span><a href="https://ai.google.dev/gemini-api/docs/gemini-3" target="_blank" rel="noopener">https://ai.google.dev/gemini-api/docs/gemini-3</a></li>
+      <li id="src-6"><span class="ti">Anthropic Engineering〈Effective context engineering for AI agents〉</span><span class="meta">Anthropic 官方 · 2025-09-29 · 提示工程與脈絡工程的定義 · 查證 2026-09-16</span><a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank" rel="noopener">https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents</a></li>
+      <li id="src-7"><span class="ti">Google AI for Developers〈Image generation | Gemini API〉</span><span class="meta">Google 官方 · 頁面未標日期 · 正面描述範例、The more specific you are · 查證 2026-09-16</span><a href="https://ai.google.dev/gemini-api/docs/image-generation" target="_blank" rel="noopener">https://ai.google.dev/gemini-api/docs/image-generation</a></li>
+      <li id="src-8"><span class="ti">Schulhoff, S., Ilie, M., Balepur, N. 等〈The Prompt Report: A Systematic Survey of Prompt Engineering Techniques〉</span><span class="meta">arXiv 2406.06608 · 2024-06-06 提交、v6 2025-02-26 · 33／58／40 · 查證 2026-09-16</span><a href="https://arxiv.org/abs/2406.06608" target="_blank" rel="noopener">https://arxiv.org/abs/2406.06608</a></li>
+      <li id="src-9"><span class="ti">Kojima, T., Gu, S. S., Reid, M., Matsuo, Y. &amp; Iwasawa, Y.〈Large Language Models are Zero-Shot Reasoners〉</span><span class="meta">arXiv 2205.11916 · 2022-05-24 提交 · Let's think step by step、17.7%→78.7%、10.4%→40.7% · 查證 2026-09-16</span><a href="https://arxiv.org/abs/2205.11916" target="_blank" rel="noopener">https://arxiv.org/abs/2205.11916</a></li>
+      <li id="src-10"><span class="ti">Wei, J., Wang, X., Schuurmans, D. 等〈Chain-of-Thought Prompting Elicits Reasoning in Large Language Models〉</span><span class="meta">arXiv 2201.11903 · 2022-01-28 提交 · 中間推理步驟 · 查證 2026-09-16</span><a href="https://arxiv.org/abs/2201.11903" target="_blank" rel="noopener">https://arxiv.org/abs/2201.11903</a></li>
+      <li id="src-11"><span class="ti">Doshi, A. R. &amp; Hauser, O. P.〈Generative AI enhances individual creativity but reduces the collective diversity of novel content〉</span><span class="meta">Science Advances, 10(28), eadn5290 · 2024-07-12 · Crossref 書目、Semantic Scholar 摘要（science.org 403）· 查證 2026-09-16</span><a href="https://doi.org/10.1126/sciadv.adn5290" target="_blank" rel="noopener">https://doi.org/10.1126/sciadv.adn5290</a></li>
+      <li id="src-12"><span class="ti">Anthropic〈prompt-eng-interactive-tutorial〉（GitHub）</span><span class="meta">Anthropic 官方 · 頁面未標日期 · 九章加附錄 · 查證 2026-09-16</span><a href="https://github.com/anthropics/prompt-eng-interactive-tutorial" target="_blank" rel="noopener">https://github.com/anthropics/prompt-eng-interactive-tutorial</a></li>
+      <li id="src-13"><span class="ti">Lee, S., Law, M. &amp; Hoffman, G.〈When and How to Use AI in the Design Process? Implications for Human-AI Design Collaboration〉</span><span class="meta">International Journal of Human–Computer Interaction, 41(2), 1569–1584 · 2025 · 沿用第 3 週查證 · 查證 2026-09-16</span><a href="https://doi.org/10.1080/10447318.2024.2353451" target="_blank" rel="noopener">https://doi.org/10.1080/10447318.2024.2353451</a></li>
+      <li id="src-14"><span class="ti">OpenAI〈Introducing ChatGPT〉</span><span class="meta">OpenAI 官方 · 2022-11-30 · 研究預覽（頁面對抓取工具回 403，沿用第 2 週查證）· 查證 2026-09-16</span><a href="https://openai.com/index/chatgpt/" target="_blank" rel="noopener">https://openai.com/index/chatgpt/</a></li>
+      <li id="src-15"><span class="ti">Figma〈Figma's 2026 AI Report: Can AI help us collaborate better?〉</span><span class="meta">Figma 官方部落格 · 2026-06-24 · 8,403 份問卷、41%、76%、90%（廠商自行調查）· 查證 2026-09-16</span><a href="https://www.figma.com/blog/2026-ai-report/" target="_blank" rel="noopener">https://www.figma.com/blog/2026-ai-report/</a></li>
+    </ol>
+  </section>
+
+  <section class="sec cyan">
+    <span class="kicker">補充資訊</span>
+    <h2>延伸閱讀與這一週刪掉的東西</h2>
+    <h3>這一週刪掉的東西，以及為什麼</h3>
+    <ul>
+      <li><strong>Karpathy 2025 年 6 月「context engineering」貼文</strong>：x.com 回 402 開不了，改引 Anthropic 官方文章。<sup class="fn"><a href="#src-6">6</a></sup></li>
+      <li><strong>OpenAI Academy 提示課程、DAIR.AI 指南、Glean 建庫指南</strong>：前者 403，後兩者非官方指南頁，不引。</li>
+      <li><strong>Figma「72% 已用生成式 AI」「91% 更快、15% 更有信心」</strong>：不在 2026 年報告頁，只寫該頁有的數字。<sup class="fn"><a href="#src-15">15</a></sup></li>
+      <li><strong>Prompt Report「六大類名稱」、OpenAI「六大策略」</strong>：arXiv 摘要頁未載；OpenAI 現行頁已改版無此字樣，改引現行段落。<sup class="fn"><a href="#src-8">8</a></sup><sup class="fn"><a href="#src-1">1</a></sup></li>
+      <li><strong>「提示工程師職缺退燒」「2026 產業報告共同觀察」</strong>：無可開啟來源，前者留作討論題不寫數字，後者刪。</li>
+      <li><strong>負向提示的工具名稱與參數</strong>：Midjourney 與 Stability 文件頁開不了，只寫 OpenAI 的「永遠不該做什麼」與 Gemini 影像範例的正面描述。<sup class="fn"><a href="#src-1">1</a></sup><sup class="fn"><a href="#src-7">7</a></sup></li>
+    </ul>
+    <h3>延伸閱讀</h3>
+    <ul>
+      <li>Anthropic 最佳實務頁的「Use examples effectively」只有一屏，讀完就知道範例為什麼要多樣。<sup class="fn"><a href="#src-3">3</a></sup></li>
+      <li>Gemini 3 指南關於 temperature 的那一段，是「模型改版會讓舊祕技失效」的最好例子。<sup class="fn"><a href="#src-5">5</a></sup></li>
+      <li>Anthropic 的脈絡工程文章第一節，適合拿來和第 4 週的「座標」比喻對照。<sup class="fn"><a href="#src-6">6</a></sup></li>
+      <li>Kojima 等人的論文附錄列了多種「思考句」的比較，可以看到同一招措辭不同結果差多少。<sup class="fn"><a href="#src-9">9</a></sup></li>
+    </ul>
+  </section>
+
+  <section class="sec lemon">
+    <span class="kicker">本週檢核</span>
+    <h2>交作業前自己打勾</h2>
+    <ul class="check">
+      <li>選了一個自己重複執行的設計任務，資產卡寫了名稱、用途、負責人、更新日期。</li>
+      <li>提示本體有角色設定、結構化模板、可替換變數欄位。</li>
+      <li>附了兩個示範，以及固定測試輸入與理想輸出。</li>
+      <li>寫了模型名稱與版本、參數設定、測試日期。</li>
+      <li>與同學交換測試，300 字失效觀察指出哪裡走樣、為什麼。</li>
+      <li>提示寫法引的是三家官方指南頁，沒有非官方來源。</li>
+      <li>文末有 AI 使用揭露四欄。</li>
+      <li>檔名是「學號_W13_提示資產卡.pdf」，一頁；準備好 5 分鐘分享。</li>
+    </ul>
+  </section>
+
+  <p class="version">2026-09-16 翻新：版型改為水彩由灰轉彩、新增講義區、提示寫法只引 OpenAI／Anthropic／Google 官方指南頁、脈絡工程改引 Anthropic 官方定義、Figma 數字更新為 2026 年報告頁、刪除開不了與非官方的來源。前一版：2026-09-13。</p>
+
+</main>
+
+<a class="backtop" id="backtop" href="#deck">↑ 回投影片</a>
+
 <script>
 (function () {
   /* ★ 每週只改這一行 ★ */
+  var COURSE_LABEL = '人工智慧與互動媒體特論';
   var WEEK_LABEL = '第 13 週 · 創意發想與提示工程';
 
+  var deck = document.getElementById('deck');
   var stage = document.getElementById('stage');
   var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
   var cnt = document.getElementById('cnt');
   var prog = document.getElementById('prog');
   var toc = document.getElementById('toc');
   var tgrid = document.getElementById('tgrid');
+  var backtop = document.getElementById('backtop');
   var cur = 0;
 
   document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
@@ -686,7 +814,7 @@
   slides.forEach(function (s, i) {
     var f = document.createElement('div');
     f.className = 'foot';
-    f.innerHTML = '<span>人工智慧與互動媒體特論|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    f.innerHTML = '<span>' + COURSE_LABEL + '|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
     s.appendChild(f);
   });
 
@@ -695,12 +823,12 @@
     var eb = s.querySelector('.eyebrow');
     var part = '開場';
     if (eb) {
-      var m = eb.textContent.match(/PART\s*(\d)/i);
-      if (m) part = 'PART ' + m[1];
+      var m = eb.textContent.match(/Part\s*(\d)/i);
+      if (m) part = 'Part ' + m[1];
       else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
     }
     var h = s.querySelector('h1, h2');
-    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent.replace(/\d+$/, '') : '') });
   });
   Object.keys(groups).forEach(function (k) {
     var col = document.createElement('div');
@@ -728,35 +856,57 @@
   function toggleToc(on) {
     toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
   }
+  function atDeck() { return window.scrollY < 40; }
+  function toNotes() { document.getElementById('notes').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  function toggleFull() {
+    if (document.fullscreenElement) { document.exitFullscreen(); return; }
+    if (deck.requestFullscreen) deck.requestFullscreen();
+  }
 
   document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
   document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
   document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
   document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+  document.getElementById('toNotes').addEventListener('click', toNotes);
+  document.getElementById('full').addEventListener('click', toggleFull);
 
   document.addEventListener('keydown', function (e) {
+    if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
     if (e.key === 'Escape') { toggleToc(false); return; }
     if (toc.classList.contains('on')) return;
     switch (e.key) {
-      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
-      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
-      case 'Home': go(0); break;
-      case 'End': go(slides.length - 1); break;
+      case 'ArrowRight': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'ArrowDown': case ' ': if (atDeck()) { e.preventDefault(); go(cur + 1); } break;
+      case 'ArrowUp': if (atDeck()) { e.preventDefault(); go(cur - 1); } break;
+      case 'Home': if (atDeck()) go(0); break;
+      case 'End': if (atDeck()) go(slides.length - 1); break;
       case 'm': case 'M': toggleToc(); break;
+      case 'n': case 'N': toNotes(); break;
+      case 'f': case 'F': toggleFull(); break;
     }
   });
 
   function fit() {
-    var w = window.innerWidth, h = window.innerHeight;
+    var w = deck.clientWidth, h = deck.clientHeight;
     if (!w || !h) { requestAnimationFrame(fit); return; }
-    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+    stage.style.transform = 'scale(' + Math.min((w - 48) / 1300, (h - 88) / 740) + ')';
   }
   window.addEventListener('resize', fit);
   window.addEventListener('load', fit);
+  document.addEventListener('fullscreenchange', fit);
   fit();
+
+  window.addEventListener('scroll', function () {
+    backtop.classList.toggle('show', window.scrollY > deck.clientHeight * 0.6);
+  }, { passive: true });
 
   var m = location.hash.match(/^#s(\d+)$/);
   go(m ? +m[1] - 1 : 0);
+  if (!m && location.hash) {
+    var target = document.querySelector(location.hash.replace(/[^#\w-]/g, ''));
+    if (target) setTimeout(function () { target.scrollIntoView({ block: 'start' }); }, 50);
+  }
 })();
 </script>
 </body>

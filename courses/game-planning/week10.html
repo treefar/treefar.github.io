@@ -3,145 +3,231 @@
 <head>
 <meta charset="utf-8">
 <title>第 10 週|玩法系統與規則文件化</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Zen+Maru+Gothic:wght@500;700;900&family=Baloo+2:wght@600;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
-  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  /* ============ 版型：糖果流行（style-library muse-dash，色值取自 styles/muse-dash.json）============ */
   * { box-sizing: border-box; }
-  #app {
-    position: fixed; inset: 0; overflow: hidden;
-    background: var(--bg);
-    font-family: var(--body);
-    color: var(--ink);
-    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
-    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
-    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
-    --bg: #F5F4EC; --bg2: #EFEEE2;
-    --panel: #FDFCF6; --panel2: #EDECDF;
-    --ink: #232B21; --sub: #67705E;
-    --accent: #2F6B4F; --accent-rgb: 47,107,79;
-    --accent2: #BC4F2C;
-    --line: rgba(35,43,33,.16);
-    --link: #2F6B4F;
-    --r: 4px;
+  :root {
+    --bg: #fff4fa; --bg2: #eefaff;
+    --surface: #ffffff; --surface2: #eefaff;
+    --ink: #2b1b3d; --ink2: #6b5a7e; --muted: #6b5a7e;
+    --accent: #ff3d97; --accent2: #1fd0d6;
+    --pink-soft: #ff7fb8; --coral: #ff7a7a; --cyan-deep: #0fb6c4;
+    --grape: #8b54e6; --grape-deep: #6f3fd6; --lemon: #ffd23f; --sky: #49b8ff;
+    --dot-pink: rgba(255,61,151,.13); --dot-cyan: rgba(31,208,214,.16);
+    --body: 'Noto Sans TC', 'Microsoft JhengHei', 'PingFang TC', 'Segoe UI', sans-serif;
+    --disp: 'Fredoka', 'Zen Maru Gothic', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+    --num: 'Baloo 2', 'Fredoka', 'Noto Sans TC', sans-serif;
+    --r-sm: 14px; --r-md: 22px; --r-lg: 34px;
+    --bw: 4px;
+    --sh-sm: 4px 4px 0 var(--ink); --sh-md: 7px 7px 0 var(--ink);
   }
-  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
-  #app a:hover { opacity: .85; }
-  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-weight: 500; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 2px; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
+  /* ---------- 投影區 ---------- */
+  #deck {
+    position: relative; height: 100vh; min-height: 560px; overflow: hidden;
+    background: var(--bg2);
+    background-image: radial-gradient(var(--dot-cyan) 2.4px, transparent 2.6px);
+    background-size: 26px 26px;
+  }
   .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
-  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
-  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
-  .slide.active { display: flex; }
-  .slide::before {
-    content: ""; position: absolute; inset: 24px; pointer-events: none;
-    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
+  .stage {
+    width: 1280px; height: 720px; position: relative; flex: 0 0 auto;
+    background: var(--bg);
+    background-image: radial-gradient(var(--dot-pink) 2.4px, transparent 2.6px);
+    background-size: 26px 26px;
+    border: var(--bw) solid var(--ink); border-radius: 26px;
+    box-shadow: 10px 10px 0 var(--ink);
+    overflow: hidden;
   }
+  .slide { position: absolute; inset: 0; padding: 44px 60px 74px; display: none; flex-direction: column; }
+  .slide.active { display: flex; animation: pop .42s cubic-bezier(.2,.9,.3,1.2) both; }
+  @keyframes pop { 0% { transform: scale(.96); opacity: 0 } 60% { transform: scale(1.01); opacity: 1 } 100% { transform: none } }
 
-  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
-  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
-  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
-  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+  .eyebrow { font-family: var(--disp); font-size: 18px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+  h1 { font-family: var(--disp); font-size: 80px; line-height: 1.12; margin: 0; font-weight: 700; text-wrap: balance; }
+  h2 { font-family: var(--disp); font-size: 54px; line-height: 1.18; margin: 0 0 18px; font-weight: 700; text-wrap: balance; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 18px; padding-right: 8px; }
 
-  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
-  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
-  .sub { color: var(--sub); }
+  .slide ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 16px; font-size: 26px; line-height: 1.55; }
+  .slide ul ul { margin-top: 6px; gap: 6px; font-size: 22px; color: var(--ink2); }
+  .slide li::marker { color: var(--accent); }
+  .sub { color: var(--ink2); }
   .small { font-size: 18px; }
-  .num { font-variant-numeric: tabular-nums; }
+  .num { font-family: var(--num); font-variant-numeric: tabular-nums; }
 
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
-  .cards { display: grid; gap: 18px; }
+  .cards { display: grid; gap: 20px; }
   .c2 { grid-template-columns: repeat(2, 1fr); }
   .c3 { grid-template-columns: repeat(3, 1fr); }
   .c4 { grid-template-columns: repeat(4, 1fr); }
   .c5 { grid-template-columns: repeat(5, 1fr); }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
-  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
-  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
-  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
-
-  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
-  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
-
-  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
-
-  .cover, .part { justify-content: center; }
-  .cover .eyebrow { margin-bottom: 26px; }
-  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
-  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
-  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
-  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
-  .part h2 { font-size: 56px; }
-  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
-
-  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
-  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
-  .kv dd { margin: 0; }
-  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
-  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
-  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
-  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
-  .lk::after { content: " ↗"; font-size: 12px; }
-  .flow { display: flex; align-items: stretch; gap: 0; }
-  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
-  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
-  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
-  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
-  .bar i { display: block; height: 100%; background: var(--accent); }
-  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
-  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
-  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
-  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
-  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
-  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
-  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
-  .tl { display: flex; flex-direction: column; gap: 18px; }
-  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
-  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
-  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
-
-  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
-  .content > .cards,
-  .content > .cols,
-  .content > .flow,
-  .content > .kv,
-  .content > .prob { flex: 1 1 auto; }
-  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
-  .content > .qlist,
-  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
-  .content > .biblio { flex: 0 0 auto; }
+  .card {
+    background: var(--surface); border: var(--bw) solid var(--ink); border-radius: var(--r-md);
+    box-shadow: var(--sh-md); padding: 18px 22px; min-width: 0;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .card.pink { background: #ffe3f0; } .card.cyan { background: #dff8f9; } .card.grape { background: #ece2ff; } .card.lemon { background: #fff4c7; }
+  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 10px; font-weight: 700; line-height: 1.25; }
+  .card p, .card li { font-size: 22px; line-height: 1.5; margin: 0; }
+  .card ul { padding-left: 1.1em; gap: 8px; font-size: 22px; }
+  .card .who { display: block; font-family: var(--disp); font-size: 16px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; font-weight: 600; }
+  .card.cyan .who { color: var(--cyan-deep); } .card.grape .who { color: var(--grape-deep); } .card.lemon .who { color: #9a7400; }
   .cols > .card { justify-content: flex-start; }
 
-  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
-  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
-  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
-  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
-  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 3px solid var(--ink); padding-top: 12px; font-size: 22px; line-height: 1.5; }
+  .take b { font-family: var(--disp); color: var(--accent); font-size: 17px; letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; font-weight: 700; }
+
+  .foot { position: absolute; left: 60px; right: 60px; bottom: 22px; display: flex; justify-content: space-between; font-family: var(--disp); font-size: 16px; letter-spacing: .06em; color: var(--ink2); }
+
+  /* 封面與章節頁：整片彩色 radial-gradient ＋ 白色半色調點，文字反白 */
+  .cover, .part { justify-content: center; color: #fff; }
+  .cover { background: radial-gradient(circle at 25% 30%, var(--pink-soft), var(--accent) 65%); }
+  .part.p-cyan { background: radial-gradient(circle at 70% 30%, #86ecf0, var(--accent2) 65%); }
+  .part.p-grape { background: radial-gradient(circle at 40% 65%, #b79af5, var(--grape) 65%); }
+  .part.p-pink { background: radial-gradient(circle at 25% 30%, var(--pink-soft), var(--accent) 65%); }
+  .part.p-sky { background: radial-gradient(circle at 70% 60%, #9ad6ff, var(--sky) 65%); }
+  .part.p-coral { background: radial-gradient(circle at 30% 40%, #ffa3a3, var(--coral) 65%); }
+  .cover::after, .part::after { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(rgba(255,255,255,.35) 2.4px, transparent 2.6px); background-size: 26px 26px; }
+  .cover > *:not(.foot), .part > *:not(.foot) { position: relative; z-index: 1; }
+  .cover .foot, .part .foot { z-index: 1; }
+  .cover .eyebrow, .part .eyebrow { color: #fff; margin-bottom: 22px; }
+  .cover .foot, .part .foot { color: #fff; }
+  .cover-sub { font-size: 30px; margin: 26px 0 0; line-height: 1.6; max-width: 30em; font-weight: 500; }
+  .cover-meta { margin-top: 40px; display: flex; gap: 12px; flex-wrap: wrap; font-family: var(--disp); font-size: 17px; }
+  .cover-meta span { border: 3px solid #fff; border-radius: 999px; padding: 6px 16px; }
+  .part-num { font-family: var(--num); font-size: 150px; line-height: 1; margin-bottom: 4px; font-weight: 800; color: transparent; -webkit-text-stroke: 4px #fff; }
+  .part h2 { font-size: 60px; }
+  .part-sub { font-size: 28px; margin: 18px 0 0; max-width: 32em; line-height: 1.6; font-weight: 500; }
+
+  .kv { display: grid; grid-template-columns: 250px 1fr; gap: 16px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
+  .kv dt { font-family: var(--disp); color: var(--accent); font-weight: 700; font-size: 22px; }
+  .kv dd { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .chip { font-family: var(--disp); padding: 6px 16px; border: 3px solid var(--ink); background: var(--surface2); border-radius: 999px; font-size: 21px; font-weight: 600; }
+  .chip.hot { background: var(--lemon); }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lk { display: inline-block; border: 3px solid var(--ink); background: var(--surface); box-shadow: var(--sh-sm); padding: 6px 16px; border-radius: 999px; font-size: 18px; text-decoration: none; color: var(--ink); font-weight: 600; }
+  .lk::after { content: " ↗"; font-size: 12px; }
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .flow .step { flex: 1; background: var(--surface); border: var(--bw) solid var(--ink); border-radius: var(--r-md); box-shadow: var(--sh-md); padding: 18px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 8px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.5; margin: 0; color: var(--ink2); }
+  .flow .arr { flex: 0 0 48px; display: flex; align-items: center; justify-content: center; font-family: var(--num); font-size: 30px; color: var(--accent); font-weight: 800; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 16px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.5; display: flex; gap: 14px; }
+  .qlist p::before { content: "Q" counter(q); font-family: var(--num); color: var(--accent); font-weight: 800; flex: 0 0 auto; }
+  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .08em; color: var(--accent); margin: 0 0 10px; font-weight: 700; }
+  .card p.big, .cols > .card p.big { font-family: var(--num); font-size: 88px; line-height: 1.05; font-weight: 800; color: var(--accent); margin: 0; }
+  .card p.big small { font-family: var(--disp); font-size: 22px; line-height: 1.4; color: var(--ink2); font-weight: 600; display: block; margin-top: 10px; }
+
+  /* 貼紙卡不撐滿高度：卡片依內容高度，整組在標題與底列之間置中 */
+  .content > .cards, .content > .cols, .content > .flow { flex: 0 0 auto; margin-top: auto; margin-bottom: auto; }
+  .content > .kv { flex: 1 1 auto; }
+  .cards .card { min-height: 200px; }
+  .cols > .card { min-height: 240px; }
+  .cols > .card h3 { font-size: 28px; }
+  .cols > .card p, .cols > .card li { font-size: 24px; }
+  .cols > .card ul { gap: 10px; }
+  .c3 .card p { font-size: 23px; }
+  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .qlist { flex: 1 1 auto; justify-content: space-evenly; }
+
+  /* 投影片上的出處記號 */
+  sup.fn { font-family: var(--num); font-size: 13px; line-height: 1; vertical-align: top; margin-left: 4px; position: relative; top: -2px; }
+  sup.fn a { display: inline-block; background: var(--ink); color: #fff; border-radius: 999px; height: 20px; line-height: 20px; min-width: 20px; padding: 0 6px; text-align: center; text-decoration: none; font-weight: 800; }
+  .cover sup.fn a, .part sup.fn a { background: #fff; color: var(--ink); }
+
+  /* 控制列 */
+  .ctrl { position: absolute; right: 16px; bottom: 14px; display: flex; gap: 6px; align-items: center; z-index: 30; }
+  .ctrl button { font-family: var(--disp); border: 3px solid var(--ink); background: var(--surface); color: var(--ink); font-size: 15px; height: 34px; min-width: 36px; padding: 0 10px; border-radius: 999px; cursor: pointer; box-shadow: 3px 3px 0 var(--ink); font-weight: 600; }
+  .ctrl button:hover { transform: translateY(-2px); box-shadow: 5px 5px 0 var(--ink); }
+  .ctrl button:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--ink); }
+  .ctrl .cnt { font-family: var(--num); font-size: 14px; color: var(--ink2); padding: 0 6px; font-variant-numeric: tabular-nums; }
+  .prog { position: absolute; left: 0; bottom: 0; height: 5px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
+  .hint { position: absolute; left: 16px; bottom: 16px; z-index: 30; font-family: var(--disp); font-size: 13px; color: var(--ink2); }
+
+  .toc { position: absolute; inset: 0; background: rgba(255,244,250,.96); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
   .toc.on { display: block; }
-  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
-  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
-  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
-  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
-  .toc button:hover { background: var(--panel2); }
-  .toc button.here { color: var(--accent2); font-weight: 700; }
-  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
-  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
- .eyebrow{font-size:18px}.slide h2{font-size:48px}.slide ul{font-size:26px}.slide ul ul{font-size:22px}.small{font-size:18px}.card h3{font-size:26px}.card p,.card li,.card ul{font-size:22px}.card .who{font-size:16px}.take{font-size:22px}.take b{font-size:17px}.foot{font-size:16px}.cover-sub{font-size:30px}.part-sub{font-size:28px}.kv{font-size:24px}.kv dt{font-size:21px}.chip{font-size:23px}.lk{font-size:18px}.flow .step h3{font-size:24px}.flow .step p{font-size:21px}.prob,.biblio{font-size:23px}.biblio .ti{font-size:27px}.qlist p{font-size:26px}.tl .ev{font-size:23px}.grp h3{font-size:20px}
+  .toc h2 { font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 26px; }
+  .toc h3 { font-family: var(--disp); color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 10px; cursor: pointer; border-radius: 10px; font-family: var(--body); font-weight: 500; }
+  .toc button:hover { background: var(--surface2); }
+  .toc button.here { color: var(--accent); font-weight: 700; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--ink2); }
+
+  /* ---------- 講義區 ---------- */
+  .notes { max-width: 960px; margin: 0 auto; padding: 56px 20px 96px; }
+  .notes-head { text-align: center; margin-bottom: 40px; }
+  .notes-head .eyebrow { margin-bottom: 10px; }
+  .notes-head h2 { font-size: 44px; margin: 0 0 12px; }
+  .notes-head p { color: var(--ink2); font-size: 18px; margin: 0; }
+  .sec { background: var(--surface); border: var(--bw) solid var(--ink); border-radius: var(--r-md); box-shadow: var(--sh-md); padding: 28px 32px; margin: 0 0 30px; }
+  .sec h2 { font-size: 30px; margin: 0 0 14px; }
+  .sec h3 { font-family: var(--disp); font-size: 21px; margin: 24px 0 8px; font-weight: 700; }
+  .sec p, .sec li { font-size: 18px; line-height: 1.85; color: var(--ink2); margin: 0 0 12px; }
+  .sec li { margin: 0 0 6px; }
+  .sec strong { color: var(--ink); font-weight: 700; }
+  .sec .kicker { display: inline-block; font-family: var(--disp); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: #fff; background: var(--accent); border-radius: 999px; padding: 4px 12px; margin-bottom: 12px; font-weight: 700; }
+  .sec.cyan .kicker { background: var(--cyan-deep); } .sec.grape .kicker { background: var(--grape); } .sec.lemon .kicker { background: #9a7400; }
+  .sec table { width: 100%; border-collapse: collapse; font-size: 17px; margin: 8px 0 16px; }
+  .sec th, .sec td { text-align: left; padding: 10px 12px; border-bottom: 2px solid #efe6f2; vertical-align: top; line-height: 1.6; }
+  .sec th { font-family: var(--disp); font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+  .scene { background: var(--surface2); border: 3px dashed var(--ink); border-radius: var(--r-sm); padding: 14px 18px; margin: 14px 0 18px; }
+  .scene .who { font-family: var(--disp); font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--cyan-deep); font-weight: 700; display: block; margin-bottom: 4px; }
+  .scene p { margin: 0; }
+  ol.src { padding-left: 1.4em; counter-reset: s; list-style: none; }
+  ol.src li { counter-increment: s; position: relative; padding-left: 8px; margin-bottom: 14px; line-height: 1.7; }
+  ol.src li::before { content: counter(s); position: absolute; left: -1.5em; top: .35em; font-family: var(--num); font-size: 13px; font-weight: 800; background: var(--ink); color: #fff; border-radius: 999px; min-width: 22px; height: 22px; line-height: 22px; text-align: center; }
+  ol.src li:target { background: #fff4c7; border-radius: 10px; }
+  ol.src .ti { color: var(--ink); font-weight: 700; }
+  ol.src .meta { display: block; font-size: 15px; color: var(--muted); }
+  ol.src a { word-break: break-all; font-size: 15px; }
+  .check { counter-reset: c; list-style: none; padding: 0; }
+  .check li { counter-increment: c; display: flex; gap: 12px; align-items: baseline; }
+  .check li::before { content: "☐"; color: var(--accent); font-size: 22px; flex: 0 0 auto; }
+  .backtop { position: fixed; right: 18px; bottom: 18px; z-index: 50; font-family: var(--disp); font-size: 15px; font-weight: 700; color: var(--ink); background: var(--lemon); border: 3px solid var(--ink); border-radius: 999px; padding: 8px 16px; text-decoration: none; box-shadow: 4px 4px 0 var(--ink); display: none; }
+  .backtop.show { display: inline-block; }
+  .version { text-align: center; font-size: 14px; color: var(--muted); margin-top: 30px; }
+
+  @media (max-width: 720px) {
+    .notes { padding: 40px 16px 80px; }
+    .sec { padding: 20px 18px; }
+    .notes-head h2 { font-size: 32px; }
+    .kv { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .slide.active { animation: none; }
+    .prog { transition: none; }
+    .ctrl button:hover { transform: none; }
+  }
+  @media print {
+    #deck, .backtop { display: none; }
+    .notes { max-width: none; padding: 0; }
+    .sec { box-shadow: none; break-inside: avoid; }
+  }
 </style>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
 </head>
 <body>
-<div id="app" data-deck="b">
-  <div class="stagewrap"><div class="stage" id="stage">
 
-  <!-- 1 封面 -->
+<div id="deck" data-deck="muse-dash">
+  <div class="stagewrap"><div class="stage" id="stage">
+<!-- 1 封面 -->
   <section class="slide cover">
     <div class="eyebrow">遊戲企畫 · 動畫與遊戲設計系</div>
     <h1>寫到別人做得出來</h1>
     <p class="cover-sub">玩法在你腦中很清楚，寫下來卻沒人看得懂，這是企畫最常見的失敗。這堂課講怎麼把玩法拆成別人能照著做的規格。</p>
-    <div class="cover-meta"><span>第 10 週</span><span>授課：鄧樹遠</span></div>
+    <div class="cover-meta"><span>第 10 週</span><span>授課：鄧樹遠</span><span>投影片 ＋ 下方講義</span></div>
   </section>
 
   <!-- 2 本週地圖 -->
@@ -150,17 +236,17 @@
     <h2>九十分鐘，五段路</h2>
     <div class="content">
       <div class="cards c5">
-        <div class="card"><span class="who">PART 1</span><h3>核心循環</h3><p class="sub">遊戲的心跳</p></div>
-        <div class="card"><span class="who">PART 2</span><h3>系統怎麼拆</h3><p class="sub">拆到能被實作</p></div>
-        <div class="card"><span class="who">PART 3</span><h3>規則怎麼寫</h3><p class="sub">三種常見的寫壞</p></div>
-        <div class="card"><span class="who">PART 4</span><h3>圖比文字有效</h3><p class="sub">畫不出來就是沒想完</p></div>
-        <div class="card"><span class="who">PART 5</span><h3>本週交付</h3><p class="sub">核心循環與一個系統</p></div>
+        <div class="card pink"><span class="who">Part 1</span><h3>核心循環</h3><p class="sub">遊戲的心跳</p></div>
+        <div class="card cyan"><span class="who">Part 2</span><h3>系統怎麼拆</h3><p class="sub">拆到能被實作</p></div>
+        <div class="card grape"><span class="who">Part 3</span><h3>規則怎麼寫</h3><p class="sub">三種常見的寫壞</p></div>
+        <div class="card lemon"><span class="who">Part 4</span><h3>圖比文字有效</h3><p class="sub">畫不出來就是沒想完</p></div>
+        <div class="card"><span class="who">Part 5</span><h3>本週交付</h3><p class="sub">核心循環與一個系統</p></div>
       </div>
       <div class="take"><b>本週目標</b>離開教室時，你要有一張核心循環圖，而且隔壁同學看得懂。</div>
     </div>
   </section>
 
-  <!-- 3 承接上週 -->
+  <!-- 3 承接 -->
   <section class="slide">
     <div class="eyebrow">承接第 9 週 · 世界觀與故事背景</div>
     <h2>設定要變成規則了</h2>
@@ -175,7 +261,7 @@
             <li>那組不對等對應的一個操作</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card cyan">
           <span class="who">今天要做</span>
           <h3>把那個操作展開</h3>
           <ul>
@@ -189,21 +275,21 @@
     </div>
   </section>
 
-  <!-- 4 PART 1 章節頁 -->
-  <section class="slide part">
+  <!-- 4 PART 1 -->
+  <section class="slide part p-pink">
     <div class="part-num">01</div>
-    <div class="eyebrow">PART 1</div>
+    <div class="eyebrow">Part 1</div>
     <h2>核心循環</h2>
     <p class="part-sub">玩家會重複做的那個循環，決定這個遊戲玩十分鐘還是玩十小時。</p>
   </section>
 
-  <!-- 5 核心循環是什麼 -->
+  <!-- 5 定義 -->
   <section class="slide">
-    <div class="eyebrow">PART 1 · 定義</div>
-    <h2>核心循環是什麼</h2>
+    <div class="eyebrow">Part 1 · 定義</div>
+    <h2>核心循環（Core Loop）是什麼</h2>
     <div class="content">
       <dl class="kv">
-        <dt>它是什麼</dt><dd>玩家在遊戲裡不斷重複的那一組動作</dd>
+        <dt>它是什麼</dt><dd>玩家在遊戲裡不斷重複的那一組動作；業界說它是「定義你這款遊戲的主要系統或機制」<sup class="fn"><a href="#src-1">1</a></sup></dd>
         <dt>典型長度</dt><dd>三十秒到五分鐘跑完一輪，然後又回到起點</dd>
         <dt>經典結構</dt><dd>探索、遭遇、解決、獲得，然後帶著獲得的東西再探索</dd>
         <dt>為什麼重要</dt><dd>循環不好玩，做再多內容都只是把不好玩的事重複更多次</dd>
@@ -212,50 +298,51 @@
     </div>
   </section>
 
-  <!-- 6 循環的四個環節 -->
+  <!-- 6 四個環節 -->
   <section class="slide">
-    <div class="eyebrow">PART 1 · 結構</div>
+    <div class="eyebrow">Part 1 · 結構</div>
     <h2>一個循環要有四個環節</h2>
     <div class="content">
       <div class="cards c4">
-        <div class="card"><span class="who">環節一</span><h3>動機</h3><p class="sub">玩家為什麼要做這件事</p></div>
-        <div class="card"><span class="who">環節二</span><h3>行動</h3><p class="sub">他實際按了什麼、做了什麼</p></div>
-        <div class="card"><span class="who">環節三</span><h3>回饋</h3><p class="sub">遊戲怎麼告訴他做對了</p></div>
-        <div class="card"><span class="who">環節四</span><h3>成長</h3><p class="sub">他得到什麼，讓下一輪不一樣</p></div>
+        <div class="card pink"><span class="who">環節一</span><h3>動機</h3><p class="sub">玩家為什麼要做這件事</p></div>
+        <div class="card cyan"><span class="who">環節二</span><h3>行動</h3><p class="sub">他實際按了什麼、做了什麼</p></div>
+        <div class="card lemon"><span class="who">環節三</span><h3>回饋</h3><p class="sub">遊戲怎麼告訴他做對了</p></div>
+        <div class="card grape"><span class="who">環節四</span><h3>成長</h3><p class="sub">他得到什麼，讓下一輪不一樣</p></div>
       </div>
-      <div class="take"><b>最常缺的是第三個</b>學生的循環常常只有動機、行動、成長，沒設計回饋，玩起來會很悶。</div>
+      <div class="take"><b>最常缺的是第三個</b>學生的循環常常只有動機、行動、成長，沒設計回饋，玩起來會很悶。Unity 的 GDD 範本要求每個屬性都寫「改變時的回饋」。<sup class="fn"><a href="#src-3">3</a></sup></div>
     </div>
   </section>
 
-  <!-- 7 循環會壞在哪 -->
+  <!-- 7 壞在三個地方 -->
   <section class="slide">
-    <div class="eyebrow">PART 1 · 常見問題</div>
+    <div class="eyebrow">Part 1 · 常見問題</div>
     <h2>循環會壞在三個地方</h2>
     <div class="content">
       <ul>
         <li>太長：一輪要二十分鐘，玩家還沒感覺到成長就累了。</li>
         <li>沒有變化：每一輪都一樣，第三輪就開始無聊。</li>
         <li>成長跟行動無關：練等能力值變高，但玩起來的感覺完全一樣。</li>
+        <li>沒定下來：業界的反例是整個開發期都在改核心循環，系統一直重寫。<sup class="fn"><a href="#src-1">1</a></sup></li>
       </ul>
       <div class="take"><b>第三個最致命</b>成長要讓「做同一件事的感覺不同」，不是只有數字變大。</div>
     </div>
   </section>
 
-  <!-- 8 PART 2 章節頁 -->
-  <section class="slide part">
+  <!-- 8 PART 2 -->
+  <section class="slide part p-cyan">
     <div class="part-num">02</div>
-    <div class="eyebrow">PART 2</div>
+    <div class="eyebrow">Part 2</div>
     <h2>系統怎麼拆</h2>
     <p class="part-sub">系統是支撐循環運作的規則組合。拆得夠細，別人才做得出來。</p>
   </section>
 
-  <!-- 9 拆到什麼程度 -->
+  <!-- 9 顆粒度 -->
   <section class="slide">
-    <div class="eyebrow">PART 2 · 顆粒度</div>
+    <div class="eyebrow">Part 2 · 顆粒度</div>
     <h2>要拆到多細</h2>
     <div class="content">
       <div class="cols">
-        <div class="card">
+        <div class="card pink">
           <span class="who">太粗</span>
           <h3>沒辦法動手</h3>
           <ul>
@@ -264,7 +351,7 @@
             <li>程式看完不知道要寫什麼</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card cyan">
           <span class="who">剛好</span>
           <h3>能動手也留彈性</h3>
           <ul>
@@ -278,27 +365,27 @@
     </div>
   </section>
 
-  <!-- 10 系統的三個部分 -->
+  <!-- 10 三件事 -->
   <section class="slide">
-    <div class="eyebrow">PART 2 · 結構</div>
+    <div class="eyebrow">Part 2 · 結構</div>
     <h2>每個系統要寫三件事</h2>
     <div class="content">
       <dl class="kv">
-        <dt>輸入</dt><dd>玩家做什麼會啟動這個系統。按鍵、選擇、還是自動觸發</dd>
-        <dt>規則</dt><dd>系統內部怎麼運作。條件、判定、結果的對應關係</dd>
+        <dt>輸入</dt><dd>玩家做什麼會啟動這個系統。按鍵、選擇，還是自動觸發</dd>
+        <dt>規則</dt><dd>系統內部怎麼運作。條件、判定、結果的對應關係；MDA 叫它機制（Mechanics）<sup class="fn"><a href="#src-2">2</a></sup></dd>
         <dt>輸出</dt><dd>玩家看到什麼、得到什麼。包含畫面回饋與實際變化</dd>
       </dl>
       <div class="take"><b>三個都要寫</b>只寫規則不寫輸出，美術不知道要做什麼；只寫輸入不寫規則，程式做不出來。</div>
     </div>
   </section>
 
-  <!-- 11 系統之間的關係 -->
+  <!-- 11 關聯 -->
   <section class="slide">
-    <div class="eyebrow">PART 2 · 關聯</div>
+    <div class="eyebrow">Part 2 · 關聯</div>
     <h2>系統不是獨立的</h2>
     <div class="content">
       <div class="cols">
-        <div class="card">
+        <div class="card lemon">
           <span class="who">要標出來</span>
           <h3>系統之間怎麼影響</h3>
           <ul>
@@ -307,7 +394,7 @@
             <li>行動又回頭影響戰鬥</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card grape">
           <span class="who">為什麼重要</span>
           <h3>改一個會動到全部</h3>
           <ul>
@@ -321,47 +408,35 @@
     </div>
   </section>
 
-  <!-- 12 PART 3 章節頁 -->
-  <section class="slide part">
+  <!-- 12 PART 3 -->
+  <section class="slide part p-grape">
     <div class="part-num">03</div>
-    <div class="eyebrow">PART 3</div>
+    <div class="eyebrow">Part 3</div>
     <h2>規則怎麼寫</h2>
     <p class="part-sub">同一條規則，寫法不同，別人做出來的東西可能完全不一樣。</p>
   </section>
 
   <!-- 13 三種寫壞 -->
   <section class="slide">
-    <div class="eyebrow">PART 3 · 常見問題</div>
+    <div class="eyebrow">Part 3 · 常見問題</div>
     <h2>三種會被做錯的寫法</h2>
     <div class="content">
       <div class="cards c3">
-        <div class="card">
-          <span class="who">寫壞一</span>
-          <h3>用形容詞描述手感</h3>
-          <p>「攻擊要有重量感」。每個人理解的重量感都不同，做出來一定不是你要的。</p>
-        </div>
-        <div class="card">
-          <span class="who">寫壞二</span>
-          <h3>沒寫例外情況</h3>
-          <p>「血量歸零就死亡」。那無敵狀態下呢？在動畫播放中呢？漏掉就會出 bug。</p>
-        </div>
-        <div class="card">
-          <span class="who">寫壞三</span>
-          <h3>規則之間互相矛盾</h3>
-          <p>第三頁說可以取消動作，第八頁說動作不可中斷。分兩次寫最容易發生。</p>
-        </div>
+        <div class="card pink"><span class="who">寫壞一</span><h3>用形容詞描述手感</h3><p>「攻擊要有重量感」。每個人理解的重量感都不同，做出來一定不是你要的。</p></div>
+        <div class="card cyan"><span class="who">寫壞二</span><h3>沒寫例外情況</h3><p>「血量歸零就死亡」。那無敵狀態下呢？動畫播放中呢？漏掉就會出 bug。</p></div>
+        <div class="card lemon"><span class="who">寫壞三</span><h3>規則之間互相矛盾</h3><p>第三頁說可以取消動作，第八頁說動作不可中斷。分兩次寫最容易發生。</p></div>
       </div>
       <div class="take"><b>防止方法</b>寫完自己扮演程式讀一次，遇到「這裡我要自己決定」的地方就是沒寫清楚。</div>
     </div>
   </section>
 
-  <!-- 14 手感怎麼寫 -->
+  <!-- 14 手感 -->
   <section class="slide">
-    <div class="eyebrow">PART 3 · 技巧</div>
-    <h2>手感這種東西怎麼寫</h2>
+    <div class="eyebrow">Part 3 · 技巧</div>
+    <h2>手感（Game Feel）這種東西怎麼寫</h2>
     <div class="content">
       <div class="cols">
-        <div class="card">
+        <div class="card pink">
           <span class="who">不要寫</span>
           <h3>形容詞</h3>
           <ul>
@@ -370,7 +445,7 @@
             <li>「節奏要緊湊」</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card cyan">
           <span class="who">要寫</span>
           <h3>參照與可調參數</h3>
           <ul>
@@ -380,73 +455,115 @@
           </ul>
         </div>
       </div>
-      <div class="take"><b>最有效的一招</b>是舉參照。「像某某遊戲那樣」比十行形容詞精確得多。</div>
+      <div class="take"><b>最有效的一招</b>是舉參照。Swink 整本《Game Feel》講的就是手感能拆成可調的參數，不是形容詞。<sup class="fn"><a href="#src-10">10</a></sup></div>
     </div>
   </section>
 
-  <!-- 15 PART 4 章節頁 -->
-  <section class="slide part">
+  <!-- 15 公開的 GDD -->
+  <section class="slide">
+    <div class="eyebrow">Part 3 · 公開案例</div>
+    <h2>真實的設計文件，都改過</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>《Doom》1992</dt><dd>Tom Hall 的 Doom Bible，79 頁，裡面大量內容沒進最後的遊戲<sup class="fn"><a href="#src-5">5</a></sup></dd>
+        <dt>《Deus Ex》1997</dt><dd>原名「Shooter」的設計文件，太空站第三幕與合作模式後來被砍<sup class="fn"><a href="#src-6">6</a></sup></dd>
+        <dt>《Grim Fandango》1996</dt><dd>72 頁謎題文件，大半被砍<sup class="fn"><a href="#src-7">7</a></sup></dd>
+        <dt>《Diablo》1994</dt><dd>提案時是回合制，做出來是即時制<sup class="fn"><a href="#src-8">8</a></sup></dd>
+      </dl>
+      <div class="take"><b>看這四份要學的</b>文件會改，但每一版都寫得夠清楚，團隊才知道自己改了什麼。寫不清楚連改都改不了。</div>
+    </div>
+  </section>
+
+  <!-- 16 PART 4 -->
+  <section class="slide part p-sky">
     <div class="part-num">04</div>
-    <div class="eyebrow">PART 4</div>
+    <div class="eyebrow">Part 4</div>
     <h2>圖比文字有效</h2>
     <p class="part-sub">能畫的就不要寫。而且畫不出來，通常代表你自己還沒想完。</p>
   </section>
 
-  <!-- 16 三種必畫的圖 -->
+  <!-- 17 三張圖 -->
   <section class="slide">
-    <div class="eyebrow">PART 4 · 圖表</div>
+    <div class="eyebrow">Part 4 · 圖表</div>
     <h2>企畫書裡要有這三張圖</h2>
     <div class="content">
       <div class="cards c3">
-        <div class="card">
-          <span class="who">圖一</span>
-          <h3>核心循環圖</h3>
-          <p>四個環節接成一個圈。把這張圖放在玩法章節第一頁，讓讀者先看懂循環。</p>
-        </div>
-        <div class="card">
-          <span class="who">圖二</span>
-          <h3>系統關聯圖</h3>
-          <p>方塊加箭頭，標出哪個系統影響哪個。畫不出來代表系統太亂。</p>
-        </div>
-        <div class="card">
-          <span class="who">圖三</span>
-          <h3>介面線框圖</h3>
-          <p>標出畫面上各區塊放什麼。不用畫美術，方框加文字就好。</p>
-        </div>
+        <div class="card pink"><span class="who">圖一</span><h3>核心循環圖</h3><p>四個環節接成一個圈。放在玩法章節第一頁，讓讀者先看懂循環。</p></div>
+        <div class="card cyan"><span class="who">圖二</span><h3>系統關聯圖</h3><p>方塊加箭頭，標出哪個系統影響哪個。畫不出來代表系統太亂。</p></div>
+        <div class="card lemon"><span class="who">圖三</span><h3>介面線框圖</h3><p>標出畫面上各區塊放什麼。不用畫美術，方框加文字就好。</p></div>
       </div>
-      <div class="take"><b>不用畫得漂亮</b>手繪掃描完全可以。重點是讀的人看得懂，不是好看。</div>
+      <div class="take"><b>不用畫得漂亮</b>手繪掃描完全可以。Librande 的一頁設計就是一張帶註解的圖。<sup class="fn"><a href="#src-9">9</a></sup></div>
     </div>
   </section>
 
-  <!-- 17 畫不出來的意義 -->
+  <!-- 18 診斷 -->
   <section class="slide">
-    <div class="eyebrow">PART 4 · 診斷</div>
+    <div class="eyebrow">Part 4 · 診斷</div>
     <h2>畫不出來代表什麼</h2>
     <div class="content">
       <ul>
         <li>循環圖畫不成一個圈：代表你的玩法沒有重複性，玩一次就結束。</li>
         <li>系統關聯圖線太多：代表系統之間耦合太重，改一個要動全部。</li>
         <li>線框圖畫不出來：代表你還沒想過玩家實際會看到什麼。</li>
+        <li>Unity 的範本也要求一張流程圖，標出物件、屬性、動作。<sup class="fn"><a href="#src-3">3</a></sup></li>
       </ul>
-      <div class="take"><b>畫圖後檢查</b>循環圖若接不起來，就回到每一箭頭補上觸發條件、回饋與下一步。</div>
+      <div class="take"><b>畫圖後檢查</b>循環圖若接不起來，就回到每一個箭頭補上觸發條件、回饋與下一步。</div>
     </div>
   </section>
 
-  <!-- 18 PART 5 章節頁 -->
-  <section class="slide part">
+  <!-- 19 2025–2026 現況 -->
+  <section class="slide">
+    <div class="eyebrow">Part 4 · 2025–2026 現況</div>
+    <h2>用 AI 打草稿可以，規格還是你的</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card lemon">
+          <span class="who">GDC 2026 產業調查</span>
+          <p class="big">36%<small>從業者在工作中使用生成式 AI；用途以研究與腦力激盪（81%）為主，原型製作 35%<sup class="fn"><a href="#src-11">11</a></sup></small></p>
+        </div>
+        <div class="card cyan">
+          <span class="who">對這門課的意思</span>
+          <ul>
+            <li>拿 AI 列例外情況、找矛盾，可以</li>
+            <li>規則的判定與數值的取捨，要你自己決定</li>
+            <li>交出來的規格，每一條你都要答得出為什麼</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>我的立場</b>AI 幫你把「我要自己決定」的地方找出來，很好用；但決定本身是企畫的工作。</div>
+    </div>
+  </section>
+
+  <!-- 20 老師的課堂規矩 -->
+  <section class="slide">
+    <div class="eyebrow">Part 4 · 老師的課堂規矩</div>
+    <h2>規格在我這裡怎麼算數</h2>
+    <div class="content">
+      <ul>
+        <li>你的系統規格我會交給隔壁同學讀，請他複述規則。他講錯就是你寫得不夠清楚，不是他笨。</li>
+        <li>出現「有打擊感」「要流暢」這類形容詞，整條規則當作沒寫。換成參照或可調參數再交。</li>
+        <li>沒寫例外情況的規則，我會當場問一個例外。答不出來就退回。</li>
+        <li>循環圖必須是一個圈。畫成一條線的，代表你的遊戲玩一次就結束，回去重想。</li>
+      </ul>
+      <div class="take"><b>我的判斷</b>寫三個系統都很淺，不如寫一個寫到別人真的做得出來。期末我看的是深度，不是頁數。</div>
+    </div>
+  </section>
+
+  <!-- 21 PART 5 -->
+  <section class="slide part p-coral">
     <div class="part-num">05</div>
-    <div class="eyebrow">PART 5</div>
+    <div class="eyebrow">Part 5</div>
     <h2>本週交付</h2>
     <p class="part-sub">一張核心循環圖，加一個系統的完整規格。這是企畫書最厚的一章的起點。</p>
   </section>
 
-  <!-- 19 交付規格 -->
+  <!-- 22 交付規格 -->
   <section class="slide">
-    <div class="eyebrow">PART 5 · 交付規格</div>
+    <div class="eyebrow">Part 5 · 交付規格</div>
     <h2>這週要交什麼</h2>
     <div class="content">
       <dl class="kv">
-        <dt>交付物</dt><dd>核心循環圖一張，加一個系統的輸入規則輸出</dd>
+        <dt>交付物</dt><dd>核心循環圖一張，加一個系統的輸入、規則、輸出</dd>
         <dt>格式</dt><dd>兩頁 A4 以內，PDF，檔名為「學號_W10_玩法系統」</dd>
         <dt>循環圖</dt><dd>四個環節都要標出來，手繪掃描可以</dd>
         <dt>系統規格</dt><dd>挑最核心的那一個寫完整，其他一句話帶過</dd>
@@ -455,33 +572,21 @@
     </div>
   </section>
 
-  <!-- 20 檢核與退件 -->
+  <!-- 23 檢核 -->
   <section class="slide">
-    <div class="eyebrow">PART 5 · 檢核標準</div>
+    <div class="eyebrow">Part 5 · 檢核標準</div>
     <h2>什麼樣算過關</h2>
     <div class="content">
       <div class="cards c3">
-        <div class="card">
-          <span class="who">及格</span>
-          <h3>循環圖接得成一個圈</h3>
-          <p>四個環節都有，而且最後一個環節接得回第一個。</p>
-        </div>
-        <div class="card">
-          <span class="who">好</span>
-          <h3>系統規格能被實作</h3>
-          <p>輸入規則輸出三項齊全，隔壁同學讀完知道要做什麼。</p>
-        </div>
-        <div class="card">
-          <span class="who">退件</span>
-          <h3>常見的三種</h3>
-          <p>循環接不回去；規則用形容詞寫手感；沒有寫例外情況。</p>
-        </div>
+        <div class="card cyan"><span class="who">及格</span><h3>循環圖接得成一個圈</h3><p>四個環節都有，而且最後一個環節接得回第一個。</p></div>
+        <div class="card lemon"><span class="who">好</span><h3>系統規格能被實作</h3><p>輸入、規則、輸出三項齊全，隔壁同學讀完知道要做什麼。</p></div>
+        <div class="card pink"><span class="who">退件</span><h3>常見的三種</h3><p>循環接不回去；規則用形容詞寫手感；沒有寫例外情況。</p></div>
       </div>
       <div class="take"><b>驗收方式</b>我會把你的系統規格給隔壁同學讀，請他複述規則。他講錯就是你寫得不夠清楚。</div>
     </div>
   </section>
 
-  <!-- 21 課堂討論與課後任務 -->
+  <!-- 24 收尾 -->
   <section class="slide">
     <div class="eyebrow">Week 10 · 收尾</div>
     <h2>回去做這三件事</h2>
@@ -491,7 +596,7 @@
         <p>你的成長環節，有讓「做同一件事的感覺不同」嗎？還是只有數字變大？</p>
         <p>把你的系統規格自己當程式讀一次，有幾個地方你會不知道該怎麼做？</p>
       </div>
-      <div class="card">
+      <div class="card grape">
         <span class="who">課後任務</span>
         <p>找一款你熟的遊戲，畫出它的核心循環圖。畫別人的比畫自己的容易，先練手。</p>
       </div>
@@ -499,42 +604,44 @@
     </div>
   </section>
 
-  <!-- 22 資源彙整 -->
+  <!-- 25 資源彙整 -->
   <section class="slide">
     <div class="eyebrow">Week 10 · 資源彙整</div>
     <h2>本週資源</h2>
     <div class="content">
       <div class="cols">
         <div class="grp">
-          <h3>文件與規格</h3>
+          <h3>GDD 範本</h3>
           <div class="linkrow">
-            <a class="lk" href="https://www.gamedeveloper.com/design/a-gdd-template-for-the-indie-developer" target="_blank" rel="noopener">獨立開發 GDD</a>
-            <a class="lk" href="https://en.wikipedia.org/wiki/Game_design_document" target="_blank" rel="noopener">GDD 條目</a>
             <a class="lk" href="https://connect-prd-cdn.unity.com/20201215/83f3733d-3146-42de-8a69-f461d6662eb1/Game-Design-Document-Template.pdf" target="_blank" rel="noopener">Unity GDD 範本</a>
+            <a class="lk" href="https://www.gamedeveloper.com/design/a-gdd-template-for-the-indie-developer" target="_blank" rel="noopener">Bakker · 獨立團隊 GDD</a>
+            <a class="lk" href="https://www.notion.com/templates/game-design-document-367" target="_blank" rel="noopener">Notion GDD 範本</a>
+            <a class="lk" href="https://www.stonetronix.com/gdc-2010/" target="_blank" rel="noopener">Librande · 一頁設計</a>
           </div>
         </div>
         <div class="grp">
-          <h3>參考作品</h3>
+          <h3>公開的真實設計文件</h3>
           <div class="linkrow">
-            <a class="lk" href="https://store.steampowered.com/" target="_blank" rel="noopener">Steam</a>
-            <a class="lk" href="https://itch.io/" target="_blank" rel="noopener">itch.io</a>
-            <a class="lk" href="https://www.notion.com/templates/game-design-document-367" target="_blank" rel="noopener">Notion GDD 範本</a>
+            <a class="lk" href="https://archive.org/details/Doombible" target="_blank" rel="noopener">Doom Bible 1992</a>
+            <a class="lk" href="https://archive.org/details/DeusExDesignDoc11081997" target="_blank" rel="noopener">Deus Ex 1997</a>
+            <a class="lk" href="https://archive.org/details/gf_doc" target="_blank" rel="noopener">Grim Fandango 1996</a>
+            <a class="lk" href="https://archive.org/details/diablo_pitch" target="_blank" rel="noopener">Diablo 1994</a>
           </div>
         </div>
       </div>
-      <div class="take"><b>使用方法</b>用範本核對自己漏了什麼；本課八章結構會在第 15 週統一說明。</div>
+      <div class="take"><b>出處與補充</b>在下方講義，按 N 鍵。四份文件的頁數與年份、Unity 範本的節次、查證日期都在講義區。本課八章結構第 15 週統一說明。</div>
     </div>
   </section>
-
-  
-
   </div></div>
 
+  <div class="hint">← → 換頁　M 目錄　N 講義　F 全螢幕</div>
   <div class="ctrl">
     <button id="prev" aria-label="上一張">‹</button>
     <span class="cnt" id="cnt">1 / 1</span>
     <button id="next" aria-label="下一張">›</button>
     <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+    <button id="toNotes" title="講義（N）">講義 ↓</button>
+    <button id="full" title="全螢幕（F）">⛶</button>
   </div>
   <div class="prog" id="prog"></div>
 
@@ -545,17 +652,150 @@
   </div>
 </div>
 
+<!-- ============ 講義區 ============ -->
+<main class="notes" id="notes">
+<div class="notes-head">
+    <div class="eyebrow">Week 10 · 講義</div>
+    <h2>玩法系統與規則文件化</h2>
+    <p>投影片講的是骨架，這裡放肉：每一段的展開說明、四份公開的真實設計文件、Unity 官方 GDD 範本的節次、手感怎麼寫成參數、老師的課堂規矩，以及交作業前的自我檢核。</p>
+  </div>
+
+  <section class="sec">
+    <span class="kicker">導讀</span>
+    <h2>這週在解決什麼問題</h2>
+    <p>上週你們寫出了世界觀的核心規則，以及兩個角色之間的不對等對應的一個操作。這週把那個操作展開：從一個操作長成一個循環，從一個循環長成一套系統，然後寫到別人做得出來的程度。玩法在你腦中很清楚、寫下來卻沒人看得懂，是企畫最常見的失敗；這週練的就是「寫清楚」這件事。</p>
+    <p>三個詞先講清楚。<strong>核心循環（Core Loop）</strong>是玩家在遊戲裡不斷重複的那一組動作，業界說它是「定義你這款遊戲的主要系統或機制」，<a href="#src-1">[1]</a> 這門課要求它有動機、行動、回饋、成長四個環節並接成一個圈。<strong>系統（System）</strong>是支撐循環運作的規則組合，每個系統寫輸入、規則、輸出三件事；MDA 論文把規則層叫機制（Mechanics），把規則跑起來的行為叫動態（Dynamics）。<a href="#src-2">[2]</a> <strong>規則文件化</strong>是把規則寫到別人能照著做的程度，判準是隔壁同學讀完能複述。全程用這三個詞，不換名字。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">§1</span>
+    <h2>核心循環：四個環節，三個壞法</h2>
+    <p>核心循環的典型長度是三十秒到五分鐘跑完一輪，然後又回到起點；經典結構是探索、遭遇、解決、獲得，然後帶著獲得的東西再探索。循環不好玩，做再多內容都只是把不好玩的事重複更多次。檢驗方式是把循環在腦中跑五次，第五次還想跑，這個循環就對了。Game Developer 的專欄舉過反例：一款獨立遊戲整個開發期都沒定下核心循環，人員管理、資源、進度系統反覆改寫，始終湊不成一個整體；作者的結論是沒有明確的核心循環，就會範圍蔓延、浪費資源。<a href="#src-1">[1]</a></p>
+    <p>一個循環要有四個環節：動機（玩家為什麼要做這件事）、行動（他實際按了什麼、做了什麼）、回饋（遊戲怎麼告訴他做對了）、成長（他得到什麼，讓下一輪不一樣）。最常缺的是第三個，學生的循環常常只有動機、行動、成長，沒設計回饋，玩起來會很悶。Unity 官方的 GDD 範本在「玩家屬性」那一節寫得很直接：「每個屬性都要提到它改變時的回饋」。<a href="#src-3">[3]</a> 循環會壞在三個地方：太長（一輪要二十分鐘，玩家還沒感覺到成長就累了）、沒有變化（每一輪都一樣，第三輪就開始無聊）、成長跟行動無關（練等能力值變高，但玩起來的感覺完全一樣）。第三個最致命：成長要讓「做同一件事的感覺不同」，不是只有數字變大。</p>
+  </section>
+
+  <section class="sec cyan">
+    <span class="kicker">§2</span>
+    <h2>系統怎麼拆：顆粒度、三件事、關聯</h2>
+    <p>要拆到多細？「有一個戰鬥系統」「玩家可以升級」太粗，程式看完不知道要寫什麼。「攻擊有三段，第三段可以打斷敵人動作」「升級提升的是可用行動次數，不是數值」剛好，能動手也留彈性。企畫書的分寸是規則寫清楚，具體數值標「待測試調整」，企畫階段的數值本來就會改。Unity 範本對「Game Play」那一節的要求也是同一件事：用描述性段落，不要寫「enemy_1 血量比 enemy_2 多」這種泛用句子，要寫成讀者能想像自己在玩的樣子。<a href="#src-3">[3]</a></p>
+    <p>每個系統要寫三件事。輸入：玩家做什麼會啟動這個系統，按鍵、選擇，還是自動觸發。規則：系統內部怎麼運作，條件、判定、結果的對應關係。輸出：玩家看到什麼、得到什麼，包含畫面回饋與實際變化。三個都要寫，只寫規則不寫輸出，美術不知道要做什麼；只寫輸入不寫規則，程式做不出來。對照 MDA 的用語：規則是機制，輸入與輸出在玩家身上跑起來的結果是動態，玩家因此產生的情緒才是美學。<a href="#src-2">[2]</a> 企畫書寫的是機制，動態要靠測試才看得到，第 11 週的紙上原型就是在測動態。</p>
+    <p>系統不是獨立的。戰鬥的結果影響資源、資源影響能做什麼行動、行動又回頭影響戰鬥，這些要標出來，不畫關係圖，改動時會漏；關係太複雜代表系統太多。學生專題三個系統就夠了，企畫書詳寫三個以內，其餘只交代它和核心循環的關係。</p>
+    <div class="scene">
+      <span class="who">假設情境</span>
+      <p>一組上週的操作是「搭檔負責問，玩家盯著對方的影子看有沒有消失」。這週展開成循環：動機是要找出誰在說謊；行動是選擇問哪一題、在對方回答的兩秒內按下「標記」；回饋是影子消失時畫面邊緣暗一下、標記成功有一聲短音；成長是每抓到一個謊，解鎖一種新的提問方式，下一輪能問到更深的事。系統只寫一個「盯影子」：輸入是回答期間的按鍵，規則是回答中含謊言則影子在第 0.5 到 1.5 秒之間消失（時間待測試），例外是對方戴帽子時改為帽影消失，輸出是畫面暗角與音效加紀錄本一行。隔壁同學讀完能複述，這一份就過了。</p>
+    </div>
+  </section>
+
+  <section class="sec grape">
+    <span class="kicker">§3</span>
+    <h2>規則怎麼寫：三種寫壞、手感、以及四份改過的真實文件</h2>
+    <p>同一條規則，寫法不同，別人做出來的東西可能完全不一樣。三種會被做錯的寫法：用形容詞描述手感（「攻擊要有重量感」，每個人理解的重量感都不同）、沒寫例外情況（「血量歸零就死亡」，那無敵狀態下呢？動畫播放中呢？漏掉就會出 bug）、規則之間互相矛盾（第三頁說可以取消動作，第八頁說動作不可中斷，分兩次寫最容易發生）。防止方法：寫完自己扮演程式讀一次，遇到「這裡我要自己決定」的地方就是沒寫清楚。</p>
+    <p>手感（Game Feel）怎麼寫。不要寫形容詞（「有打擊感」「操作要流暢」「節奏要緊湊」），要寫參照與可調參數（「參考某某遊戲的第一段輕攻擊」「命中時畫面震動，幅度待測試」「輸入到動作起始的延遲越短越好」）。最有效的一招是舉參照，「像某某遊戲那樣」比十行形容詞精確得多。Steve Swink 的《Game Feel: A Game Designer's Guide to Virtual Sensation》整本書的主張就是手感可以拆成可調的組件與參數，書附的網站還提供可以自己調參數感受差別的工具；<a href="#src-10">[10]</a> 這門課不要求讀完，只要求你寫規格時用它的態度：手感是參數，不是形容詞。</p>
+    <h3>四份公開可讀的真實設計文件</h3>
+    <table>
+      <thead><tr><th>文件</th><th>年份與規模</th><th>後來改了什麼</th></tr></thead>
+      <tbody>
+        <tr><td>《Doom》Doom Bible（Tom Hall）</td><td>1992 年，79 頁，Internet Archive 標示公眾領域<a href="#src-5">[5]</a></td><td>大量功能與內容沒進最後上市的遊戲</td></tr>
+        <tr><td>《Deus Ex》設計文件（Ion Storm，Warren Spector 註解）</td><td>1997 年 8 月，原名「Shooter」，原定 1998 年上市<a href="#src-6">[6]</a></td><td>2000 年才上市；太空站第三幕與合作模式被砍</td></tr>
+        <tr><td>《Grim Fandango》Puzzle Document（Tim Schafer 等）</td><td>1996 年，72 頁，提案用<a href="#src-7">[7]</a></td><td>大半內容被砍</td></tr>
+        <tr><td>《Diablo》提案文件（David Brevik）</td><td>1994 年，不到十頁<a href="#src-8">[8]</a></td><td>提案時是回合制，做出來是即時制</td></tr>
+      </tbody>
+    </table>
+    <p>四份都可以在 Internet Archive 直接讀。看它們要學的不是內容，是兩件事：第一，文件會改，而且改很大，所以企畫階段不要把數字寫死；第二，每一版都寫得夠清楚，團隊才知道自己改了什麼、為什麼改。寫不清楚的文件連改都改不了。</p>
+  </section>
+
+  <section class="sec lemon">
+    <span class="kicker">§4</span>
+    <h2>圖比文字有效，以及 AI 在這一章的位置</h2>
+    <p>企畫書裡要有三張圖。核心循環圖：四個環節接成一個圈，放在玩法章節第一頁，讓讀者先看懂循環。系統關聯圖：方塊加箭頭，標出哪個系統影響哪個，畫不出來代表系統太亂。介面線框圖：標出畫面上各區塊放什麼，不用畫美術，方框加文字就好。不用畫得漂亮，手繪掃描完全可以，重點是讀的人看得懂。Stone Librande 的一頁設計本質上就是一張帶註解的圖，他在 GDC 2010 說那種文件「剛好一頁長」；<a href="#src-9">[9]</a> Unity 的範本也要求一張遊戲流程圖，標出物件、屬性與動作，並給每一項編號對回機制文件。<a href="#src-3">[3]</a></p>
+    <p>畫不出來代表什麼：循環圖畫不成一個圈，代表你的玩法沒有重複性，玩一次就結束；系統關聯圖線太多，代表系統之間耦合太重，改一個要動全部；線框圖畫不出來，代表你還沒想過玩家實際會看到什麼。畫圖後檢查：循環圖若接不起來，就回到每一個箭頭補上觸發條件、回饋與下一步。</p>
+    <p>2025 到 2026 年的現況：GDC 2026 年產業調查（超過 2,300 位從業者）說 36% 的人在工作中使用生成式 AI，用途以研究與腦力激盪（81%）為主，原型製作 35%。<a href="#src-11">[11]</a> 對這一章的意思是：拿 AI 幫你列例外情況、找兩頁之間的矛盾、把形容詞改寫成參數，可以，而且它很擅長把「這裡我要自己決定」的地方找出來；但規則的判定與數值的取捨要你自己決定，交出來的規格每一條你都要答得出為什麼。用了 AI 的地方在文件裡註明，第 1 週講過的揭露規則這裡一樣適用。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">老師的課堂規矩</span>
+    <h2>規格在我這裡怎麼算數</h2>
+    <p>這章我改作業的方式就是這四條，先講給你們聽：</p>
+    <ul>
+      <li><strong>你的系統規格我會交給隔壁同學讀，請他複述規則。</strong>他講錯就是你寫得不夠清楚，不是他笨。這是最便宜的可讀性測試，自己先做一次。</li>
+      <li><strong>出現「有打擊感」「要流暢」這類形容詞，整條規則當作沒寫。</strong>換成參照或可調參數再交。</li>
+      <li><strong>沒寫例外情況的規則，我會當場問一個例外。</strong>「無敵狀態下呢」「動畫播放中呢」「兩個同時發生呢」，答不出來就退回。</li>
+      <li><strong>循環圖必須是一個圈。</strong>畫成一條線的，代表你的遊戲玩一次就結束，回去重想循環，不是重畫圖。</li>
+    </ul>
+    <p>我的判斷是：寫三個系統都很淺，不如寫一個寫到別人真的做得出來。期末我看的是深度，不是頁數。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">出處</span>
+    <h2>本週引用的資料</h2>
+    <p>每一條都在 2026-09-15 打開確認過。網址失效請告訴我，我會換。</p>
+    <ol class="src">
+      <li id="src-1"><span class="ti">Bycer, J.〈Why the Core Gameplay Loop is Critical For Game Design〉</span><span class="meta">Game Developer · 2019-04-25 · 「the primary game system or mechanic that defines your title」；《Clockwork Empires》反例 · 二手媒體 · 查證 2026-09-15</span><a href="https://www.gamedeveloper.com/business/why-the-core-gameplay-loop-is-critical-for-game-design" target="_blank" rel="noopener">https://www.gamedeveloper.com/business/why-the-core-gameplay-loop-is-critical-for-game-design</a></li>
+      <li id="src-2"><span class="ti">Hunicke, R., LeBlanc, M. & Zubek, R.〈MDA: A Formal Approach to Game Design and Game Research〉</span><span class="meta">原論文 PDF（Northwestern 大學 Hunicke 網頁）· GDC 2001–2004 工作坊 · Mechanics／Dynamics／Aesthetics 定義 · 查證 2026-09-15</span><a href="https://users.cs.northwestern.edu/~hunicke/MDA.pdf" target="_blank" rel="noopener">https://users.cs.northwestern.edu/~hunicke/MDA.pdf</a></li>
+      <li id="src-3"><span class="ti">Unity〈Game Design Document (GDD) Template〉</span><span class="meta">Unity Technologies 官方 CDN · 頁面未標日期（網址路徑 2020-12-15）· 「Each property should mention a feedback as a result of the property changing」、Game Flowchart 節 · PDF 以 pdftotext 核對 · 查證 2026-09-15</span><a href="https://connect-prd-cdn.unity.com/20201215/83f3733d-3146-42de-8a69-f461d6662eb1/Game-Design-Document-Template.pdf" target="_blank" rel="noopener">https://connect-prd-cdn.unity.com/20201215/83f3733d-3146-42de-8a69-f461d6662eb1/Game-Design-Document-Template.pdf</a></li>
+      <li id="src-4"><span class="ti">Bakker, J.〈A GDD Template for the Indie Developer〉</span><span class="meta">Game Developer · 2009-06-04 · 獨立團隊 GDD 範本十節 · 一手（作者本人文章）· 查證 2026-09-15</span><a href="https://www.gamedeveloper.com/design/a-gdd-template-for-the-indie-developer" target="_blank" rel="noopener">https://www.gamedeveloper.com/design/a-gdd-template-for-the-indie-developer</a></li>
+      <li id="src-5"><span class="ti">Hall, T.《Doombible》</span><span class="meta">Internet Archive · 1992 年撰寫、2018-08-28 上傳 · 79 頁、Public Domain Mark 1.0 · 一手文件 · 查證 2026-09-15</span><a href="https://archive.org/details/Doombible" target="_blank" rel="noopener">https://archive.org/details/Doombible</a></li>
+      <li id="src-6"><span class="ti">Wawro, A.〈Annotated version of an original Deus Ex design doc surfaces〉；Internet Archive〈Majestic Revolutions - Deus Ex's original design document〉</span><span class="meta">Game Developer 2016-11-14（Eurogamer 2013 年節錄、Spector 註解、原名 Shooter、太空站第三幕與合作模式被砍）· Internet Archive 文件日期 1997-08-11、2016-11-15 上傳 · 查證 2026-09-15</span><a href="https://www.gamedeveloper.com/design/annotated-version-of-an-original-i-deus-ex-i-design-doc-surfaces" target="_blank" rel="noopener">https://www.gamedeveloper.com/design/annotated-version-of-an-original-i-deus-ex-i-design-doc-surfaces</a>　<a href="https://archive.org/details/DeusExDesignDoc11081997" target="_blank" rel="noopener">https://archive.org/details/DeusExDesignDoc11081997</a></li>
+      <li id="src-7"><span class="ti">Caoili, E.〈Schafer Releases Grim Fandango Puzzle Document〉；Internet Archive〈Grim Fandango Puzzle Document〉</span><span class="meta">Game Developer 2008-11-06 · Internet Archive 2017-11-22 上傳 · 72 頁、1996 年撰寫 · 查證 2026-09-15</span><a href="https://www.gamedeveloper.com/game-platforms/schafer-releases-i-grim-fandango-i-puzzle-document" target="_blank" rel="noopener">https://www.gamedeveloper.com/game-platforms/schafer-releases-i-grim-fandango-i-puzzle-document</a>　<a href="https://archive.org/details/gf_doc" target="_blank" rel="noopener">https://archive.org/details/gf_doc</a></li>
+      <li id="src-8"><span class="ti">Brevik, D.〈Original Diablo Pitch Document〉；Internet Archive〈The original Diablo Pitch〉</span><span class="meta">Graybeard Games 部落格 2016-03-19（作者本人）· Internet Archive 2017-01-01 上傳，標示 8 頁 · 1994 年、回合制改即時制（Game Developer 2016-03-21 報導）· 查證 2026-09-15</span><a href="https://graybeardgames.blogspot.com/2016/03/original-diablo-pitch-document.html" target="_blank" rel="noopener">https://graybeardgames.blogspot.com/2016/03/original-diablo-pitch-document.html</a>　<a href="https://archive.org/details/diablo_pitch" target="_blank" rel="noopener">https://archive.org/details/diablo_pitch</a></li>
+      <li id="src-9"><span class="ti">Librande, S.〈One-Page Designs〉</span><span class="meta">GDC Vault · GDC 2010 · 官方摘要「a document that is exactly one page long」；只引標題與官方摘要，影片本次未看 · 查證 2026-09-15</span><a href="https://www.stonetronix.com/gdc-2010/" target="_blank" rel="noopener">https://www.stonetronix.com/gdc-2010/</a></li>
+      <li id="src-10"><span class="ti">Swink, S.《Game Feel: A Game Designer's Guide to Virtual Sensation》</span><span class="meta">Google Books 書目頁 · Morgan Kaufmann／Elsevier · 358 頁、ISBN 9780123743282 · 只引書名與書目頁主旨，原書本次未讀 · 查證 2026-09-15</span><a href="https://books.google.com.tw/books/about/Game_Feel.html?id=i9GfunWcB-oC" target="_blank" rel="noopener">https://books.google.com.tw/books/about/Game_Feel.html?id=i9GfunWcB-oC</a></li>
+      <li id="src-11"><span class="ti">GDC〈GDC 2026 State of the Game Industry Reveals Impact of Layoffs, Generative AI, and More〉</span><span class="meta">GDC（gdconf.com）· 文章頁未標日期 · 超過 2,300 位回覆；36% 使用生成式 AI；研究或腦力激盪 81%、原型製作 35% · 查證 2026-09-15</span><a href="https://gdconf.com/article/gdc-2026-state-of-the-game-industry-reveals-impact-of-layoffs-generative-ai-and-more/" target="_blank" rel="noopener">https://gdconf.com/article/gdc-2026-state-of-the-game-industry-reveals-impact-of-layoffs-generative-ai-and-more/</a></li>
+      <li id="src-12"><span class="ti">dos Reis, M.〈G.D.D - Game Design Document Template〉</span><span class="meta">Notion Marketplace · 頁面未標日期 · 免費範本；只當工具連結，節次頁面未列 · 查證 2026-09-15</span><a href="https://www.notion.com/templates/game-design-document-367" target="_blank" rel="noopener">https://www.notion.com/templates/game-design-document-367</a></li>
+    </ol>
+  </section>
+
+  <section class="sec cyan">
+    <span class="kicker">補充資訊</span>
+    <h2>延伸閱讀與工具</h2>
+    <h3>範本怎麼用</h3>
+    <ul>
+      <li><strong>Unity 的 GDD 範本</strong>是一份 PDF，節次從 Game Elements、Technical Specs、Game Play 到 Design Document、Game Flowchart、Player Definition、User Interface。<a href="#src-3">[3]</a> 用法是拿它核對自己漏了什麼，不是照抄格式；本課八章結構會在第 15 週統一說明。</li>
+      <li><strong>Bakker 的獨立團隊範本</strong>十節裡有「Systematic Breakdown of Components」與「Suggested Game Flow Diagram」，<a href="#src-4">[4]</a> 跟這週的系統拆解與循環圖直接對應。</li>
+      <li><strong>Notion 上的 GDD 範本</strong>是第三方做的免費範本，<a href="#src-12">[12]</a> 想用線上協作工具寫企畫書的組可以拿來當起點。</li>
+    </ul>
+    <h3>下週紙上原型要用的東西</h3>
+    <ul>
+      <li><strong>這週那一個系統的規格</strong>就是下週紙上原型的規則書。規則寫得夠清楚，下週才能不寫程式就用紙牌、骰子、棋子把它跑起來。</li>
+      <li><strong>循環圖</strong>下週會被拿來排關卡節奏：每一關就是循環跑幾輪、在哪一輪加變化。</li>
+    </ul>
+  </section>
+
+  <section class="sec lemon">
+    <span class="kicker">本週檢核</span>
+    <h2>交作業前自己打勾</h2>
+    <ul class="check">
+      <li>核心循環圖有動機、行動、回饋、成長四個環節，而且最後一個接得回第一個。</li>
+      <li>回饋那個環節寫了「遊戲怎麼告訴玩家做對了」，不是空的。</li>
+      <li>成長讓「做同一件事的感覺不同」，不只是數字變大。</li>
+      <li>只寫了一個系統，而且是最核心的那一個；其他系統一句話帶過。</li>
+      <li>系統規格有輸入、規則、輸出三項。</li>
+      <li>規則裡沒有「打擊感」「流暢」這類形容詞；手感用參照或可調參數寫。</li>
+      <li>至少寫了兩個例外情況，數值標了「待測試調整」。</li>
+      <li>找一位同學讀過規格並複述，他講對了。</li>
+      <li>兩頁 A4 以內，檔名是「學號_W10_玩法系統.pdf」。</li>
+    </ul>
+  </section>
+
+  <p class="version">2026-09-15 翻新：版型改為糖果流行、新增講義區、加入四份可在 Internet Archive 讀到的公開設計文件、Unity 官方 GDD 範本以 PDF 全文核對、GDC 2026 產業調查數字查證。前一版：2026-09-13。</p>
+</main>
+
+<a class="backtop" id="backtop" href="#deck">↑ 回投影片</a>
+
 <script>
 (function () {
   /* ★ 每週只改這一行 ★ */
+  var COURSE_LABEL = '遊戲企畫';
   var WEEK_LABEL = '第 10 週 · 玩法系統與規則文件化';
 
+  var deck = document.getElementById('deck');
   var stage = document.getElementById('stage');
   var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
   var cnt = document.getElementById('cnt');
   var prog = document.getElementById('prog');
   var toc = document.getElementById('toc');
   var tgrid = document.getElementById('tgrid');
+  var backtop = document.getElementById('backtop');
   var cur = 0;
 
   document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
@@ -563,7 +803,7 @@
   slides.forEach(function (s, i) {
     var f = document.createElement('div');
     f.className = 'foot';
-    f.innerHTML = '<span>遊戲企畫|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    f.innerHTML = '<span>' + COURSE_LABEL + '|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
     s.appendChild(f);
   });
 
@@ -572,12 +812,12 @@
     var eb = s.querySelector('.eyebrow');
     var part = '開場';
     if (eb) {
-      var m = eb.textContent.match(/PART\s*(\d)/i);
-      if (m) part = 'PART ' + m[1];
+      var m = eb.textContent.match(/Part\s*(\d)/i);
+      if (m) part = 'Part ' + m[1];
       else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
     }
     var h = s.querySelector('h1, h2');
-    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent.replace(/\d+$/, '') : '') });
   });
   Object.keys(groups).forEach(function (k) {
     var col = document.createElement('div');
@@ -605,35 +845,57 @@
   function toggleToc(on) {
     toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
   }
+  function atDeck() { return window.scrollY < 40; }
+  function toNotes() { document.getElementById('notes').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  function toggleFull() {
+    if (document.fullscreenElement) { document.exitFullscreen(); return; }
+    if (deck.requestFullscreen) deck.requestFullscreen();
+  }
 
   document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
   document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
   document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
   document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+  document.getElementById('toNotes').addEventListener('click', toNotes);
+  document.getElementById('full').addEventListener('click', toggleFull);
 
   document.addEventListener('keydown', function (e) {
+    if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
     if (e.key === 'Escape') { toggleToc(false); return; }
     if (toc.classList.contains('on')) return;
     switch (e.key) {
-      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
-      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
-      case 'Home': go(0); break;
-      case 'End': go(slides.length - 1); break;
+      case 'ArrowRight': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'ArrowDown': case ' ': if (atDeck()) { e.preventDefault(); go(cur + 1); } break;
+      case 'ArrowUp': if (atDeck()) { e.preventDefault(); go(cur - 1); } break;
+      case 'Home': if (atDeck()) go(0); break;
+      case 'End': if (atDeck()) go(slides.length - 1); break;
       case 'm': case 'M': toggleToc(); break;
+      case 'n': case 'N': toNotes(); break;
+      case 'f': case 'F': toggleFull(); break;
     }
   });
 
   function fit() {
-    var w = window.innerWidth, h = window.innerHeight;
+    var w = deck.clientWidth, h = deck.clientHeight;
     if (!w || !h) { requestAnimationFrame(fit); return; }
-    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+    stage.style.transform = 'scale(' + Math.min((w - 48) / 1300, (h - 88) / 740) + ')';
   }
   window.addEventListener('resize', fit);
   window.addEventListener('load', fit);
+  document.addEventListener('fullscreenchange', fit);
   fit();
+
+  window.addEventListener('scroll', function () {
+    backtop.classList.toggle('show', window.scrollY > deck.clientHeight * 0.6);
+  }, { passive: true });
 
   var m = location.hash.match(/^#s(\d+)$/);
   go(m ? +m[1] - 1 : 0);
+  if (!m && location.hash) {
+    var target = document.querySelector(location.hash.replace(/[^#\w-]/g, ''));
+    if (target) setTimeout(function () { target.scrollIntoView({ block: 'start' }); }, 50);
+  }
 })();
 </script>
 </body>

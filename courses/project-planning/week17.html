@@ -3,144 +3,183 @@
 <head>
 <meta charset="utf-8">
 <title>第 17 週|推廣發表與媒體規劃</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Serif+TC:wght@400;500;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  /* ============ 版型：典籍金箔（style-library capcom-codex，色值取自 styles/capcom-codex.json）============ */
   * { box-sizing: border-box; }
-  #app {
-    position: fixed; inset: 0; overflow: hidden;
-    background: var(--bg);
-    font-family: var(--body);
-    color: var(--ink);
-    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
-    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
-    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
-    --bg: #F5F4EC; --bg2: #EFEEE2;
-    --panel: #FDFCF6; --panel2: #EDECDF;
-    --ink: #232B21; --sub: #67705E;
-    --accent: #2F6B4F; --accent-rgb: 47,107,79;
-    --accent2: #BC4F2C;
-    --line: rgba(35,43,33,.16);
-    --link: #2F6B4F;
-    --r: 4px;
+  :root {
+    --bg: #f4ead8; --cream: #efe2bf; --cream2: #e6d4ad; --ink: #1c1308; --ink2: #3a2a16; --muted: #5a3a14;
+    --gold: #8a5a1a; --gold2: #b88a3a; --goldDeep: #5a3a14; --burgundy: #6a1a1a; --sage: #4a5a3a;
+    --body: 'Noto Serif TC', 'Cormorant Garamond', Georgia, 'PMingLiU', serif;
+    --disp: 'Cinzel', 'Noto Serif TC', serif;
+    --num: 'Cormorant Garamond', 'Cinzel', serif;
+    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .23 0 0 0 0 .08 0 0 0 .18 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
   }
-  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
-  #app a:hover { opacity: .85; }
-  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-weight: 400; }
+  a { color: var(--gold); text-underline-offset: 4px; text-decoration-thickness: 1px; }
+  :focus-visible { outline: 2px solid var(--gold2); outline-offset: 2px; }
 
-  .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
-  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
-  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
-  .slide.active { display: flex; }
-  .slide::before {
-    content: ""; position: absolute; inset: 24px; pointer-events: none;
-    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
-  }
+  /* ---------- 投影區 ---------- */
+  #deck { position: relative; height: 100vh; min-height: 560px; overflow: hidden; background: #e6d4ad; }
+  #deck::after { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: var(--grain); opacity: .5; mix-blend-mode: multiply; }
+  .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 1; }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; background: var(--bg); box-shadow: 0 0 0 4px rgba(0,0,0,.4), 0 40px 120px rgba(0,0,0,.35); overflow: hidden; }
+  .stage::before { content: ""; position: absolute; inset: 36px; border: 1px solid rgba(90,58,20,.55); pointer-events: none; z-index: 2; }
+  .stage::after { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: var(--grain); opacity: .5; mix-blend-mode: multiply; z-index: 3; }
+  .slide { position: absolute; inset: 0; padding: 92px 110px 84px; display: none; flex-direction: column; }
+  .slide.active { display: flex; animation: fadein .45s ease both; }
+  @keyframes fadein { from { opacity: 0 } to { opacity: 1 } }
+  /* 書脊文字：每張都有，由 JS 用 .foot 產生（頁尾），頁首用 .eyebrow 置中版 */
+  .eyebrow { font-family: var(--disp); font-size: 14px; letter-spacing: .5em; text-transform: uppercase; color: var(--gold); margin-bottom: 20px; }
+  h1 { font-family: 'Noto Serif TC', serif; font-size: 78px; line-height: 1.15; margin: 0; font-weight: 700; letter-spacing: .06em; text-wrap: balance; }
+  h2 { font-family: 'Noto Serif TC', serif; font-size: 44px; line-height: 1.25; margin: 0 0 26px; font-weight: 700; letter-spacing: .04em; text-wrap: balance; }
+  /* 章節標題匾額（cartouche） */
+  .slide:not(.cover):not(.part) h2 { display: inline-block; align-self: flex-start; padding: 8px 40px; border: 1px solid var(--gold); background: var(--cream); box-shadow: inset 0 0 0 4px var(--bg), inset 0 0 0 5px var(--gold2); clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0 50%); font-size: 36px; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 18px; }
 
-  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
-  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
-  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
-  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
-
-  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
-  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
-  .sub { color: var(--sub); }
+  .slide ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 14px; font-size: 26px; line-height: 1.6; }
+  .slide ul ul { margin-top: 6px; gap: 6px; font-size: 22px; color: var(--ink2); }
+  .slide li::marker { color: var(--gold2); }
+  .sub { color: var(--ink2); }
   .small { font-size: 18px; }
-  .num { font-variant-numeric: tabular-nums; }
+  .num { font-family: var(--num); font-variant-numeric: tabular-nums; }
 
-  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
-  .cards { display: grid; gap: 18px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: stretch; }
+  .cards { display: grid; gap: 22px; }
   .c2 { grid-template-columns: repeat(2, 1fr); }
   .c3 { grid-template-columns: repeat(3, 1fr); }
   .c4 { grid-template-columns: repeat(4, 1fr); }
   .c5 { grid-template-columns: repeat(5, 1fr); }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
-  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
-  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
-  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+  /* 羊皮紙卡：1px 金深框＋內縮 4px 紙色＋再一圈金 */
+  .card { background: var(--cream); border: 1px solid var(--goldDeep); border-radius: 0; box-shadow: inset 0 0 0 4px var(--bg), inset 0 0 0 5px var(--gold2); padding: 24px 26px; min-width: 0; display: flex; flex-direction: column; justify-content: flex-start; }
+  .card.pink { background: #efe0d6; } .card.cyan { background: #e4e6d4; } .card.grape { background: #e9dfd0; } .card.lemon { background: var(--cream2); }
+  .card h3 { font-family: 'Noto Serif TC', serif; font-size: 26px; margin: 0 0 10px; font-weight: 700; line-height: 1.3; }
+  .card p, .card li { font-size: 22px; line-height: 1.6; margin: 0; color: var(--ink2); }
+  .card ul { padding-left: 1.1em; gap: 8px; font-size: 22px; }
+  .card .who { display: block; font-family: var(--disp); font-size: 13px; letter-spacing: .3em; text-transform: uppercase; color: var(--gold); margin-bottom: 10px; }
+  .cols > .card h3 { font-size: 28px; }
+  .cols > .card p, .cols > .card li { font-size: 23px; }
 
-  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
-  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+  /* 典籍旁註 */
+  .take { margin-top: auto; display: flex; gap: 18px; align-items: baseline; background: var(--cream2); border-left: 1px solid var(--gold); border-right: 1px solid var(--gold); padding: 14px 24px; font-size: 22px; line-height: 1.55; }
+  .take b { font-family: var(--disp); color: var(--burgundy); font-size: 13px; letter-spacing: .3em; text-transform: uppercase; white-space: nowrap; }
 
-  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
+  .foot { position: absolute; left: 60px; right: 60px; bottom: 46px; display: flex; justify-content: space-between; font-family: var(--disp); font-size: 12px; letter-spacing: .5em; text-transform: uppercase; color: var(--goldDeep); z-index: 4; }
 
   .cover, .part { justify-content: center; }
-  .cover .eyebrow { margin-bottom: 26px; }
-  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
-  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
-  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
-  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
-  .part h2 { font-size: 56px; }
-  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+  .cover .eyebrow, .part .eyebrow { margin-bottom: 26px; }
+  .cover-sub { font-size: 27px; color: var(--ink2); margin: 24px 0 0; line-height: 1.7; max-width: 28em; }
+  .cover-meta { margin-top: 40px; display: flex; gap: 14px; flex-wrap: wrap; font-family: var(--disp); font-size: 12px; letter-spacing: .3em; text-transform: uppercase; color: var(--goldDeep); }
+  .cover-meta span { border: 1px solid var(--gold2); padding: 8px 16px; }
+  /* 章節頁徽章 */
+  .part-num { width: 150px; height: 150px; border-radius: 50%; border: 1px solid var(--gold); box-shadow: inset 0 0 0 5px var(--bg), inset 0 0 0 6px var(--gold2); display: flex; align-items: center; justify-content: center; font-family: var(--disp); font-size: 52px; font-weight: 600; color: var(--gold); background: var(--cream); margin-bottom: 26px; }
+  .part h2 { font-size: 60px; }
+  .part-sub { font-size: 27px; color: var(--ink2); margin: 18px 0 0; max-width: 30em; line-height: 1.7; }
 
-  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
-  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
-  .kv dd { margin: 0; }
+  .kv { display: grid; grid-template-columns: 220px 1fr; gap: 0 24px; font-size: 23px; line-height: 1.5; align-content: start; border-top: 1px solid var(--gold2); }
+  .kv dt { font-family: var(--disp); font-size: 14px; letter-spacing: .3em; text-transform: uppercase; color: var(--gold); padding: 14px 0 10px; border-bottom: 1px solid var(--gold2); }
+  .kv dd { margin: 0; padding: 10px 0; border-bottom: 1px solid var(--gold2); }
   .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
-  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .chip { font-family: var(--disp); font-size: 15px; letter-spacing: .2em; text-transform: uppercase; padding: 8px 16px; border: 1px solid var(--gold2); background: var(--cream); color: var(--ink); }
+  .chip.hot { background: var(--gold2); color: var(--bg); }
   .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
-  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
+  .lk { display: inline-block; border: 1px solid var(--gold2); background: var(--cream); padding: 8px 18px; font-family: 'Noto Serif TC', serif; font-size: 18px; text-decoration: none; color: var(--ink); }
+  .lk:hover { background: var(--gold2); color: var(--bg); }
   .lk::after { content: " ↗"; font-size: 12px; }
   .flow { display: flex; align-items: stretch; gap: 0; }
-  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
-  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
-  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
-  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
-  .bar i { display: block; height: 100%; background: var(--accent); }
-  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
-  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
-  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
-  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
-  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
-  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
-  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
-  .tl { display: flex; flex-direction: column; gap: 18px; }
-  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
-  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
-  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+  .flow .step { flex: 1; background: var(--cream); border: 1px solid var(--goldDeep); box-shadow: inset 0 0 0 4px var(--bg), inset 0 0 0 5px var(--gold2); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .step h3 { font-family: 'Noto Serif TC', serif; font-size: 25px; margin: 0 0 8px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.6; margin: 0; color: var(--ink2); }
+  .flow .arr { flex: 0 0 48px; display: flex; align-items: center; justify-content: center; font-family: var(--disp); font-size: 28px; color: var(--gold); }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 16px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 18px; }
+  .qlist p::before { content: counter(q, upper-roman); font-family: var(--disp); color: var(--gold); font-weight: 600; flex: 0 0 auto; min-width: 1.6em; }
+  .grp h3 { font-family: var(--disp); font-size: 14px; letter-spacing: .3em; text-transform: uppercase; color: var(--gold); margin: 0 0 12px; }
+  .card p.big, .cols > .card p.big { font-family: var(--num); font-size: 100px; line-height: 1; font-weight: 500; color: var(--gold); margin: 0; }
+  .card p.big small { font-family: var(--disp); font-size: 13px; letter-spacing: .3em; text-transform: uppercase; line-height: 1.5; color: var(--muted); display: block; margin-top: 12px; }
 
-  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
-  .content > .cards,
-  .content > .cols,
-  .content > .flow,
-  .content > .kv,
-  .content > .prob { flex: 1 1 auto; }
+  .content > .cards, .content > .cols, .content > .flow { flex: 0 0 auto; margin-top: auto; margin-bottom: auto; }
+  .content > .kv { flex: 1 1 auto; }
+  .cards .card { min-height: 190px; }
+  .cols > .card { min-height: 230px; }
   .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
-  .content > .qlist,
-  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
-  .content > .biblio { flex: 0 0 auto; }
-  .cols > .card { justify-content: flex-start; }
 
-  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
-  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
-  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
-  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
-  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  sup.fn { font-family: var(--disp); font-size: 11px; line-height: 1; vertical-align: top; margin-left: 4px; position: relative; top: -2px; }
+  sup.fn a { display: inline-block; border: 1px solid var(--gold); color: var(--gold); border-radius: 50%; height: 20px; line-height: 18px; min-width: 20px; padding: 0 5px; text-align: center; text-decoration: none; font-weight: 600; background: var(--cream); }
+
+  .ctrl { position: absolute; right: 16px; bottom: 14px; display: flex; gap: 8px; align-items: center; z-index: 30; }
+  .ctrl button { font-family: var(--disp); border: 1px solid var(--gold2); background: var(--cream); color: var(--ink); font-size: 13px; letter-spacing: .1em; height: 32px; min-width: 34px; padding: 0 12px; border-radius: 0; cursor: pointer; }
+  .ctrl button:hover { background: var(--gold2); color: var(--bg); }
+  .ctrl .cnt { font-family: var(--num); font-size: 15px; color: var(--muted); padding: 0 6px; font-variant-numeric: tabular-nums; }
+  .prog { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--gold2); width: 0; z-index: 30; transition: width .3s ease; }
+  .hint { position: absolute; left: 16px; bottom: 16px; z-index: 30; font-family: var(--disp); font-size: 11px; letter-spacing: .2em; color: var(--muted); }
+
+  .toc { position: absolute; inset: 0; background: rgba(244,234,216,.97); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
   .toc.on { display: block; }
-  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
-  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
-  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
-  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
-  .toc button:hover { background: var(--panel2); }
-  .toc button.here { color: var(--accent2); font-weight: 700; }
-  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
-  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+  .toc h2 { font-size: 24px; margin: 0 0 22px; font-family: 'Noto Serif TC', serif; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 26px; }
+  .toc h3 { font-family: var(--disp); color: var(--gold); font-size: 12px; letter-spacing: .3em; text-transform: uppercase; margin: 0 0 10px; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 17px; padding: 6px 8px; cursor: pointer; font-family: var(--body); }
+  .toc button:hover { color: var(--gold); }
+  .toc button.here { color: var(--burgundy); font-weight: 700; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 12px; color: var(--muted); font-family: var(--disp); letter-spacing: .2em; }
+
+  /* ---------- 講義區 ---------- */
+  .notes { max-width: 920px; margin: 0 auto; padding: 72px 20px 110px; position: relative; }
+  .notes-head { text-align: center; margin-bottom: 48px; }
+  .notes-head .eyebrow { margin-bottom: 14px; }
+  .notes-head h2 { font-family: 'Noto Serif TC', serif; font-size: 44px; margin: 0 0 14px; font-weight: 700; letter-spacing: .06em; }
+  .notes-head p { color: var(--ink2); font-size: 19px; line-height: 1.8; margin: 0 auto; max-width: 34em; }
+  .sec { background: var(--cream); border: 1px solid var(--goldDeep); box-shadow: inset 0 0 0 4px var(--bg), inset 0 0 0 5px var(--gold2); padding: 34px 38px; margin: 0 0 30px; }
+  .sec h2 { font-family: 'Noto Serif TC', serif; font-size: 30px; margin: 0 0 16px; font-weight: 700; letter-spacing: .04em; }
+  .sec h3 { font-family: 'Noto Serif TC', serif; font-size: 22px; margin: 26px 0 10px; font-weight: 700; }
+  .sec p, .sec li { font-size: 19px; line-height: 1.85; color: var(--ink2); margin: 0 0 14px; }
+  .sec li { margin: 0 0 6px; }
+  .sec strong { color: var(--ink); font-weight: 700; }
+  .sec .kicker { display: inline-block; font-family: var(--disp); font-size: 12px; letter-spacing: .4em; text-transform: uppercase; color: var(--gold); border-bottom: 1px solid var(--gold2); padding-bottom: 4px; margin-bottom: 14px; }
+  .sec.cyan .kicker { color: var(--sage); } .sec.grape .kicker { color: var(--burgundy); } .sec.lemon .kicker { color: var(--goldDeep); }
+  .sec table { width: 100%; border-collapse: collapse; font-size: 18px; margin: 8px 0 16px; }
+  .sec th, .sec td { text-align: left; padding: 12px 12px 12px 0; border-bottom: 1px solid var(--gold2); vertical-align: top; line-height: 1.65; }
+  .sec th { font-family: var(--disp); font-size: 12px; letter-spacing: .3em; text-transform: uppercase; color: var(--gold); }
+  .scene { background: var(--cream2); border-left: 1px solid var(--gold); border-right: 1px solid var(--gold); padding: 16px 24px; margin: 18px 0 22px; }
+  .scene .who { font-family: var(--disp); font-size: 12px; letter-spacing: .3em; text-transform: uppercase; color: var(--burgundy); display: block; margin-bottom: 6px; }
+  .scene p { margin: 0; }
+  ol.src { padding-left: 1.6em; counter-reset: s; list-style: none; }
+  ol.src li { counter-increment: s; position: relative; padding-left: 6px; margin-bottom: 16px; line-height: 1.7; }
+  ol.src li::before { content: counter(s); position: absolute; left: -1.7em; top: .3em; font-family: var(--disp); font-size: 12px; font-weight: 600; color: var(--gold); border: 1px solid var(--gold); border-radius: 50%; min-width: 22px; height: 22px; line-height: 20px; text-align: center; background: var(--bg); }
+  ol.src li:target { background: var(--cream2); }
+  ol.src .ti { color: var(--ink); font-weight: 700; }
+  ol.src .meta { display: block; font-size: 14px; color: var(--muted); }
+  ol.src a { word-break: break-all; font-size: 14px; }
+  .check { counter-reset: c; list-style: none; padding: 0; }
+  .check li { counter-increment: c; display: flex; gap: 14px; align-items: baseline; }
+  .check li::before { content: "☐"; color: var(--gold); font-size: 20px; flex: 0 0 auto; }
+  .backtop { position: fixed; right: 18px; bottom: 18px; z-index: 50; font-family: var(--disp); font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--ink); background: var(--cream); border: 1px solid var(--gold2); padding: 10px 16px; text-decoration: none; display: none; }
+  .backtop.show { display: inline-block; }
+  .version { text-align: center; font-family: var(--disp); font-size: 12px; letter-spacing: .2em; color: var(--muted); margin-top: 40px; }
+
+  @media (max-width: 720px) { .notes { padding: 40px 16px 80px; } .sec { padding: 22px 18px; } .notes-head h2 { font-size: 30px; } .kv { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .slide.active { animation: none; } .prog { transition: none; } }
+  @media print { #deck, .backtop { display: none; } .notes { max-width: none; padding: 0; } .sec { break-inside: avoid; box-shadow: none; } }
 </style>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
 </head>
 <body>
-<div id="app" data-deck="b">
+
+<div id="deck" data-deck="capcom-codex">
   <div class="stagewrap"><div class="stage" id="stage">
+
 
   <!-- 1 封面 -->
   <section class="slide cover">
     <div class="eyebrow">專題企畫 · 動畫與遊戲設計系</div>
     <h1>講得出來才有人看</h1>
-    <p class="cover-sub">做完不等於被看到。這堂課講怎麼把作品講給沒玩過的人聽，以及下週上台前要準備什麼。</p>
-    <div class="cover-meta"><span>第 17 週</span><span>授課：鄧樹遠</span></div>
+    <p class="cover-sub">做完不等於被看到。這堂課講怎麼把作品講給沒玩過的人聽：商店頁的規格、三十秒影片放什麼、台灣有哪幾個舞台，以及下週上台前要準備什麼。</p>
+    <div class="cover-meta"><span>第 17 週</span><span>授課：鄧樹遠</span><span>投影片 ＋ 下方講義</span></div>
   </section>
 
   <!-- 2 本週地圖 -->
@@ -149,11 +188,11 @@
     <h2>九十分鐘，五段路</h2>
     <div class="content">
       <div class="cards c5">
-        <div class="card"><span class="who">PART 1</span><h3>推廣是設計的一部分</h3><p class="sub">講不清楚就沒人玩</p></div>
-        <div class="card"><span class="who">PART 2</span><h3>作品頁怎麼寫</h3><p class="sub">三秒決定要不要看下去</p></div>
-        <div class="card"><span class="who">PART 3</span><h3>短影音</h3><p class="sub">三十秒放什麼</p></div>
-        <div class="card"><span class="who">PART 4</span><h3>期末發表</h3><p class="sub">下週上台的準備</p></div>
-        <div class="card"><span class="who">PART 5</span><h3>本週交付</h3><p class="sub">作品頁與宣傳影片</p></div>
+        <div class="card pink"><span class="who">Part 1</span><h3>推廣是設計的一部分</h3><p class="sub">講不清楚就沒人玩</p></div>
+        <div class="card cyan"><span class="who">Part 2</span><h3>作品頁怎麼寫</h3><p class="sub">四層資訊與官方規格</p></div>
+        <div class="card grape"><span class="who">Part 3</span><h3>短影音與預告片</h3><p class="sub">三十秒放什麼</p></div>
+        <div class="card lemon"><span class="who">Part 4</span><h3>期末發表</h3><p class="sub">下週上台的準備</p></div>
+        <div class="card"><span class="who">Part 5</span><h3>本週交付</h3><p class="sub">作品頁與宣傳影片</p></div>
       </div>
       <div class="take"><b>本週目標</b>離開教室時，你要有一段三十秒影片與一頁作品介紹，兩樣都能直接發出去。</div>
     </div>
@@ -165,53 +204,53 @@
     <h2>東西有了，該讓人看見</h2>
     <div class="content">
       <div class="cols">
-        <div class="card">
+        <div class="card cyan">
           <span class="who">已完成</span>
           <h3>可交付版本</h3>
           <ul>
             <li>別人的電腦打得開</li>
             <li>能從頭玩到尾</li>
-            <li>必改清單修完了</li>
+            <li>封版計畫寫了日期與負責人</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card pink">
           <span class="who">這週要做</span>
           <h3>包裝與發表準備</h3>
           <ul>
-            <li>作品頁與宣傳影片</li>
+            <li>作品頁與三十秒影片</li>
             <li>下週上台的簡報與演練</li>
             <li>本週中封版，之後只修錯誤</li>
           </ul>
         </div>
       </div>
-      <div class="take"><b>封版後要做</b>停止加功能，把時間留給作品頁、影片與展示演練；這些都直接影響別人看不看得懂作品。</div>
+      <div class="take"><b>封版後的時間用在這</b>停止加功能，把時間留給作品頁、影片與展示演練；這些直接影響別人看不看得懂作品。</div>
     </div>
   </section>
 
-  <!-- 4 PART 1 章節頁 -->
+  <!-- 4 PART 1 -->
   <section class="slide part">
     <div class="part-num">01</div>
-    <div class="eyebrow">PART 1</div>
+    <div class="eyebrow">Part 1</div>
     <h2>推廣是設計的一部分</h2>
-    <p class="part-sub">很多人覺得推廣是做完之後的事。實際上講不清楚的作品，通常是設計本身就沒收斂。</p>
+    <p class="part-sub">很多人覺得推廣是做完之後的事。講不清楚的作品，通常是設計本身就沒收斂。</p>
   </section>
 
   <!-- 5 為什麼要學 -->
   <section class="slide">
-    <div class="eyebrow">PART 1 · 必要性</div>
+    <div class="eyebrow">Part 1 · 必要性</div>
     <h2>為什麼這也算專題內容</h2>
     <div class="content">
       <div class="cols">
-        <div class="card">
+        <div class="card pink">
           <span class="who">現實</span>
           <h3>做完不會自動被看到</h3>
           <ul>
             <li>放上平台沒人點進來就等於沒發表</li>
-            <li>評審一天看二十組，記得住的沒幾個</li>
-            <li>畢業後投履歷，作品要能被三十秒看懂</li>
+            <li>Steam 官方說在探索佇列裡「你可能只有不到 10 秒留下印象」<sup class="fn"><a href="#src-2">2</a></sup></li>
+            <li>畢業後投履歷，作品頁就是你的名片</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card cyan">
           <span class="who">附加價值</span>
           <h3>逼你收斂</h3>
           <ul>
@@ -227,30 +266,44 @@
 
   <!-- 6 一句話賣點 -->
   <section class="slide">
-    <div class="eyebrow">PART 1 · 賣點</div>
+    <div class="eyebrow">Part 1 · 賣點</div>
     <h2>一句話要包含三件事</h2>
     <div class="content">
       <ul>
         <li>玩家做什麼：用動詞。「操控會分裂的角色穿過機關」而不是「動作解謎遊戲」。</li>
         <li>什麼限制：張力來自限制。「每分裂一次就少一半體力」。</li>
         <li>什麼感覺：一個形容詞就好，放最後。緊張、療癒、荒謬。</li>
-        <li>整句控制在三十個字以內，唸出來不用換氣。</li>
+        <li>整句控制在三十個字以內，唸出來不用換氣。Steam 的簡短描述指南標題就叫「講重點」。<sup class="fn"><a href="#src-3">3</a></sup></li>
       </ul>
       <div class="take"><b>測試方法</b>唸給沒看過的人聽，請他複述。複述得出來才算過關，這跟第 3 週的標準一樣。</div>
     </div>
   </section>
 
-  <!-- 7 PART 2 章節頁 -->
-  <section class="slide part">
-    <div class="part-num">02</div>
-    <div class="eyebrow">PART 2</div>
-    <h2>作品頁怎麼寫</h2>
-    <p class="part-sub">不管放在哪個平台，結構都差不多。玩家給你三秒決定要不要看下去。</p>
+  <!-- 7 2025–2026 現況：三個舞台 -->
+  <section class="slide">
+    <div class="eyebrow">Part 1 · 2025–2026 現況</div>
+    <h2>作品做完之後，台灣有哪些舞台</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card cyan"><span class="who">台北國際電玩展<sup class="fn"><a href="#src-9">9</a></sup></span><h3>2027 年 1 月 21 到 24 日</h3><p>南港展覽館 1 館。Indie House 學生方案免費、保證金 3,000 元，要交可試玩版。<sup class="fn"><a href="#src-10">10</a></sup></p></div>
+        <div class="card lemon"><span class="who">放視大賞<sup class="fn"><a href="#src-11">11</a></sup></span><h3>每年 5 月底，高雄</h3><p>2026 年是 5 月 28 到 30 日，競賽報名 1 月 1 日到 4 月 10 日。</p></div>
+        <div class="card pink"><span class="who">Steam 新品節<sup class="fn"><a href="#src-6">6</a></sup></span><h3>每年二、六、十月</h3><p>要有公開可玩的試玩版；每款遊戲只能參加一次。<sup class="fn"><a href="#src-7">7</a></sup></p></div>
+      </div>
+      <div class="take"><b>時間點</b>Indie House 報名在前一年 10 月中截止，這一屆來不及；想上舞台的組，畢業製作要提早半年算。<sup class="fn"><a href="#src-10">10</a></sup></div>
+    </div>
   </section>
 
-  <!-- 8 作品頁結構 -->
+  <!-- 8 PART 2 -->
+  <section class="slide part">
+    <div class="part-num">02</div>
+    <div class="eyebrow">Part 2</div>
+    <h2>作品頁怎麼寫</h2>
+    <p class="part-sub">不管放在哪個平台，結構都差不多。玩家給你幾秒決定要不要看下去。</p>
+  </section>
+
+  <!-- 9 四層 -->
   <section class="slide">
-    <div class="eyebrow">PART 2 · 結構</div>
+    <div class="eyebrow">Part 2 · 結構</div>
     <h2>作品頁的四層資訊</h2>
     <div class="content">
       <dl class="kv">
@@ -259,81 +312,65 @@
         <dt>第三層</dt><dd>三到五張截圖，各展示一個不同的玩法面向</dd>
         <dt>第四層</dt><dd>文字說明、操作方式、製作團隊、授權與致謝</dd>
       </dl>
-      <div class="take"><b>順序不能顛倒</b>把長篇世界觀放最上面，是學生作品頁最常見的錯誤。那是第四層的東西。</div>
+      <div class="take"><b>順序不能顛倒</b>把長篇世界觀放最上面，是學生作品頁最常見的錯誤。Steam 官方也說看到文字的人「已經有興趣了」。<sup class="fn"><a href="#src-3">3</a></sup></div>
     </div>
   </section>
 
-  <!-- 9 截圖怎麼挑 -->
+  <!-- 10 Steam 規格 -->
   <section class="slide">
-    <div class="eyebrow">PART 2 · 截圖</div>
+    <div class="eyebrow">Part 2 · 官方規格</div>
+    <h2>Steam 商店頁素材的尺寸<sup class="fn"><a href="#src-1">1</a></sup></h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>Header Capsule</dt><dd>920×430，商店頁最上面那張</dd>
+        <dt>Main Capsule</dt><dd>1232×706；Small Capsule 462×174；Vertical 748×896</dd>
+        <dt>截圖</dt><dd>至少 1920×1080，16:9</dd>
+        <dt>膠囊圖內容</dt><dd>「只放你的遊戲 logo 與美術」，不放評論引句</dd>
+      </dl>
+      <div class="take"><b>就算不上 Steam</b>照這套尺寸做，itch.io 與簡報都能直接用；itch.io 官方頁沒規定尺寸，只要求描述「完整、有資訊」。<sup class="fn"><a href="#src-12">12</a></sup></div>
+    </div>
+  </section>
+
+  <!-- 11 截圖 -->
+  <section class="slide">
+    <div class="eyebrow">Part 2 · 截圖</div>
     <h2>截圖要各講一件事</h2>
     <div class="content">
       <div class="cards c3">
-        <div class="card">
-          <span class="who">第一張</span>
-          <h3>核心玩法</h3>
-          <p>玩家在做那個核心動作的瞬間。這張要能單獨說明遊戲在幹嘛。</p>
-        </div>
-        <div class="card">
-          <span class="who">第二張</span>
-          <h3>視覺特色</h3>
-          <p>你們美術最強的那個畫面。第 4 週定的風格在這裡展示。</p>
-        </div>
-        <div class="card">
-          <span class="who">第三張</span>
-          <h3>情境或角色</h3>
-          <p>能讓人好奇「這是什麼故事」的一幕。</p>
-        </div>
+        <div class="card cyan"><span class="who">第一張</span><h3>核心玩法</h3><p>玩家在做那個核心動作的瞬間。這張要能單獨說明遊戲在幹嘛。</p></div>
+        <div class="card lemon"><span class="who">第二張</span><h3>視覺特色</h3><p>你們美術最強的那個畫面。第 4 週定的風格在這裡展示。</p></div>
+        <div class="card pink"><span class="who">第三張</span><h3>情境或角色</h3><p>能讓人好奇「這是什麼故事」的一幕。</p></div>
       </div>
-      <div class="take"><b>不要放的</b>選單畫面、設定畫面、空無一物的場景。這些每款遊戲都有，講不出你的特色。</div>
+      <div class="take"><b>不要放的</b>選單畫面、設定畫面、空無一物的場景。統一 1920×1080，不要混用不同尺寸。<sup class="fn"><a href="#src-1">1</a></sup></div>
     </div>
   </section>
 
-  <!-- 10 必要素材 -->
+  <!-- 12 標籤 -->
   <section class="slide">
-    <div class="eyebrow">PART 2 · 素材清單</div>
-    <h2>上架前要準備的素材</h2>
-    <div class="content">
-      <ul>
-        <li>封面圖一張，橫式。上面要能放得下遊戲名稱且看得清楚。</li>
-        <li>截圖三到五張，統一解析度，不要混用不同尺寸。</li>
-        <li>短影片一段，三十秒到一分鐘。</li>
-        <li>文字：一句話賣點、一段簡介、操作說明、製作名單與授權聲明。</li>
-      </ul>
-      <div class="linkrow">
-        <a class="lk" href="https://itch.io/" target="_blank" rel="noopener">itch.io</a>
-        <a class="lk" href="https://partner.steamgames.com/doc/store/tags?l=tchinese" target="_blank" rel="noopener">Steam 標籤文件</a>
-      </div>
-      <div class="take"><b>授權聲明別漏</b>用到的素材與字型要列出來源。這是第 1 週講的，期末報告會檢查。</div>
-    </div>
-  </section>
-
-  <!-- 11 標籤與分類 -->
-  <section class="slide">
-    <div class="eyebrow">PART 2 · 標籤</div>
-    <h2>標籤決定誰會看到你</h2>
+    <div class="eyebrow">Part 2 · 標籤</div>
+    <h2>標籤決定誰會看到你<sup class="fn"><a href="#src-4">4</a></sup></h2>
     <div class="content">
       <ul>
         <li>回頭用第 3 週寫的那五個標籤。做完之後可能要修，因為方向變了。</li>
+        <li>Steam 規定上市前至少 5 個，「建議加到 20 個」；前 5 個權重最高，要最精準。</li>
+        <li>「前 20 個標籤決定你的遊戲能出現在哪些標籤頁與類似瀏覽視圖」。</li>
         <li>標籤要誠實。掛了熱門標籤但內容不符，玩家點進來會給差評。</li>
-        <li>Steam 建議填滿二十個，前五個權重最強，所以前五個要最精準。</li>
-        <li>在 itch.io 這種平台，標籤與分類同樣是主要的曝光來源。</li>
       </ul>
       <div class="take"><b>檢查方式</b>用你的五個標籤去搜，看搜出來的作品跟你的像不像。不像就是標錯了。</div>
     </div>
   </section>
 
-  <!-- 12 PART 3 章節頁 -->
+  <!-- 13 PART 3 -->
   <section class="slide part">
     <div class="part-num">03</div>
-    <div class="eyebrow">PART 3</div>
-    <h2>短影音</h2>
+    <div class="eyebrow">Part 3</div>
+    <h2>短影音與預告片</h2>
     <p class="part-sub">三十秒。前三秒沒抓住人，後面二十七秒都白剪。</p>
   </section>
 
-  <!-- 13 三十秒放什麼 -->
+  <!-- 14 三十秒 -->
   <section class="slide">
-    <div class="eyebrow">PART 3 · 結構</div>
+    <div class="eyebrow">Part 3 · 結構</div>
     <h2>三十秒怎麼分</h2>
     <div class="content">
       <div class="flow">
@@ -343,58 +380,46 @@
         <div class="arr">→</div>
         <div class="step"><h3>最後七秒</h3><p>遊戲名稱、一句話賣點、哪裡玩得到。</p></div>
       </div>
-      <div class="take"><b>前三秒的鐵律</b>直接進畫面。任何形式的開場動畫都會讓人滑掉。</div>
+      <div class="take"><b>Steam 官方的三句</b>第一支預告片以實機遊玩為主；沒聲音也要看得懂；Steam 會自動從你的影片擷取 6 秒循環當微型預告片。<sup class="fn"><a href="#src-2">2</a></sup></div>
     </div>
   </section>
 
-  <!-- 14 常見錯誤 -->
+  <!-- 15 常見錯誤 -->
   <section class="slide">
-    <div class="eyebrow">PART 3 · 常見錯誤</div>
+    <div class="eyebrow">Part 3 · 常見錯誤</div>
     <h2>三種會被滑掉的剪法</h2>
     <div class="content">
       <div class="cards c3">
-        <div class="card">
-          <span class="who">錯誤一</span>
-          <h3>前五秒是黑幕與字卡</h3>
-          <p>觀眾在第二秒就滑走了。字卡放最後，不要放開頭。</p>
-        </div>
-        <div class="card">
-          <span class="who">錯誤二</span>
-          <h3>一鏡到底玩三十秒</h3>
-          <p>沒有剪接的實況片段很無聊。要挑精華段落接起來。</p>
-        </div>
-        <div class="card">
-          <span class="who">錯誤三</span>
-          <h3>用大量文字解釋</h3>
-          <p>影片要用畫面講。需要文字解釋的東西，代表畫面沒做好。</p>
-        </div>
+        <div class="card pink"><span class="who">錯誤一</span><h3>前五秒是黑幕與字卡</h3><p>觀眾在第二秒就滑走了。字卡放最後，不要放開頭。</p></div>
+        <div class="card lemon"><span class="who">錯誤二</span><h3>一鏡到底玩三十秒</h3><p>沒有剪接的實況片段很無聊。要挑精華段落接起來。</p></div>
+        <div class="card cyan"><span class="who">錯誤三</span><h3>用大量文字解釋</h3><p>影片要用畫面講。需要文字解釋的東西，代表畫面沒做好。</p></div>
       </div>
-      <div class="take"><b>參考做法</b>去看第 10 週那幾款台灣獨立遊戲的宣傳片，看它們前三秒放什麼。</div>
+      <div class="take"><b>參考做法</b>打開 Steam 任何一款你喜歡的遊戲，看它第一支預告片前三秒放什麼。</div>
     </div>
   </section>
 
-  <!-- 15 錄製與剪輯 -->
+  <!-- 16 錄製與剪輯 -->
   <section class="slide">
-    <div class="eyebrow">PART 3 · 製作</div>
+    <div class="eyebrow">Part 3 · 製作</div>
     <h2>錄製與剪輯的實務</h2>
     <div class="content">
       <dl class="kv">
-        <dt>錄製</dt><dd>錄多一點，至少十分鐘遊玩，才有素材可以挑</dd>
-        <dt>操作要漂亮</dt><dd>錄的時候刻意玩得順一點。失誤的片段不要用</dd>
-        <dt>聲音</dt><dd>用遊戲本身的音效與音樂。不要配不相干的流行歌</dd>
-        <dt>直式與橫式</dt><dd>短影音平台用直式，作品頁用橫式，要各出一版</dd>
+        <dt>錄製</dt><dd>錄多一點，至少十分鐘遊玩，才有素材可以挑；失誤的片段不要用</dd>
+        <dt>橫式規格</dt><dd>照 Steam 的上限：1920×1080、30 或 60 fps、H.264 與 AAC<sup class="fn"><a href="#src-2">2</a></sup></dd>
+        <dt>直式與橫式</dt><dd>短影音平台用直式，作品頁用橫式，要各出一版；直式不是把橫式裁掉兩邊</dd>
+        <dt>聲音</dt><dd>用遊戲本身的音效與音樂，不配不相干的流行歌</dd>
       </dl>
       <div class="take"><b>音樂授權</b>配樂用第 8 週查過授權的那些。隨便配一首熱門歌，發出去就是侵權。</div>
     </div>
   </section>
 
-  <!-- 16 粉專要不要開 -->
+  <!-- 17 粉專 -->
   <section class="slide">
-    <div class="eyebrow">PART 3 · 社群</div>
+    <div class="eyebrow">Part 3 · 社群</div>
     <h2>粉專要不要開</h2>
     <div class="content">
       <div class="cols">
-        <div class="card">
+        <div class="card cyan">
           <span class="who">值得開</span>
           <h3>如果會繼續做</h3>
           <ul>
@@ -403,7 +428,7 @@
             <li>目標是累積關注到上架</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card pink">
           <span class="who">不必開</span>
           <h3>如果做到這裡</h3>
           <ul>
@@ -413,21 +438,21 @@
           </ul>
         </div>
       </div>
-      <div class="take"><b>經驗談</b>開了但只發三篇的粉專，比沒開更糟。看的人會覺得這個專案已經死了。</div>
+      <div class="take"><b>要上 Steam 的組</b>Coming Soon 頁至少要公開兩週才能上市，送審要提早 7 個工作天；<sup class="fn"><a href="#src-5">5</a></sup> 這些時間要算進畢業製作的排程。</div>
     </div>
   </section>
 
-  <!-- 17 PART 4 章節頁 -->
+  <!-- 18 PART 4 -->
   <section class="slide part">
     <div class="part-num">04</div>
-    <div class="eyebrow">PART 4</div>
+    <div class="eyebrow">Part 4</div>
     <h2>期末發表</h2>
     <p class="part-sub">下週就是最後一堂。這一段講流程、要帶什麼、以及現場出包怎麼處理。</p>
   </section>
 
-  <!-- 18 發表流程 -->
+  <!-- 19 流程 -->
   <section class="slide">
-    <div class="eyebrow">PART 4 · 流程</div>
+    <div class="eyebrow">Part 4 · 流程</div>
     <h2>一組十五分鐘</h2>
     <div class="content">
       <div class="flow">
@@ -441,9 +466,9 @@
     </div>
   </section>
 
-  <!-- 19 要準備什麼 -->
+  <!-- 20 要帶什麼 -->
   <section class="slide">
-    <div class="eyebrow">PART 4 · 準備清單</div>
+    <div class="eyebrow">Part 4 · 準備清單</div>
     <h2>下週要帶的東西</h2>
     <div class="content">
       <dl class="kv">
@@ -456,96 +481,73 @@
     </div>
   </section>
 
-  <!-- 20 現場出包 -->
+  <!-- 21 出包 -->
   <section class="slide">
-    <div class="eyebrow">PART 4 · 危機處理</div>
+    <div class="eyebrow">Part 4 · 危機處理</div>
     <h2>現場出包怎麼辦</h2>
     <div class="content">
       <div class="cards c3">
-        <div class="card">
-          <span class="who">打不開</span>
-          <h3>直接播錄影</h3>
-          <p>不要在台上除錯。說一句「我們改用錄影展示」就繼續，不用道歉三次。</p>
-        </div>
-        <div class="card">
-          <span class="who">玩到一半當掉</span>
-          <h3>承認並繼續</h3>
-          <p>「這裡還有個錯誤沒修完」講出來就好。誠實比慌張好看。</p>
-        </div>
-        <div class="card">
-          <span class="who">被問倒</span>
-          <h3>說還沒想清楚</h3>
-          <p>這句話不扣分。硬掰被追問到底才是災難。</p>
-        </div>
+        <div class="card cyan"><span class="who">打不開</span><h3>直接播錄影</h3><p>不要在台上除錯。說一句「我們改用錄影展示」就繼續，不用道歉三次。</p></div>
+        <div class="card lemon"><span class="who">玩到一半當掉</span><h3>承認並繼續</h3><p>「這裡還有個錯誤沒修完」講出來就好。誠實比慌張好看。</p></div>
+        <div class="card pink"><span class="who">被問倒</span><h3>說還沒想清楚</h3><p>這句話不扣分。硬掰被追問到底才是災難。</p></div>
       </div>
       <div class="take"><b>評審在看什麼</b>出包的處理方式，本身就是專業度的展示。慌張比出包本身扣更多分。</div>
     </div>
   </section>
 
-  <!-- 21 常見發表失誤 -->
+  <!-- 22 老師的課堂規矩 -->
   <section class="slide">
-    <div class="eyebrow">PART 4 · 發表失誤</div>
-    <h2>三個最常見的失誤</h2>
+    <div class="eyebrow">Part 4 · 老師的課堂規矩</div>
+    <h2>我驗作品頁與影片的四條規矩</h2>
     <div class="content">
       <ul>
-        <li>八分鐘全在講開發過程有多辛苦。評審要看結果，不是看苦勞。</li>
-        <li>實機展示時操作不熟，卡在自己做的關卡。事前要練到很順。</li>
-        <li>只有一個人講，其他人站旁邊。被問到自己負責的部分答不出來。</li>
+        <li>一句話賣點我會請隔壁組的人唸一次再複述。複述不出來，退回重寫。</li>
+        <li>影片前三秒出現字卡、logo 或黑幕的，退件。我只看前三秒就決定要不要看下去。</li>
+        <li>截圖裡出現選單或設定畫面的，那張不算數；三張都要是遊玩中的畫面。</li>
+        <li>配樂與字型的授權沒寫進作品頁的，整份不收。第 8 週的素材帳本這時候就要拿出來。</li>
       </ul>
-      <div class="take"><b>練習方式</b>發表前完整走過兩次，其中一次找別組當觀眾。只在腦中想過不算練習。</div>
+      <div class="take"><b>發表練習</b>發表前完整走過兩次，其中一次找別組當觀眾並計時。只在腦中想過不算練習。</div>
     </div>
   </section>
 
-  <!-- 22 PART 5 章節頁 -->
+  <!-- 23 PART 5 -->
   <section class="slide part">
     <div class="part-num">05</div>
-    <div class="eyebrow">PART 5</div>
+    <div class="eyebrow">Part 5</div>
     <h2>本週交付</h2>
     <p class="part-sub">作品頁與三十秒影片。下週發表時這兩樣都會用到。</p>
   </section>
 
-  <!-- 23 交付規格 -->
+  <!-- 24 交付規格 -->
   <section class="slide">
-    <div class="eyebrow">PART 5 · 交付規格</div>
+    <div class="eyebrow">Part 5 · 交付規格</div>
     <h2>這週要交什麼</h2>
     <div class="content">
       <dl class="kv">
-        <dt>交付物</dt><dd>一頁作品頁，加三十秒宣傳影片</dd>
+        <dt>交付物</dt><dd>一頁作品頁，加三十秒宣傳影片；檔名「組別代號_W17_作品頁」</dd>
         <dt>作品頁</dt><dd>封面圖、一句話賣點、三到五張截圖、簡介與授權聲明</dd>
-        <dt>影片</dt><dd>三十秒，橫式，前三秒直接進畫面，配樂授權要查過</dd>
+        <dt>影片</dt><dd>三十秒，橫式 1920×1080，前三秒直接進畫面，配樂授權要查過</dd>
         <dt>截止</dt><dd>第 18 週上課前，2027 年 1 月 7 日 08:00</dd>
       </dl>
       <div class="take"><b>形式不限平台</b>做成 itch.io 頁面、PDF 或簡報頁都可以。重點是四層資訊齊全。</div>
     </div>
   </section>
 
-  <!-- 24 檢核與退件 -->
+  <!-- 25 檢核 -->
   <section class="slide">
-    <div class="eyebrow">PART 5 · 檢核標準</div>
+    <div class="eyebrow">Part 5 · 檢核標準</div>
     <h2>什麼樣算過關</h2>
     <div class="content">
       <div class="cards c3">
-        <div class="card">
-          <span class="who">及格</span>
-          <h3>四層資訊齊全</h3>
-          <p>封面、影片、截圖、說明都有，授權聲明沒漏。</p>
-        </div>
-        <div class="card">
-          <span class="who">好</span>
-          <h3>三秒抓得住人</h3>
-          <p>影片前三秒直接進畫面，一句話唸完別人複述得出來。</p>
-        </div>
-        <div class="card">
-          <span class="who">退件</span>
-          <h3>常見的三種</h3>
-          <p>截圖全是選單；影片前五秒是字卡；配樂沒查授權。</p>
-        </div>
+        <div class="card cyan"><span class="who">及格</span><h3>四層資訊齊全</h3><p>封面、影片、截圖、說明都有，授權聲明沒漏。</p></div>
+        <div class="card lemon"><span class="who">好</span><h3>三秒抓得住人</h3><p>影片前三秒直接進畫面，一句話唸完別人複述得出來。</p></div>
+        <div class="card pink"><span class="who">退件</span><h3>常見的三種</h3><p>截圖全是選單；影片前五秒是字卡；配樂沒查授權。</p></div>
       </div>
       <div class="take"><b>提醒</b>這是最後一份週交付。下週就是期末，沒有補交的機會了。</div>
     </div>
   </section>
 
-  <!-- 25 課堂討論與課後任務 -->
+  <!-- 26 收尾 -->
   <section class="slide">
     <div class="eyebrow">Week 17 · 收尾</div>
     <h2>回去做這三件事</h2>
@@ -555,7 +557,7 @@
         <p>影片前三秒放的是什麼？那個畫面夠不夠讓人停下來？</p>
         <p>展示版在別的電腦上測過了嗎？錄影備援錄好了嗎？</p>
       </div>
-      <div class="card">
+      <div class="card grape">
         <span class="who">課後任務</span>
         <p>發表流程完整走過兩次，其中一次找別組當觀眾。計時，超過八分鐘就要刪內容。</p>
       </div>
@@ -563,42 +565,44 @@
     </div>
   </section>
 
-  <!-- 26 資源彙整 -->
+  <!-- 27 資源彙整 -->
   <section class="slide">
     <div class="eyebrow">Week 17 · 資源彙整</div>
     <h2>本週資源</h2>
     <div class="content">
       <div class="cols">
         <div class="grp">
-          <h3>發布平台</h3>
+          <h3>商店頁官方文件</h3>
           <div class="linkrow">
-            <a class="lk" href="https://itch.io/" target="_blank" rel="noopener">itch.io</a>
-            <a class="lk" href="https://store.steampowered.com/" target="_blank" rel="noopener">Steam</a>
-            <a class="lk" href="https://partner.steamgames.com/doc/store/tags?l=tchinese" target="_blank" rel="noopener">Steam 標籤文件</a>
+            <a class="lk" href="https://partner.steamgames.com/doc/store/assets" target="_blank" rel="noopener">Steam 素材尺寸</a>
+            <a class="lk" href="https://partner.steamgames.com/doc/store/trailer" target="_blank" rel="noopener">Steam 預告片</a>
+            <a class="lk" href="https://partner.steamgames.com/doc/store/tags" target="_blank" rel="noopener">Steam 標籤</a>
+            <a class="lk" href="https://itch.io/docs/creators/design" target="_blank" rel="noopener">itch.io 頁面設計</a>
           </div>
         </div>
         <div class="grp">
-          <h3>參考與素材</h3>
+          <h3>舞台</h3>
           <div class="linkrow">
-            <a class="lk" href="https://www.indiegametw.com/en/" target="_blank" rel="noopener">台灣遊戲資料站</a>
-            <a class="lk" href="https://www.incgmedia.com/spotlight/11-taiwan-indie-games-must-play" target="_blank" rel="noopener">台灣獨立遊戲盤點</a>
-            <a class="lk" href="https://freesound.org/" target="_blank" rel="noopener">Freesound</a>
+            <a class="lk" href="https://partner.steamgames.com/doc/marketing/upcoming_events/nextfest" target="_blank" rel="noopener">Steam 新品節</a>
+            <a class="lk" href="https://tgs.tca.org.tw/indie_application.php" target="_blank" rel="noopener">電玩展 Indie House</a>
+            <a class="lk" href="https://www.tca.org.tw/exhibit_info1.php?n=2725" target="_blank" rel="noopener">2027 電玩展公告</a>
           </div>
         </div>
       </div>
-      <div class="take"><b>提醒</b>宣傳影片的配樂一樣要查授權。第 8 週的素材帳本這時候要拿出來用。</div>
+      <div class="take"><b>出處與補充</b>在下方講義，按 N 鍵。宣傳影片的配樂一樣要查授權，第 8 週的素材帳本這時候要拿出來用。</div>
     </div>
   </section>
 
-  
-
   </div></div>
 
+  <div class="hint">← → 換頁　M 目錄　N 講義　F 全螢幕</div>
   <div class="ctrl">
     <button id="prev" aria-label="上一張">‹</button>
     <span class="cnt" id="cnt">1 / 1</span>
     <button id="next" aria-label="下一張">›</button>
     <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+    <button id="toNotes" title="講義（N）">講義 ↓</button>
+    <button id="full" title="全螢幕（F）">⛶</button>
   </div>
   <div class="prog" id="prog"></div>
 
@@ -609,17 +613,158 @@
   </div>
 </div>
 
+<!-- ============ 講義區 ============ -->
+<main class="notes" id="notes">
+  <div class="notes-head">
+    <div class="eyebrow">Week 17 · 講義</div>
+    <h2>推廣、發表與媒體規劃</h2>
+    <p>投影片講的是骨架，這裡放肉：Steam 商店頁與預告片的官方規格、台灣兩個舞台與新品節的官方頁、三十秒影片的做法、期末發表的準備，以及交作業前的自我檢核。</p>
+  </div>
+
+  <section class="sec">
+    <span class="kicker">導讀</span>
+    <h2>這週在解決什麼問題</h2>
+    <p>上週你們交出了別人打得開的版本。這週要回答的是：沒玩過的人，憑什麼點進來？推廣不是做完之後的事，講不清楚的作品通常是設計本身沒收斂，所以這週的作品頁與影片，同時也是對第 3 週那句定位的最後一次檢查。</p>
+    <p>三個詞先講清楚。<strong>一句話賣點</strong>是玩家做什麼、什麼限制、什麼感覺，三十個字以內，唸給人聽要能複述。<strong>作品頁</strong>是封面、影片、截圖、文字四層由上到下排的介紹頁，Steam 與 itch.io 結構都一樣。<strong>錄影備援</strong>是整段遊玩的錄影，現場打不開時直接播，是下週唯一能救場的東西。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">§1</span>
+    <h2>推廣是設計的一部分</h2>
+    <p>做完不會自動被看到。放上平台沒人點進來就等於沒發表；Steam 的預告片指南直接寫，在探索佇列的情境下「你可能只有不到 10 秒留下印象」。<a href="#src-2">[2]</a> 畢業後投履歷，作品頁就是你的名片。推廣還有一個附加價值：逼你收斂。寫不出一句話賣點，代表定位還很模糊；剪不出三十秒精華，代表沒有記憶點。這兩件事都會反映回設計本身。</p>
+    <p>一句話要包含三件事：玩家做什麼，用動詞，「操控會分裂的角色穿過機關」而不是「動作解謎遊戲」；什麼限制，張力來自限制，「每分裂一次就少一半體力」；什麼感覺，一個形容詞放最後。整句三十個字以內，唸出來不用換氣。Steam 的簡短描述指南標題就叫「Get to the Point!」，並要求「聚焦你產品的獨特價值主張」、「快速傳達顧客為什麼會想多了解這款遊戲」。<a href="#src-3">[3]</a> 測試方法跟第 3 週一樣：唸給沒看過的人聽，請他複述，複述得出來才算過關。</p>
+    <h3>2025–2026 現況：作品做完之後，台灣有哪些舞台</h3>
+    <table>
+      <thead><tr><th>舞台</th><th>官方頁怎麼寫（查證 2026-09-16）</th><th>對你們的意思</th></tr></thead>
+      <tbody>
+        <tr><td>台北國際電玩展<a href="#src-9">[9]</a></td><td>2027 年 1 月 21 至 24 日，南港展覽館 1 館；Indie House 獨立遊戲專區同步開放報名</td><td>Indie House 有「Rising Star 學生方案」：在學或應屆畢業生、須為開發者，免費，保證金 3,000 元，要交可試玩版；報名 2026-10-14 截止<a href="#src-10">[10]</a></td></tr>
+        <tr><td>放視大賞<a href="#src-11">[11]</a></td><td>2026 年 5 月 28 至 30 日，高雄展覽館；競賽報名 1 月 1 日至 4 月 10 日</td><td>每年 5 月底在高雄；2027 年日期未公告，以主辦單位公告為準</td></tr>
+        <tr><td>Steam 新品節<a href="#src-6">[6]</a></td><td>「一週長、聚焦推廣附可玩試玩版的即將上市遊戲」；每年二、六、十月；每款遊戲只能參加一次<a href="#src-7">[7]</a></td><td>要先有公開的商店頁與試玩版；試玩版是獨立的 App ID<a href="#src-8">[8]</a></td></tr>
+      </tbody>
+    </table>
+    <p>時間點是重點。電玩展 Indie House 的報名在前一年 10 月中截止，<a href="#src-10">[10]</a> 這一屆你們來不及；新品節每款遊戲一生只能參加一次，<a href="#src-7">[7]</a> 不要拿半成品去消耗掉。想上舞台的組，畢業製作的排程要提早半年往回推。</p>
+  </section>
+
+  <section class="sec cyan">
+    <span class="kicker">§2</span>
+    <h2>作品頁怎麼寫</h2>
+    <p>不管放在哪個平台，結構都是四層。第一層封面圖與一句話，決定他要不要往下看；第二層影片或動圖，決定他要不要下載；第三層三到五張截圖，各展示一個不同的玩法面向；第四層文字說明、操作方式、製作團隊、授權與致謝。順序不能顛倒，把長篇世界觀放最上面是學生作品頁最常見的錯誤。Steam 的描述指南講得很清楚：看完截圖與預告片還往下讀文字的人，「已經有興趣，想知道更多」，<a href="#src-3">[3]</a> 文字是給第四層的人看的。</p>
+    <h3>Steam 商店頁素材的官方尺寸</h3>
+    <table>
+      <thead><tr><th>素材</th><th>尺寸</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td>Header Capsule</td><td>920×430</td><td>商店頁最上面那張</td></tr>
+        <tr><td>Main Capsule</td><td>1232×706</td><td>首頁與特賣輪播</td></tr>
+        <tr><td>Small Capsule</td><td>462×174</td><td>搜尋結果與清單</td></tr>
+        <tr><td>Vertical Capsule</td><td>748×896</td><td>直式版位</td></tr>
+        <tr><td>截圖</td><td>至少 1920×1080（16:9）</td><td>作品頁第三層</td></tr>
+        <tr><td>Library Capsule</td><td>600×900</td><td>玩家收藏庫</td></tr>
+      </tbody>
+    </table>
+    <p>膠囊圖的內容規定是「只放你的遊戲 logo 與美術」，不放評論引句與其他元素。<a href="#src-1">[1]</a> 就算你們不上 Steam，照這套尺寸做，itch.io 頁面與期末簡報都能直接用；itch.io 官方的頁面設計文件沒有規定封面與截圖尺寸，只要求描述「完整、有資訊」，並鼓勵用主題工具做出符合遊戲風格的頁面。<a href="#src-12">[12]</a></p>
+    <p>截圖要各講一件事：第一張核心玩法，玩家在做那個核心動作的瞬間，這張要能單獨說明遊戲在幹嘛；第二張視覺特色，你們美術最強的那個畫面；第三張情境或角色，能讓人好奇「這是什麼故事」的一幕。不要放選單畫面、設定畫面、空無一物的場景，這些每款遊戲都有，講不出你的特色。統一 1920×1080，不要混用不同尺寸。</p>
+    <p>標籤決定誰會看到你。回頭用第 3 週寫的那五個標籤，做完之後可能要修，因為方向變了。Steam 規定上市前至少 5 個標籤，「建議加到 20 個」；前 5 個要能清楚描繪你的遊戲，權重最高；「前 20 個標籤決定你的遊戲能出現在哪些標籤頁與類似瀏覽視圖」。<a href="#src-4">[4]</a> 標籤要誠實，掛了熱門標籤但內容不符，玩家點進來會給差評。檢查方式：用你的五個標籤去搜，看搜出來的作品跟你的像不像。</p>
+  </section>
+
+  <section class="sec grape">
+    <span class="kicker">§3</span>
+    <h2>短影音與預告片</h2>
+    <p>三十秒怎麼分：前三秒放最有記憶點的那個畫面，不放標題卡、不放製作商 logo；中間二十秒三到四段實際玩的畫面，每段五秒左右，展示不同面向；最後七秒遊戲名稱、一句話賣點、哪裡玩得到。Steam 預告片指南的三句話跟這個結構一致：第一支預告片以實機遊玩為主，展示「玩家在遊戲裡會做什麼、從他們操作遊戲的視角」；要能在沒有聲音時理解；Steam 會從主要預告片自動擷取「6 秒循環影片」當微型預告片，所以每一段都要能單獨成立。<a href="#src-2">[2]</a></p>
+    <p>三種會被滑掉的剪法：前五秒是黑幕與字卡，觀眾在第二秒就滑走了；一鏡到底玩三十秒，沒有剪接的實況片段很無聊；用大量文字解釋，影片要用畫面講，需要文字解釋的東西代表畫面沒做好。參考做法：打開 Steam 任何一款你喜歡的遊戲，看它第一支預告片前三秒放什麼。</p>
+    <div class="scene">
+      <span class="who">假設情境</span>
+      <p>一組做的是「操控會分裂的角色穿過機關」。第一版影片前五秒是黑底白字的遊戲名與組名，第六秒才進畫面，前三秒什麼都沒發生。第二版把角色在半空中分裂成兩個、同時踩下兩塊踏板的那 0.5 秒放在第一格，第三秒機關門打開，第四秒才切到下一段。給隔壁組看，第一版有人在第四秒低頭看手機，第二版看完了。差別不在剪接技巧，在第一格放了什麼。</p>
+    </div>
+    <p>錄製與剪輯的實務：錄多一點，至少十分鐘遊玩才有素材可以挑，失誤的片段不要用；橫式規格照 Steam 的上限，1920×1080、30 或 60 fps、H.264 與 AAC、.mp4；<a href="#src-2">[2]</a> 直式版另外出一版給短影音平台，直式不是把橫式裁掉兩邊，要重新選鏡位或把 UI 縮進中間；聲音用遊戲本身的音效與音樂，不配不相干的流行歌。配樂用第 8 週查過授權的那些，隨便配一首熱門歌，發出去就是侵權。</p>
+    <p>粉專要不要開，看會不會繼續做。畢業製作要接著做這個題目、有人願意固定發開發日誌、目標是累積關注到上架，值得開；專題結束就不再更新、沒有人有時間經營，放上作品平台就夠了。開了但只發三篇的粉專比沒開更糟，看的人會覺得這個專案已經死了。要上 Steam 的組還要記得：Coming Soon 頁「至少要公開兩週」才能上市，送審「至少提早 7 個工作天」，需要「一組品牌圖片、文字描述，最好有實機預告片」；<a href="#src-5">[5]</a> 這些時間要算進畢業製作的排程。</p>
+  </section>
+
+  <section class="sec lemon">
+    <span class="kicker">§4</span>
+    <h2>期末發表</h2>
+    <p>一組十五分鐘：報告八分鐘，作品講解加成果展示，全組分工，每人講自己主責的部分；實機展示四分鐘，用準備好的存檔跳到精彩段落；問答三分鐘，我跟其他組會問，答不出來就說還沒想清楚，不要硬掰。跟期中的差別是期中講計畫、期末講結果，重點放在「做出了什麼」與「學到了什麼」。</p>
+    <p>下週要帶的東西：展示版，封版後測過的那一份，隨身碟一份、雲端一份；存檔進度，能直接跳到精彩段落；錄影備援，整段遊玩的錄影，現場當機時直接播；簡報檔、企畫書定稿、AI 使用說明、素材帳本。錄影備援最常被跳過，但它是唯一能救「現場打不開」的東西，花二十分鐘錄，值得。</p>
+    <p>現場出包怎麼辦：打不開就直接播錄影，說一句「我們改用錄影展示」就繼續，不用道歉三次；玩到一半當掉，「這裡還有個錯誤沒修完」講出來就好，誠實比慌張好看；被問倒就說還沒想清楚，這句話不扣分，硬掰被追問到底才是災難。出包的處理方式本身就是專業度的展示，慌張比出包本身扣更多分。三個最常見的失誤：八分鐘全在講開發過程有多辛苦，評審要看結果不是看苦勞；實機展示時操作不熟，卡在自己做的關卡；只有一個人講，其他人站旁邊，被問到自己負責的部分答不出來。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">§5</span>
+    <h2>本週交付</h2>
+    <p>交一頁作品頁加三十秒宣傳影片，檔名「組別代號_W17_作品頁」。作品頁要有封面圖、一句話賣點、三到五張截圖、簡介與授權聲明；影片三十秒、橫式 1920×1080、前三秒直接進畫面、配樂授權要查過；截止第 18 週上課前，2027 年 1 月 7 日 08:00。形式不限平台，itch.io 頁面、PDF 或簡報頁都可以，重點是四層資訊齊全。及格是四層資訊齊全、授權聲明沒漏；好是影片前三秒直接進畫面、一句話唸完別人複述得出來；退件的三種常見樣子是截圖全是選單、影片前五秒是字卡、配樂沒查授權。這是最後一份週交付，下週就是期末，沒有補交的機會。</p>
+  </section>
+
+  <section class="sec grape">
+    <span class="kicker">老師的課堂規矩</span>
+    <h2>我驗作品頁與影片的四條規矩</h2>
+    <p>第一，一句話賣點我會請隔壁組的人唸一次再複述，複述不出來退回重寫；這跟第 3 週的標準一樣，做了一學期要是還講不清楚，問題在設計不在文案。第二，影片前三秒出現字卡、logo 或黑幕的退件，我只看前三秒就決定要不要看下去，玩家也是。第三，截圖裡出現選單或設定畫面的那張不算數，三張都要是遊玩中的畫面。第四，配樂與字型的授權沒寫進作品頁的整份不收，第 8 週的素材帳本這時候就要拿出來。發表練習要完整走過兩次，其中一次找別組當觀眾並計時，只在腦中想過不算練習。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">出處</span>
+    <h2>本週引用的資料</h2>
+    <p>每一條都在 2026-09-16 打開確認過。Steam 的規格與活動日期會變，引用時以你使用當天的 Steamworks 文件為準；台灣兩個展的日期以當年主辦單位公告為準。網址失效請告訴我，我會換。</p>
+    <ol class="src">
+      <li id="src-1"><span class="ti">Valve〈Store Graphical Assets〉Steamworks 文件</span><span class="meta">Valve · 頁面未標日期 · 膠囊圖與截圖尺寸、「只放 logo 與美術」 · 查證 2026-09-16</span><a href="https://partner.steamgames.com/doc/store/assets" target="_blank" rel="noopener">https://partner.steamgames.com/doc/store/assets</a></li>
+      <li id="src-2"><span class="ti">Valve〈Trailers〉Steamworks 文件</span><span class="meta">Valve · 頁面未標日期 · 不到 10 秒、實機為主、沒聲音也要看得懂、6 秒微型預告片、技術規格 · 查證 2026-09-16</span><a href="https://partner.steamgames.com/doc/store/trailer" target="_blank" rel="noopener">https://partner.steamgames.com/doc/store/trailer</a></li>
+      <li id="src-3"><span class="ti">Valve〈Store Page Written Description〉Steamworks 文件</span><span class="meta">Valve · 頁面未標日期 · Get to the Point、獨特價值主張 · 查證 2026-09-16</span><a href="https://partner.steamgames.com/doc/store/page/description" target="_blank" rel="noopener">https://partner.steamgames.com/doc/store/page/description</a></li>
+      <li id="src-4"><span class="ti">Valve〈Steam Tags〉Steamworks 文件</span><span class="meta">Valve · 頁面未標日期 · 至少 5 個、建議 20 個、前 5 與前 20 的權重 · 查證 2026-09-16</span><a href="https://partner.steamgames.com/doc/store/tags" target="_blank" rel="noopener">https://partner.steamgames.com/doc/store/tags</a></li>
+      <li id="src-5"><span class="ti">Valve〈Coming Soon〉Steamworks 文件</span><span class="meta">Valve · 頁面未標日期 · 至少公開兩週、送審提早 7 個工作天 · 查證 2026-09-16</span><a href="https://partner.steamgames.com/doc/store/coming_soon" target="_blank" rel="noopener">https://partner.steamgames.com/doc/store/coming_soon</a></li>
+      <li id="src-6"><span class="ti">Valve〈Steam Next Fest〉Steamworks 文件總覽頁</span><span class="meta">Valve · 頁面未標日期 · 一週長、每年二、六、十月、資格條件 · 查證 2026-09-16</span><a href="https://partner.steamgames.com/doc/marketing/upcoming_events/nextfest" target="_blank" rel="noopener">https://partner.steamgames.com/doc/marketing/upcoming_events/nextfest</a></li>
+      <li id="src-7"><span class="ti">Valve〈Steam Next Fest: October 2026 Edition〉</span><span class="meta">Valve · 頁面未標日期 · 2026-10-19 至 10-26、只能參加一次、要有公開試玩版 · 查證 2026-09-16</span><a href="https://partner.steamgames.com/doc/marketing/upcoming_events/nextfest/2026october" target="_blank" rel="noopener">https://partner.steamgames.com/doc/marketing/upcoming_events/nextfest/2026october</a></li>
+      <li id="src-8"><span class="ti">Valve〈Demos〉Steamworks 文件</span><span class="meta">Valve · 頁面未標日期 · 獨立 App ID、願望清單通知兩週內一次 · 查證 2026-09-16</span><a href="https://partner.steamgames.com/doc/store/application/demos" target="_blank" rel="noopener">https://partner.steamgames.com/doc/store/application/demos</a></li>
+      <li id="src-9"><span class="ti">台北市電腦公會〈2027台北國際電玩展 全區同步開放報名、會員再享優惠〉</span><span class="meta">TCA · 2026-08-05 · 2027-01-21 至 24、南港展覽館 1 館、Indie House 開放報名 · 查證 2026-09-16</span><a href="https://www.tca.org.tw/exhibit_info1.php?n=2725" target="_blank" rel="noopener">https://www.tca.org.tw/exhibit_info1.php?n=2725</a></li>
+      <li id="src-10"><span class="ti">台北國際電玩展〈INDIE HOUSE 獨立遊戲專區 報名〉</span><span class="meta">TCA · 頁面未標日期 · 報名至 2026-10-14、Rising Star 學生方案免費、保證金 3,000 元、須可試玩 · 查證 2026-09-16</span><a href="https://tgs.tca.org.tw/indie_application.php" target="_blank" rel="noopener">https://tgs.tca.org.tw/indie_application.php</a></li>
+      <li id="src-11"><span class="ti">放視大賞主辦單位〈2026 放視大賞 參展辦法（草案）〉</span><span class="meta">主辦單位文件 · 2025-10-02 · 2026-05-28 至 30、高雄展覽館、競賽報名 01-01 至 04-10 · 查證 2026-09-16（文件重新下載，內容沿用 2026-09-15 紀錄）</span><a href="https://storage.googleapis.com/vgw-prod/cms/media/files/2026%E6%94%BE%E8%A6%96%E5%A4%A7%E8%B3%9E%E5%8F%83%E5%B1%95%E8%BE%A6%E6%B3%95_%E8%8D%89%E6%A1%88_%E5%85%AC%E5%91%8A%E7%89%88-20251002-154105.pdf" target="_blank" rel="noopener">https://storage.googleapis.com/vgw-prod/cms/media/files/2026放視大賞參展辦法_草案_公告版-20251002-154105.pdf</a></li>
+      <li id="src-12"><span class="ti">itch.io〈Page design〉創作者文件</span><span class="meta">itch.io · 頁面未標日期 · 描述要完整、主題工具、未規定尺寸 · 查證 2026-09-16</span><a href="https://itch.io/docs/creators/design" target="_blank" rel="noopener">https://itch.io/docs/creators/design</a></li>
+    </ol>
+  </section>
+
+  <section class="sec cyan">
+    <span class="kicker">補充資訊</span>
+    <h2>延伸閱讀與提醒</h2>
+    <ul>
+      <li><strong>「前三秒」是我的規矩，「不到 10 秒」是 Steam 的。</strong>各平台都沒有公開前三秒流失率的數字，我只引 Steam 那句「不到 10 秒留下印象」；<a href="#src-2">[2]</a> 三秒是我從學生影片裡看出來的門檻，比官方更嚴。</li>
+      <li><strong>新品節不要拿半成品去試。</strong>每款遊戲只能參加一次，<a href="#src-7">[7]</a> 而且要先有公開商店頁與試玩版；<a href="#src-6">[6]</a> 畢業製作真的要上 Steam 的組，把新品節排在上市前那一屆。</li>
+      <li><strong>試玩版是另一個 App ID。</strong>Steam 的試玩版與正式遊戲分開建，互相有連結，上線可對願望清單者通知一次；<a href="#src-8">[8]</a> 這代表試玩版也要一套商店素材，尺寸同正式版。<a href="#src-1">[1]</a></li>
+      <li><strong>電玩展學生方案的三個條件。</strong>在學或應屆畢業生並提供證明、須為展出遊戲的開發者、要有可試玩版；免費但有 3,000 元保證金，報名在前一年 10 月中截止。<a href="#src-10">[10]</a> 想去的組，畢業製作第一學期就要有能玩的版本。</li>
+      <li><strong>放視大賞的節奏。</strong>每年 5 月底在高雄，競賽報名從 1 月初到 4 月上旬；<a href="#src-11">[11]</a> 2027 年的日期以主辦單位公告為準。</li>
+      <li><strong>直式版的長度以平台當天的規定為準。</strong>各短影音平台的上限會改，官方說明頁也常改網址，這裡不寫數字；你們的三十秒版在所有平台都放得進去，重點是直式要重新選鏡位，不是把橫式裁掉兩邊。</li>
+    </ul>
+  </section>
+
+  <section class="sec lemon">
+    <span class="kicker">本週檢核</span>
+    <h2>交作業前自己打勾</h2>
+    <ul class="check">
+      <li>一句話賣點三十字以內，含動詞、限制、感覺；唸給非本科的人聽，他複述得出來。</li>
+      <li>作品頁四層齊全：封面圖與一句話、影片、三到五張截圖、文字說明與授權聲明。</li>
+      <li>截圖統一 1920×1080，沒有選單或設定畫面，各講一個不同的玩法面向。</li>
+      <li>影片三十秒、橫式 1920×1080，前三秒直接進畫面，沒有字卡、logo 或黑幕。</li>
+      <li>配樂與字型的授權寫進作品頁，來源對得上第 8 週的素材帳本。</li>
+      <li>展示版在別人的電腦上測過；存檔能跳到精彩段落；錄影備援錄好了。</li>
+      <li>發表流程完整走過兩次並計時，八分鐘內講完；檔名「組別代號_W17_作品頁」，2027-01-07 08:00 前交。</li>
+    </ul>
+  </section>
+
+  <p class="version">2026-09-16 翻新：版型改為典籍金箔、新增講義區、商店頁素材與預告片改引 Steamworks 官方文件、新增台北國際電玩展 Indie House 學生方案、放視大賞與 Steam 新品節官方頁。前一版：2026-09-13。</p>
+</main>
+
+<a class="backtop" id="backtop" href="#deck">↑ 回投影片</a>
+
 <script>
 (function () {
   /* ★ 每週只改這一行 ★ */
+  var COURSE_LABEL = '專題企畫';
   var WEEK_LABEL = '第 17 週 · 推廣發表與媒體規劃';
 
+  var deck = document.getElementById('deck');
   var stage = document.getElementById('stage');
   var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
   var cnt = document.getElementById('cnt');
   var prog = document.getElementById('prog');
   var toc = document.getElementById('toc');
   var tgrid = document.getElementById('tgrid');
+  var backtop = document.getElementById('backtop');
   var cur = 0;
 
   document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
@@ -627,7 +772,7 @@
   slides.forEach(function (s, i) {
     var f = document.createElement('div');
     f.className = 'foot';
-    f.innerHTML = '<span>專題企畫|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    f.innerHTML = '<span>' + COURSE_LABEL + '|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
     s.appendChild(f);
   });
 
@@ -636,12 +781,12 @@
     var eb = s.querySelector('.eyebrow');
     var part = '開場';
     if (eb) {
-      var m = eb.textContent.match(/PART\s*(\d)/i);
-      if (m) part = 'PART ' + m[1];
+      var m = eb.textContent.match(/Part\s*(\d)/i);
+      if (m) part = 'Part ' + m[1];
       else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
     }
     var h = s.querySelector('h1, h2');
-    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent.replace(/\d+$/, '') : '') });
   });
   Object.keys(groups).forEach(function (k) {
     var col = document.createElement('div');
@@ -669,35 +814,57 @@
   function toggleToc(on) {
     toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
   }
+  function atDeck() { return window.scrollY < 40; }
+  function toNotes() { document.getElementById('notes').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  function toggleFull() {
+    if (document.fullscreenElement) { document.exitFullscreen(); return; }
+    if (deck.requestFullscreen) deck.requestFullscreen();
+  }
 
   document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
   document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
   document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
   document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+  document.getElementById('toNotes').addEventListener('click', toNotes);
+  document.getElementById('full').addEventListener('click', toggleFull);
 
   document.addEventListener('keydown', function (e) {
+    if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
     if (e.key === 'Escape') { toggleToc(false); return; }
     if (toc.classList.contains('on')) return;
     switch (e.key) {
-      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
-      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
-      case 'Home': go(0); break;
-      case 'End': go(slides.length - 1); break;
+      case 'ArrowRight': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'ArrowDown': case ' ': if (atDeck()) { e.preventDefault(); go(cur + 1); } break;
+      case 'ArrowUp': if (atDeck()) { e.preventDefault(); go(cur - 1); } break;
+      case 'Home': if (atDeck()) go(0); break;
+      case 'End': if (atDeck()) go(slides.length - 1); break;
       case 'm': case 'M': toggleToc(); break;
+      case 'n': case 'N': toNotes(); break;
+      case 'f': case 'F': toggleFull(); break;
     }
   });
 
   function fit() {
-    var w = window.innerWidth, h = window.innerHeight;
+    var w = deck.clientWidth, h = deck.clientHeight;
     if (!w || !h) { requestAnimationFrame(fit); return; }
-    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+    stage.style.transform = 'scale(' + Math.min((w - 48) / 1300, (h - 88) / 740) + ')';
   }
   window.addEventListener('resize', fit);
   window.addEventListener('load', fit);
+  document.addEventListener('fullscreenchange', fit);
   fit();
+
+  window.addEventListener('scroll', function () {
+    backtop.classList.toggle('show', window.scrollY > deck.clientHeight * 0.6);
+  }, { passive: true });
 
   var m = location.hash.match(/^#s(\d+)$/);
   go(m ? +m[1] - 1 : 0);
+  if (!m && location.hash) {
+    var target = document.querySelector(location.hash.replace(/[^#\w-]/g, ''));
+    if (target) setTimeout(function () { target.scrollIntoView({ block: 'start' }); }, 50);
+  }
 })();
 </script>
 </body>

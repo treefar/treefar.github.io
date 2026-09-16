@@ -3,165 +3,218 @@
 <head>
 <meta charset="utf-8">
 <title>第 14 週|倫理智財與偏見</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;1,300;1,400&family=Noto+Serif+TC:wght@300;400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  /* ============ 版型：水彩由灰轉彩（style-library gris-watercolor，色值取自 styles/gris-watercolor.json）============ */
   * { box-sizing: border-box; }
-  #app {
-    position: fixed; inset: 0; overflow: hidden;
-    background: var(--bg);
-    font-family: var(--body);
-    color: var(--ink);
-    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
-    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
-    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
-    --bg: #F5F4EC; --bg2: #EFEEE2;
-    --panel: #FDFCF6; --panel2: #EDECDF;
-    --ink: #232B21; --sub: #67705E;
-    --accent: #2F6B4F; --accent-rgb: 47,107,79;
-    --accent2: #BC4F2C;
-    --line: rgba(35,43,33,.16);
-    --link: #2F6B4F;
-    --r: 4px;
+  :root {
+    --bg: #ece5d9; --bg2: #e3dbcc; --surface: #fffdf6; --surface2: #e3dbcc;
+    --ink: #2c2823; --ink2: #564e43; --muted: #756c5e; --line: #d8cfbd;
+    --blue: #2f7596; --red: #bd564a; --green: #6f9266; --yellow: #dbab44; --grey: #9a948a;
+    --wash-blue: #7da8bd; --wash-rose: #d59289; --wash-gold: #e6c97e; --wash-sage: #a3bd9b; --wash-grey: #b9b3a8;
+    --c: var(--blue); --c-soft: var(--wash-blue);
+    --body: 'Noto Serif TC', 'Cormorant', Georgia, 'PMingLiU', serif;
+    --sans: 'Noto Sans TC', 'Microsoft JhengHei', system-ui, sans-serif;
+    --disp: 'Noto Serif TC', 'Cormorant', Georgia, serif;
+    --num: 'Cormorant', 'Noto Serif TC', serif;
   }
-  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
-  #app a:hover { opacity: .85; }
-  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-weight: 300; }
+  a { color: var(--c); text-underline-offset: 4px; text-decoration-thickness: 1px; }
+  :focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+  b, strong { font-weight: 500; }
 
+  /* ---------- 投影區 ---------- */
+  #deck { position: relative; height: 100vh; min-height: 560px; overflow: hidden; background: var(--bg2); }
   .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
-  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
-  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
-  .slide.active { display: flex; }
-  .slide::before {
-    content: ""; position: absolute; inset: 24px; pointer-events: none;
-    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
-  }
+  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; background: var(--bg); box-shadow: 0 30px 70px -34px rgba(50,42,34,.5); overflow: hidden; }
+  .slide { position: absolute; inset: 0; padding: 56px 110px 72px; display: none; flex-direction: column; }
+  .slide.active { display: flex; animation: fadein .6s ease both; }
+  @keyframes fadein { from { opacity: 0 } to { opacity: 1 } }
+  /* 章節換色：只換 --c 與 --c-soft */
+  .slide.p-blue, .slide[data-c="blue"] { --c: var(--blue); --c-soft: var(--wash-blue); }
+  .slide.p-red, .slide[data-c="red"] { --c: var(--red); --c-soft: var(--wash-rose); }
+  .slide.p-green, .slide[data-c="green"] { --c: var(--green); --c-soft: var(--wash-sage); }
+  .slide.p-yellow, .slide[data-c="yellow"] { --c: var(--yellow); --c-soft: var(--wash-gold); }
+  .slide.p-grey, .slide[data-c="grey"] { --c: var(--grey); --c-soft: var(--wash-grey); }
+  /* 水彩暈染 */
+  .slide::before { content: ""; position: absolute; inset: 0; pointer-events: none; background:
+    radial-gradient(ellipse 520px 380px at 84% 20%, color-mix(in srgb, var(--c-soft) 34%, transparent), transparent 70%),
+    radial-gradient(ellipse 420px 300px at 10% 90%, color-mix(in srgb, var(--c-soft) 20%, transparent), transparent 70%); }
+  .slide > * { position: relative; }
 
-  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
-  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
-  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
-  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+  .eyebrow { font-family: var(--sans); font-weight: 500; font-size: 16px; letter-spacing: .34em; text-transform: uppercase; color: var(--c); display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+  .eyebrow::before { content: ""; width: 40px; height: 1px; background: var(--c); flex: 0 0 auto; }
+  h1 { font-family: var(--disp); font-size: 88px; line-height: 1.15; margin: 0; font-weight: 400; letter-spacing: .02em; text-wrap: balance; }
+  h2 { font-family: var(--disp); font-size: 54px; line-height: 1.2; margin: 0 0 22px; font-weight: 400; text-wrap: balance; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 18px; }
 
-  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
-  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
-  .sub { color: var(--sub); }
+  .slide ul { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 16px; font-size: 27px; line-height: 1.6; }
+  .slide ul ul { margin-top: 6px; gap: 6px; font-size: 22px; color: var(--ink2); }
+  .slide li::marker { color: var(--c); }
+  .sub { color: var(--ink2); }
   .small { font-size: 18px; }
-  .num { font-variant-numeric: tabular-nums; }
+  .num { font-family: var(--num); font-variant-numeric: tabular-nums; }
 
-  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
-  .cards { display: grid; gap: 18px; }
+  /* 這套不用卡片：分區靠 1px 紙緣線與留白 */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 56px; align-items: stretch; }
+  .cards { display: grid; gap: 0 40px; }
   .c2 { grid-template-columns: repeat(2, 1fr); }
   .c3 { grid-template-columns: repeat(3, 1fr); }
   .c4 { grid-template-columns: repeat(4, 1fr); }
   .c5 { grid-template-columns: repeat(5, 1fr); }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
-  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
-  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
-  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
+  .card { background: transparent; border: 0; border-top: 1px solid var(--c); padding: 18px 0 14px; min-width: 0; display: flex; flex-direction: column; justify-content: flex-start; }
+  .card.pink, .card.cyan, .card.grape, .card.lemon { background: transparent; }
+  .card h3 { font-family: var(--disp); font-size: 27px; margin: 0 0 10px; font-weight: 400; line-height: 1.3; }
+  .card p, .card li { font-size: 22px; line-height: 1.6; margin: 0; color: var(--ink2); }
+  .card ul { padding-left: 1.05em; gap: 8px; font-size: 22px; }
+  .card .who { display: block; font-family: var(--sans); font-weight: 500; font-size: 14px; letter-spacing: .24em; text-transform: uppercase; color: var(--c); margin-bottom: 10px; }
+  .cols > .card h3 { font-size: 29px; }
+  .cols > .card p, .cols > .card li { font-size: 24px; }
 
-  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
-  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
+  /* 結語：用 lede 大字，不用框 */
+  .take { margin-top: auto; display: flex; gap: 18px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 16px; font-size: 24px; line-height: 1.55; }
+  .take b { font-family: var(--sans); color: var(--c); font-size: 14px; letter-spacing: .24em; text-transform: uppercase; white-space: nowrap; font-weight: 500; }
 
-  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
+  .foot { position: absolute; left: 110px; right: 110px; bottom: 30px; display: flex; justify-content: space-between; font-family: var(--sans); font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
 
+  /* 封面與章節頁：同一張紙，只是暈染更重、字更大 */
   .cover, .part { justify-content: center; }
-  .cover .eyebrow { margin-bottom: 26px; }
-  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
-  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
-  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
-  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
-  .part h2 { font-size: 56px; }
-  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
+  .cover::before, .part::before { background:
+    radial-gradient(ellipse 700px 520px at 80% 25%, color-mix(in srgb, var(--c-soft) 48%, transparent), transparent 70%),
+    radial-gradient(ellipse 520px 380px at 12% 88%, color-mix(in srgb, var(--c-soft) 30%, transparent), transparent 70%); }
+  .cover .eyebrow { margin-bottom: 30px; }
+  .cover-sub { font-size: 30px; color: var(--ink2); margin: 26px 0 0; line-height: 1.6; max-width: 26em; }
+  .cover-meta { margin-top: 44px; display: flex; gap: 28px; flex-wrap: wrap; font-family: var(--sans); font-size: 13px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
+  .part-num { font-family: var(--num); font-style: italic; font-size: 132px; line-height: 1; margin-bottom: 6px; color: var(--c); font-weight: 300; }
+  .part h2 { font-size: 64px; }
+  .part-sub { font-size: 28px; color: var(--ink2); margin: 18px 0 0; max-width: 30em; line-height: 1.65; }
 
-  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
-  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
-  .kv dd { margin: 0; }
-  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
-  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
-  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
-  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
-  .lk::after { content: " ↗"; font-size: 12px; }
+  /* fact-row：左小標右正文 */
+  .kv { display: grid; grid-template-columns: 230px 1fr; gap: 0 24px; font-size: 25px; line-height: 1.55; border-top: 1px solid var(--line); align-content: start; }
+  .kv dt { font-family: var(--sans); font-weight: 500; font-size: 15px; letter-spacing: .22em; text-transform: uppercase; color: var(--c); padding: 20px 0 14px; border-bottom: 1px solid var(--line); }
+  .kv dd { margin: 0; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px 26px; align-items: center; }
+  .chip { font-family: var(--sans); font-weight: 500; font-size: 17px; letter-spacing: .12em; padding: 6px 0; border-bottom: 1px solid var(--c); background: none; color: var(--ink); }
+  .chip.hot { color: var(--c); }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px 26px; }
+  .lk { display: inline-block; padding: 6px 0; border-bottom: 1px solid var(--c); font-family: var(--sans); font-size: 17px; text-decoration: none; color: var(--ink); font-weight: 500; }
+  .lk:hover { color: var(--c); }
+  .lk::after { content: " ↗"; font-size: 12px; color: var(--c); }
   .flow { display: flex; align-items: stretch; gap: 0; }
-  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
-  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
-  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
-  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
-  .bar i { display: block; height: 100%; background: var(--accent); }
-  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
-  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
-  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
-  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
-  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
-  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
-  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
-  .tl { display: flex; flex-direction: column; gap: 18px; }
-  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
-  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
-  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
+  .flow .step { flex: 1; border-top: 1px solid var(--c); padding: 18px 22px 12px 0; min-width: 0; display: flex; flex-direction: column; justify-content: flex-start; }
+  .flow .step h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 8px; font-weight: 400; }
+  .flow .step p { font-size: 22px; line-height: 1.6; margin: 0; color: var(--ink2); }
+  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-family: var(--num); font-style: italic; font-size: 36px; color: var(--c); font-weight: 300; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 16px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 27px; line-height: 1.55; display: flex; gap: 18px; }
+  .qlist p::before { content: counter(q, upper-roman); font-family: var(--num); font-style: italic; color: var(--c); font-weight: 400; flex: 0 0 auto; min-width: 1.4em; }
+  .grp h3 { font-family: var(--sans); font-weight: 500; font-size: 14px; letter-spacing: .24em; text-transform: uppercase; color: var(--c); margin: 0 0 12px; }
+  .card p.big, .cols > .card p.big { font-family: var(--num); font-size: 120px; line-height: 1; font-weight: 300; color: var(--c); margin: 0; }
+  .card p.big small { font-family: var(--sans); font-size: 15px; letter-spacing: .22em; text-transform: uppercase; line-height: 1.5; color: var(--muted); font-weight: 500; display: block; margin-top: 12px; }
 
-  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
-  .content > .cards,
-  .content > .cols,
-  .content > .flow,
-  .content > .kv,
-  .content > .prob { flex: 1 1 auto; }
+  .content > .cards, .content > .cols, .content > .flow { flex: 0 0 auto; margin-top: auto; margin-bottom: auto; }
+  .content > .kv { flex: 1 1 auto; }
+  .cards .card { min-height: 180px; }
+  .cols > .card { min-height: 220px; }
   .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
-  .content > .qlist,
-  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
-  .content > .biblio { flex: 0 0 auto; }
-  .cols > .card { justify-content: flex-start; }
 
-  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
-  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
-  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
-  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
-  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  sup.fn { font-family: var(--sans); font-size: 12px; line-height: 1; vertical-align: top; margin-left: 4px; position: relative; top: -2px; }
+  sup.fn a { display: inline-block; border: 1px solid var(--c); color: var(--c); border-radius: 50%; height: 20px; line-height: 18px; min-width: 20px; padding: 0 5px; text-align: center; text-decoration: none; font-weight: 500; }
+
+  .ctrl { position: absolute; right: 16px; bottom: 14px; display: flex; gap: 8px; align-items: center; z-index: 30; }
+  .ctrl button { font-family: var(--sans); border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 14px; height: 32px; min-width: 34px; padding: 0 10px; border-radius: 2px; cursor: pointer; }
+  .ctrl button:hover { border-color: var(--c); color: var(--c); }
+  .ctrl .cnt { font-family: var(--num); font-size: 15px; color: var(--muted); padding: 0 6px; font-variant-numeric: tabular-nums; }
+  .prog { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--c); width: 0; z-index: 30; transition: width .3s ease; }
+  .hint { position: absolute; left: 16px; bottom: 16px; z-index: 30; font-family: var(--sans); font-size: 12px; letter-spacing: .12em; color: var(--muted); }
+
+  .toc { position: absolute; inset: 0; background: rgba(236,229,217,.97); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
   .toc.on { display: block; }
-  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
-  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
-  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
-  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
-  .toc button:hover { background: var(--panel2); }
-  .toc button.here { color: var(--accent2); font-weight: 700; }
-  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
-  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
+  .toc h2 { font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 26px; }
+  .toc h3 { font-family: var(--sans); color: var(--c); font-size: 13px; letter-spacing: .24em; text-transform: uppercase; margin: 0 0 10px; font-weight: 500; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 17px; padding: 6px 8px; cursor: pointer; font-family: var(--body); font-weight: 300; }
+  .toc button:hover { color: var(--c); }
+  .toc button.here { color: var(--c); font-weight: 500; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 13px; color: var(--muted); font-family: var(--sans); }
+
+  /* ---------- 講義區 ---------- */
+  .notes { max-width: 900px; margin: 0 auto; padding: 72px 20px 110px; }
+  .notes-head { margin-bottom: 56px; }
+  .notes-head .eyebrow { margin-bottom: 14px; }
+  .notes-head h2 { font-size: 46px; margin: 0 0 14px; }
+  .notes-head p { color: var(--ink2); font-size: 20px; line-height: 1.75; margin: 0; max-width: 34em; }
+  .sec { background: transparent; border: 0; border-top: 1px solid var(--line); padding: 34px 0 20px; margin: 0 0 26px; --c: var(--blue); }
+  .sec.cyan { --c: var(--green); } .sec.grape { --c: var(--red); } .sec.lemon { --c: var(--yellow); }
+  .sec h2 { font-size: 32px; margin: 0 0 16px; }
+  .sec h3 { font-family: var(--disp); font-size: 23px; margin: 28px 0 10px; font-weight: 500; }
+  .sec p, .sec li { font-size: 19px; line-height: 1.9; color: var(--ink2); margin: 0 0 14px; }
+  .sec li { margin: 0 0 6px; }
+  .sec strong { color: var(--ink); font-weight: 500; }
+  .sec .kicker { display: inline-block; font-family: var(--sans); font-size: 12px; letter-spacing: .34em; text-transform: uppercase; color: var(--c); margin-bottom: 12px; font-weight: 500; }
+  .sec .kicker::before { content: "—"; margin-right: 10px; }
+  .sec table { width: 100%; border-collapse: collapse; font-size: 18px; margin: 8px 0 16px; }
+  .sec th, .sec td { text-align: left; padding: 12px 12px 12px 0; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.65; }
+  .sec th { font-family: var(--sans); font-size: 13px; letter-spacing: .22em; text-transform: uppercase; color: var(--c); font-weight: 500; }
+  .scene { border-left: 1px solid var(--c); padding: 6px 0 6px 22px; margin: 18px 0 22px; }
+  .scene .who { font-family: var(--sans); font-size: 12px; letter-spacing: .24em; text-transform: uppercase; color: var(--c); font-weight: 500; display: block; margin-bottom: 6px; }
+  .scene p { margin: 0; }
+  ol.src { padding-left: 1.6em; counter-reset: s; list-style: none; }
+  ol.src li { counter-increment: s; position: relative; padding-left: 6px; margin-bottom: 16px; line-height: 1.7; }
+  ol.src li::before { content: counter(s); position: absolute; left: -1.7em; top: .3em; font-family: var(--num); font-style: italic; font-size: 16px; color: var(--c); border: 1px solid var(--c); border-radius: 50%; min-width: 22px; height: 22px; line-height: 20px; text-align: center; }
+  ol.src li:target { background: color-mix(in srgb, var(--c-soft) 22%, transparent); }
+  ol.src .ti { color: var(--ink); font-weight: 500; }
+  ol.src .meta { display: block; font-family: var(--sans); font-size: 14px; color: var(--muted); }
+  ol.src a { word-break: break-all; font-size: 14px; font-family: var(--sans); }
+  .check { counter-reset: c; list-style: none; padding: 0; }
+  .check li { counter-increment: c; display: flex; gap: 14px; align-items: baseline; }
+  .check li::before { content: "☐"; color: var(--c); font-size: 20px; flex: 0 0 auto; }
+  .backtop { position: fixed; right: 18px; bottom: 18px; z-index: 50; font-family: var(--sans); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink); background: var(--surface); border: 1px solid var(--line); padding: 10px 16px; text-decoration: none; display: none; }
+  .backtop.show { display: inline-block; }
+  .version { font-family: var(--sans); font-size: 13px; letter-spacing: .1em; color: var(--muted); margin-top: 40px; }
+
+  @media (max-width: 720px) { .notes { padding: 40px 16px 80px; } .notes-head h2 { font-size: 32px; } .kv { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .slide.active { animation: none; } .prog { transition: none; } }
+  @media print { #deck, .backtop { display: none; } .notes { max-width: none; padding: 0; } .sec { break-inside: avoid; } }
 </style>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
 </head>
 <body>
-<div id="app" data-deck="b">
+
+<div id="deck" data-deck="gris-watercolor">
   <div class="stagewrap"><div class="stage" id="stage">
 
-  <!-- 1 AI 倫理、智財與偏見 -->
-<section class="slide cover">
+<!-- 1 封面 -->
+  <section class="slide cover">
     <div class="eyebrow">人工智慧與互動媒體特論 · 設計創新與經營研究所</div>
     <h1>AI 倫理、智財與偏見</h1>
-    <p class="cover-sub">訓練資料在法院、權利歸屬在主管機關、深偽標示在平台、刻板印象在你的輸出裡：2026 年年中的四個現場。</p>
-    <div class="cover-meta"><span>第 14 週</span><span>論文導讀與案例討論</span><span>授課：鄧樹遠</span></div>
+    <p class="cover-sub">訓練資料在法院、權利歸屬在主管機關、深偽標示在平台與歐盟、刻板印象在你的輸出裡：2026 年 9 月的四個現場，只引官方頁與原論文。</p>
+    <div class="cover-meta"><span>第 14 週</span><span>授課：鄧樹遠</span><span>投影片 ＋ 下方講義</span></div>
   </section>
 
-  <!-- 2 九十分鐘，五個現場 -->
-<section class="slide">
+  <!-- 2 本週地圖 -->
+  <section class="slide">
     <div class="eyebrow">Week 14 · 本週地圖</div>
     <h2>九十分鐘，五個現場</h2>
     <div class="content">
       <div class="cards c5">
-        <div class="card"><span class="who">PART 1</span><h3>訴訟版圖</h3><p class="sub">三條戰線各打到哪了</p></div>
-        <div class="card"><span class="who">PART 2</span><h3>權利歸屬</h3><p class="sub">誰是作者，誰能主張</p></div>
-        <div class="card"><span class="who">PART 3</span><h3>深偽與標示</h3><p class="sub">下個月上路的義務</p></div>
-        <div class="card"><span class="who">PART 4</span><h3>偏見與輸出</h3><p class="sub">刻板印象怎麼進作品</p></div>
-        <div class="card"><span class="who">PART 5</span><h3>論文導讀</h3><p class="sub">放大效應與藝術家立場</p></div>
+        <div class="card"><span class="who">Part 1</span><h3>訴訟版圖</h3><p class="sub">三條戰線各打到哪</p></div>
+        <div class="card"><span class="who">Part 2</span><h3>權利歸屬</h3><p class="sub">誰是作者，誰能主張</p></div>
+        <div class="card"><span class="who">Part 3</span><h3>深偽與標示</h3><p class="sub">上個月上路的義務</p></div>
+        <div class="card"><span class="who">Part 4</span><h3>偏見與輸出</h3><p class="sub">刻板印象怎麼進作品</p></div>
+        <div class="card"><span class="who">Part 5</span><h3>論文與交付</h3><p class="sub">放大效應與藝術家</p></div>
       </div>
       <div class="take"><b>本週目標</b>建立「風險判讀」能力：看懂每一則 AI 法律新聞，究竟影響你工作流程的哪一環。</div>
     </div>
   </section>
 
-  <!-- 3 從會用，到用得正當 -->
-<section class="slide">
-    <div class="eyebrow">承接第 13 週 · 生成式 AI 與創意發想</div>
+  <!-- 3 承接 -->
+  <section class="slide">
+    <div class="eyebrow">承接第 13 週 · 創意發想與提示工程</div>
     <h2>從會用，到用得正當</h2>
     <div class="content">
       <div class="cols">
@@ -169,452 +222,416 @@
           <span class="who">到上週為止</span>
           <h3>把 AI 用得更好</h3>
           <ul>
-            <li>原理（W4）、各設計領域應用（W5–12）</li>
-            <li>上週：提示工程，讓輸出可控、可重複</li>
-            <li>第 1 週聽過智財的基本觀念：那時是「名詞解釋」</li>
+            <li>原理（第 4 週）、各設計領域應用（第 5 到 12 週）</li>
+            <li>上週：提示資產卡，讓輸出可控、可重複</li>
+            <li>第 1 週聽過智財觀念：那時是名詞解釋</li>
           </ul>
         </div>
         <div class="card">
           <span class="who">本週</span>
           <h3>問「該不該、能不能主張」</h3>
           <ul>
-            <li>第 1 週的基本觀念，今天全部變成進行式</li>
-            <li>開庭中：訴訟版圖；立法中：標示義務</li>
+            <li>第 1 週的觀念全部變成進行式</li>
+            <li>開庭中：訴訟版圖；已上路：歐盟標示義務</li>
             <li>還有一題法律管不到的：輸出裡的偏見</li>
           </ul>
         </div>
       </div>
+      <div class="take"><b>先做五分鐘</b>依學號順序，三位同學分享上週的提示資產卡：同學拿去重做，哪裡走樣。</div>
     </div>
   </section>
 
-  <!-- 4 訴訟版圖 2025–2026 -->
-<section class="slide part">
+  <!-- 4 PART 1 -->
+  <section class="slide part p-blue">
     <div class="part-num">01</div>
-    <div class="eyebrow">PART 1</div>
+    <div class="eyebrow">Part 1</div>
     <h2>訴訟版圖 2025–2026</h2>
-    <p class="part-sub">生成式 AI 與著作權的世紀之爭沒有一個「大案子」，而是三條戰線同時開打。這一段把每條戰線查到本月的最新進度。</p>
+    <p class="part-sub">生成式 AI 與著作權沒有一個「大案子」，而是三條戰線同時開打。這一段把每條戰線查到本月的最新進度，開不了的來源就不寫。</p>
   </section>
 
-  <!-- 5 三條戰線，一張版圖 -->
-<section class="slide">
-    <div class="eyebrow">PART 1 · 訴訟版圖</div>
+  <!-- 5 三戰線 -->
+  <section class="slide" data-c="blue">
+    <div class="eyebrow">Part 1 · 訴訟版圖</div>
     <h2>三條戰線，一張版圖</h2>
     <div class="content">
       <div class="cards c3">
-        <div class="card"><span class="who">戰線一</span><h3>文字與新聞</h3><ul><li>NYT 對 OpenAI 與 Microsoft（2023/12 起）</li><li>作家集體訴訟促成 Anthropic 天價和解</li></ul></div>
-        <div class="card"><span class="who">戰線二</span><h3>影像與影視 IP</h3><ul><li>Disney、Universal 對 Midjourney（2025/6 起）</li><li>Warner Bros. 跟進，戰場在角色與畫面</li></ul></div>
-        <div class="card"><span class="who">戰線三</span><h3>圖庫與商標</h3><ul><li>Getty 對 Stability，英美兩線並行</li><li>英國 2025/11 判決給出第一份完整答案</li></ul></div>
+        <div class="card"><span class="who">戰線一</span><h3>文字與新聞</h3><p>作家集體訴訟促成 Anthropic 15 億美元和解；新聞媒體告 OpenAI 打到證據開示。<sup class="fn"><a href="#src-11">11</a></sup><sup class="fn"><a href="#src-12">12</a></sup></p></div>
+        <div class="card"><span class="who">戰線二</span><h3>影像與影視 IP</h3><p>Disney、Universal 告 Midjourney（2025-06）；Warner Bros. 跟進（2025-09）。<sup class="fn"><a href="#src-13">13</a></sup><sup class="fn"><a href="#src-15">15</a></sup></p></div>
+        <div class="card"><span class="who">戰線三</span><h3>圖庫與商標</h3><p>Getty 告 Stability，英國 2025-11 判決給出第一份答案。<sup class="fn"><a href="#src-16">16</a></sup></p></div>
       </div>
-      <ul>
-        <li>三條戰線共用同一組爭點：訓練是否合理使用、輸出是否侵權、法院管不管得到</li>
-      </ul>
+      <div class="take"><b>共用爭點</b>訓練是否合理使用、輸出是否侵權、法院管不管得到。</div>
     </div>
   </section>
 
-  <!-- 6 NYT v. OpenAI：打到 -->
-<section class="slide">
-    <div class="eyebrow">PART 1 · 戰線一 · 文字與新聞</div>
-    <h2>NYT v. OpenAI：打到哪了</h2>
+  <!-- 6 文字戰線 -->
+  <section class="slide" data-c="blue">
+    <div class="eyebrow">Part 1 · 戰線一 · 文字與新聞</div>
+    <h2>作家與新聞：兩個關鍵裁定</h2>
     <div class="content">
       <dl class="kv">
-        <dt>起點</dt><dd>2023/12 控告 OpenAI 與 Microsoft：訓練侵權，且模型會逐字吐回付費報導</dd>
-        <dt>證據開示</dt><dd class="num">2026/1/5 法院維持調閱 2,000 萬筆去識別化 ChatGPT 對話紀錄</dd>
-        <dt>戰線調整</dt><dd>2026/6 撤回對 OpenAI 的部分主張，轉而強化對 Microsoft 的指控</dd>
-        <dt>最新</dt><dd class="num">2026/7/9 新聞團體聲請制裁，指 OpenAI 隱瞞資料檢索能力逾兩年</dd>
+        <dt>2026-01-05</dt><dd>紐約南區法院維持命令：OpenAI 須交出 2,000 萬筆去識別化 ChatGPT 對話紀錄給新聞媒體原告。<sup class="fn"><a href="#src-12">12</a></sup></dd>
+        <dt>2026-07-20</dt><dd>北加州法院最終核准 Bartz v. Anthropic 15 億美元和解；案由是以盜版書籍訓練。<sup class="fn"><a href="#src-11">11</a></sup></dd>
+        <dt>行情</dt><dd>每件作品約 3,000 美元，法院稱為法定最低額 750 美元的四倍。<sup class="fn"><a href="#src-11">11</a></sup></dd>
+        <dt>注意</dt><dd>OpenAI 官方回應頁擋抓取；v1 寫的撤回主張與制裁聲請我沒開到來源，不寫。</dd>
       </dl>
-      <div class="linkrow">
-        <a class="lk" href="https://openai.com/new-york-times/" target="_blank" rel="noopener">OpenAI 官方回應</a>
-        <a class="lk" href="https://money.usnews.com/investing/news/articles/2026-07-09/new-york-times-led-group-asks-court-to-sanction-openai-in-us-copyright-dispute" target="_blank" rel="noopener">制裁動議報導</a>
-      </div>
     </div>
   </section>
 
-  <!-- 7 好萊塢 vs. Midjourn -->
-<section class="slide">
-    <div class="eyebrow">PART 1 · 戰線二 · 深度案例</div>
-    <h2>好萊塢 vs. Midjourney</h2>
+  <!-- 7 好萊塢 -->
+  <section class="slide" data-c="blue">
+    <div class="eyebrow">Part 1 · 戰線二 · 深度案例</div>
+    <h2>好萊塢對 Midjourney</h2>
     <div class="content">
-      <div class="tl">
-        <div class="ev"><b>2025/6</b><span>Disney 與 Universal 聯合起訴 Midjourney：好萊塢第一次直接對生成式 AI 出手</span></div>
-        <div class="ev"><b>2025</b><span>Warner Bros. 隨後跟進提告，三大片廠站上同一陣線</span></div>
-        <div class="ev"><b>2026/6/15</b><span>治安法官裁定：片廠僅需揭露「面向消費者內容」的內部 AI 使用</span></div>
-        <div class="ev"><b>2026/6–7</b><span>Midjourney 不服提出異議，主張片廠「自己也在用同樣的技術」</span></div>
-        <div class="ev"><b>2026/8/17</b><span>關鍵聽證：證據開示範圍將決定「你也一樣」防禦能走多遠</span></div>
-      </div>
-      <div class="qlist">
-        <p>片廠內部也在用生成式 AI：這會削弱它們的法律主張，還是只影響輿論戰？</p>
-        <p>若你經營動畫工作室，哪種判決結果對你最有利？先想清楚你站在哪一邊。</p>
-      </div>
-      <div class="linkrow">
-        <a class="lk" href="https://www.courtlistener.com/docket/70513159/disney-enterprises-inc-v-midjourney-inc/" target="_blank" rel="noopener">案件卷宗</a>
-        <a class="lk" href="https://variety.com/2026/film/news/midjourney-studios-ai-copyright-discovery-1236800902/" target="_blank" rel="noopener">Variety 報導</a>
-      </div>
+      <dl class="kv">
+        <dt>2025-06-11</dt><dd>Disney、Universal 等七家於加州中區法院起訴。<sup class="fn"><a href="#src-13">13</a></sup></dd>
+        <dt>2025-09-04</dt><dd>Warner Bros. Discovery 跟進，五大片廠三家到齊。<sup class="fn"><a href="#src-15">15</a></sup></dd>
+        <dt>2026 時程</dt><dd>證據開示 09-21 與 11-09 截止；即決判決聲請 11-23 到期。<sup class="fn"><a href="#src-14">14</a></sup></dd>
+        <dt>防禦</dt><dd>Midjourney 主張合理使用，並以「不潔之手」指片廠自己也用生成式 AI。<sup class="fn"><a href="#src-14">14</a></sup></dd>
+      </dl>
     </div>
   </section>
 
-  <!-- 8 Getty 案：地域性的一課 -->
-<section class="slide">
-    <div class="eyebrow">PART 1 · 戰線三 · 圖庫與商標</div>
+  <!-- 8 Getty -->
+  <section class="slide" data-c="blue">
+    <div class="eyebrow">Part 1 · 戰線三 · 圖庫與商標</div>
     <h2>Getty 案：地域性的一課</h2>
     <div class="content">
       <dl class="kv">
-        <dt>判決</dt><dd class="num">2025/11/4 英國高等法院：模型權重不是著作的「重製物」，主要著作權主張不成立</dd>
-        <dt>小勝</dt><dd>輸出重現 Getty 浮水印構成商標侵權，但認定範圍有限</dd>
-        <dt>關鍵</dt><dd>地域性：訓練不在英國進行，英國法院無從審理主要侵權主張</dd>
-        <dt>後續</dt><dd>Getty 聲明將把英國認定的事實帶進美國訴訟，主戰場移回美國</dd>
+        <dt>2025-11-04</dt><dd>英格蘭及威爾斯高等法院判決，[2025] EWHC 2863 (Ch)。<sup class="fn"><a href="#src-16">16</a></sup></dd>
+        <dt>權重</dt><dd>模型權重不是圖像的「重製物」，也未儲存視覺資訊。<sup class="fn"><a href="#src-17">17</a></sup></dd>
+        <dt>地域</dt><dd>Getty 撤回訓練主張：無法證明重製發生在英國境內。<sup class="fn"><a href="#src-17">17</a></sup></dd>
+        <dt>小勝</dt><dd>早期版本產出含浮水印，構成有限的商標侵權；Getty 要把認定帶進美國案。<sup class="fn"><a href="#src-17">17</a></sup><sup class="fn"><a href="#src-18">18</a></sup></dd>
       </dl>
-      <div class="linkrow">
-        <a class="lk" href="https://newsroom.gettyimages.com/en/getty-images/getty-images-issues-statement-on-ruling-in-stability-ai-uk-litigation" target="_blank" rel="noopener">Getty 官方聲明</a>
-      </div>
     </div>
   </section>
 
-  <!-- 9 Anthropic：15 億美元 -->
-<section class="slide">
-    <div class="eyebrow">PART 1 · 戰線一 · 作家集體訴訟</div>
-    <h2>Anthropic：15 億美元的和解</h2>
-    <div class="content">
-      <dl class="kv">
-        <dt>前情</dt><dd>法院先認定用「合法取得」的書訓練屬合理使用；從盜版站下載則另當別論</dd>
-        <dt>和解</dt><dd class="num">2025/8 底達成 15 億美元和解，涵蓋約 50 萬部盜版取得的書籍</dd>
-        <dt>核准</dt><dd class="num">2025/9/25 法官初步核准：公開紀錄中金額最大的著作權和解</dd>
-        <dt>行情</dt><dd>平均每部作品約 3,000 美元；最終核准與發放程序 2026 年續行</dd>
-      </dl>
-      <div class="linkrow">
-        <a class="lk" href="https://www.npr.org/2025/09/05/nx-s1-5529404/anthropic-settlement-authors-copyright-ai" target="_blank" rel="noopener">NPR 報導</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- 10 訴訟版圖對設計師的意義 -->
-<section class="slide">
-    <div class="eyebrow">PART 1 · 訴訟版圖</div>
+  <!-- 9 意義 -->
+  <section class="slide" data-c="blue">
+    <div class="eyebrow">Part 1 · 訴訟版圖</div>
     <h2>訴訟版圖對設計師的意義</h2>
     <div class="content">
       <div class="cards c3">
-        <div class="card"><h3>授權市場成形</h3><p>訴訟壓力催生交易：新聞、圖庫與出版社開始把「訓練權」當商品談價。</p></div>
-        <div class="card"><h3>選工具＝管風險</h3><p>「商業安全」承諾與侵權賠償條款，正在變成企業採購生成工具的檢核項。</p></div>
-        <div class="card"><h3>判決有地域性</h3><p>英美結論不同步；跨國接案時，合約準據法決定你適用哪一套規則。</p></div>
+        <div class="card"><h3>盜版與合法取得不同</h3><p>Anthropic 案賠的是盜版書；素材來源本身就是風險變數。<sup class="fn"><a href="#src-11">11</a></sup></p></div>
+        <div class="card"><h3>選工具等於管風險</h3><p>訴訟中的工具，交付物可能被客戶要求說明來源。</p></div>
+        <div class="card"><h3>判決有地域性</h3><p>英國法院管不到境外訓練；跨國接案時準據法決定規則。<sup class="fn"><a href="#src-17">17</a></sup></p></div>
       </div>
-      <div class="take"><b>假設情境</b>接案前若客戶問素材能否交付，先查來源、授權條款與揭露需求；不確定就把問題列進合約討論。</div>
+      <div class="take"><b>假設情境</b>客戶問素材能否交付：先查來源、授權條款與揭露需求；不確定就把問題列進合約討論。</div>
     </div>
   </section>
 
-  <!-- 11 誰是作者：權利歸屬 -->
-<section class="slide part">
+  <!-- 10 PART 2 -->
+  <section class="slide part p-red">
     <div class="part-num">02</div>
-    <div class="eyebrow">PART 2</div>
+    <div class="eyebrow">Part 2</div>
     <h2>誰是作者：權利歸屬</h2>
-    <p class="part-sub">法院管「拿了誰的」，主管機關管「產出算誰的」。美國三部曲報告、Thaler 案定讞，以及台灣的函釋與新法。</p>
+    <p class="part-sub">法院管「拿了誰的」，主管機關管「產出算誰的」。美國三部報告、Thaler 案定讞，以及台灣的解釋資料、指引初稿與基本法。</p>
   </section>
 
-  <!-- 12 美國著作權局的三部曲 -->
-<section class="slide">
-    <div class="eyebrow">PART 2 · 權利歸屬 · 美國</div>
-    <h2>美國著作權局的三部曲</h2>
+  <!-- 11 USCO -->
+  <section class="slide" data-c="red">
+    <div class="eyebrow">Part 2 · 權利歸屬 · 美國</div>
+    <h2>美國著作權局的三部報告</h2>
     <div class="content">
-      <div class="tl">
-        <div class="ev"><b>2023</b><span>啟動 AI 與著作權研究，公開徵詢收到超過一萬則意見</span></div>
-        <div class="ev"><b>2024/7/31</b><span>第一部「數位分身」：正視深偽對肖像與聲音的威脅，建議立法</span></div>
-        <div class="ev"><b>2025/1/29</b><span>第二部「可著作權性」：只下提示詞不構成作者，人類創意投入才算</span></div>
-        <div class="ev"><b>2025/5/9</b><span>第三部「生成式 AI 訓練」（預發布版）：訓練涉重製；產出與原作競爭者較難主張合理使用</span></div>
-      </div>
-      <div class="linkrow">
-        <a class="lk" href="https://www.copyright.gov/ai/" target="_blank" rel="noopener">著作權局 AI 專頁</a>
-      </div>
+      <dl class="kv">
+        <dt>2024-07-31</dt><dd>第一部「數位分身」：深偽對肖像與聲音的威脅。<sup class="fn"><a href="#src-6">6</a></sup></dd>
+        <dt>2025-01-29</dt><dd>第二部「可著作權性」：「僅提供提示詞」不算作者；人的編排與修改可受保護。<sup class="fn"><a href="#src-7">7</a></sup></dd>
+        <dt>2025-05-09</dt><dd>第三部「生成式 AI 訓練」預先出版版；最終版至今未發布。<sup class="fn"><a href="#src-6">6</a></sup></dd>
+        <dt>2026-05-12</dt><dd>局長證詞：已登記逾 7,000 件排除 AI 部分的申請；訓練是否合理使用由法院個案決定。<sup class="fn"><a href="#src-8">8</a></sup></dd>
+      </dl>
     </div>
   </section>
 
-  <!-- 13 Thaler 案：作者必須是人類 -->
-<section class="slide">
-    <div class="eyebrow">PART 2 · 權利歸屬 · 美國</div>
+  <!-- 12 Thaler -->
+  <section class="slide" data-c="red">
+    <div class="eyebrow">Part 2 · 權利歸屬 · 美國</div>
     <h2>Thaler 案：作者必須是人類</h2>
     <div class="content">
       <dl class="kv">
-        <dt>案件</dt><dd>Thaler 主張其 AI「Creativity Machine」為畫作唯一作者，著作權局拒絕註冊</dd>
-        <dt>2025/3/18</dt><dd>DC 巡迴上訴法院：著作權法自始要求作者必須是人類</dd>
-        <dt>2026/3/2</dt><dd>聯邦最高法院拒絕受理，人類作者原則就此定案</dd>
-        <dt>界線</dt><dd>提示詞本身不等同完整的作者行為；可主張的部分要回到人類的選擇、編排與修改</dd>
+        <dt>案件</dt><dd>Thaler 列 AI「Creativity Machine」為畫作唯一作者，著作權局拒絕登記。<sup class="fn"><a href="#src-9">9</a></sup></dd>
+        <dt>2025-03-18</dt><dd>D.C. 巡迴上訴法院維持拒絕登記。<sup class="fn"><a href="#src-9">9</a></sup></dd>
+        <dt>2026-03-02</dt><dd>聯邦最高法院拒絕受理，人類作者原則定案。<sup class="fn"><a href="#src-10">10</a></sup><sup class="fn"><a href="#src-8">8</a></sup></dd>
+        <dt>界線</dt><dd>提示詞本身不等於作者行為；可主張的部分回到人的選擇、編排與修改。<sup class="fn"><a href="#src-7">7</a></sup></dd>
       </dl>
-      <div class="linkrow">
-        <a class="lk" href="https://www.mayerbrown.com/en/insights/publications/2026/03/supreme-court-denies-review-in-ai-authorship-case" target="_blank" rel="noopener">Mayer Brown 分析</a>
-      </div>
     </div>
   </section>
 
-  <!-- 14 台灣現況：函釋與基本法 -->
-<section class="slide">
-    <div class="eyebrow">PART 2 · 權利歸屬 · 台灣</div>
-    <h2>台灣現況：函釋與基本法</h2>
+  <!-- 13 台灣 -->
+  <section class="slide" data-c="red">
+    <div class="eyebrow">Part 2 · 權利歸屬 · 台灣 · 2025–2026 現況</div>
+    <h2>台灣：解釋資料、指引初稿、基本法</h2>
     <div class="content">
       <dl class="kv">
-        <dt>智慧局函釋</dt><dd>2023/6 起確立：AI 為輔助工具且有人類創意投入，成果可受著作權保護</dd>
-        <dt>反面</dt><dd>AI 獨立生成、人僅下簡單指令的內容，不受著作權法保護</dd>
-        <dt>訓練資料</dt><dd>輸入他人著作訓練涉及「重製」，除合理使用外原則上須取得授權</dd>
-        <dt>AI 基本法</dt><dd class="num">2025/12/23 立法院三讀：主管機關國科會，明定透明可解釋、公平不歧視等七原則</dd>
+        <dt>智慧局</dt><dd>2025 年兩則解釋資料：有無「人類實際的創意投入」決定有無著作權；完全由 AI 演算不受保護。<sup class="fn"><a href="#src-1">1</a></sup><sup class="fn"><a href="#src-2">2</a></sup></dd>
+        <dt>2026-07-20</dt><dd>「生成式 AI 著作權指引（初稿）」公聽會；正式版尚未公布。<sup class="fn"><a href="#src-3">3</a></sup></dd>
+        <dt>2025-12-23</dt><dd>《人工智慧基本法》三讀，20 條，主管機關國科會。<sup class="fn"><a href="#src-4">4</a></sup></dd>
+        <dt>七原則</dt><dd>含透明可解釋、公平不歧視、問責。<sup class="fn"><a href="#src-5">5</a></sup></dd>
       </dl>
-      <div class="linkrow">
-        <a class="lk" href="https://www.tipo.gov.tw/tw/copyright/692-63403.html" target="_blank" rel="noopener">智慧局解釋令函</a>
-        <a class="lk" href="https://moda.gov.tw/press/press-releases/18316" target="_blank" rel="noopener">數位部新聞稿</a>
-      </div>
     </div>
   </section>
 
-  <!-- 15 權利歸屬的工作流實務 -->
-<section class="slide">
-    <div class="eyebrow">PART 2 · 權利歸屬</div>
+  <!-- 14 實務 -->
+  <section class="slide" data-c="red">
+    <div class="eyebrow">Part 2 · 權利歸屬</div>
     <h2>權利歸屬的工作流實務</h2>
     <div class="content">
       <div class="cards c3">
         <div class="card"><h3>留下創作履歷</h3><p>提示詞、迭代過程、人工修改版本全部存檔：它們是主張權利時的證據。</p></div>
-        <div class="card"><h3>分層看待產出</h3><p>AI 草稿與人工深化分開管理；在美國註冊須揭露並排除 AI 生成部分。</p></div>
+        <div class="card"><h3>分層看待產出</h3><p>AI 草稿與人工深化分開管理；在美國登記須聲明排除 AI 生成部分。<sup class="fn"><a href="#src-8">8</a></sup></p></div>
         <div class="card"><h3>合約先講清楚</h3><p>委託案明定 AI 使用範圍與權利歸屬，避免「不受保護」變成「誰都能用」。</p></div>
       </div>
     </div>
   </section>
 
-  <!-- 16 深偽與標示義務 -->
-<section class="slide part">
+  <!-- 15 PART 3 -->
+  <section class="slide part p-green">
     <div class="part-num">03</div>
-    <div class="eyebrow">PART 3</div>
+    <div class="eyebrow">Part 3</div>
     <h2>深偽與標示義務</h2>
-    <p class="part-sub">深偽內容從「道德問題」變成「法遵事項」：歐盟的時程進入倒數，三大平台早已先行一步。</p>
+    <p class="part-sub">深偽內容從「道德問題」變成「法遵事項」：歐盟第 50 條上個月上路，三大平台與模型公司的政策各自先行。</p>
   </section>
 
-  <!-- 17 歐盟第 50 條：下個月上路 -->
-<section class="slide">
-    <div class="eyebrow">PART 3 · 深偽與標示 · 歐盟</div>
-    <h2>歐盟第 50 條：下個月上路</h2>
+  <!-- 16 歐盟 -->
+  <section class="slide" data-c="green">
+    <div class="eyebrow">Part 3 · 2025–2026 現況 · 歐盟</div>
+    <h2>歐盟 AI 法第 50 條：已經上路</h2>
     <div class="content">
       <dl class="kv">
-        <dt>時程</dt><dd class="num">AI 法透明義務 2026/8/2 起適用：距離今天不到三週</dd>
-        <dt>深偽定義</dt><dd>與真實人物、物件、場所、事件相像，且會讓人誤以為真的 AI 生成或操縱內容</dd>
-        <dt>義務</dt><dd>深偽須揭露；合成內容須可機器判讀的標記；聊天機器人須表明非人類身分</dd>
-        <dt>罰則</dt><dd class="num">最高 1,500 萬歐元，或全球年營業額 3%，取其高者</dd>
+        <dt>2026-08-02</dt><dd>第 50 條透明義務適用；AI Omnibus 修正案 07-27 生效，沒有延後這一條。<sup class="fn"><a href="#src-19">19</a></sup><sup class="fn"><a href="#src-20">20</a></sup></dd>
+        <dt>部署者</dt><dd>深偽「最遲在首次接觸時」清楚揭露，不能只靠機器可讀標記。<sup class="fn"><a href="#src-20">20</a></sup></dd>
+        <dt>提供者</dt><dd>AI 生成內容以機器可讀格式標記、可被偵測；既有系統寬限至 2026-12-02。<sup class="fn"><a href="#src-20">20</a></sup></dd>
+        <dt>罰則</dt><dd>最高 1,500 萬歐元或全球營業額 3%。<sup class="fn"><a href="#src-20">20</a></sup></dd>
       </dl>
-      <div class="linkrow">
-        <a class="lk" href="https://artificialintelligenceact.eu/article/50/" target="_blank" rel="noopener">AI Act 第 50 條</a>
-      </div>
     </div>
   </section>
 
-  <!-- 18 標示怎麼落地：守則與技術 -->
-<section class="slide">
-    <div class="eyebrow">PART 3 · 深偽與標示</div>
-    <h2>標示怎麼落地：守則與技術</h2>
+  <!-- 17 守則 -->
+  <section class="slide" data-c="green">
+    <div class="eyebrow">Part 3 · 深偽與標示</div>
+    <h2>標示怎麼落地：守則、技術、平台</h2>
     <div class="content">
       <div class="flow">
-        <div class="step"><h3>1. 法規層</h3><p>執委會研擬「AI 生成內容透明實務守則」：2026/3 出二稿，目標 8 月前定稿</p></div>
+        <div class="step"><h3>1. 法規層</h3><p>執委會透明實務守則：2025-12 初稿、2026-06-10 定稿，約 190 個組織簽署。<sup class="fn"><a href="#src-21">21</a></sup></p></div>
         <div class="arr">→</div>
-        <div class="step"><h3>2. 技術層</h3><p>C2PA 內容憑證、隱形浮水印、偵測模型：標示要能跟著檔案走</p></div>
+        <div class="step"><h3>2. 技術層</h3><p>C2PA 內容憑證、偵測模型：YouTube 對含 C2PA 全 AI 中繼資料的內容，標籤不可移除。<sup class="fn"><a href="#src-22">22</a></sup></p></div>
         <div class="arr">→</div>
-        <div class="step"><h3>3. 平台層</h3><p>平台把法規要求轉成上傳流程的必填欄位與自動標籤</p></div>
+        <div class="step"><h3>3. 平台層</h3><p>平台把要求轉成上傳流程的必填欄位與自動標籤。<sup class="fn"><a href="#src-22">22</a></sup><sup class="fn"><a href="#src-23">23</a></sup></p></div>
       </div>
-      <ul>
-        <li>標示技術的攻防才剛開始：截圖、轉檔、重新壓縮都可能讓標記脫落</li>
-      </ul>
-      <div class="linkrow">
-        <a class="lk" href="https://digital-strategy.ec.europa.eu/en/policies/code-practice-ai-generated-content" target="_blank" rel="noopener">歐盟實務守則</a>
-      </div>
+      <div class="take"><b>攻防才開始</b>截圖、轉檔、重新壓縮都可能讓中繼資料脫落；平台才會自己加偵測模型。<sup class="fn"><a href="#src-22">22</a></sup></div>
     </div>
   </section>
 
-  <!-- 19 三大平台的標示政策 -->
-<section class="slide">
-    <div class="eyebrow">PART 3 · 深偽與標示 · 平台</div>
+  <!-- 18 平台 -->
+  <section class="slide" data-c="green">
+    <div class="eyebrow">Part 3 · 深偽與標示 · 平台</div>
     <h2>三大平台的標示政策</h2>
     <div class="content">
       <div class="cards c3">
-        <div class="card"><span class="who">YOUTUBE</span><h3>從自律到代勞</h3><p>2024/3 起要求揭露擬真合成內容；2026/5 起偵測到未揭露者，平台主動貼標。</p></div>
-        <div class="card"><span class="who">META</span><h3>廣告先行</h3><p>政治與社會議題廣告強制揭露；自家 AI 工具產出自動標示；2026/2 起 FB 與 IG 政策統一。</p></div>
-        <div class="card"><span class="who">TIKTOK</span><h3>憑證自動化</h3><p>2025/1 起接入 C2PA 自動偵測，已標示逾 13 億支影片；未揭露有分級處分。</p></div>
-      </div>
-      <div class="linkrow">
-        <a class="lk" href="https://blog.youtube/news-and-events/improving-ai-labels-viewers-creators/" target="_blank" rel="noopener">YouTube 官方說明</a>
+        <div class="card"><span class="who">YouTube</span><h3>從自律到代勞</h3><p>2026-05 起偵測到「顯著的擬真 AI 使用」而未揭露者，平台主動貼標；不影響營利。<sup class="fn"><a href="#src-22">22</a></sup></p></div>
+        <div class="card"><span class="who">Meta</span><h3>AI Info 標籤</h3><p>2024-05 起對影片、音訊與圖片加標籤，涵蓋 Facebook、Instagram、Threads。<sup class="fn"><a href="#src-23">23</a></sup></p></div>
+        <div class="card"><span class="who">Instagram · 2026-08</span><h3>AI 生成人物帳號</h3><p>改名「AI-generated profile」；未標示者降觸及，修圖與潤飾文案不需標。<sup class="fn"><a href="#src-24">24</a></sup></p></div>
       </div>
     </div>
   </section>
 
-  <!-- 20 訓練資料偏見 -->
-<section class="slide part">
-    <div class="part-num">04</div>
-    <div class="eyebrow">PART 4</div>
-    <h2>訓練資料偏見</h2>
-    <p class="part-sub">訴訟與法規管的是「拿了誰的」；偏見問題管的是「輸出了什麼」。這一段回到作品本身。</p>
+  <!-- 19 使用政策 -->
+  <section class="slide" data-c="green">
+    <div class="eyebrow">Part 3 · 模型公司使用政策</div>
+    <h2>工具本身也有規矩</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card">
+          <span class="who">Anthropic · 2025-09-15 生效</span>
+          <h3>不冒充人類、不侵權</h3>
+          <ul>
+            <li>禁止把結果呈現為人類產出<sup class="fn"><a href="#src-25">25</a></sup></li>
+            <li>禁止侵害第三方智財、禁止推動歧視<sup class="fn"><a href="#src-25">25</a></sup></li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="who">Google · 2024-12-17 更新</span>
+          <h3>不誤導來源</h3>
+          <ul>
+            <li>禁止「聲稱完全由人類創作」以欺騙<sup class="fn"><a href="#src-26">26</a></sup></li>
+            <li>禁止未揭露而冒充個人、禁止侵害智財<sup class="fn"><a href="#src-26">26</a></sup></li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>注意</b>OpenAI 使用政策頁擋抓取，本週不引。</div>
+    </div>
   </section>
 
-  <!-- 21 偏見從哪裡來 -->
-<section class="slide">
-    <div class="eyebrow">PART 4 · 偏見與輸出</div>
+  <!-- 20 PART 4 -->
+  <section class="slide part p-yellow">
+    <div class="part-num">04</div>
+    <div class="eyebrow">Part 4</div>
+    <h2>訓練資料偏見</h2>
+    <p class="part-sub">訴訟與法規管的是「拿了誰的」；偏見問題管的是「輸出了什麼」。這一段回到作品本身，證據來自本週論文①。</p>
+  </section>
+
+  <!-- 21 從哪來 -->
+  <section class="slide" data-c="yellow">
+    <div class="eyebrow">Part 4 · 偏見與輸出</div>
     <h2>偏見從哪裡來</h2>
     <div class="content">
       <div class="flow">
-        <div class="step"><h3>1. 資料</h3><p>網路爬取的影像與文字，先天帶著世界觀的傾斜與缺口</p></div>
+        <div class="step"><h3>1. 資料</h3><p>網路爬取的影像與文字，先天帶著世界觀的傾斜與缺口。</p></div>
         <div class="arr">→</div>
-        <div class="step"><h3>2. 模型</h3><p>訓練目標獎勵「最典型」的樣態，少數樣態被平均掉</p></div>
+        <div class="step"><h3>2. 模型</h3><p>訓練目標獎勵「最典型」的樣態，少數樣態被平均掉。</p></div>
         <div class="arr">→</div>
-        <div class="step"><h3>3. 使用</h3><p>預設參數與草率提示，讓傾斜直接流進交付物</p></div>
+        <div class="step"><h3>3. 使用</h3><p>預設參數與草率提示，讓傾斜直接流進交付物。</p></div>
       </div>
-      <ul>
-        <li>偏見會隨統計學習進入輸出，因此不能把預設值直接視為「中性」</li>
-        <li>你沒指定的每一個屬性（膚色、性別、年齡、場景），模型都會替你決定</li>
-      </ul>
+      <div class="take"><b>直觀</b>你沒指定的每一個屬性（膚色、性別、年齡、場景），模型都會替你決定；預設值不是中性。</div>
     </div>
   </section>
 
-  <!-- 22 刻板印象長進設計輸出 -->
-<section class="slide">
-    <div class="eyebrow">PART 4 · 偏見與輸出</div>
+  <!-- 22 長進輸出 -->
+  <section class="slide" data-c="yellow">
+    <div class="eyebrow">Part 4 · 偏見與輸出</div>
     <h2>刻板印象長進設計輸出</h2>
     <div class="content">
       <ul>
-        <li>職業提示的性別與族群分布，常比現實統計更極端：是放大，不是反映</li>
-        <li>「有魅力的人」「成功的人」這類抽象詞，輸出高度趨向特定膚色與體型</li>
-        <li>文化物件有預設樣板：不指定地點的「房子」「婚禮」，多半長成歐美樣</li>
-        <li>對台灣設計者的坑：在地專案直接用預設輸出，畫面會不知不覺「西化」</li>
-        <li>品牌識別、教材、公部門文宣是高風險場景：預設偏見會被當成官方立場</li>
+        <li>日常提示就會觸發：只提到特質、描述詞、職業或物件就足夠。<sup class="fn"><a href="#src-27">27</a></sup></li>
+        <li>職業提示放大「種族與性別差距」：是放大，不是反映。<sup class="fn"><a href="#src-27">27</a></sup></li>
+        <li>基本特質請求強化「白人為理想」；物件描述延續「美國常態」。<sup class="fn"><a href="#src-27">27</a></sup></li>
+        <li>對台灣設計者的坑：在地專案直接用預設輸出，畫面會不知不覺「西化」。</li>
+        <li>品牌識別、教材、公部門文宣是高風險場景：預設偏見會被當成官方立場。</li>
       </ul>
     </div>
   </section>
 
-  <!-- 23 設計師的倫理實踐清單 -->
-<section class="slide">
-    <div class="eyebrow">PART 4 · 偏見與輸出</div>
+  <!-- 23 實踐清單 -->
+  <section class="slide" data-c="yellow">
+    <div class="eyebrow">Part 4 · 偏見與輸出</div>
     <h2>設計師的倫理實踐清單</h2>
     <div class="content">
       <div class="cards c3">
-        <div class="card"><span class="who">產出前</span><h3>選對工具</h3><p>查訓練資料來源與授權論述；敏感題材先自問：這裡適合用生成嗎。</p></div>
+        <div class="card"><span class="who">產出前</span><h3>選對工具</h3><p>查訓練資料來源與使用政策；敏感題材先自問：這裡適合用生成嗎。</p></div>
         <div class="card"><span class="who">產出中</span><h3>測試偏見</h3><p>同一提示換人群、換文化跑幾輪；不指名在世藝術家風格與真人肖像。</p></div>
-        <div class="card"><span class="who">產出後</span><h3>誠實揭露</h3><p>標示 AI 使用並掛上內容憑證；盤點可主張權利的部分，留下人工貢獻證據。</p></div>
+        <div class="card"><span class="who">產出後</span><h3>誠實揭露</h3><p>標示 AI 使用並掛上內容憑證；盤點可主張的部分，留下人工貢獻證據。</p></div>
       </div>
     </div>
   </section>
 
-  <!-- 24 論文導讀 -->
-<section class="slide part">
+  <!-- 24 課堂規矩 -->
+  <section class="slide" data-c="yellow">
+    <div class="eyebrow">Part 4 · 老師的課堂規矩</div>
+    <h2>談法規與偏見，我只認四種來源</h2>
+    <div class="content">
+      <ul>
+        <li>法規與政策只引官方頁：智慧局、著作權局、歐盟執委會、模型公司政策頁、平台新聞室。</li>
+        <li>訴訟進度引法院文件或當事人聲明；媒體轉述要標「二手」，付費牆後的不寫。</li>
+        <li>偏見主張引原論文，寫到摘要有的為止；摘要沒有的數字不補。</li>
+        <li>「AI 生成不受保護」四個字不能單獨出現，要寫清楚是哪一國、哪一則、什麼條件。</li>
+      </ul>
+      <div class="take"><b>一句話</b>我評的不是你站哪一邊，是你每一句主張後面有沒有能開得了的來源。</div>
+    </div>
+  </section>
+
+  <!-- 25 PART 5 -->
+  <section class="slide part p-grey">
     <div class="part-num">05</div>
-    <div class="eyebrow">PART 5</div>
-    <h2>論文導讀</h2>
+    <div class="eyebrow">Part 5</div>
+    <h2>論文導讀與本週交付</h2>
     <p class="part-sub">兩篇 2023 年的 ACM 論文：一篇量測偏見的放大，一篇替藝術家發聲。正好是本週兩大爭議的學術版。</p>
   </section>
 
-  <!-- 25 文生圖如何放大刻板印象 -->
-<section class="slide">
-    <div class="eyebrow">PART 5 · 論文導讀 ①</div>
+  <!-- 26 論文① -->
+  <section class="slide" data-c="grey">
+    <div class="eyebrow">Part 5 · 論文導讀 ①</div>
     <h2>文生圖如何放大刻板印象</h2>
     <div class="content">
-      <div class="biblio">
-        <span class="ti">Easily Accessible Text-to-Image Generation Amplifies Demographic Stereotypes at Large Scale</span>
-        Bianchi, F., Kalluri, P., Durmus, E., Ladhak, F., Cheng, M., Nozza, D., Hashimoto, T., Jurafsky, D., Zou, J., &amp; Caliskan, A.（2023）。<i>Proceedings of the 2023 ACM Conference on Fairness, Accountability, and Transparency（FAccT '23）</i>, 1493–1504。
-        <a href="https://doi.org/10.1145/3593013.3594095" target="_blank" rel="noopener">doi.org/10.1145/3593013.3594095</a>
-      </div>
       <dl class="kv">
-        <dt>研究問題</dt><dd>人人可用的文生圖工具，是否在大規模放大人口刻板印象？</dd>
-        <dt>方法</dt><dd>以特質、職業、物件等日常提示大量生成影像，與現實人口統計比較</dd>
+        <dt>書目</dt><dd>Bianchi 等十位（2023）。〈Easily Accessible Text-to-Image Generation Amplifies Demographic Stereotypes at Large Scale〉。FAccT '23。<sup class="fn"><a href="#src-27">27</a></sup></dd>
+        <dt>問題</dt><dd>人人可用的文生圖工具，是否在大規模放大刻板印象？</dd>
+        <dt>發現</dt><dd>日常提示就會觸發；減緩策略下「仍然持續」，使用者反制與機構護欄都沒擋住。<sup class="fn"><a href="#src-27">27</a></sup></dd>
+        <dt>結論</dt><dd>大規模部署等於大規模散布刻板印象。<sup class="fn"><a href="#src-27">27</a></sup></dd>
       </dl>
     </div>
   </section>
 
-  <!-- 26 發現：放大，而且很難修 -->
-<section class="slide">
-    <div class="eyebrow">PART 5 · 論文導讀 ①</div>
-    <h2>發現：放大，而且很難修</h2>
-    <div class="content">
-      <ul>
-        <li>日常提示就會觸發：不必寫敏感詞，提到職業或特質就足以喚出刻板印象</li>
-        <li>職業提示放大差距：性別與族群比例比真實從業統計更極端</li>
-        <li>抽象特質更危險：「有魅力」高度趨向白人面孔，「窮困」趨向深膚色</li>
-        <li>使用者自救有限：在提示裡加修飾語，常只是換一組刻板印象</li>
-        <li>物件也有國籍：「房子」「旗子」預設美國樣板，文化差異被抹平</li>
-      </ul>
-    </div>
-  </section>
-
-  <!-- 27 快讀：AI 藝術與藝術家 -->
-<section class="slide">
-    <div class="eyebrow">PART 5 · 論文導讀 ②</div>
+  <!-- 27 論文② -->
+  <section class="slide" data-c="grey">
+    <div class="eyebrow">Part 5 · 論文導讀 ②</div>
     <h2>快讀：AI 藝術與藝術家</h2>
     <div class="content">
-      <div class="biblio">
-        <span class="ti">AI Art and its Impact on Artists</span>
-        Jiang, H. H., Brown, L., Cheng, J., Khan, M., Gupta, A., Workman, D., Hanna, A., Flowers, J., &amp; Gebru, T.（2023）。<i>Proceedings of the 2023 AAAI/ACM Conference on AI, Ethics, and Society（AIES '23）</i>, 363–374。
-        <a href="https://doi.org/10.1145/3600211.3604681" target="_blank" rel="noopener">doi.org/10.1145/3600211.3604681</a>
-      </div>
-      <ul>
-        <li>立場論文：從美學、勞動與著作權三個面向，整理圖像生成對藝術家的衝擊</li>
-        <li>核心主張：模型未經同意萃取藝術家風格，衝擊生計、署名與創作社群生態</li>
-        <li>與本週互為註腳：藝術家社群的訴求，正是訴訟版圖與標示制度要處理的問題</li>
-      </ul>
+      <dl class="kv">
+        <dt>書目</dt><dd>Jiang、Brown、Cheng 等九位（2023）。〈AI Art and its Impact on Artists〉。AIES '23, 363–374。<sup class="fn"><a href="#src-28">28</a></sup></dd>
+        <dt>性質</dt><dd>立場論文：回顧藝術家經歷的傷害，「名譽損害、經濟損失、抄襲與著作權侵害」。<sup class="fn"><a href="#src-28">28</a></sup></dd>
+        <dt>建議</dt><dd>強制組織揭露訓練資料的法規；協助藝術家防止內容未經同意被訓練的工具。<sup class="fn"><a href="#src-28">28</a></sup></dd>
+        <dt>對照</dt><dd>藝術家社群的訴求，正是 Part 1 訴訟與 Part 3 標示制度在處理的問題。</dd>
+      </dl>
     </div>
   </section>
 
-  <!-- 28 把爭議變成你的立場 -->
-<section class="slide">
-    <div class="eyebrow">Week 14 · 課堂討論與課後任務</div>
-    <h2>把爭議變成你的立場</h2>
+  <!-- 28 交付 -->
+  <section class="slide" data-c="grey">
+    <div class="eyebrow">Part 5 · 交付規格</div>
+    <h2>這週要交什麼</h2>
+    <div class="content">
+      <dl class="kv">
+        <dt>交付物</dt><dd>替你最常用的生成工具寫 400 字「倫理體檢」。</dd>
+        <dt>內容</dt><dd>訓練資料與授權論述、使用政策條款、標示機制，各附官方頁連結。</dd>
+        <dt>實測</dt><dd>三組職業提示的偏見觀察，附截圖與提示詞原文。</dd>
+        <dt>格式</dt><dd>一頁 PDF，檔名「學號_W14_倫理體檢」，附 AI 揭露；下週分享 5 分鐘。</dd>
+      </dl>
+      <div class="take"><b>退件</b>政策條款沒附官方頁；偏見觀察沒截圖；把媒體轉述寫成法院認定。</div>
+    </div>
+  </section>
+
+  <!-- 29 收尾 -->
+  <section class="slide">
+    <div class="eyebrow">Week 14 · 收尾</div>
+    <h2>回去想這三題</h2>
     <div class="content">
       <div class="qlist">
         <p>若訓練授權成為常態、工具因此漲價，你願意為「乾淨資料」多付多少？誰該付？</p>
-        <p>2026/8 歐盟深偽標示上路：你作品集裡哪些作品需要標？標了會改變觀眾的評價嗎？</p>
+        <p>歐盟第 50 條已上路：你作品集裡哪些作品需要標？標了會改變觀眾的評價嗎？</p>
         <p>Bianchi 的量測證據與 Jiang 的立場論述，哪一種更能說服你的客戶改變工作流程？</p>
       </div>
-      <div class="card">
-        <h3>課後任務（下週開場分享，約 5 分鐘）</h3>
-        <p>替你最常用的生成工具寫 400 字「倫理體檢」：訓練資料與授權論述、標示機制，加上實測三組職業提示的偏見觀察與截圖。</p>
-      </div>
+      <div class="take"><b>下週預告</b>未來趨勢：只看 2025 到 2026 年的官方公告與一手報告，不做預測。</div>
     </div>
   </section>
 
-  <!-- 29 所有連結，一頁帶走 -->
-<section class="slide">
-    <div class="eyebrow">Week 14 · 本週資源彙整</div>
-    <h2>所有連結，一頁帶走</h2>
+  <!-- 30 資源彙整 -->
+  <section class="slide">
+    <div class="eyebrow">Week 14 · 資源彙整</div>
+    <h2>本週資源</h2>
     <div class="content">
       <div class="cols">
         <div class="grp">
-          <h3>訴訟現場</h3>
+          <h3>法規與主管機關</h3>
           <div class="linkrow">
-            <a class="lk" href="https://openai.com/new-york-times/" target="_blank" rel="noopener">OpenAI 官方回應</a>
-            <a class="lk" href="https://money.usnews.com/investing/news/articles/2026-07-09/new-york-times-led-group-asks-court-to-sanction-openai-in-us-copyright-dispute" target="_blank" rel="noopener">制裁動議報導</a>
-            <a class="lk" href="https://www.courtlistener.com/docket/70513159/disney-enterprises-inc-v-midjourney-inc/" target="_blank" rel="noopener">Midjourney 案卷宗</a>
-            <a class="lk" href="https://newsroom.gettyimages.com/en/getty-images/getty-images-issues-statement-on-ruling-in-stability-ai-uk-litigation" target="_blank" rel="noopener">Getty 官方聲明</a>
-            <a class="lk" href="https://www.npr.org/2025/09/05/nx-s1-5529404/anthropic-settlement-authors-copyright-ai" target="_blank" rel="noopener">NPR：和解案</a>
-          </div>
-          <h3 style="margin-top:18px">權利歸屬</h3>
-          <div class="linkrow">
-            <a class="lk" href="https://www.copyright.gov/ai/" target="_blank" rel="noopener">著作權局 AI 專頁</a>
-            <a class="lk" href="https://www.mayerbrown.com/en/insights/publications/2026/03/supreme-court-denies-review-in-ai-authorship-case" target="_blank" rel="noopener">Thaler 案分析</a>
-            <a class="lk" href="https://www.tipo.gov.tw/tw/copyright/692-63403.html" target="_blank" rel="noopener">智慧局解釋令函</a>
-            <a class="lk" href="https://moda.gov.tw/press/press-releases/18316" target="_blank" rel="noopener">數位部新聞稿</a>
+            <a class="lk" href="https://www.tipo.gov.tw/tw/copyright/692-63403.html" target="_blank" rel="noopener">智慧局解釋資料</a>
+            <a class="lk" href="https://www.copyright.gov/ai/" target="_blank" rel="noopener">美國著作權局 AI 專頁</a>
+            <a class="lk" href="https://digital-strategy.ec.europa.eu/en/faqs/transparency-obligations-under-article-50-ai-act" target="_blank" rel="noopener">歐盟第 50 條問答</a>
+            <a class="lk" href="https://www.judiciary.uk/judgments/getty-images-v-stability-ai/" target="_blank" rel="noopener">Getty 判決</a>
           </div>
         </div>
         <div class="grp">
-          <h3>深偽與標示</h3>
+          <h3>政策與論文</h3>
           <div class="linkrow">
-            <a class="lk" href="https://artificialintelligenceact.eu/article/50/" target="_blank" rel="noopener">AI Act 第 50 條</a>
-            <a class="lk" href="https://digital-strategy.ec.europa.eu/en/policies/code-practice-ai-generated-content" target="_blank" rel="noopener">歐盟實務守則</a>
-            <a class="lk" href="https://blog.youtube/news-and-events/improving-ai-labels-viewers-creators/" target="_blank" rel="noopener">YouTube 官方說明</a>
-          </div>
-          <h3 style="margin-top:18px">本週論文</h3>
-          <div class="linkrow">
-            <a class="lk" href="https://doi.org/10.1145/3593013.3594095" target="_blank" rel="noopener">論文① FAccT '23</a>
-            <a class="lk" href="https://doi.org/10.1145/3600211.3604681" target="_blank" rel="noopener">論文② AIES '23</a>
+            <a class="lk" href="https://www.anthropic.com/legal/aup" target="_blank" rel="noopener">Anthropic 使用政策</a>
+            <a class="lk" href="https://policies.google.com/terms/generative-ai/use-policy" target="_blank" rel="noopener">Google 禁用政策</a>
+            <a class="lk" href="https://blog.youtube/news-and-events/improving-ai-labels-viewers-creators/" target="_blank" rel="noopener">YouTube 標示</a>
+            <a class="lk" href="https://arxiv.org/abs/2211.03759" target="_blank" rel="noopener">論文① FAccT</a>
+            <a class="lk" href="https://doi.org/10.1145/3600211.3604681" target="_blank" rel="noopener">論文② AIES</a>
           </div>
         </div>
       </div>
-      <div class="take"><b>本週檢核</b>使用 AI 素材前，你是否核對來源、授權、揭露、偏見與保存紀錄？</div>
+      <div class="take"><b>出處與補充</b>在下方講義，按 N 鍵。每一條日期的來源與查證日期都在那裡。</div>
     </div>
   </section>
 
-  
-
   </div></div>
 
+  <div class="hint">← → 換頁　M 目錄　N 講義　F 全螢幕</div>
   <div class="ctrl">
     <button id="prev" aria-label="上一張">‹</button>
     <span class="cnt" id="cnt">1 / 1</span>
     <button id="next" aria-label="下一張">›</button>
     <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+    <button id="toNotes" title="講義（N）">講義 ↓</button>
+    <button id="full" title="全螢幕（F）">⛶</button>
   </div>
   <div class="prog" id="prog"></div>
 
@@ -625,17 +642,171 @@
   </div>
 </div>
 
+<!-- ============ 講義區 ============ -->
+<main class="notes" id="notes">
+<div class="notes-head">
+    <div class="eyebrow">Week 14 · 講義</div>
+    <h2>AI 倫理、智財與偏見</h2>
+    <p>投影片講的是骨架，這裡放肉：三條訴訟戰線查到本月的進度、美國著作權局三部報告與 Thaler 案的定讞、台灣智慧局解釋資料與基本法、歐盟第 50 條上路後的義務與罰則、三大平台與兩家模型公司的政策條文、偏見從資料到輸出的路徑、兩篇論文的書目與摘要，以及交作業前的自我檢核。</p>
+  </div>
+
+  <section class="sec">
+    <span class="kicker">導讀</span>
+    <h2>這週在解決什麼問題</h2>
+    <p>到上週為止，這門課教的是把 AI 用得更好；這週問的是該不該、能不能主張。第 1 週聽過的智財觀念全部變成進行式：訴訟開庭中、歐盟標示義務已上路、主管機關的解釋一則接一則。要建立的判斷力是：看到任何一則 AI 法律新聞，說得出它影響你工作流程的哪一環，以及那則新聞的來源開不開得了。</p>
+    <p>三個關鍵詞先講清楚。<strong>人類創意投入</strong>是台灣智慧局判斷 AI 生成物有無著作權的標準：把 AI 當輔助工具、有人類實際的創意投入，成果受保護；完全由 AI 演算獨立完成則不受保護。<sup class="fn"><a href="#src-1">1</a></sup><sup class="fn"><a href="#src-2">2</a></sup> <strong>深偽</strong>（deep fake）在歐盟 AI 法第 50 條下是部署者的揭露義務：最遲在自然人首次接觸時清楚告知，不能只靠機器可讀的標記。<sup class="fn"><a href="#src-20">20</a></sup> <strong>刻板印象放大</strong>是本週論文①的核心發現：文生圖模型對日常提示的輸出，比現實統計更極端，而且減緩策略擋不住。<sup class="fn"><a href="#src-27">27</a></sup></p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">§1</span>
+    <h2>訴訟版圖：三條戰線各打到哪</h2>
+    <table>
+      <thead><tr><th>時間</th><th>發生什麼</th><th>來源</th></tr></thead>
+      <tbody>
+        <tr><td>2025-06-11</td><td>Disney、Marvel、Lucasfilm、Universal、DreamWorks 等七家於加州中區聯邦地院告 Midjourney</td><td>Georgetown Law（二手）<sup class="fn"><a href="#src-13">13</a></sup></td></tr>
+        <tr><td>2025-09-04</td><td>Warner Bros. Discovery 於同一法院跟進，主張直接與間接侵權</td><td>McKool Smith（二手）<sup class="fn"><a href="#src-15">15</a></sup></td></tr>
+        <tr><td>2025-11-04</td><td>英國高等法院 Getty v. Stability 判決，[2025] EWHC 2863 (Ch)</td><td>英國司法機關<sup class="fn"><a href="#src-16">16</a></sup></td></tr>
+        <tr><td>2026-01-05</td><td>紐約南區法院維持命令：OpenAI 交出 2,000 萬筆去識別化對話紀錄</td><td>Bloomberg Law（二手）<sup class="fn"><a href="#src-12">12</a></sup></td></tr>
+        <tr><td>2026-07-20</td><td>Bartz v. Anthropic 15 億美元和解最終核准</td><td>Authors Guild（原告方公告）<sup class="fn"><a href="#src-11">11</a></sup></td></tr>
+        <tr><td>2026-09 至 11</td><td>Disney 案證據開示 09-21、11-09 截止，即決判決聲請 11-23 到期</td><td>AI Lawsuit Tracker（二手）<sup class="fn"><a href="#src-14">14</a></sup></td></tr>
+      </tbody>
+    </table>
+    <p>戰線一是文字與新聞。Bartz 案的案由是以盜版書籍訓練模型，法院最終核准的 15 億美元和解，每件作品約 3,000 美元，法院稱為一般侵權法定最低額 750 美元的四倍；<sup class="fn"><a href="#src-11">11</a></sup> 這件事對設計師的意義是「盜版取得」與「合法取得」在法律上是兩回事，素材來源本身就是風險變數。新聞媒體對 OpenAI 的案子打到證據開示，法院維持要求 OpenAI 交出 2,000 萬筆去識別化 ChatGPT 對話紀錄；<sup class="fn"><a href="#src-12">12</a></sup> v1 寫的撤回主張與制裁聲請，我沒開到可靠來源，不寫。戰線二是影視 IP：三家片廠告 Midjourney，Midjourney 主張合理使用，並以「不潔之手」指片廠內部也在用生成式 AI；<sup class="fn"><a href="#src-14">14</a></sup> 這是課堂討論題，片廠自己也用，削弱的是法律主張還是輿論？戰線三是 Getty：法院認定模型權重不是圖像的「重製物」、也未儲存視覺資訊；Getty 在審理中撤回訓練主張，因為無法證明重製發生在英國境內；早期版本產出含浮水印構成有限的商標侵權。<sup class="fn"><a href="#src-17">17</a></sup> Getty 聲明要把英國判決的認定帶進美國案。<sup class="fn"><a href="#src-18">18</a></sup> 地域性是這一課的重點：跨國接案時，合約準據法決定你適用哪一套規則。</p>
+  </section>
+
+  <section class="sec grape">
+    <span class="kicker">§2</span>
+    <h2>權利歸屬：法院管「拿了誰的」，主管機關管「產出算誰的」</h2>
+    <p>美國著作權局三部報告的日期在官網：Part 1 數位分身 2024-07-31，Part 2 可著作權性 2025-01-29，Part 3 生成式 AI 訓練 2025-05-09 預先出版版，官網載最終版將另行發布。<sup class="fn"><a href="#src-6">6</a></sup> Part 2 的結論在 NewsNet 1060：只有在人類作者決定了足夠的表達元素時，AI 產出才受保護，「僅提供提示詞」不算；人對產出做創意編排或修改可受保護，把 AI 當輔助工具不妨礙可著作性。<sup class="fn"><a href="#src-7">7</a></sup> 2026-05-12 局長 Perlmutter 在參議院的證詞補上現況：依 2023 年登記指引，已登記「超過 7,000 件」含 AI 生成素材且已聲明排除該部分的申請案；Part 3 的結論是訓練有些情況可能是合理使用、有些不是，要由法院依個案事實決定。<sup class="fn"><a href="#src-8">8</a></sup></p>
+    <p>Thaler 案把「作者必須是人類」定案。Thaler 申請登記時列 AI「Creativity Machine」為畫作《A Recent Entrance to Paradise》的唯一作者，著作權局拒絕；D.C. 巡迴上訴法院 2025-03-18 維持拒絕登記；<sup class="fn"><a href="#src-9">9</a></sup> 最高法院 2026-03-02 駁回調卷聲請。<sup class="fn"><a href="#src-10">10</a></sup> 台灣這邊，智慧局 2025 年的兩則解釋資料（電子郵件 1140522c、1141017b）框架一致：著作須由自然人創作，AI 生成圖畫有無著作權視「創作過程中有無人類實際的創意投入」；有爭議由司法機關依個案認定。<sup class="fn"><a href="#src-1">1</a></sup><sup class="fn"><a href="#src-2">2</a></sup> 2026-07-20 智慧局開了「生成式人工智慧著作權指引（初稿）」公聽會，會議紀錄 08-03 公告，正式版截至查證日尚未公布，所以教材只寫「公聽會已開」，不寫指引內容。<sup class="fn"><a href="#src-3">3</a></sup> 《人工智慧基本法》2025-12-23 三讀，全文 20 條，主管機關國科會；<sup class="fn"><a href="#src-4">4</a></sup> 數位部新聞稿列七大治理原則：永續發展與福祉、人類自主、隱私保護與資料治理、資安與安全、透明與可解釋、公平與不歧視、問責。<sup class="fn"><a href="#src-5">5</a></sup></p>
+    <p>工作流實務三條：留下創作履歷，提示詞、迭代過程、人工修改版本全部存檔，它們是主張權利時的證據；分層看待產出，AI 草稿與人工深化分開管理，在美國登記須聲明排除 AI 生成部分；合約先講清楚，委託案明定 AI 使用範圍與權利歸屬，避免「不受保護」變成「誰都能用」。</p>
+  </section>
+
+  <section class="sec cyan">
+    <span class="kicker">§3</span>
+    <h2>深偽與標示義務：從道德問題變成法遵事項</h2>
+    <p>歐盟 AI 法 2024-08-01 生效，分階段適用：2025-02-02 禁止性規定、2025-08-02 治理與 GPAI 義務、2026-08-02 一般適用日、2027-12-02 附件三高風險系統、2028-08-02 嵌入產品的系統。AI Omnibus 修正案 2025-11-19 提案、2026-05-07 政治協議、2026-07-27 生效，把附件三高風險時程往後移，但第 50 條沒有延後，並新增禁止生成未經同意的性露骨與私密內容。<sup class="fn"><a href="#src-19">19</a></sup> 第 50 條自 2026-08-02 起適用：部署者對深偽「最遲在自然人首次接觸時揭露」，且要清楚可辨，不能只靠機器可讀標記；提供者須讓 AI 生成或操縱內容「以機器可讀格式標記且可被偵測」，2026-08-02 前已上市的系統，這條標記義務寬限至 2026-12-02；罰鍰最高 1,500 萬歐元或前一會計年度全球營業額 3%。<sup class="fn"><a href="#src-20">20</a></sup> 落地靠三層。法規層：執委會的「AI 生成內容透明實務守則」2025-12-17 初稿、2026-03-03 二稿、2026-06-10 定稿，至 07-31 約 190 個組織簽署，執委會確認它是證明符合第 50 條的「適當的自願工具」。<sup class="fn"><a href="#src-21">21</a></sup> 技術層：C2PA 內容憑證與偵測模型，截圖、轉檔、重新壓縮都可能讓中繼資料脫落，所以平台才自己加偵測。平台層：把要求轉成上傳流程的必填欄位與自動標籤。</p>
+    <p>三大平台各自先行。YouTube 2026-05-27 官方文：標籤移到長片播放器正下方、Shorts 以浮層顯示；自 2026 年 5 月起，創作者未揭露但系統「偵測到顯著的擬真 AI 使用」時平台主動貼標，可在 Studio 申訴；用 Veo、Dream Screen 或含 C2PA 全 AI 生成中繼資料的內容，標籤不可移除；「單獨的揭露標籤不改變推薦與營利資格」。<sup class="fn"><a href="#src-22">22</a></sup> Meta 透明中心：2024 年 5 月起對更廣範圍的影片、音訊與圖片加標籤，現顯示為「AI Info」，涵蓋 Facebook、Instagram、Threads；<sup class="fn"><a href="#src-23">23</a></sup> 2026-08-31 TechCrunch 報導 Instagram 把「AI creator」改名「AI-generated profile」，未正確標示的 AI 生成人物帳號觸及會被降低，用 AI 修圖、潤飾文案不需標。<sup class="fn"><a href="#src-24">24</a></sup> 模型公司的使用政策也有規矩：Anthropic 2025-09-15 生效的政策禁止「冒充人類，把結果呈現為人類產出」、禁止侵害第三方智財、禁止基於受保護屬性推動歧視；<sup class="fn"><a href="#src-25">25</a></sup> Google 2024-12-17 更新的禁用政策禁止「聲稱內容完全由人類創作以欺騙」、禁止未明確揭露而冒充個人。<sup class="fn"><a href="#src-26">26</a></sup> OpenAI 使用政策頁擋抓取，本週不引。</p>
+    <div class="scene">
+      <span class="who">假設情境</span>
+      <p>一位同學把作品集裡三支 AI 生成的短片上傳 YouTube，兩支沒揭露。六月起其中一支被平台自動貼上標籤，他去 Studio 申訴，卻發現那支是用 Veo 做的，標籤不可移除。他的作品集網站沒有任何標示，若面試官問「這支用了什麼」，他答不出來會比標籤本身更傷。解法不是躲標籤，是把第 12 週的鏡頭表附在作品旁邊。</p>
+    </div>
+  </section>
+
+  <section class="sec lemon">
+    <span class="kicker">§4</span>
+    <h2>訓練資料偏見：輸出了什麼</h2>
+    <p>偏見走三步進作品。資料：網路爬取的影像與文字先天帶著世界觀的傾斜與缺口，第 3 週講過 LAION 的來源。模型：訓練目標獎勵「最典型」的樣態，少數樣態被平均掉。使用：預設參數與草率提示讓傾斜直接流進交付物。所以你沒指定的每一個屬性（膚色、性別、年齡、場景），模型都會替你決定，預設值不是中性。</p>
+    <p>證據在本週論文①的摘要：「一大類日常提示都會產生刻板印象，包括只提到特質、描述詞、職業或物件的提示」；基本特質請求強化「白人為理想」、職業提示放大「種族與性別差距」、物件描述延續「美國常態」；「刻板印象在減緩策略下仍持續：使用者反制的嘗試與機構加上的護欄都沒能阻止」。<sup class="fn"><a href="#src-27">27</a></sup> 對台灣設計者的坑是在地專案直接用預設輸出，畫面會不知不覺西化；品牌識別、教材、公部門文宣是高風險場景，預設偏見會被當成官方立場。實踐清單三段：產出前選對工具，查訓練資料來源與使用政策，敏感題材先自問適不適合用生成；產出中測試偏見，同一提示換人群、換文化跑幾輪，不指名在世藝術家風格與真人肖像；產出後誠實揭露，標示 AI 使用並掛上內容憑證，盤點可主張的部分、留下人工貢獻證據。v1 寫的「有魅力趨向白人面孔、窮困趨向深膚色、房子旗子預設美國」，摘要只載「whiteness as ideal」與「American norms」，我只寫摘要有的。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">§5</span>
+    <h2>論文導讀與本週交付</h2>
+    <p>第一篇是 Bianchi、Kalluri、Durmus、Ladhak、Cheng、Nozza、Hashimoto、Jurafsky、Zou 與 Caliskan 的〈Easily Accessible Text-to-Image Generation Amplifies Demographic Stereotypes at Large Scale〉，FAccT '23 論文集 1493 至 1504 頁，2023-06-12；arXiv 2211.03759 於 2022-11-07 提交。<sup class="fn"><a href="#src-27">27</a></sup> 研究問題是人人可用的文生圖工具是否在大規模放大人口刻板印象；發現已在 §4 引過；結論一句話：大規模部署等於大規模散布刻板印象與相應的傷害。ACM 全文頁擋抓取，我以 Crossref 書目與 arXiv 摘要核對。</p>
+    <p>第二篇是 Jiang、Brown、Cheng、Khan、Gupta、Workman、Hanna、Flowers 與 Gebru 的〈AI Art and its Impact on Artists〉，AIES '23 論文集 363 至 374 頁，2023-08-08。<sup class="fn"><a href="#src-28">28</a></sup> 這是立場論文：回顧藝術家經歷的傷害，「名譽損害、經濟損失、抄襲與著作權侵害」，並提出建議：強制組織揭露訓練資料的法規，以及協助藝術家防止內容未經同意被當訓練資料的工具。與本週互為註腳：藝術家社群的訴求，正是 Part 1 的訴訟與 Part 3 的標示制度在處理的問題。</p>
+    <h3>本週交付：一份倫理體檢</h3>
+    <p>替你最常用的生成工具寫 400 字「倫理體檢」：訓練資料與授權論述、使用政策條款、標示機制，各附官方頁連結；實測三組職業提示的偏見觀察，附截圖與提示詞原文。一頁 PDF，檔名「學號_W14_倫理體檢」，附 AI 使用揭露；下週開場分享約 5 分鐘。退件條件：政策條款沒附官方頁；偏見觀察沒截圖；把媒體轉述寫成法院認定。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">老師的課堂規矩</span>
+    <h2>談法規與偏見，我只認四種來源</h2>
+    <p>第一條，法規與政策只引官方頁：智慧局、國科會與數位部、美國著作權局、歐盟執委會、模型公司的政策頁、平台自己的新聞室；律師事務所評析可以幫你讀懂判決，但要標二手。第二條，訴訟進度引法院文件或當事人聲明；媒體轉述要標「二手」，付費牆後面的內容我開不了就不寫，你也一樣。第三條，偏見主張引原論文，寫到摘要有的為止；摘要沒有的數字不補，這週我自己也刪了三句。第四條，「AI 生成不受保護」四個字不能單獨出現，要寫清楚是哪一國、哪一則、什麼條件，因為台灣與美國的標準都是「有沒有人類創意投入」，不是「有沒有用 AI」。我評的不是你站哪一邊，是你每一句主張後面有沒有能開得了的來源。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">出處</span>
+    <h2>本週引用的資料</h2>
+    <p>每一條都在 2026-09-16 打開確認過；第 1 週已查證的法院與主管機關條目沿用，標「沿用」。OpenAI 官方頁擋抓取，不引；ACM 全文頁擋抓取，以 Crossref 書目與 arXiv、Semantic Scholar 摘要核對；Variety 等付費牆的內容一律不寫。網址失效請告訴我，我會換。</p>
+    <ol class="src">
+      <li id="src-1"><span class="ti">經濟部智慧財產局〈解釋資料檢索－電子郵件 1140522c〉</span><span class="meta">智慧局官方 · 2025-05-22 · 人類實際的創意投入 · 沿用第 1 週 · 查證 2026-09-16</span><a href="https://www.tipo.gov.tw/tw/copyright/692-34252.html" target="_blank" rel="noopener">https://www.tipo.gov.tw/tw/copyright/692-34252.html</a></li>
+      <li id="src-2"><span class="ti">經濟部智慧財產局〈解釋資料檢索－電子郵件 1141017b〉</span><span class="meta">智慧局官方 · 2025-10-17 · AI 當輔助工具 · 沿用第 1 週 · 查證 2026-09-16</span><a href="https://www.tipo.gov.tw/tw/copyright/692-63403.html" target="_blank" rel="noopener">https://www.tipo.gov.tw/tw/copyright/692-63403.html</a></li>
+      <li id="src-3"><span class="ti">經濟部智慧財產局〈著作權布告欄〉（生成式人工智慧著作權指引（初稿）公聽會會議紀錄）</span><span class="meta">智慧局官方 · 2026-08-03 · 公聽會 2026-07-20 · 沿用第 1 週 · 查證 2026-09-16</span><a href="https://www.tipo.gov.tw/tw/copyright/721.html" target="_blank" rel="noopener">https://www.tipo.gov.tw/tw/copyright/721.html</a></li>
+      <li id="src-4"><span class="ti">國家科學及技術委員會〈人工智慧基本法三讀通過〉</span><span class="meta">國科會官方 · 2025-12-24 · 三讀 12-23、共 20 條 · 沿用第 1 週 · 查證 2026-09-16</span><a href="https://www.nstc.gov.tw/folksonomy/detail/ed981806-1852-4b63-8dfd-9eea04157971?l=ch" target="_blank" rel="noopener">https://www.nstc.gov.tw/folksonomy/detail/ed981806-1852-4b63-8dfd-9eea04157971?l=ch</a></li>
+      <li id="src-5"><span class="ti">數位發展部〈立法院三讀通過《人工智慧基本法》〉</span><span class="meta">數位部官方 · 2025-12-24 · 七大治理原則 · 沿用第 1 週 · 查證 2026-09-16</span><a href="https://moda.gov.tw/press/press-releases/18316" target="_blank" rel="noopener">https://moda.gov.tw/press/press-releases/18316</a></li>
+      <li id="src-6"><span class="ti">U.S. Copyright Office〈Copyright and Artificial Intelligence〉</span><span class="meta">美國著作權局官方 · 頁面未標日期 · 三部報告日期 · 沿用第 1 週 · 查證 2026-09-16</span><a href="https://www.copyright.gov/ai/" target="_blank" rel="noopener">https://www.copyright.gov/ai/</a></li>
+      <li id="src-7"><span class="ti">U.S. Copyright Office〈NewsNet Issue 1060〉</span><span class="meta">美國著作權局官方 · 2025-01-29 · the mere provision of prompts · 沿用第 1 週 · 查證 2026-09-16</span><a href="https://www.copyright.gov/newsnet/2025/1060.html" target="_blank" rel="noopener">https://www.copyright.gov/newsnet/2025/1060.html</a></li>
+      <li id="src-8"><span class="ti">U.S. Copyright Office〈Testimony of Shira Perlmutter, Register of Copyrights〉</span><span class="meta">美國著作權局官方 · 2026-05-12 · 逾 7,000 件、cert denied · 沿用第 1 週 · 查證 2026-09-16</span><a href="https://www.copyright.gov/laws/hearings/Testimony-Register-Shira-Perlmutter-May-12-2026-Hearing-Senate-Judiciary-IP-Subcommittee.pdf" target="_blank" rel="noopener">https://www.copyright.gov/laws/hearings/Testimony-Register-Shira-Perlmutter-May-12-2026-Hearing-Senate-Judiciary-IP-Subcommittee.pdf</a></li>
+      <li id="src-9"><span class="ti">U.S. Court of Appeals for the D.C. Circuit〈Thaler v. Perlmutter, No. 23-5233〉</span><span class="meta">法院判決 · 2025-03-18 · 沿用第 1 週 · 查證 2026-09-16</span><a href="https://media.cadc.uscourts.gov/opinions/docs/2025/03/23-5233.pdf" target="_blank" rel="noopener">https://media.cadc.uscourts.gov/opinions/docs/2025/03/23-5233.pdf</a></li>
+      <li id="src-10"><span class="ti">SCOTUSblog〈Thaler v. Perlmutter (25-449)〉</span><span class="meta">法律媒體（二手，逐條轉載 docket）· 2026-03-02 拒絕受理 · 沿用第 1 週 · 查證 2026-09-16</span><a href="https://www.scotusblog.com/cases/thaler-v-perlmutter/" target="_blank" rel="noopener">https://www.scotusblog.com/cases/thaler-v-perlmutter/</a></li>
+      <li id="src-11"><span class="ti">The Authors Guild〈Court Grants Final Approval of $1.5 Billion Anthropic Copyright Settlement〉</span><span class="meta">原告方作家組織公告（二手）· 2026-07-21 · 07-20 最終核准、每件約 3,000 美元 · 沿用第 1 週 · 查證 2026-09-16</span><a href="https://authorsguild.org/news/court-grants-final-approval-anthropic-copyright-settlement/" target="_blank" rel="noopener">https://authorsguild.org/news/court-grants-final-approval-anthropic-copyright-settlement/</a></li>
+      <li id="src-12"><span class="ti">Bloomberg Law〈OpenAI Must Turn Over 20 Million ChatGPT Logs, Judge Affirms〉</span><span class="meta">二手媒體 · 2026-01-05 · 沿用第 1 週 · 查證 2026-09-16</span><a href="https://news.bloomberglaw.com/ip-law/openai-must-turn-over-20-million-chatgpt-logs-judge-affirms" target="_blank" rel="noopener">https://news.bloomberglaw.com/ip-law/openai-must-turn-over-20-million-chatgpt-logs-judge-affirms</a></li>
+      <li id="src-13"><span class="ti">Georgetown Law Tech Institute〈Disney, NBC Universal, and DreamWorks File Major IP Lawsuit Against AI Image Generator Midjourney〉</span><span class="meta">法學院研究機構（二手）· 2025-06-24 · 起訴 2025-06-11 · 沿用第 1 週 · 查證 2026-09-16</span><a href="https://www.law.georgetown.edu/tech-institute/research-insights/insights/disney-nbc-universal-and-dreamworks-file-major-ip-lawsuit-against-ai-image-generator-midjourney/" target="_blank" rel="noopener">https://www.law.georgetown.edu/tech-institute/research-insights/insights/disney-nbc-universal-and-dreamworks-file-major-ip-lawsuit-against-ai-image-generator-midjourney/</a></li>
+      <li id="src-14"><span class="ti">AI Lawsuit Tracker〈Disney v. Midjourney Explained〉</span><span class="meta">追蹤網站（二手）· 2026-04-26 · 2026 年時程、合理使用與不潔之手 · 沿用第 1 週 · 查證 2026-09-16</span><a href="https://ailawsuittracker.com/blog/disney-v-midjourney-explained/" target="_blank" rel="noopener">https://ailawsuittracker.com/blog/disney-v-midjourney-explained/</a></li>
+      <li id="src-15"><span class="ti">McKool Smith〈AI Infringement Case Updates: September 22, 2025〉</span><span class="meta">律師事務所案件追蹤（二手）· 2025-09-22 · Warner Bros. Discovery v. Midjourney 09-04 起訴 · 查證 2026-09-16</span><a href="https://www.mckoolsmith.com/newsroom-ailitigation-37" target="_blank" rel="noopener">https://www.mckoolsmith.com/newsroom-ailitigation-37</a></li>
+      <li id="src-16"><span class="ti">Courts and Tribunals Judiciary〈Getty Images -v- Stability AI〉</span><span class="meta">英國司法機關官方 · 2025-11-04 · [2025] EWHC 2863 (Ch) · 沿用第 1 週 · 查證 2026-09-16</span><a href="https://www.judiciary.uk/judgments/getty-images-v-stability-ai/" target="_blank" rel="noopener">https://www.judiciary.uk/judgments/getty-images-v-stability-ai/</a></li>
+      <li id="src-17"><span class="ti">Mayer Brown〈Getty Images v Stability AI: What the High Court's Decision Means for Rights-Holders and AI Developers〉</span><span class="meta">律師事務所評析（二手）· 2025-11 · 權重非重製物、撤回訓練主張、商標有限成立 · 沿用第 1 週 · 查證 2026-09-16</span><a href="https://www.mayerbrown.com/en/insights/publications/2025/11/getty-images-v-stability-ai-what-the-high-courts-decision-means-for-rights-holders-and-ai-developers" target="_blank" rel="noopener">https://www.mayerbrown.com/en/insights/publications/2025/11/getty-images-v-stability-ai-what-the-high-courts-decision-means-for-rights-holders-and-ai-developers</a></li>
+      <li id="src-18"><span class="ti">Getty Images Newsroom〈Getty Images Issues Statement on Ruling in Stability AI UK Litigation〉</span><span class="meta">當事人聲明（一手）· 2025-11-04 · 沿用第 1 週 · 查證 2026-09-16</span><a href="https://newsroom.gettyimages.com/en/getty-images/getty-images-issues-statement-on-ruling-in-stability-ai-uk-litigation" target="_blank" rel="noopener">https://newsroom.gettyimages.com/en/getty-images/getty-images-issues-statement-on-ruling-in-stability-ai-uk-litigation</a></li>
+      <li id="src-19"><span class="ti">European Commission〈AI Act | Shaping Europe's digital future〉</span><span class="meta">歐盟執委會官方 · 2026-08-03 更新 · 分階段時程、AI Omnibus 07-27 生效、透明規則 2026 年 8 月生效 · 查證 2026-09-16</span><a href="https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai" target="_blank" rel="noopener">https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai</a></li>
+      <li id="src-20"><span class="ti">European Commission〈Transparency obligations under Article 50 of the AI Act〉</span><span class="meta">歐盟執委會官方 · 2026-07-24 · 08-02 適用、首次接觸揭露、機器可讀標記、12-02 寬限、1,500 萬歐元或 3% · 查證 2026-09-16</span><a href="https://digital-strategy.ec.europa.eu/en/faqs/transparency-obligations-under-article-50-ai-act" target="_blank" rel="noopener">https://digital-strategy.ec.europa.eu/en/faqs/transparency-obligations-under-article-50-ai-act</a></li>
+      <li id="src-21"><span class="ti">European Commission〈Code of Practice on Transparency of AI-generated Content〉</span><span class="meta">歐盟執委會官方 · 2026-07-31 · 初稿 2025-12-17、定稿 2026-06-10、約 190 個簽署 · 查證 2026-09-16</span><a href="https://digital-strategy.ec.europa.eu/en/policies/code-practice-ai-generated-content" target="_blank" rel="noopener">https://digital-strategy.ec.europa.eu/en/policies/code-practice-ai-generated-content</a></li>
+      <li id="src-22"><span class="ti">YouTube Official Blog〈Improving AI labels for viewers and creators〉</span><span class="meta">YouTube 官方 · 2026-05-27 · 平台主動貼標、Veo 標籤不可移除、不影響營利 · 查證 2026-09-16</span><a href="https://blog.youtube/news-and-events/improving-ai-labels-viewers-creators/" target="_blank" rel="noopener">https://blog.youtube/news-and-events/improving-ai-labels-viewers-creators/</a></li>
+      <li id="src-23"><span class="ti">Meta Transparency Center〈Labeling AI Content〉</span><span class="meta">Meta 官方 · 2025-02-19 更新 · AI Info、Facebook／Instagram／Threads · 查證 2026-09-16</span><a href="https://transparency.meta.com/governance/tracking-impact/labeling-ai-content/" target="_blank" rel="noopener">https://transparency.meta.com/governance/tracking-impact/labeling-ai-content/</a></li>
+      <li id="src-24"><span class="ti">TechCrunch〈Instagram puts new limits on undisclosed AI profiles〉</span><span class="meta">二手媒體 · 2026-08-31 · AI-generated profile、降觸及 · 查證 2026-09-16</span><a href="https://techcrunch.com/2026/08/31/instagram-puts-new-limits-on-undisclosed-ai-profiles/" target="_blank" rel="noopener">https://techcrunch.com/2026/08/31/instagram-puts-new-limits-on-undisclosed-ai-profiles/</a></li>
+      <li id="src-25"><span class="ti">Anthropic〈Usage Policy〉</span><span class="meta">Anthropic 官方 · 2025-09-15 生效 · 冒充人類、智財、歧視、揭露 · 查證 2026-09-16</span><a href="https://www.anthropic.com/legal/aup" target="_blank" rel="noopener">https://www.anthropic.com/legal/aup</a></li>
+      <li id="src-26"><span class="ti">Google〈Generative AI Prohibited Use Policy〉</span><span class="meta">Google 官方 · 2024-12-17 更新 · 誤導來源、冒充個人、智財 · 查證 2026-09-16</span><a href="https://policies.google.com/terms/generative-ai/use-policy" target="_blank" rel="noopener">https://policies.google.com/terms/generative-ai/use-policy</a></li>
+      <li id="src-27"><span class="ti">Bianchi, F., Kalluri, P., Durmus, E., Ladhak, F., Cheng, M., Nozza, D., Hashimoto, T., Jurafsky, D., Zou, J. &amp; Caliskan, A.〈Easily Accessible Text-to-Image Generation Amplifies Demographic Stereotypes at Large Scale〉</span><span class="meta">FAccT '23, 1493–1504 · 2023-06-12 · Crossref 書目、摘要見 arXiv 2211.03759（dl.acm.org 403）· 查證 2026-09-16</span><a href="https://arxiv.org/abs/2211.03759" target="_blank" rel="noopener">https://arxiv.org/abs/2211.03759</a></li>
+      <li id="src-28"><span class="ti">Jiang, H. H., Brown, L., Cheng, J., Khan, M., Gupta, A., Workman, D., Hanna, A., Flowers, J. &amp; Gebru, T.〈AI Art and its Impact on Artists〉</span><span class="meta">AIES '23, 363–374 · 2023-08-08 · Crossref 書目、Semantic Scholar 摘要（dl.acm.org 403）· 查證 2026-09-16</span><a href="https://doi.org/10.1145/3600211.3604681" target="_blank" rel="noopener">https://doi.org/10.1145/3600211.3604681</a></li>
+    </ol>
+  </section>
+
+  <section class="sec cyan">
+    <span class="kicker">補充資訊</span>
+    <h2>延伸閱讀與這一週刪掉的東西</h2>
+    <h3>這一週刪掉的東西，以及為什麼</h3>
+    <ul>
+      <li><strong>NYT「2026/6 撤回部分主張」「2026/7/9 聲請制裁」、OpenAI 官方回應頁</strong>：OpenAI 頁 403，其餘未開到可靠來源，不寫。</li>
+      <li><strong>Midjourney 案「2026/6/15 揭露範圍裁定」「2026/8/17 聽證」</strong>：Variety 付費牆，改寫第 1 週查證的 2026 年時程。<sup class="fn"><a href="#src-14">14</a></sup></li>
+      <li><strong>Anthropic「2025/9/25 初步核准」「約 50 萬部書」</strong>：改寫 2026-07-20 最終核准與每件約 3,000 美元。<sup class="fn"><a href="#src-11">11</a></sup></li>
+      <li><strong>TikTok 標示政策（含「13 億支」「30 億支」）</strong>：TikTok 新聞室頁面對連結檢查回 404（瀏覽器可開），依本課規則不留開不了的連結，整段不寫。</li>
+      <li><strong>USCO「徵詢逾一萬則意見」、Meta「2026/2 政策統一」「政治廣告強制揭露」</strong>：未開到官方頁，不寫。</li>
+      <li><strong>OpenAI 使用政策</strong>：頁面 403，模型公司政策只寫 Anthropic 與 Google。<sup class="fn"><a href="#src-25">25</a></sup><sup class="fn"><a href="#src-26">26</a></sup></li>
+      <li><strong>論文①「有魅力趨向白人面孔」「窮困趨向深膚色」「房子旗子預設美國」</strong>：摘要只載 whiteness as ideal 與 American norms，只寫摘要有的。<sup class="fn"><a href="#src-27">27</a></sup></li>
+    </ul>
+    <h3>延伸閱讀</h3>
+    <ul>
+      <li>執委會第 50 條問答頁一屏就讀完，適合當「法遵事項長什麼樣」的第一份材料。<sup class="fn"><a href="#src-20">20</a></sup></li>
+      <li>NewsNet 1060 只有幾段，是「提示詞不等於作者」最短的一手來源。<sup class="fn"><a href="#src-7">7</a></sup></li>
+      <li>Perlmutter 證詞的 PDF 把三部報告的結論濃縮在幾頁裡，比讀全報告快。<sup class="fn"><a href="#src-8">8</a></sup></li>
+      <li>Bianchi 等人的 arXiv 摘要頁附了論文全文，圖表可以直接拿來做你的偏見實測對照。<sup class="fn"><a href="#src-27">27</a></sup></li>
+    </ul>
+  </section>
+
+  <section class="sec lemon">
+    <span class="kicker">本週檢核</span>
+    <h2>交作業前自己打勾</h2>
+    <ul class="check">
+      <li>選了自己最常用的生成工具，400 字倫理體檢寫了訓練資料與授權論述。</li>
+      <li>使用政策條款附了該公司官方政策頁的連結。</li>
+      <li>標示機制寫了工具或平台的官方說明，附連結。</li>
+      <li>實測三組職業提示，附截圖與提示詞原文，偏見觀察各一句。</li>
+      <li>引用的訴訟進度標了「法院文件」或「二手」，沒有把媒體轉述寫成法院認定。</li>
+      <li>文末有 AI 使用揭露四欄。</li>
+      <li>檔名是「學號_W14_倫理體檢.pdf」，一頁；準備好 5 分鐘分享。</li>
+    </ul>
+  </section>
+
+  <p class="version">2026-09-16 翻新：版型改為水彩由灰轉彩、新增講義區、法規與政策只引官方頁、訴訟進度沿用第 1 週查證並刪除付費牆內容、歐盟第 50 條更新至 2026 年 8 月上路後的執委會問答、平台政策更新至 2026 年 5 至 8 月、偏見主張改寫到論文摘要有的為止。前一版：2026-09-13。</p>
+
+</main>
+
+<a class="backtop" id="backtop" href="#deck">↑ 回投影片</a>
+
 <script>
 (function () {
   /* ★ 每週只改這一行 ★ */
+  var COURSE_LABEL = '人工智慧與互動媒體特論';
   var WEEK_LABEL = '第 14 週 · 倫理智財與偏見';
 
+  var deck = document.getElementById('deck');
   var stage = document.getElementById('stage');
   var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
   var cnt = document.getElementById('cnt');
   var prog = document.getElementById('prog');
   var toc = document.getElementById('toc');
   var tgrid = document.getElementById('tgrid');
+  var backtop = document.getElementById('backtop');
   var cur = 0;
 
   document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
@@ -643,7 +814,7 @@
   slides.forEach(function (s, i) {
     var f = document.createElement('div');
     f.className = 'foot';
-    f.innerHTML = '<span>人工智慧與互動媒體特論|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    f.innerHTML = '<span>' + COURSE_LABEL + '|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
     s.appendChild(f);
   });
 
@@ -652,12 +823,12 @@
     var eb = s.querySelector('.eyebrow');
     var part = '開場';
     if (eb) {
-      var m = eb.textContent.match(/PART\s*(\d)/i);
-      if (m) part = 'PART ' + m[1];
+      var m = eb.textContent.match(/Part\s*(\d)/i);
+      if (m) part = 'Part ' + m[1];
       else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
     }
     var h = s.querySelector('h1, h2');
-    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent.replace(/\d+$/, '') : '') });
   });
   Object.keys(groups).forEach(function (k) {
     var col = document.createElement('div');
@@ -685,35 +856,57 @@
   function toggleToc(on) {
     toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
   }
+  function atDeck() { return window.scrollY < 40; }
+  function toNotes() { document.getElementById('notes').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  function toggleFull() {
+    if (document.fullscreenElement) { document.exitFullscreen(); return; }
+    if (deck.requestFullscreen) deck.requestFullscreen();
+  }
 
   document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
   document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
   document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
   document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+  document.getElementById('toNotes').addEventListener('click', toNotes);
+  document.getElementById('full').addEventListener('click', toggleFull);
 
   document.addEventListener('keydown', function (e) {
+    if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
     if (e.key === 'Escape') { toggleToc(false); return; }
     if (toc.classList.contains('on')) return;
     switch (e.key) {
-      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
-      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
-      case 'Home': go(0); break;
-      case 'End': go(slides.length - 1); break;
+      case 'ArrowRight': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'ArrowDown': case ' ': if (atDeck()) { e.preventDefault(); go(cur + 1); } break;
+      case 'ArrowUp': if (atDeck()) { e.preventDefault(); go(cur - 1); } break;
+      case 'Home': if (atDeck()) go(0); break;
+      case 'End': if (atDeck()) go(slides.length - 1); break;
       case 'm': case 'M': toggleToc(); break;
+      case 'n': case 'N': toNotes(); break;
+      case 'f': case 'F': toggleFull(); break;
     }
   });
 
   function fit() {
-    var w = window.innerWidth, h = window.innerHeight;
+    var w = deck.clientWidth, h = deck.clientHeight;
     if (!w || !h) { requestAnimationFrame(fit); return; }
-    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+    stage.style.transform = 'scale(' + Math.min((w - 48) / 1300, (h - 88) / 740) + ')';
   }
   window.addEventListener('resize', fit);
   window.addEventListener('load', fit);
+  document.addEventListener('fullscreenchange', fit);
   fit();
+
+  window.addEventListener('scroll', function () {
+    backtop.classList.toggle('show', window.scrollY > deck.clientHeight * 0.6);
+  }, { passive: true });
 
   var m = location.hash.match(/^#s(\d+)$/);
   go(m ? +m[1] - 1 : 0);
+  if (!m && location.hash) {
+    var target = document.querySelector(location.hash.replace(/[^#\w-]/g, ''));
+    if (target) setTimeout(function () { target.scrollIntoView({ block: 'start' }); }, 50);
+  }
 })();
 </script>
 </body>

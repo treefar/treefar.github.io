@@ -3,145 +3,233 @@
 <head>
 <meta charset="utf-8">
 <title>第 1 週|智財與課程簡介</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Zen+Maru+Gothic:wght@500;700;900&family=Baloo+2:wght@600;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
-  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  /* ============ 版型：糖果流行（style-library muse-dash，色值取自 styles/muse-dash.json）============ */
   * { box-sizing: border-box; }
-  #app {
-    position: fixed; inset: 0; overflow: hidden;
-    background: var(--bg);
-    font-family: var(--body);
-    color: var(--ink);
-    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
-    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
-    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
-    --bg: #F5F4EC; --bg2: #EFEEE2;
-    --panel: #FDFCF6; --panel2: #EDECDF;
-    --ink: #232B21; --sub: #67705E;
-    --accent: #2F6B4F; --accent-rgb: 47,107,79;
-    --accent2: #BC4F2C;
-    --line: rgba(35,43,33,.16);
-    --link: #2F6B4F;
-    --r: 4px;
+  :root {
+    --bg: #fff4fa; --bg2: #eefaff;
+    --surface: #ffffff; --surface2: #eefaff;
+    --ink: #2b1b3d; --ink2: #6b5a7e; --muted: #6b5a7e;
+    --accent: #ff3d97; --accent2: #1fd0d6;
+    --pink-soft: #ff7fb8; --coral: #ff7a7a; --cyan-deep: #0fb6c4;
+    --grape: #8b54e6; --grape-deep: #6f3fd6; --lemon: #ffd23f; --sky: #49b8ff;
+    --dot-pink: rgba(255,61,151,.13); --dot-cyan: rgba(31,208,214,.16);
+    --body: 'Noto Sans TC', 'Microsoft JhengHei', 'PingFang TC', 'Segoe UI', sans-serif;
+    --disp: 'Fredoka', 'Zen Maru Gothic', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+    --num: 'Baloo 2', 'Fredoka', 'Noto Sans TC', sans-serif;
+    --r-sm: 14px; --r-md: 22px; --r-lg: 34px;
+    --bw: 4px;
+    --sh-sm: 4px 4px 0 var(--ink); --sh-md: 7px 7px 0 var(--ink);
   }
-  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
-  #app a:hover { opacity: .85; }
-  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-weight: 500; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 2px; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
+  /* ---------- 投影區 ---------- */
+  #deck {
+    position: relative; height: 100vh; min-height: 560px; overflow: hidden;
+    background: var(--bg2);
+    background-image: radial-gradient(var(--dot-cyan) 2.4px, transparent 2.6px);
+    background-size: 26px 26px;
+  }
   .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
-  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
-  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
-  .slide.active { display: flex; }
-  .slide::before {
-    content: ""; position: absolute; inset: 24px; pointer-events: none;
-    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
+  .stage {
+    width: 1280px; height: 720px; position: relative; flex: 0 0 auto;
+    background: var(--bg);
+    background-image: radial-gradient(var(--dot-pink) 2.4px, transparent 2.6px);
+    background-size: 26px 26px;
+    border: var(--bw) solid var(--ink); border-radius: 26px;
+    box-shadow: 10px 10px 0 var(--ink);
+    overflow: hidden;
   }
+  .slide { position: absolute; inset: 0; padding: 44px 60px 74px; display: none; flex-direction: column; }
+  .slide.active { display: flex; animation: pop .42s cubic-bezier(.2,.9,.3,1.2) both; }
+  @keyframes pop { 0% { transform: scale(.96); opacity: 0 } 60% { transform: scale(1.01); opacity: 1 } 100% { transform: none } }
 
-  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
-  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
-  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
-  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+  .eyebrow { font-family: var(--disp); font-size: 18px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+  h1 { font-family: var(--disp); font-size: 80px; line-height: 1.12; margin: 0; font-weight: 700; text-wrap: balance; }
+  h2 { font-family: var(--disp); font-size: 54px; line-height: 1.18; margin: 0 0 18px; font-weight: 700; text-wrap: balance; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 18px; padding-right: 8px; }
 
-  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
-  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
-  .sub { color: var(--sub); }
+  .slide ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 16px; font-size: 26px; line-height: 1.55; }
+  .slide ul ul { margin-top: 6px; gap: 6px; font-size: 22px; color: var(--ink2); }
+  .slide li::marker { color: var(--accent); }
+  .sub { color: var(--ink2); }
   .small { font-size: 18px; }
-  .num { font-variant-numeric: tabular-nums; }
+  .num { font-family: var(--num); font-variant-numeric: tabular-nums; }
 
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
-  .cards { display: grid; gap: 18px; }
+  .cards { display: grid; gap: 20px; }
   .c2 { grid-template-columns: repeat(2, 1fr); }
   .c3 { grid-template-columns: repeat(3, 1fr); }
   .c4 { grid-template-columns: repeat(4, 1fr); }
   .c5 { grid-template-columns: repeat(5, 1fr); }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
-  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
-  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
-  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
-
-  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
-  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
-
-  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
-
-  .cover, .part { justify-content: center; }
-  .cover .eyebrow { margin-bottom: 26px; }
-  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
-  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
-  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
-  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
-  .part h2 { font-size: 56px; }
-  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
-
-  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
-  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
-  .kv dd { margin: 0; }
-  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
-  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
-  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
-  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
-  .lk::after { content: " ↗"; font-size: 12px; }
-  .flow { display: flex; align-items: stretch; gap: 0; }
-  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
-  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
-  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
-  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
-  .bar i { display: block; height: 100%; background: var(--accent); }
-  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
-  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
-  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
-  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
-  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
-  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
-  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
-  .tl { display: flex; flex-direction: column; gap: 18px; }
-  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
-  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
-  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
-
-  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
-  .content > .cards,
-  .content > .cols,
-  .content > .flow,
-  .content > .kv,
-  .content > .prob { flex: 1 1 auto; }
-  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
-  .content > .qlist,
-  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
-  .content > .biblio { flex: 0 0 auto; }
+  .card {
+    background: var(--surface); border: var(--bw) solid var(--ink); border-radius: var(--r-md);
+    box-shadow: var(--sh-md); padding: 18px 22px; min-width: 0;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .card.pink { background: #ffe3f0; } .card.cyan { background: #dff8f9; } .card.grape { background: #ece2ff; } .card.lemon { background: #fff4c7; }
+  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 10px; font-weight: 700; line-height: 1.25; }
+  .card p, .card li { font-size: 22px; line-height: 1.5; margin: 0; }
+  .card ul { padding-left: 1.1em; gap: 8px; font-size: 22px; }
+  .card .who { display: block; font-family: var(--disp); font-size: 16px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; font-weight: 600; }
+  .card.cyan .who { color: var(--cyan-deep); } .card.grape .who { color: var(--grape-deep); } .card.lemon .who { color: #9a7400; }
   .cols > .card { justify-content: flex-start; }
 
-  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
-  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
-  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
-  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
-  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 3px solid var(--ink); padding-top: 12px; font-size: 22px; line-height: 1.5; }
+  .take b { font-family: var(--disp); color: var(--accent); font-size: 17px; letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; font-weight: 700; }
+
+  .foot { position: absolute; left: 60px; right: 60px; bottom: 22px; display: flex; justify-content: space-between; font-family: var(--disp); font-size: 16px; letter-spacing: .06em; color: var(--ink2); }
+
+  /* 封面與章節頁：整片彩色 radial-gradient ＋ 白色半色調點，文字反白 */
+  .cover, .part { justify-content: center; color: #fff; }
+  .cover { background: radial-gradient(circle at 25% 30%, var(--pink-soft), var(--accent) 65%); }
+  .part.p-cyan { background: radial-gradient(circle at 70% 30%, #86ecf0, var(--accent2) 65%); }
+  .part.p-grape { background: radial-gradient(circle at 40% 65%, #b79af5, var(--grape) 65%); }
+  .part.p-pink { background: radial-gradient(circle at 25% 30%, var(--pink-soft), var(--accent) 65%); }
+  .part.p-sky { background: radial-gradient(circle at 70% 60%, #9ad6ff, var(--sky) 65%); }
+  .part.p-coral { background: radial-gradient(circle at 30% 40%, #ffa3a3, var(--coral) 65%); }
+  .cover::after, .part::after { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(rgba(255,255,255,.35) 2.4px, transparent 2.6px); background-size: 26px 26px; }
+  .cover > *:not(.foot), .part > *:not(.foot) { position: relative; z-index: 1; }
+  .cover .foot, .part .foot { z-index: 1; }
+  .cover .eyebrow, .part .eyebrow { color: #fff; margin-bottom: 22px; }
+  .cover .foot, .part .foot { color: #fff; }
+  .cover-sub { font-size: 30px; margin: 26px 0 0; line-height: 1.6; max-width: 30em; font-weight: 500; }
+  .cover-meta { margin-top: 40px; display: flex; gap: 12px; flex-wrap: wrap; font-family: var(--disp); font-size: 17px; }
+  .cover-meta span { border: 3px solid #fff; border-radius: 999px; padding: 6px 16px; }
+  .part-num { font-family: var(--num); font-size: 150px; line-height: 1; margin-bottom: 4px; font-weight: 800; color: transparent; -webkit-text-stroke: 4px #fff; }
+  .part h2 { font-size: 60px; }
+  .part-sub { font-size: 28px; margin: 18px 0 0; max-width: 32em; line-height: 1.6; font-weight: 500; }
+
+  .kv { display: grid; grid-template-columns: 250px 1fr; gap: 16px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
+  .kv dt { font-family: var(--disp); color: var(--accent); font-weight: 700; font-size: 22px; }
+  .kv dd { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .chip { font-family: var(--disp); padding: 6px 16px; border: 3px solid var(--ink); background: var(--surface2); border-radius: 999px; font-size: 21px; font-weight: 600; }
+  .chip.hot { background: var(--lemon); }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lk { display: inline-block; border: 3px solid var(--ink); background: var(--surface); box-shadow: var(--sh-sm); padding: 6px 16px; border-radius: 999px; font-size: 18px; text-decoration: none; color: var(--ink); font-weight: 600; }
+  .lk::after { content: " ↗"; font-size: 12px; }
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .flow .step { flex: 1; background: var(--surface); border: var(--bw) solid var(--ink); border-radius: var(--r-md); box-shadow: var(--sh-md); padding: 18px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 8px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.5; margin: 0; color: var(--ink2); }
+  .flow .arr { flex: 0 0 48px; display: flex; align-items: center; justify-content: center; font-family: var(--num); font-size: 30px; color: var(--accent); font-weight: 800; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 16px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.5; display: flex; gap: 14px; }
+  .qlist p::before { content: "Q" counter(q); font-family: var(--num); color: var(--accent); font-weight: 800; flex: 0 0 auto; }
+  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .08em; color: var(--accent); margin: 0 0 10px; font-weight: 700; }
+  .card p.big, .cols > .card p.big { font-family: var(--num); font-size: 88px; line-height: 1.05; font-weight: 800; color: var(--accent); margin: 0; }
+  .card p.big small { font-family: var(--disp); font-size: 22px; line-height: 1.4; color: var(--ink2); font-weight: 600; display: block; margin-top: 10px; }
+
+  /* 貼紙卡不撐滿高度：卡片依內容高度，整組在標題與底列之間置中 */
+  .content > .cards, .content > .cols, .content > .flow { flex: 0 0 auto; margin-top: auto; margin-bottom: auto; }
+  .content > .kv { flex: 1 1 auto; }
+  .cards .card { min-height: 200px; }
+  .cols > .card { min-height: 240px; }
+  .cols > .card h3 { font-size: 28px; }
+  .cols > .card p, .cols > .card li { font-size: 24px; }
+  .cols > .card ul { gap: 10px; }
+  .c3 .card p { font-size: 23px; }
+  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .qlist { flex: 1 1 auto; justify-content: space-evenly; }
+
+  /* 投影片上的出處記號 */
+  sup.fn { font-family: var(--num); font-size: 13px; line-height: 1; vertical-align: top; margin-left: 4px; position: relative; top: -2px; }
+  sup.fn a { display: inline-block; background: var(--ink); color: #fff; border-radius: 999px; height: 20px; line-height: 20px; min-width: 20px; padding: 0 6px; text-align: center; text-decoration: none; font-weight: 800; }
+  .cover sup.fn a, .part sup.fn a { background: #fff; color: var(--ink); }
+
+  /* 控制列 */
+  .ctrl { position: absolute; right: 16px; bottom: 14px; display: flex; gap: 6px; align-items: center; z-index: 30; }
+  .ctrl button { font-family: var(--disp); border: 3px solid var(--ink); background: var(--surface); color: var(--ink); font-size: 15px; height: 34px; min-width: 36px; padding: 0 10px; border-radius: 999px; cursor: pointer; box-shadow: 3px 3px 0 var(--ink); font-weight: 600; }
+  .ctrl button:hover { transform: translateY(-2px); box-shadow: 5px 5px 0 var(--ink); }
+  .ctrl button:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--ink); }
+  .ctrl .cnt { font-family: var(--num); font-size: 14px; color: var(--ink2); padding: 0 6px; font-variant-numeric: tabular-nums; }
+  .prog { position: absolute; left: 0; bottom: 0; height: 5px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
+  .hint { position: absolute; left: 16px; bottom: 16px; z-index: 30; font-family: var(--disp); font-size: 13px; color: var(--ink2); }
+
+  .toc { position: absolute; inset: 0; background: rgba(255,244,250,.96); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
   .toc.on { display: block; }
-  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
-  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
-  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
-  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
-  .toc button:hover { background: var(--panel2); }
-  .toc button.here { color: var(--accent2); font-weight: 700; }
-  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
-  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
- .eyebrow{font-size:18px}.slide h2{font-size:48px}.slide ul{font-size:26px}.slide ul ul{font-size:22px}.small{font-size:18px}.card h3{font-size:26px}.card p,.card li,.card ul{font-size:22px}.card .who{font-size:16px}.take{font-size:22px}.take b{font-size:17px}.foot{font-size:16px}.cover-sub{font-size:30px}.part-sub{font-size:28px}.kv{font-size:24px}.kv dt{font-size:21px}.chip{font-size:23px}.lk{font-size:18px}.flow .step h3{font-size:24px}.flow .step p{font-size:21px}.prob,.biblio{font-size:23px}.biblio .ti{font-size:27px}.qlist p{font-size:26px}.tl .ev{font-size:23px}.grp h3{font-size:20px}
+  .toc h2 { font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 26px; }
+  .toc h3 { font-family: var(--disp); color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 10px; cursor: pointer; border-radius: 10px; font-family: var(--body); font-weight: 500; }
+  .toc button:hover { background: var(--surface2); }
+  .toc button.here { color: var(--accent); font-weight: 700; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--ink2); }
+
+  /* ---------- 講義區 ---------- */
+  .notes { max-width: 960px; margin: 0 auto; padding: 56px 20px 96px; }
+  .notes-head { text-align: center; margin-bottom: 40px; }
+  .notes-head .eyebrow { margin-bottom: 10px; }
+  .notes-head h2 { font-size: 44px; margin: 0 0 12px; }
+  .notes-head p { color: var(--ink2); font-size: 18px; margin: 0; }
+  .sec { background: var(--surface); border: var(--bw) solid var(--ink); border-radius: var(--r-md); box-shadow: var(--sh-md); padding: 28px 32px; margin: 0 0 30px; }
+  .sec h2 { font-size: 30px; margin: 0 0 14px; }
+  .sec h3 { font-family: var(--disp); font-size: 21px; margin: 24px 0 8px; font-weight: 700; }
+  .sec p, .sec li { font-size: 18px; line-height: 1.85; color: var(--ink2); margin: 0 0 12px; }
+  .sec li { margin: 0 0 6px; }
+  .sec strong { color: var(--ink); font-weight: 700; }
+  .sec .kicker { display: inline-block; font-family: var(--disp); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: #fff; background: var(--accent); border-radius: 999px; padding: 4px 12px; margin-bottom: 12px; font-weight: 700; }
+  .sec.cyan .kicker { background: var(--cyan-deep); } .sec.grape .kicker { background: var(--grape); } .sec.lemon .kicker { background: #9a7400; }
+  .sec table { width: 100%; border-collapse: collapse; font-size: 17px; margin: 8px 0 16px; }
+  .sec th, .sec td { text-align: left; padding: 10px 12px; border-bottom: 2px solid #efe6f2; vertical-align: top; line-height: 1.6; }
+  .sec th { font-family: var(--disp); font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+  .scene { background: var(--surface2); border: 3px dashed var(--ink); border-radius: var(--r-sm); padding: 14px 18px; margin: 14px 0 18px; }
+  .scene .who { font-family: var(--disp); font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--cyan-deep); font-weight: 700; display: block; margin-bottom: 4px; }
+  .scene p { margin: 0; }
+  ol.src { padding-left: 1.4em; counter-reset: s; list-style: none; }
+  ol.src li { counter-increment: s; position: relative; padding-left: 8px; margin-bottom: 14px; line-height: 1.7; }
+  ol.src li::before { content: counter(s); position: absolute; left: -1.5em; top: .35em; font-family: var(--num); font-size: 13px; font-weight: 800; background: var(--ink); color: #fff; border-radius: 999px; min-width: 22px; height: 22px; line-height: 22px; text-align: center; }
+  ol.src li:target { background: #fff4c7; border-radius: 10px; }
+  ol.src .ti { color: var(--ink); font-weight: 700; }
+  ol.src .meta { display: block; font-size: 15px; color: var(--muted); }
+  ol.src a { word-break: break-all; font-size: 15px; }
+  .check { counter-reset: c; list-style: none; padding: 0; }
+  .check li { counter-increment: c; display: flex; gap: 12px; align-items: baseline; }
+  .check li::before { content: "☐"; color: var(--accent); font-size: 22px; flex: 0 0 auto; }
+  .backtop { position: fixed; right: 18px; bottom: 18px; z-index: 50; font-family: var(--disp); font-size: 15px; font-weight: 700; color: var(--ink); background: var(--lemon); border: 3px solid var(--ink); border-radius: 999px; padding: 8px 16px; text-decoration: none; box-shadow: 4px 4px 0 var(--ink); display: none; }
+  .backtop.show { display: inline-block; }
+  .version { text-align: center; font-size: 14px; color: var(--muted); margin-top: 30px; }
+
+  @media (max-width: 720px) {
+    .notes { padding: 40px 16px 80px; }
+    .sec { padding: 20px 18px; }
+    .notes-head h2 { font-size: 32px; }
+    .kv { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .slide.active { animation: none; }
+    .prog { transition: none; }
+    .ctrl button:hover { transform: none; }
+  }
+  @media print {
+    #deck, .backtop { display: none; }
+    .notes { max-width: none; padding: 0; }
+    .sec { box-shadow: none; break-inside: avoid; }
+  }
 </style>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
 </head>
 <body>
-<div id="app" data-deck="b">
+
+<div id="deck" data-deck="muse-dash">
   <div class="stagewrap"><div class="stage" id="stage">
+
 
   <!-- 1 封面 -->
   <section class="slide cover">
     <div class="eyebrow">遊戲企畫 · 動畫與遊戲設計系</div>
     <h1>先搞懂界線</h1>
     <p class="cover-sub">這門課教你把遊戲的點子寫成別人讀得懂、做得出來的文件。但在寫任何東西之前，要先知道哪些東西可以用、哪些碰了會出事。</p>
-    <div class="cover-meta"><span>第 1 週</span><span>授課：鄧樹遠</span></div>
+    <div class="cover-meta"><span>第 1 週</span><span>授課：鄧樹遠</span><span>投影片 ＋ 下方講義</span></div>
   </section>
 
   <!-- 2 本週地圖 -->
@@ -150,57 +238,57 @@
     <h2>第一堂，五段路</h2>
     <div class="content">
       <div class="cards c5">
-        <div class="card"><span class="who">PART 1</span><h3>這門課要你交什麼</h3><p class="sub">18 週地圖與評分</p></div>
-        <div class="card"><span class="who">PART 2</span><h3>智財權是什麼</h3><p class="sub">四種類型與保護範圍</p></div>
-        <div class="card"><span class="who">PART 3</span><h3>抄襲與致敬</h3><p class="sub">界線到底在哪</p></div>
-        <div class="card"><span class="who">PART 4</span><h3>素材怎麼合法用</h3><p class="sub">授權分級與記帳</p></div>
-        <div class="card"><span class="who">PART 5</span><h3>本週交付</h3><p class="sub">選一款遊戲來拆</p></div>
+        <div class="card pink"><span class="who">Part 1</span><h3>這門課要你交什麼</h3><p class="sub">18 週地圖與評分</p></div>
+        <div class="card cyan"><span class="who">Part 2</span><h3>智財權是什麼</h3><p class="sub">四種類型與保護範圍</p></div>
+        <div class="card grape"><span class="who">Part 3</span><h3>抄襲與致敬</h3><p class="sub">界線到底在哪</p></div>
+        <div class="card lemon"><span class="who">Part 4</span><h3>素材怎麼合法用</h3><p class="sub">授權分級與記帳</p></div>
+        <div class="card"><span class="who">Part 5</span><h3>本週交付</h3><p class="sub">選一款遊戲來拆</p></div>
       </div>
       <div class="take"><b>本週目標</b>離開教室時，你要知道這學期要交什麼，以及哪些東西寫進企畫書會出事。</div>
     </div>
   </section>
 
-  <!-- 3 這門課在哪 -->
+  <!-- 3 課程定位 -->
   <section class="slide">
     <div class="eyebrow">Week 01 · 課程定位</div>
     <h2>這門課在你四年裡的位置</h2>
     <div class="content">
       <div class="flow">
-        <div class="step"><h3>大二・遊戲企畫</h3><p>學怎麼把點子寫成別人讀得懂的文件。產出是企畫書與提案簡報。</p></div>
+        <div class="step"><h3>大二 · 遊戲企畫</h3><p>學怎麼把點子寫成別人讀得懂的文件。產出是企畫書與提案簡報。</p></div>
         <div class="arr">→</div>
-        <div class="step"><h3>大三・專題企畫</h3><p>把文件變成看得到的東西。產出是企畫書加上可展示的雛型。</p></div>
+        <div class="step"><h3>大三 · 專題企畫</h3><p>把文件變成看得到的東西。產出是企畫書加上可展示的雛型。</p></div>
         <div class="arr">→</div>
-        <div class="step"><h3>大四・畢業製作</h3><p>把雛型做到能對外發表。</p></div>
+        <div class="step"><h3>大四 · 畢業製作</h3><p>把雛型做到能對外發表。</p></div>
       </div>
       <div class="take"><b>這學期的定位</b>你不用做出遊戲。這門課練的是「講清楚」的能力，那是後面兩年的地基。</div>
     </div>
   </section>
 
   <!-- 4 PART 1 章節頁 -->
-  <section class="slide part">
+  <section class="slide part p-pink">
     <div class="part-num">01</div>
-    <div class="eyebrow">PART 1</div>
+    <div class="eyebrow">Part 1</div>
     <h2>這門課要你交什麼</h2>
-    <p class="part-sub">18 週的節奏、分數怎麼算、以及一個很多人會誤會的重點：這門課不用做出遊戲。</p>
+    <p class="part-sub">18 週的節奏、分數怎麼算，以及一個很多人會誤會的重點：這門課不用做出遊戲。</p>
   </section>
 
-  <!-- 5 18週地圖 -->
+  <!-- 5 18 週地圖 -->
   <section class="slide">
-    <div class="eyebrow">PART 1 · 學期地圖</div>
+    <div class="eyebrow">Part 1 · 學期地圖</div>
     <h2>十八週，三個階段</h2>
     <div class="content">
       <div class="cards c3">
-        <div class="card">
+        <div class="card pink">
           <span class="who">第 1 – 7 週</span>
           <h3>為什麼做</h3>
-          <p>智財、產業、市場、玩家、創意定位、核心賣點。這段回答「這遊戲憑什麼有人玩」。</p>
+          <p>智財、產業、市場、玩家、創意定位、核心賣點。回答「這遊戲憑什麼有人玩」。</p>
         </div>
-        <div class="card">
+        <div class="card cyan">
           <span class="who">第 8 – 14 週</span>
           <h3>做什麼</h3>
           <p>期中一頁企畫、世界觀、玩法系統、關卡節奏、經濟模式、行銷、風險與排程。</p>
         </div>
-        <div class="card">
+        <div class="card lemon">
           <span class="who">第 15 – 18 週</span>
           <h3>寫成一本並講出來</h3>
           <p>完整企畫書撰寫兩週，期末提案發表兩週。</p>
@@ -212,7 +300,7 @@
 
   <!-- 6 評分 -->
   <section class="slide">
-    <div class="eyebrow">PART 1 · 評量方式</div>
+    <div class="eyebrow">Part 1 · 評量方式</div>
     <h2>分數怎麼算</h2>
     <div class="content">
       <dl class="kv">
@@ -227,7 +315,7 @@
 
   <!-- 7 不用做出遊戲 -->
   <section class="slide">
-    <div class="eyebrow">PART 1 · 常見誤會</div>
+    <div class="eyebrow">Part 1 · 常見誤會</div>
     <h2>這門課不用做出遊戲</h2>
     <div class="content">
       <div class="cols">
@@ -240,7 +328,7 @@
             <li>學 Unity 或任何引擎</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card cyan">
           <span class="who">要做</span>
           <h3>這些才是本課的功課</h3>
           <ul>
@@ -254,33 +342,47 @@
     </div>
   </section>
 
-  <!-- 8 PART 2 章節頁 -->
-  <section class="slide part">
+  <!-- 8 老師的課堂規矩 -->
+  <section class="slide">
+    <div class="eyebrow">Part 1 · 老師的課堂規矩</div>
+    <h2>用 AI 可以，但要照三條規矩</h2>
+    <div class="content">
+      <ul>
+        <li>可以用 AI 查資料、整理、潤稿。作業末尾寫一行「用了什麼 AI、做了哪一步」。</li>
+        <li>AI 給的數字、法條、遊戲資料，一律自己開原始頁面再抄。抄錯算你的，不算 AI 的。</li>
+        <li>AI 生的圖可以當示意圖，要標「AI 生成」；不能當成你的美術能力證明。</li>
+      </ul>
+      <div class="take"><b>我的判斷</b>沒寫揭露而被我看出來的，那份作業以退件計。寫了揭露的，我只看內容好不好。</div>
+    </div>
+  </section>
+
+  <!-- 9 PART 2 章節頁 -->
+  <section class="slide part p-cyan">
     <div class="part-num">02</div>
-    <div class="eyebrow">PART 2</div>
+    <div class="eyebrow">Part 2</div>
     <h2>智財權是什麼</h2>
     <p class="part-sub">寫企畫會用到別人的素材、參考別人的作品。先知道保護的範圍在哪，後面才不會踩線。</p>
   </section>
 
-  <!-- 9 四種類型 -->
+  <!-- 10 四種類型 -->
   <section class="slide">
-    <div class="eyebrow">PART 2 · 分類</div>
-    <h2>智財權有四種</h2>
+    <div class="eyebrow">Part 2 · 分類</div>
+    <h2>智慧財產權有四種</h2>
     <div class="content">
       <div class="cards c4">
-        <div class="card"><span class="who">著作權</span><h3>Copyright</h3><p class="sub">文字、美術、音樂、程式碼</p></div>
-        <div class="card"><span class="who">商標</span><h3>Trademark</h3><p class="sub">品牌名稱、標誌與識別</p></div>
-        <div class="card"><span class="who">專利</span><h3>Patent</h3><p class="sub">技術發明與部分玩法機制</p></div>
-        <div class="card"><span class="who">營業秘密</span><h3>Trade Secret</h3><p class="sub">未公開的技術與資料</p></div>
+        <div class="card pink"><span class="who">著作權</span><h3>Copyright</h3><p class="sub">文字、美術、音樂、程式碼</p></div>
+        <div class="card cyan"><span class="who">商標</span><h3>Trademark</h3><p class="sub">品牌名稱、標誌與識別</p></div>
+        <div class="card grape"><span class="who">專利</span><h3>Patent</h3><p class="sub">技術發明</p></div>
+        <div class="card lemon"><span class="who">營業秘密</span><h3>Trade Secret</h3><p class="sub">未公開的技術與資料</p></div>
       </div>
-      <div class="take"><b>做企畫最常碰到的</b>是著作權。但取遊戲名稱時要查商標，那是另一套規則。</div>
+      <div class="take"><b>做企畫最常碰到的</b>是著作權。取遊戲名稱時要先到智慧局的商標檢索系統查一次。<sup class="fn"><a href="#src-15">15</a></sup></div>
     </div>
   </section>
 
-  <!-- 10 表達 vs 構想 -->
+  <!-- 11 表達 vs 構想 -->
   <section class="slide">
-    <div class="eyebrow">PART 2 · 保護範圍</div>
-    <h2>保護表達，不保護構想</h2>
+    <div class="eyebrow">Part 2 · 保護範圍</div>
+    <h2>保護表達，不保護構想<sup class="fn"><a href="#src-1">1</a></sup></h2>
     <div class="content">
       <div class="cols">
         <div class="card">
@@ -288,11 +390,11 @@
           <h3>構想層</h3>
           <ul>
             <li>思想、程序、系統、操作方法</li>
-            <li>原理、概念、發現</li>
+            <li>概念、原理、發現</li>
             <li>遊戲的玩法規則屬於這一層</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card cyan">
           <span class="who">受保護</span>
           <h3>表達層</h3>
           <ul>
@@ -302,56 +404,75 @@
           </ul>
         </div>
       </div>
-      <div class="take"><b>企畫判斷</b>可以參考類型與玩法方向；美術、介面與具體造型要另外設計。</div>
+      <div class="take"><b>企畫判斷</b>可以參考類型與玩法方向；美術、介面與具體造型要另外設計。<sup class="fn"><a href="#src-3">3</a></sup></div>
     </div>
   </section>
 
-  <!-- 11 遊戲裡哪些受保護 -->
+  <!-- 12 遊戲裡哪些受保護 -->
   <section class="slide">
-    <div class="eyebrow">PART 2 · 受保護的元素</div>
-    <h2>遊戲裡哪些東西受保護</h2>
+    <div class="eyebrow">Part 2 · 受保護的元素</div>
+    <h2>遊戲裡哪些東西受保護<sup class="fn"><a href="#src-2">2</a></sup></h2>
     <div class="content">
       <div class="cards c4">
-        <div class="card"><span class="who">美術著作</span><h3>造型與介面</h3><p class="sub">角色、場景、道具、UI</p></div>
-        <div class="card"><span class="who">音樂著作</span><h3>配樂與音效</h3><p class="sub">主題曲、環境音、語音</p></div>
-        <div class="card"><span class="who">語文著作</span><h3>劇本與文案</h3><p class="sub">對白、任務、世界觀文字</p></div>
-        <div class="card"><span class="who">電腦程式著作</span><h3>程式碼</h3><p class="sub">實際寫出來的原始碼</p></div>
+        <div class="card pink"><span class="who">美術著作</span><h3>造型與介面</h3><p class="sub">角色、場景、道具、UI</p></div>
+        <div class="card cyan"><span class="who">音樂著作</span><h3>配樂與音效</h3><p class="sub">主題曲、環境音、語音</p></div>
+        <div class="card grape"><span class="who">語文著作</span><h3>劇本與文案</h3><p class="sub">對白、任務、世界觀文字</p></div>
+        <div class="card lemon"><span class="who">電腦程式著作</span><h3>程式碼</h3><p class="sub">實際寫出來的原始碼</p></div>
       </div>
       <div class="take"><b>比對方法</b>遇到爭議時，把角色、介面、音樂與文字逐項列出來比，不要只說「整體很像」。</div>
     </div>
   </section>
 
-  <!-- 12 PART 3 章節頁 -->
-  <section class="slide part">
+  <!-- 13 2025–2026 現況 -->
+  <section class="slide">
+    <div class="eyebrow">Part 2 · 2025–2026 現況</div>
+    <h2>AI 生的東西，算誰的</h2>
+    <div class="content">
+      <div class="cards c3">
+        <div class="card cyan">
+          <span class="who">智慧局 2025 年 4 月函釋</span>
+          <p>人有實際創意投入、AI 只是工具：受保護，著作權歸那個人。完全由 AI 生成：不是著作。<sup class="fn"><a href="#src-5">5</a></sup></p>
+        </div>
+        <div class="card lemon">
+          <span class="who">人工智慧基本法</span>
+          <p>2025 年 12 月三讀。要求 AI 產出做「適當資訊揭露或標記」。<sup class="fn"><a href="#src-6">6</a></sup></p>
+        </div>
+        <div class="card pink">
+          <span class="who">Steam 內容調查</span>
+          <p>上架要填有沒有用生成式 AI，分「開發時生成」與「遊戲執行中生成」兩類。<sup class="fn"><a href="#src-11">11</a></sup></p>
+        </div>
+      </div>
+      <div class="take"><b>對企畫書的意思</b>用了 AI 就寫出來。法規、平台、我的課堂規矩，三邊要的是同一件事。</div>
+    </div>
+  </section>
+
+  <!-- 14 PART 3 章節頁 -->
+  <section class="slide part p-grape">
     <div class="part-num">03</div>
-    <div class="eyebrow">PART 3</div>
+    <div class="eyebrow">Part 3</div>
     <h2>抄襲與致敬</h2>
     <p class="part-sub">這是每年最多人問的問題。界線其實有明確的判斷方式，不是靠感覺。</p>
   </section>
 
-  <!-- 13 抄襲怎麼認定 -->
+  <!-- 15 抄襲怎麼認定 -->
   <section class="slide">
-    <div class="eyebrow">PART 3 · 認定標準</div>
-    <h2>要兩個條件同時成立</h2>
+    <div class="eyebrow">Part 3 · 認定標準</div>
+    <h2>要兩個條件同時成立<sup class="fn"><a href="#src-4">4</a></sup></h2>
     <div class="content">
       <dl class="kv">
-        <dt>要件一 · 接觸</dt><dd>要證明被告曾經接觸過原告的著作，不是各自獨立想出來的</dd>
-        <dt>要件二 · 實質近似</dt><dd>被訴作品的表達方式，與原告作品實質近似</dd>
-        <dt>舉證責任</dt><dd>在主張自己被抄的那一方</dd>
-        <dt>最終認定</dt><dd>屬私權爭議，由司法機關就個案調查證據認定</dd>
+        <dt>要件一 · 接觸</dt><dd>要證明對方曾經接觸過你的著作，不是各自獨立想出來的</dd>
+        <dt>要件二 · 實質相似</dt><dd>對方作品的表達方式，與你的作品實質相似</dd>
+        <dt>接觸怎麼推</dt><dd>從發行數量、通路、時間、知名度推斷；相似度極高時可以推定</dd>
+        <dt>最終認定</dt><dd>屬私權爭議，由法院就個案調查證據認定</dd>
       </dl>
-      <div class="linkrow">
-        <a class="lk" href="https://opinion.udn.com/opinion/story/10043/6096306" target="_blank" rel="noopener">遊戲抄襲怎麼判</a>
-        <a class="lk" href="https://www.saint-island.com.tw/Tw/News/News_Info.aspx?IT=News_1&amp;CID=266&amp;ID=1801" target="_blank" rel="noopener">智財法院判決解析</a>
-      </div>
       <div class="take"><b>文件證據</b>企畫書若明寫參考某作品，就等於留下接觸過該作品的紀錄。</div>
     </div>
   </section>
 
-  <!-- 14 大逃殺分析框架 -->
+  <!-- 16 同類型怎麼比對 -->
   <section class="slide">
-    <div class="eyebrow">PART 3 · 判斷步驟</div>
-    <h2>同類型遊戲怎麼比對</h2>
+    <div class="eyebrow">Part 3 · 判斷步驟</div>
+    <h2>同類型遊戲怎麼比對<sup class="fn"><a href="#src-14">14</a></sup></h2>
     <div class="content">
       <div class="cols">
         <div class="card">
@@ -363,7 +484,7 @@
             <li>這些是構想，不是表達</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card grape">
           <span class="who">第二步：再比對</span>
           <h3>剩下的具體表達</h3>
           <ul>
@@ -373,13 +494,13 @@
           </ul>
         </div>
       </div>
-      <div class="take"><b>用在企畫上</b>寫「我們要做某某類型」沒問題。寫「美術參考某某」就要說清楚參考的是哪一層。</div>
+      <div class="take"><b>台灣有判例</b>智財法院 2020 年判《俠客風雲傳》侵害《武林群俠傳》，賠 2,400 萬元。<sup class="fn"><a href="#src-13">13</a></sup></div>
     </div>
   </section>
 
-  <!-- 15 致敬與抄襲 -->
+  <!-- 17 致敬與抄襲 -->
   <section class="slide">
-    <div class="eyebrow">PART 3 · 課堂討論</div>
+    <div class="eyebrow">Part 3 · 課堂討論</div>
     <h2>致敬與抄襲，差在哪</h2>
     <div class="content">
       <div class="qlist">
@@ -387,7 +508,7 @@
         <p>把別人的角色換個髮色改個名字就用，扣掉的是哪一層、留下的是哪一層？</p>
         <p>如果這份企畫真的要拿去募資或投稿，判斷標準會不會跟交作業不一樣？</p>
       </div>
-      <div class="card">
+      <div class="card grape">
         <span class="who">我的立場</span>
         <p>致敬要說出來，而且要有自己的轉化。說不出來的那種，通常就是抄。</p>
       </div>
@@ -395,47 +516,43 @@
     </div>
   </section>
 
-  <!-- 16 PART 4 章節頁 -->
-  <section class="slide part">
+  <!-- 18 PART 4 章節頁 -->
+  <section class="slide part p-sky">
     <div class="part-num">04</div>
-    <div class="eyebrow">PART 4</div>
+    <div class="eyebrow">Part 4</div>
     <h2>素材怎麼合法用</h2>
     <p class="part-sub">企畫書會放參考圖、配圖、示意畫面。這些也有授權問題，而且是最容易被忽略的一塊。</p>
   </section>
 
-  <!-- 17 授權分級 -->
+  <!-- 19 授權分級 -->
   <section class="slide">
-    <div class="eyebrow">PART 4 · 授權分級</div>
-    <h2>授權有分等級</h2>
+    <div class="eyebrow">Part 4 · 授權分級</div>
+    <h2>授權有分等級<sup class="fn"><a href="#src-9">9</a></sup></h2>
     <div class="content">
       <div class="cards c3">
-        <div class="card">
+        <div class="card cyan">
           <span class="who">最寬鬆</span>
           <h3>CC0 與公有領域</h3>
           <p>可商用、免署名、可修改。放進企畫書或做成 Demo 都沒問題。</p>
         </div>
-        <div class="card">
+        <div class="card lemon">
           <span class="who">要標作者</span>
-          <h3>CC BY 類</h3>
-          <p>可商用但必須署名，格式要照對方要求寫，不能只寫「網路」。</p>
+          <h3>CC BY 系列</h3>
+          <p>CC 共六種，都要署名；帶 NC 不能商用，帶 ND 不能改。</p>
         </div>
-        <div class="card">
-          <span class="who">限制多</span>
-          <h3>非商業或個人授權</h3>
-          <p>課堂作業通常可以，一旦要對外發表或商用就不行。</p>
+        <div class="card pink">
+          <span class="who">各站自訂</span>
+          <h3>平台授權</h3>
+          <p>例如 Pexels 免署名可修改，但不能拿去當商標。<sup class="fn"><a href="#src-10">10</a></sup></p>
         </div>
-      </div>
-      <div class="linkrow">
-        <a class="lk" href="https://creativecommons.org/" target="_blank" rel="noopener">Creative Commons</a>
-        <a class="lk" href="https://www.pexels.com/license/" target="_blank" rel="noopener">Pexels 授權</a>
       </div>
       <div class="take"><b>陷阱</b>同一個網站上不同素材的授權可能不同，要逐件看，不能看站名就下結論。</div>
     </div>
   </section>
 
-  <!-- 18 素材帳本 -->
+  <!-- 20 素材帳本 -->
   <section class="slide">
-    <div class="eyebrow">PART 4 · 素材帳本</div>
+    <div class="eyebrow">Part 4 · 素材帳本</div>
     <h2>每一份素材都要記帳</h2>
     <div class="content">
       <dl class="kv">
@@ -443,14 +560,15 @@
         <dt>原始頁面網址</dt><dd>那一件素材自己的頁面，不是首頁</dd>
         <dt>下載日期</dt><dd>你實際取得的那一天</dd>
         <dt>當時的授權名稱</dt><dd>下載當下寫的是什麼授權，原文照抄</dd>
+        <dt>AI 生成</dt><dd>用了哪個工具、哪一天。這欄 2026 年起是必填</dd>
       </dl>
       <div class="take"><b>為何要記日期</b>授權條款會改版。沒有下載日期，日後被質疑時你無法主張當時的版本。</div>
     </div>
   </section>
 
-  <!-- 19 免費不等於可商用 -->
+  <!-- 21 免費不等於可商用 -->
   <section class="slide">
-    <div class="eyebrow">PART 4 · 常見誤解</div>
+    <div class="eyebrow">Part 4 · 常見誤解</div>
     <h2>免費不等於可商用</h2>
     <div class="content">
       <div class="cols">
@@ -463,7 +581,7 @@
             <li>字型看到免費下載就裝來用</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card lemon">
           <span class="who">實際上</span>
           <h3>要看三件事</h3>
           <ul>
@@ -473,21 +591,21 @@
           </ul>
         </div>
       </div>
-      <div class="take"><b>企畫書的例外</b>課堂報告引用競品截圖做分析通常屬於合理使用，但要標明來源與出處。</div>
+      <div class="take"><b>課堂的例外</b>為教學、評論在合理範圍引用已公開的著作是法律允許的，但要標出處，而且只限課堂。<sup class="fn"><a href="#src-7">7</a></sup></div>
     </div>
   </section>
 
-  <!-- 20 PART 5 章節頁 -->
-  <section class="slide part">
+  <!-- 22 PART 5 章節頁 -->
+  <section class="slide part p-coral">
     <div class="part-num">05</div>
-    <div class="eyebrow">PART 5</div>
+    <div class="eyebrow">Part 5</div>
     <h2>本週交付</h2>
     <p class="part-sub">選一款遊戲來拆。這款遊戲後面幾週會一直用到，所以挑一個你真的玩過的。</p>
   </section>
 
-  <!-- 21 交付規格 -->
+  <!-- 23 交付規格 -->
   <section class="slide">
-    <div class="eyebrow">PART 5 · 交付規格</div>
+    <div class="eyebrow">Part 5 · 交付規格</div>
     <h2>這週要交什麼</h2>
     <div class="content">
       <dl class="kv">
@@ -500,33 +618,33 @@
     </div>
   </section>
 
-  <!-- 22 檢核與退件 -->
+  <!-- 24 檢核與退件 -->
   <section class="slide">
-    <div class="eyebrow">PART 5 · 檢核標準</div>
+    <div class="eyebrow">Part 5 · 檢核標準</div>
     <h2>什麼樣算過關</h2>
     <div class="content">
       <div class="cards c3">
-        <div class="card">
+        <div class="card cyan">
           <span class="who">及格</span>
           <h3>三個元素講得具體</h3>
           <p>寫得出是哪個角色、哪段音樂、哪個介面，不是只寫「美術」。</p>
         </div>
-        <div class="card">
+        <div class="card lemon">
           <span class="who">好</span>
           <h3>分得出構想與表達</h3>
           <p>能指出哪些部分是不受保護的玩法規則。</p>
         </div>
-        <div class="card">
+        <div class="card pink">
           <span class="who">退件</span>
           <h3>常見的三種</h3>
           <p>選了沒玩過的遊戲；標籤自己編不是 Steam 上真的有的；元素寫「畫面很好看」。</p>
         </div>
       </div>
-      <div class="take"><b>本週動作</b>直接到 Steam 商店頁抄下五個現有標籤；第 4 週還會拿來比競品。</div>
+      <div class="take"><b>本週動作</b>到 Steam 商店頁抄下五個現有標籤。一款遊戲最多 20 個，第 4 週還會拿來比競品。<sup class="fn"><a href="#src-12">12</a></sup></div>
     </div>
   </section>
 
-  <!-- 23 課堂討論與課後任務 -->
+  <!-- 25 收尾 -->
   <section class="slide">
     <div class="eyebrow">Week 01 · 收尾</div>
     <h2>回去做這三件事</h2>
@@ -536,51 +654,52 @@
         <p>如果你要做一款「很像它」的遊戲，哪些部分可以像、哪些絕對不能像？</p>
         <p>你手邊的參考圖，講得出來源站與授權嗎？</p>
       </div>
-      <div class="card">
+      <div class="card grape">
         <span class="who">課後任務</span>
-        <p>建一份素材帳本，四個欄位照本週規格開好。之後每拿一張圖就補一列，不要留到期末。</p>
+        <p>建一份素材帳本，五個欄位照本週規格開好。之後每拿一張圖就補一列，不要留到期末。</p>
       </div>
       <div class="take"><b>下週預告</b>遊戲企畫概論與職能：企畫在團隊裡到底在做什麼，以及企畫文件有哪幾種。</div>
     </div>
   </section>
 
-  <!-- 24 資源彙整 -->
+  <!-- 26 資源彙整 -->
   <section class="slide">
     <div class="eyebrow">Week 01 · 資源彙整</div>
     <h2>本週資源</h2>
     <div class="content">
       <div class="cols">
         <div class="grp">
-          <h3>法規與判決</h3>
+          <h3>法規與官方說明</h3>
           <div class="linkrow">
-            <a class="lk" href="https://www.tipo.gov.tw/tw/copyright/692-34252.html" target="_blank" rel="noopener">智財局解釋檢索</a>
-            <a class="lk" href="https://opinion.udn.com/opinion/story/10043/6096306" target="_blank" rel="noopener">遊戲抄襲怎麼判</a>
-            <a class="lk" href="https://www.saint-island.com.tw/Tw/News/News_Info.aspx?IT=News_1&amp;CID=266&amp;ID=1801" target="_blank" rel="noopener">智財法院判決解析</a>
+            <a class="lk" href="https://law.moj.gov.tw/LawClass/LawAll.aspx?PCode=J0070017" target="_blank" rel="noopener">著作權法全文</a>
+            <a class="lk" href="https://www.tipo.gov.tw/tw/copyright/773-4961.html" target="_blank" rel="noopener">智慧局：保護表達不保護思想</a>
+            <a class="lk" href="https://cloud.tipo.gov.tw/S282/S282WV1/" target="_blank" rel="noopener">商標檢索系統</a>
           </div>
         </div>
         <div class="grp">
-          <h3>素材與市場</h3>
+          <h3>素材與平台</h3>
           <div class="linkrow">
-            <a class="lk" href="https://creativecommons.org/" target="_blank" rel="noopener">Creative Commons</a>
+            <a class="lk" href="https://creativecommons.org/share-your-work/cclicenses/" target="_blank" rel="noopener">CC 六種授權</a>
             <a class="lk" href="https://www.pexels.com/license/" target="_blank" rel="noopener">Pexels 授權</a>
-            <a class="lk" href="https://partner.steamgames.com/doc/store/tags?l=tchinese" target="_blank" rel="noopener">Steam 標籤文件</a>
+            <a class="lk" href="https://partner.steamgames.com/doc/store/tags" target="_blank" rel="noopener">Steam 標籤文件</a>
             <a class="lk" href="https://store.steampowered.com/" target="_blank" rel="noopener">Steam</a>
           </div>
         </div>
       </div>
-      <div class="take"><b>查詢原則</b>法規連結以官方網站當下內容為準；本頁整理於 2026 年 9 月。</div>
+      <div class="take"><b>出處與補充</b>在下方講義，按 N 鍵。每一條法條、函釋、判決的來源與查證日期都在講義區。</div>
     </div>
   </section>
 
-  
-
   </div></div>
 
+  <div class="hint">← → 換頁　M 目錄　N 講義　F 全螢幕</div>
   <div class="ctrl">
     <button id="prev" aria-label="上一張">‹</button>
     <span class="cnt" id="cnt">1 / 1</span>
     <button id="next" aria-label="下一張">›</button>
     <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+    <button id="toNotes" title="講義（N）">講義 ↓</button>
+    <button id="full" title="全螢幕（F）">⛶</button>
   </div>
   <div class="prog" id="prog"></div>
 
@@ -591,17 +710,159 @@
   </div>
 </div>
 
+<!-- ============ 講義區 ============ -->
+<main class="notes" id="notes">
+  <div class="notes-head">
+    <div class="eyebrow">Week 01 · 講義</div>
+    <h2>智財與課程簡介</h2>
+    <p>投影片講的是骨架，這裡放肉：每一段的展開說明、老師的課堂規矩、每一條法條與函釋的出處、延伸閱讀，以及交作業前的自我檢核。</p>
+  </div>
+
+  <section class="sec">
+    <span class="kicker">導讀</span>
+    <h2>這週在解決什麼問題</h2>
+    <p>這是第一堂課，要做兩件事：讓你知道這學期要交什麼，以及在你寫下第一個字之前，先知道哪些東西碰了會出事。後面十七週你會查競品、貼參考圖、寫玩法規格、用 AI 幫忙整理資料，每一步都會碰到「這個能不能用」的問題。今天先把判斷規則講清楚，之後就不用每次重問。</p>
+    <p>三個詞先講清楚。<strong>智慧財產權</strong>是法律給創作與發明的一組獨占權利，本課主要碰到其中的著作權。<strong>表達與構想</strong>是著作權法的核心切分：具體寫出來、畫出來的東西受保護，背後的點子、規則、方法不受保護。<strong>授權</strong>是權利人允許你在什麼條件下使用他的東西，每一件素材都要看它自己的授權，不看網站名字。這週全程用這三個詞，不換名字。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">§1</span>
+    <h2>這門課要你交什麼</h2>
+    <p>學期分三段。第 1 到 7 週回答「這遊戲憑什麼有人玩」：智財、產業、市場、玩家、創意定位、核心賣點。第 8 到 14 週回答「做什麼」：期中一頁企畫、世界觀、玩法系統、關卡節奏、經濟模式、行銷、風險與排程。第 15 到 18 週把前面所有東西寫成一本企畫書，並且站上台講出來。評分是平時 30%、期中 30%、期末 40%；每週的小作業就是期末那本書的素材，少交一週，期末就得補回對應章節。</p>
+    <p>最常見的誤會是以為要做出遊戲。不用。這門課不寫程式、不建場景、不學引擎，練的是把點子講清楚到別人願意投入時間和錢的能力。大三的專題企畫才會把文件變成雛型，大四的畢業製作才會把雛型做到能對外發表。</p>
+    <div class="scene">
+      <span class="who">假設情境</span>
+      <p>一組同學第 3 週就開始畫角色、寫程式，到第 8 週期中提案時，一頁企畫寫不出「目標玩家是誰、為什麼會買」。老師問「你們的遊戲跟市面上那三款差在哪」，答案是「我們的美術比較好看」。這組不是不努力，是把大三要做的事提前做了，大二該練的事沒練到。</p>
+    </div>
+  </section>
+
+  <section class="sec cyan">
+    <span class="kicker">§2</span>
+    <h2>智財權是什麼：四種類型與一條核心規則</h2>
+    <p>智慧財產權有四種：著作權管文字、美術、音樂、程式碼這些創作；商標管品牌名稱與標誌；專利管技術發明；營業秘密管未公開的技術與資料。做企畫最常碰到的是著作權，但取遊戲名稱時要先到智慧局的商標檢索系統查一次，看有沒有人已經在遊戲或軟體類別註冊同名或近似的商標。<a href="#src-15">[15]</a></p>
+    <p>著作權法第 10 條之 1 寫得很清楚：「依本法取得之著作權，其保護僅及於該著作之表達，而不及於其所表達之思想、程序、製程、系統、操作方法、概念、原理、發現。」<a href="#src-1">[1]</a> 智慧局的說明頁把這條翻成白話：著作權保護「具體的表達形式（例如文章、畫作等等）」，思想、概念、方法人人都可以用。<a href="#src-3">[3]</a> 對遊戲企畫的意思是：遊戲的玩法規則、勝利條件、類型慣例是構想層，不受保護；具體的角色造型、介面配置、配樂、對白、程式碼是表達層，受保護。</p>
+    <p>著作權法第 5 條把著作例示成十種：語文、音樂、戲劇舞蹈、美術、攝影、圖形、視聽、錄音、建築、電腦程式。<a href="#src-2">[2]</a> 一款遊戲裡至少同時有美術著作（角色、場景、UI）、音樂著作（配樂、音效）、語文著作（劇本、任務文字）、電腦程式著作（原始碼）。遇到爭議時要逐項列出來比，不能只講「整體很像」。</p>
+    <h3>2025–2026 現況：AI 生的東西算誰的</h3>
+    <p>三件事在 2025 年之後定下來了。第一，經濟部智慧財產局 2025 年 4 月 1 日智著字第 11460005900 號函：人類有實際的創意投入、只是把 AI 當輔助工具，創作成果仍受著作權保護，著作權由投入創意的自然人享有；反過來，「人工智慧獨立創作」，也就是人沒有實際創意投入、完全由 AI 演算完成的成果，因為 AI 不是自然人，不屬於著作權法保護的著作。<a href="#src-5">[5]</a> 第二，立法院 2025 年 12 月 23 日三讀通過《人工智慧基本法》，數位發展部的新聞稿寫到，應對 AI 產出做「適當資訊揭露或標記」。<a href="#src-6">[6]</a> 第三，Steam 的內容調查（Content Survey）要求開發者在上架時揭露有沒有用生成式 AI，分成開發期間用 AI 做出來、隨遊戲出貨的「Pre-Generated」內容，以及遊戲執行中即時生成的「Live-Generated」內容；後者還要說明用什麼防護措施避免生成違法內容。<a href="#src-11">[11]</a></p>
+    <p>把三件事放在一起看，方向是一致的：用了 AI 就寫出來。法規要你揭露，平台要你揭露，我的課堂規矩也要你揭露。至於「用 AI 生的圖有沒有著作權」，答案取決於你投入了多少創意，這件事到 2026 年 9 月為止還是要看個案，沒有一條線可以直接套。</p>
+  </section>
+
+  <section class="sec grape">
+    <span class="kicker">§3</span>
+    <h2>抄襲與致敬：兩個要件、兩個步驟</h2>
+    <p>智慧局的著作權基本概念問答寫得很直接：主張別人抄襲，要證明兩件事，一是對方「曾接觸被抄襲之著作」，二是「二著作實質相似」。接觸可以從著作的發行數量、通路、時間、知名度來推斷；如果兩件作品相似到極高的程度，而被指控的一方拿不出獨立創作的證據，也可以推定有接觸。各自獨立想出來的相似作品（平行創作）各自受保護。最後是不是侵權，屬於私權爭議，由法院就個案調查證據認定。<a href="#src-4">[4]</a></p>
+    <p>同類型遊戲怎麼比？兩位律師在 2022 年的專欄用《絕地求生》對《Free Fire》的案子示範：先扣掉「大逃殺遊戲的規則玩法」這種不受保護的部分，剩下的世界觀包裝、武器車輛建築的美術造型、UI 設計、配樂，才逐項討論有沒有實質近似。<a href="#src-14">[14]</a> 台灣自己也有判例：智慧財產法院 108 年度民著上字第 3 號判決認定《俠客風雲傳》侵害《武林群俠傳》的著作權，開發公司要賠償 2,400 萬元。<a href="#src-13">[13]</a> 這個案子的兩款遊戲同樣是武俠養成，玩法類型相同並不是問題，問題出在具體表達。</p>
+    <p>對你的企畫書，這帶出一個很實際的判斷：企畫書若明寫「參考某某作品」，就等於自己留下了接觸該作品的紀錄，之後要主張獨立創作就難了。所以參考可以寫，但要寫清楚參考的是哪一層。寫「我們要做某某類型」沒有問題，寫「美術參考某某」就要說明參考的是氛圍、配色、比例，還是具體造型。前者是致敬，後者就是抄。</p>
+    <table>
+      <thead><tr><th>你在企畫書寫的</th><th>屬於哪一層</th><th>會不會出事</th></tr></thead>
+      <tbody>
+        <tr><td>「類型是 Roguelike，每次進地城隨機生成」</td><td>構想（玩法規則）</td><td>不會，人人可用</td></tr>
+        <tr><td>「氛圍參考某作品的手繪水彩感」</td><td>構想偏表達的邊界</td><td>寫清楚只借氛圍，自己畫</td></tr>
+        <tr><td>「主角造型照某作品的角色改髮色」</td><td>表達（美術著作）</td><td>會，這是實質相似</td></tr>
+        <tr><td>「直接放某作品的截圖當我們的示意圖」</td><td>表達（重製）</td><td>課堂分析可引用並標出處；對外發表不行</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="sec lemon">
+    <span class="kicker">§4</span>
+    <h2>素材怎麼合法用：授權分級、記帳、合理使用</h2>
+    <p>Creative Commons 有六種授權，由四個要素組合：BY（要署名）、SA（改作要用同樣授權）、NC（不能商用）、ND（不能改）。六種全部要署名，最寬的是 CC BY，最窄的是 CC BY-NC-ND。另外有 CC0，權利人把作品放進公眾領域，不需署名、可商用、可修改。<a href="#src-9">[9]</a> 平台自訂的授權要另外看，例如 Pexels 寫明不需署名、可修改、可商用，但禁止未修改直接販售、暗示人物或品牌背書、轉售到其他圖庫、拿去當商標。<a href="#src-10">[10]</a> 同一個網站上不同素材的授權可能不同，要逐件看。</p>
+    <p>所以每一份素材都要記帳，五個欄位：來源站、原始頁面網址（那一件素材自己的頁面，不是首頁）、下載日期、當時的授權名稱（原文照抄）、AI 生成（用了哪個工具、哪一天）。記日期的原因是授權條款會改版，沒有下載日期，日後被質疑時你無法主張當時的版本。AI 生成那一欄從 2026 年起是必填，理由在 §2 講過了。</p>
+    <h3>課堂的例外：合理使用</h3>
+    <p>著作權法第 52 條：「為報導、評論、教學、研究或其他正當目的之必要，在合理範圍內，得引用已公開發表之著作。」第 65 條再給四個判斷基準：利用的目的與性質（商業或非營利教育）、著作的性質、利用的質量占整個著作的比例、利用結果對著作潛在市場的影響。<a href="#src-7">[7]</a> 智慧局給教師的說明也是同一個方向：重製要在「學校授課目的之必要範圍內」，跟授課內容要有必要關係。<a href="#src-8">[8]</a> 對你的意思是：課堂報告裡放競品截圖做分析，通常屬於合理使用，但要標明來源；同一份東西拿去募資、投稿、上架，就不再是課堂，例外就沒了。</p>
+    <div class="scene">
+      <span class="who">假設情境</span>
+      <p>一組同學的企畫書配圖全部從搜尋引擎右鍵存檔，期末要拿去參加校外競賽，才發現其中三張是付費圖庫的浮水印版、兩張是某遊戲的官方宣傳圖。重做配圖花了一個週末，比從第一週就開帳本貴得多。</p>
+    </div>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">§5</span>
+    <h2>老師的課堂規矩</h2>
+    <p>這門課可以用 AI，我自己也用。但有三條規矩，從第一份作業就開始適用。</p>
+    <ul>
+      <li><strong>揭露。</strong>作業末尾寫一行「用了什麼 AI、做了哪一步」，例如「用某某工具整理 Steam 評論分類，人工核對後改寫」。沒寫揭露而被我看出來的，那份作業以退件計；寫了揭露的，我只看內容好不好。</li>
+      <li><strong>自己開原始頁面。</strong>AI 給的數字、法條、遊戲資料，一律自己開原始頁面再抄，並且記下查證日期。抄錯算你的，不算 AI 的。這條規矩的來源是我自己：AI 會把不存在的判決字號、不存在的統計數字講得很像真的。</li>
+      <li><strong>AI 生圖只能當示意。</strong>企畫書裡可以放 AI 生成的示意圖，要標「AI 生成」；不能拿它當你的美術能力證明，也不能不標就當成參考圖。</li>
+    </ul>
+    <p>還有一條跟智財直接相關：企畫書裡每一張不是你自己畫的圖，旁邊都要有出處，講義區的素材帳本就是拿來做這件事的。期末我會抽三張圖問「這張哪來的、什麼授權」，答不出來的那張要拿掉重做。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">出處</span>
+    <h2>本週引用的資料</h2>
+    <p>每一條都在 2026-09-15 打開確認過。法條以全國法規資料庫當下內容為準；網址失效請告訴我，我會換。</p>
+    <ol class="src">
+      <li id="src-1"><span class="ti">著作權法 第 10 條之 1</span><span class="meta">法務部全國法規資料庫 · 法規最近修正 2022-05-04 · 查證 2026-09-15</span><a href="https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=J0070017&amp;flno=10-1" target="_blank" rel="noopener">https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=J0070017&amp;flno=10-1</a></li>
+      <li id="src-2"><span class="ti">著作權法 第 5 條（著作之例示）</span><span class="meta">法務部全國法規資料庫 · 法規最近修正 2022-05-04 · 查證 2026-09-15</span><a href="https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=J0070017&amp;flno=5" target="_blank" rel="noopener">https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=J0070017&amp;flno=5</a></li>
+      <li id="src-3"><span class="ti">經濟部智慧財產局〈何謂著作權僅「保護表達，不保護思想、概念」？〉</span><span class="meta">智慧局著作權主題網 · 2021-12-29 發布，2025-09-16 更新 · 查證 2026-09-15</span><a href="https://www.tipo.gov.tw/tw/copyright/773-4961.html" target="_blank" rel="noopener">https://www.tipo.gov.tw/tw/copyright/773-4961.html</a></li>
+      <li id="src-4"><span class="ti">經濟部智慧財產局〈著作權基本概念篇 11～20〉第 11 題：什麼情形下會構成「抄襲」？</span><span class="meta">智慧局 · 頁面更新 2025-05-13 · 接觸與實質相似兩要件 · 查證 2026-09-15</span><a href="https://www.tipo.gov.tw/tw/tipo1/209-21673.html" target="_blank" rel="noopener">https://www.tipo.gov.tw/tw/tipo1/209-21673.html</a></li>
+      <li id="src-5"><span class="ti">〈以 AI 為工具投入創意完成著作 智財局：可受著作權保護〉（轉載經濟部智慧財產局 2025-04-01 智著字第 11460005900 號函）</span><span class="meta">法源法律網 · 2025-05-20 · 二手轉載官方函釋，含字號 · 查證 2026-09-15</span><a href="https://www.lawbank.com.tw/news/NewsContent.aspx?NID=208489.00" target="_blank" rel="noopener">https://www.lawbank.com.tw/news/NewsContent.aspx?NID=208489.00</a></li>
+      <li id="src-6"><span class="ti">數位發展部〈立法院三讀通過《人工智慧基本法》 構築我國AI創新與安全治理基石〉</span><span class="meta">數位發展部新聞稿 · 2025-12-24（三讀 2025-12-23）· 查證 2026-09-15</span><a href="https://moda.gov.tw/press/press-releases/18316" target="_blank" rel="noopener">https://moda.gov.tw/press/press-releases/18316</a></li>
+      <li id="src-7"><span class="ti">著作權法 第 52 條、第 65 條</span><span class="meta">法務部全國法規資料庫 · 法規最近修正 2022-05-04 · 查證 2026-09-15</span><a href="https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=J0070017&amp;flno=52" target="_blank" rel="noopener">https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=J0070017&amp;flno=52</a>　<a href="https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=J0070017&amp;flno=65" target="_blank" rel="noopener">https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=J0070017&amp;flno=65</a></li>
+      <li id="src-8"><span class="ti">經濟部智慧財產局〈教師授課著作權錦囊〉</span><span class="meta">智慧局著作權主題網 · 頁面更新 2025-05-22 · 查證 2026-09-15</span><a href="https://www.tipo.gov.tw/tw/copyright/701-21243.html" target="_blank" rel="noopener">https://www.tipo.gov.tw/tw/copyright/701-21243.html</a></li>
+      <li id="src-9"><span class="ti">Creative Commons〈About CC Licenses〉</span><span class="meta">Creative Commons · 頁面未標日期 · 六種授權與 CC0 · 查證 2026-09-15</span><a href="https://creativecommons.org/share-your-work/cclicenses/" target="_blank" rel="noopener">https://creativecommons.org/share-your-work/cclicenses/</a></li>
+      <li id="src-10"><span class="ti">Pexels〈Legal Simplicity - Pexels License〉</span><span class="meta">Pexels · 頁面未標日期（© 2026）· 查證 2026-09-15</span><a href="https://www.pexels.com/license/" target="_blank" rel="noopener">https://www.pexels.com/license/</a></li>
+      <li id="src-11"><span class="ti">Valve〈Content Survey〉（含生成式 AI 揭露）</span><span class="meta">Steamworks 文件 · 頁面未標日期 · Pre-Generated 與 Live-Generated 兩類 · 查證 2026-09-15</span><a href="https://partner.steamgames.com/doc/gettingstarted/contentsurvey" target="_blank" rel="noopener">https://partner.steamgames.com/doc/gettingstarted/contentsurvey</a></li>
+      <li id="src-12"><span class="ti">Valve〈Steam Tags〉</span><span class="meta">Steamworks 文件 · 頁面未標日期 · 最多 20 個標籤、上架前至少 5 個 · 查證 2026-09-15</span><a href="https://partner.steamgames.com/doc/store/tags" target="_blank" rel="noopener">https://partner.steamgames.com/doc/store/tags</a></li>
+      <li id="src-13"><span class="ti">聖島智慧財產專業團體〈電玩遊戲之著作權侵權議題（智財法院 108 年度民著上字第 3 號民事判決）〉</span><span class="meta">聖島 · 2020-08-28 · 二手解析，引判決字號 · 查證 2026-09-15</span><a href="https://www.saint-island.com.tw/Tw/News/News_Info.aspx?IT=News_1&amp;CID=266&amp;ID=1801" target="_blank" rel="noopener">https://www.saint-island.com.tw/Tw/News/News_Info.aspx?IT=News_1&amp;CID=266&amp;ID=1801</a></li>
+      <li id="src-14"><span class="ti">周逸濱、魯忠翰〈電玩遊戲內容玩法都好像！該如何判斷是否構成抄襲？〉</span><span class="meta">聯合新聞網 鳴人堂 · 2022-02-14 · 二手媒體（律師專欄）· 查證 2026-09-15</span><a href="https://opinion.udn.com/opinion/story/10043/6096306" target="_blank" rel="noopener">https://opinion.udn.com/opinion/story/10043/6096306</a></li>
+      <li id="src-15"><span class="ti">經濟部智慧財產局〈如何查詢「商標」？－商標檢索〉；商標檢索系統</span><span class="meta">智慧局 · 頁面更新 2025-10-15 · 查證 2026-09-15</span><a href="https://www.tipo.gov.tw/tw/tipo1/834-1255.html" target="_blank" rel="noopener">https://www.tipo.gov.tw/tw/tipo1/834-1255.html</a>　<a href="https://cloud.tipo.gov.tw/S282/S282WV1/" target="_blank" rel="noopener">https://cloud.tipo.gov.tw/S282/S282WV1/</a></li>
+    </ol>
+  </section>
+
+  <section class="sec cyan">
+    <span class="kicker">補充資訊</span>
+    <h2>延伸閱讀與工具</h2>
+    <h3>查法條與判決</h3>
+    <ul>
+      <li><strong>全國法規資料庫。</strong>著作權法全文與逐條內容都在這裡，引用法條時以它當下的版本為準，不要引第三方整理頁。<a href="#src-1">[1]</a></li>
+      <li><strong>智慧局著作權主題網。</strong>基本概念問答、校園著作權、教師授課錦囊都在這裡，是台灣最直接的官方白話說明。<a href="#src-3">[3]</a> <a href="#src-8">[8]</a></li>
+      <li><strong>遊戲抄襲判決。</strong>要看台灣法院怎麼比對兩款遊戲，先讀鳴人堂那篇專欄的拆法，再讀聖島對 108 年度民著上字第 3 號的整理。<a href="#src-14">[14]</a> <a href="#src-13">[13]</a></li>
+    </ul>
+    <h3>AI 與智財，2026 年的三個入口</h3>
+    <ul>
+      <li><strong>智慧局函釋。</strong>2025 年 4 月的函釋是目前台灣對「AI 生成內容有沒有著作權」最直接的官方立場；官網本次沒找到函釋的獨立頁面，講義引的是法源法律網的轉載，字號可查。<a href="#src-5">[5]</a></li>
+      <li><strong>人工智慧基本法。</strong>2025 年 12 月三讀，它是基本法，講原則不講罰則；生成內容要怎麼標示，要看之後的子法與各主管機關規定。<a href="#src-6">[6]</a></li>
+      <li><strong>Steam 內容調查。</strong>第 12 週講上架流程時會再碰到。現在先知道：用了生成式 AI 要在上架時揭露，遊戲執行中即時生成的內容還要說明防護措施。<a href="#src-11">[11]</a></li>
+    </ul>
+    <h3>本次沒有寫進正文的東西</h3>
+    <p>字型授權（免費字型能不能商用）沒有找到一個可以引的官方通則頁，所以投影片只寫「字型也要看授權」，沒有舉例。《人工智慧基本法》的總統公布日期與條文全文本次沒有另開法規資料庫確認，講義只寫「三讀通過」。2025 到 2026 年有沒有新的台灣遊戲抄襲判決，本次沒有找到可以開啟的法院或事務所解析頁，正文沿用 2019 到 2020 年的判決。</p>
+  </section>
+
+  <section class="sec lemon">
+    <span class="kicker">本週檢核</span>
+    <h2>交作業前自己打勾</h2>
+    <ul class="check">
+      <li>選的遊戲是我真的玩過的，寫得出遊戲名稱與平台。</li>
+      <li>五個標籤是從 Steam 商店頁抄下來的，不是自己編的。</li>
+      <li>三個受著作權保護的元素，每個都寫得出是哪個角色、哪段音樂、哪個介面。</li>
+      <li>有標出哪些部分是不受保護的玩法規則。</li>
+      <li>如果用了 AI，末尾有一行揭露：用了什麼、做了哪一步。</li>
+      <li>素材帳本已經開好，五個欄位：來源站、原始頁面網址、下載日期、當時的授權名稱、AI 生成。</li>
+      <li>檔名是「學號_W1_智財盤點.pdf」，一頁 A4，下週上課前交。</li>
+    </ul>
+  </section>
+
+  <p class="version">2026-09-15 翻新：版型改為糖果流行、新增講義區、法條與函釋逐條查證、補 2025–2026 AI 現況。前一版：2026-09-13。</p>
+</main>
+
+<a class="backtop" id="backtop" href="#deck">↑ 回投影片</a>
 <script>
 (function () {
   /* ★ 每週只改這一行 ★ */
+  var COURSE_LABEL = '遊戲企畫';
   var WEEK_LABEL = '第 1 週 · 智財與課程簡介';
 
+  var deck = document.getElementById('deck');
   var stage = document.getElementById('stage');
   var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
   var cnt = document.getElementById('cnt');
   var prog = document.getElementById('prog');
   var toc = document.getElementById('toc');
   var tgrid = document.getElementById('tgrid');
+  var backtop = document.getElementById('backtop');
   var cur = 0;
 
   document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
@@ -609,7 +870,7 @@
   slides.forEach(function (s, i) {
     var f = document.createElement('div');
     f.className = 'foot';
-    f.innerHTML = '<span>遊戲企畫|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    f.innerHTML = '<span>' + COURSE_LABEL + '|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
     s.appendChild(f);
   });
 
@@ -618,12 +879,12 @@
     var eb = s.querySelector('.eyebrow');
     var part = '開場';
     if (eb) {
-      var m = eb.textContent.match(/PART\s*(\d)/i);
-      if (m) part = 'PART ' + m[1];
+      var m = eb.textContent.match(/Part\s*(\d)/i);
+      if (m) part = 'Part ' + m[1];
       else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
     }
     var h = s.querySelector('h1, h2');
-    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent.replace(/\d+$/, '') : '') });
   });
   Object.keys(groups).forEach(function (k) {
     var col = document.createElement('div');
@@ -651,35 +912,57 @@
   function toggleToc(on) {
     toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
   }
+  function atDeck() { return window.scrollY < 40; }
+  function toNotes() { document.getElementById('notes').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  function toggleFull() {
+    if (document.fullscreenElement) { document.exitFullscreen(); return; }
+    if (deck.requestFullscreen) deck.requestFullscreen();
+  }
 
   document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
   document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
   document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
   document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+  document.getElementById('toNotes').addEventListener('click', toNotes);
+  document.getElementById('full').addEventListener('click', toggleFull);
 
   document.addEventListener('keydown', function (e) {
+    if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
     if (e.key === 'Escape') { toggleToc(false); return; }
     if (toc.classList.contains('on')) return;
     switch (e.key) {
-      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
-      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
-      case 'Home': go(0); break;
-      case 'End': go(slides.length - 1); break;
+      case 'ArrowRight': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'ArrowDown': case ' ': if (atDeck()) { e.preventDefault(); go(cur + 1); } break;
+      case 'ArrowUp': if (atDeck()) { e.preventDefault(); go(cur - 1); } break;
+      case 'Home': if (atDeck()) go(0); break;
+      case 'End': if (atDeck()) go(slides.length - 1); break;
       case 'm': case 'M': toggleToc(); break;
+      case 'n': case 'N': toNotes(); break;
+      case 'f': case 'F': toggleFull(); break;
     }
   });
 
   function fit() {
-    var w = window.innerWidth, h = window.innerHeight;
+    var w = deck.clientWidth, h = deck.clientHeight;
     if (!w || !h) { requestAnimationFrame(fit); return; }
-    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+    stage.style.transform = 'scale(' + Math.min((w - 48) / 1300, (h - 88) / 740) + ')';
   }
   window.addEventListener('resize', fit);
   window.addEventListener('load', fit);
+  document.addEventListener('fullscreenchange', fit);
   fit();
+
+  window.addEventListener('scroll', function () {
+    backtop.classList.toggle('show', window.scrollY > deck.clientHeight * 0.6);
+  }, { passive: true });
 
   var m = location.hash.match(/^#s(\d+)$/);
   go(m ? +m[1] - 1 : 0);
+  if (!m && location.hash) {
+    var target = document.querySelector(location.hash.replace(/[^#\w-]/g, ''));
+    if (target) setTimeout(function () { target.scrollIntoView({ block: 'start' }); }, 50);
+  }
 })();
 </script>
 </body>

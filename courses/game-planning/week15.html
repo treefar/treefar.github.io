@@ -3,145 +3,231 @@
 <head>
 <meta charset="utf-8">
 <title>第 15 週|企畫書撰寫一</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Zen+Maru+Gothic:wght@500;700;900&family=Baloo+2:wght@600;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
-  /* ============ 版型 B：紙上期刊（唯一版型，禁止改動本區） ============ */
+  /* ============ 版型：糖果流行（style-library muse-dash，色值取自 styles/muse-dash.json）============ */
   * { box-sizing: border-box; }
-  #app {
-    position: fixed; inset: 0; overflow: hidden;
-    background: var(--bg);
-    font-family: var(--body);
-    color: var(--ink);
-    --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
-    --mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
-    --disp: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
-    --bg: #F5F4EC; --bg2: #EFEEE2;
-    --panel: #FDFCF6; --panel2: #EDECDF;
-    --ink: #232B21; --sub: #67705E;
-    --accent: #2F6B4F; --accent-rgb: 47,107,79;
-    --accent2: #BC4F2C;
-    --line: rgba(35,43,33,.16);
-    --link: #2F6B4F;
-    --r: 4px;
+  :root {
+    --bg: #fff4fa; --bg2: #eefaff;
+    --surface: #ffffff; --surface2: #eefaff;
+    --ink: #2b1b3d; --ink2: #6b5a7e; --muted: #6b5a7e;
+    --accent: #ff3d97; --accent2: #1fd0d6;
+    --pink-soft: #ff7fb8; --coral: #ff7a7a; --cyan-deep: #0fb6c4;
+    --grape: #8b54e6; --grape-deep: #6f3fd6; --lemon: #ffd23f; --sky: #49b8ff;
+    --dot-pink: rgba(255,61,151,.13); --dot-cyan: rgba(31,208,214,.16);
+    --body: 'Noto Sans TC', 'Microsoft JhengHei', 'PingFang TC', 'Segoe UI', sans-serif;
+    --disp: 'Fredoka', 'Zen Maru Gothic', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+    --num: 'Baloo 2', 'Fredoka', 'Noto Sans TC', sans-serif;
+    --r-sm: 14px; --r-md: 22px; --r-lg: 34px;
+    --bw: 4px;
+    --sh-sm: 4px 4px 0 var(--ink); --sh-md: 7px 7px 0 var(--ink);
   }
-  #app a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
-  #app a:hover { opacity: .85; }
-  #app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-weight: 500; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 2px; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
+  /* ---------- 投影區 ---------- */
+  #deck {
+    position: relative; height: 100vh; min-height: 560px; overflow: hidden;
+    background: var(--bg2);
+    background-image: radial-gradient(var(--dot-cyan) 2.4px, transparent 2.6px);
+    background-size: 26px 26px;
+  }
   .stagewrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
-  .stage { width: 1280px; height: 720px; position: relative; flex: 0 0 auto; box-shadow: 0 18px 70px rgba(0,0,0,.35); background: linear-gradient(180deg, var(--bg), var(--bg2)); }
-  .slide { position: absolute; inset: 0; padding: 48px 64px 80px; display: none; flex-direction: column; }
-  .slide.active { display: flex; }
-  .slide::before {
-    content: ""; position: absolute; inset: 24px; pointer-events: none;
-    border: 1px solid var(--line); outline: 1px solid var(--line); outline-offset: 3px;
+  .stage {
+    width: 1280px; height: 720px; position: relative; flex: 0 0 auto;
+    background: var(--bg);
+    background-image: radial-gradient(var(--dot-pink) 2.4px, transparent 2.6px);
+    background-size: 26px 26px;
+    border: var(--bw) solid var(--ink); border-radius: 26px;
+    box-shadow: 10px 10px 0 var(--ink);
+    overflow: hidden;
   }
+  .slide { position: absolute; inset: 0; padding: 44px 60px 74px; display: none; flex-direction: column; }
+  .slide.active { display: flex; animation: pop .42s cubic-bezier(.2,.9,.3,1.2) both; }
+  @keyframes pop { 0% { transform: scale(.96); opacity: 0 } 60% { transform: scale(1.01); opacity: 1 } 100% { transform: none } }
 
-  .eyebrow { font-size: 18px; letter-spacing: .3em; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
-  h1 { font-family: var(--disp); font-size: 74px; line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
-  h2 { font-family: var(--disp); font-size: 48px; line-height: 1.18; margin: 0 0 20px; text-wrap: balance; font-weight: 700; }
-  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+  .eyebrow { font-family: var(--disp); font-size: 18px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+  h1 { font-family: var(--disp); font-size: 80px; line-height: 1.12; margin: 0; font-weight: 700; text-wrap: balance; }
+  h2 { font-family: var(--disp); font-size: 54px; line-height: 1.18; margin: 0 0 18px; font-weight: 700; text-wrap: balance; }
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 18px; padding-right: 8px; }
 
-  .slide ul { margin: 0; padding-left: 1.25em; display: flex; flex-direction: column; gap: 19px; font-size: 26px; line-height: 1.55; }
-  .slide ul ul { margin-top: 8px; gap: 6px; font-size: 22px; color: var(--sub); }
-  .sub { color: var(--sub); }
+  .slide ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 16px; font-size: 26px; line-height: 1.55; }
+  .slide ul ul { margin-top: 6px; gap: 6px; font-size: 22px; color: var(--ink2); }
+  .slide li::marker { color: var(--accent); }
+  .sub { color: var(--ink2); }
   .small { font-size: 18px; }
-  .num { font-variant-numeric: tabular-nums; }
+  .num { font-family: var(--num); font-variant-numeric: tabular-nums; }
 
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
-  .cards { display: grid; gap: 18px; }
+  .cards { display: grid; gap: 20px; }
   .c2 { grid-template-columns: repeat(2, 1fr); }
   .c3 { grid-template-columns: repeat(3, 1fr); }
   .c4 { grid-template-columns: repeat(4, 1fr); }
   .c5 { grid-template-columns: repeat(5, 1fr); }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 12px; font-weight: 700; }
-  .card p, .card li { font-size: 22px; line-height: 1.55; margin: 0; }
-  .card ul { padding-left: 1.15em; gap: 9px; font-size: 22px; }
-  .card .who { display: block; font-size: 16px; letter-spacing: .08em; color: var(--sub); margin-bottom: 7px; }
-
-  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 22px; line-height: 1.5; }
-  .take b { color: var(--accent2); font-size: 17px; letter-spacing: .14em; white-space: nowrap; font-weight: 700; }
-
-  .foot { position: absolute; left: 64px; right: 64px; bottom: 26px; display: flex; justify-content: space-between; font-size: 16px; letter-spacing: .06em; color: var(--sub); }
-
-  .cover, .part { justify-content: center; }
-  .cover .eyebrow { margin-bottom: 26px; }
-  .cover-sub { font-size: 30px; color: var(--sub); margin: 28px 0 0; line-height: 1.6; max-width: 30em; }
-  .cover-meta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 16px; color: var(--sub); }
-  .cover-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; }
-  .part-num { font-family: var(--disp); font-size: 148px; line-height: 1; margin-bottom: 6px; color: var(--accent2); font-style: italic; font-weight: 700; }
-  .part h2 { font-size: 56px; }
-  .part-sub { font-size: 28px; color: var(--sub); margin: 20px 0 0; max-width: 32em; line-height: 1.65; }
-
-  .kv { display: grid; grid-template-columns: 240px 1fr; gap: 18px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
-  .kv dt { color: var(--accent); font-weight: 700; font-size: 21px; letter-spacing: .04em; }
-  .kv dd { margin: 0; }
-  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-  .chip { padding: 8px 16px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-size: 23px; }
-  .chip.hot { border-color: var(--accent); color: var(--accent); font-weight: 700; }
-  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
-  .lk { display: inline-block; border: 1px solid var(--line); background: var(--panel); padding: 8px 17px; border-radius: 999px; font-size: 18px; text-decoration: none; }
-  .lk::after { content: " ↗"; font-size: 12px; }
-  .flow { display: flex; align-items: stretch; gap: 0; }
-  .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 10px; font-weight: 700; }
-  .flow .step p { font-size: 21px; line-height: 1.55; margin: 0; color: var(--sub); }
-  .flow .arr { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); }
-  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
-  .bar i { display: block; height: 100%; background: var(--accent); }
-  .prob { display: grid; grid-template-columns: 130px 1fr 90px; gap: 18px 18px; align-items: center; font-size: 23px; align-content: space-evenly; }
-  .prob .pv { text-align: right; color: var(--sub); font-variant-numeric: tabular-nums; }
-  .biblio { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 24px 28px; font-size: 23px; line-height: 1.7; }
-  .biblio .ti { font-family: var(--disp); font-size: 27px; line-height: 1.4; display: block; margin-bottom: 10px; }
-  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 18px; }
-  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.55; display: flex; gap: 16px; }
-  .qlist p::before { content: "Q" counter(q); color: var(--accent); font-weight: 800; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
-  .tl { display: flex; flex-direction: column; gap: 18px; }
-  .tl .ev { display: grid; grid-template-columns: 140px 1fr; gap: 20px; font-size: 23px; line-height: 1.5; }
-  .tl .ev b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
-  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .1em; color: var(--accent); margin: 0 0 12px; font-weight: 700; }
-
-  /* 內容撐滿可用高度：避免內容少的頁面下半部空一大塊 */
-  .content > .cards,
-  .content > .cols,
-  .content > .flow,
-  .content > .kv,
-  .content > .prob { flex: 1 1 auto; }
-  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
-  .content > .qlist,
-  .content > .tl { flex: 1 1 auto; justify-content: space-evenly; }
-  .content > .biblio { flex: 0 0 auto; }
+  .card {
+    background: var(--surface); border: var(--bw) solid var(--ink); border-radius: var(--r-md);
+    box-shadow: var(--sh-md); padding: 18px 22px; min-width: 0;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .card.pink { background: #ffe3f0; } .card.cyan { background: #dff8f9; } .card.grape { background: #ece2ff; } .card.lemon { background: #fff4c7; }
+  .card h3 { font-family: var(--disp); font-size: 26px; margin: 0 0 10px; font-weight: 700; line-height: 1.25; }
+  .card p, .card li { font-size: 22px; line-height: 1.5; margin: 0; }
+  .card ul { padding-left: 1.1em; gap: 8px; font-size: 22px; }
+  .card .who { display: block; font-family: var(--disp); font-size: 16px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; font-weight: 600; }
+  .card.cyan .who { color: var(--cyan-deep); } .card.grape .who { color: var(--grape-deep); } .card.lemon .who { color: #9a7400; }
   .cols > .card { justify-content: flex-start; }
 
-  .ctrl { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; z-index: 30; font-variant-numeric: tabular-nums; }
-  .ctrl button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 15px; width: 34px; height: 30px; border-radius: 8px; cursor: pointer; }
-  .ctrl .cnt { font-size: 13px; color: var(--sub); padding: 0 6px; }
-  .prog { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
-  .toc { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, black); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
+  .take { margin-top: auto; display: flex; gap: 14px; align-items: baseline; border-top: 3px solid var(--ink); padding-top: 12px; font-size: 22px; line-height: 1.5; }
+  .take b { font-family: var(--disp); color: var(--accent); font-size: 17px; letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; font-weight: 700; }
+
+  .foot { position: absolute; left: 60px; right: 60px; bottom: 22px; display: flex; justify-content: space-between; font-family: var(--disp); font-size: 16px; letter-spacing: .06em; color: var(--ink2); }
+
+  /* 封面與章節頁：整片彩色 radial-gradient ＋ 白色半色調點，文字反白 */
+  .cover, .part { justify-content: center; color: #fff; }
+  .cover { background: radial-gradient(circle at 25% 30%, var(--pink-soft), var(--accent) 65%); }
+  .part.p-cyan { background: radial-gradient(circle at 70% 30%, #86ecf0, var(--accent2) 65%); }
+  .part.p-grape { background: radial-gradient(circle at 40% 65%, #b79af5, var(--grape) 65%); }
+  .part.p-pink { background: radial-gradient(circle at 25% 30%, var(--pink-soft), var(--accent) 65%); }
+  .part.p-sky { background: radial-gradient(circle at 70% 60%, #9ad6ff, var(--sky) 65%); }
+  .part.p-coral { background: radial-gradient(circle at 30% 40%, #ffa3a3, var(--coral) 65%); }
+  .cover::after, .part::after { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(rgba(255,255,255,.35) 2.4px, transparent 2.6px); background-size: 26px 26px; }
+  .cover > *:not(.foot), .part > *:not(.foot) { position: relative; z-index: 1; }
+  .cover .foot, .part .foot { z-index: 1; }
+  .cover .eyebrow, .part .eyebrow { color: #fff; margin-bottom: 22px; }
+  .cover .foot, .part .foot { color: #fff; }
+  .cover-sub { font-size: 30px; margin: 26px 0 0; line-height: 1.6; max-width: 30em; font-weight: 500; }
+  .cover-meta { margin-top: 40px; display: flex; gap: 12px; flex-wrap: wrap; font-family: var(--disp); font-size: 17px; }
+  .cover-meta span { border: 3px solid #fff; border-radius: 999px; padding: 6px 16px; }
+  .part-num { font-family: var(--num); font-size: 150px; line-height: 1; margin-bottom: 4px; font-weight: 800; color: transparent; -webkit-text-stroke: 4px #fff; }
+  .part h2 { font-size: 60px; }
+  .part-sub { font-size: 28px; margin: 18px 0 0; max-width: 32em; line-height: 1.6; font-weight: 500; }
+
+  .kv { display: grid; grid-template-columns: 250px 1fr; gap: 16px 24px; font-size: 24px; line-height: 1.5; align-content: space-evenly; }
+  .kv dt { font-family: var(--disp); color: var(--accent); font-weight: 700; font-size: 22px; }
+  .kv dd { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .chip { font-family: var(--disp); padding: 6px 16px; border: 3px solid var(--ink); background: var(--surface2); border-radius: 999px; font-size: 21px; font-weight: 600; }
+  .chip.hot { background: var(--lemon); }
+  .linkrow { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lk { display: inline-block; border: 3px solid var(--ink); background: var(--surface); box-shadow: var(--sh-sm); padding: 6px 16px; border-radius: 999px; font-size: 18px; text-decoration: none; color: var(--ink); font-weight: 600; }
+  .lk::after { content: " ↗"; font-size: 12px; }
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .flow .step { flex: 1; background: var(--surface); border: var(--bw) solid var(--ink); border-radius: var(--r-md); box-shadow: var(--sh-md); padding: 18px 22px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .flow .step h3 { font-family: var(--disp); font-size: 24px; margin: 0 0 8px; font-weight: 700; }
+  .flow .step p { font-size: 21px; line-height: 1.5; margin: 0; color: var(--ink2); }
+  .flow .arr { flex: 0 0 48px; display: flex; align-items: center; justify-content: center; font-family: var(--num); font-size: 30px; color: var(--accent); font-weight: 800; }
+  .qlist { counter-reset: q; display: flex; flex-direction: column; gap: 16px; }
+  .qlist p { counter-increment: q; margin: 0; font-size: 26px; line-height: 1.5; display: flex; gap: 14px; }
+  .qlist p::before { content: "Q" counter(q); font-family: var(--num); color: var(--accent); font-weight: 800; flex: 0 0 auto; }
+  .grp h3 { font-family: var(--disp); font-size: 20px; letter-spacing: .08em; color: var(--accent); margin: 0 0 10px; font-weight: 700; }
+  .card p.big, .cols > .card p.big { font-family: var(--num); font-size: 88px; line-height: 1.05; font-weight: 800; color: var(--accent); margin: 0; }
+  .card p.big small { font-family: var(--disp); font-size: 22px; line-height: 1.4; color: var(--ink2); font-weight: 600; display: block; margin-top: 10px; }
+
+  /* 貼紙卡不撐滿高度：卡片依內容高度，整組在標題與底列之間置中 */
+  .content > .cards, .content > .cols, .content > .flow { flex: 0 0 auto; margin-top: auto; margin-bottom: auto; }
+  .content > .kv { flex: 1 1 auto; }
+  .cards .card { min-height: 200px; }
+  .cols > .card { min-height: 240px; }
+  .cols > .card h3 { font-size: 28px; }
+  .cols > .card p, .cols > .card li { font-size: 24px; }
+  .cols > .card ul { gap: 10px; }
+  .c3 .card p { font-size: 23px; }
+  .content > ul { flex: 1 1 auto; justify-content: space-evenly; }
+  .content > .qlist { flex: 1 1 auto; justify-content: space-evenly; }
+
+  /* 投影片上的出處記號 */
+  sup.fn { font-family: var(--num); font-size: 13px; line-height: 1; vertical-align: top; margin-left: 4px; position: relative; top: -2px; }
+  sup.fn a { display: inline-block; background: var(--ink); color: #fff; border-radius: 999px; height: 20px; line-height: 20px; min-width: 20px; padding: 0 6px; text-align: center; text-decoration: none; font-weight: 800; }
+  .cover sup.fn a, .part sup.fn a { background: #fff; color: var(--ink); }
+
+  /* 控制列 */
+  .ctrl { position: absolute; right: 16px; bottom: 14px; display: flex; gap: 6px; align-items: center; z-index: 30; }
+  .ctrl button { font-family: var(--disp); border: 3px solid var(--ink); background: var(--surface); color: var(--ink); font-size: 15px; height: 34px; min-width: 36px; padding: 0 10px; border-radius: 999px; cursor: pointer; box-shadow: 3px 3px 0 var(--ink); font-weight: 600; }
+  .ctrl button:hover { transform: translateY(-2px); box-shadow: 5px 5px 0 var(--ink); }
+  .ctrl button:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--ink); }
+  .ctrl .cnt { font-family: var(--num); font-size: 14px; color: var(--ink2); padding: 0 6px; font-variant-numeric: tabular-nums; }
+  .prog { position: absolute; left: 0; bottom: 0; height: 5px; background: var(--accent); width: 0; z-index: 30; transition: width .2s ease; }
+  .hint { position: absolute; left: 16px; bottom: 16px; z-index: 30; font-family: var(--disp); font-size: 13px; color: var(--ink2); }
+
+  .toc { position: absolute; inset: 0; background: rgba(255,244,250,.96); display: none; z-index: 40; overflow: auto; padding: 5vh 6vw; }
   .toc.on { display: block; }
-  .toc h2 { color: var(--ink); font-size: 26px; margin: 0 0 22px; }
-  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 26px; }
-  .toc h3 { color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
-  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 8px; cursor: pointer; border-radius: 6px; font-family: var(--body); }
-  .toc button:hover { background: var(--panel2); }
-  .toc button.here { color: var(--accent2); font-weight: 700; }
-  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--sub); }
-  @media (prefers-reduced-motion: reduce) { .prog { transition: none; } }
- .eyebrow{font-size:18px}.slide h2{font-size:48px}.slide ul{font-size:26px}.slide ul ul{font-size:22px}.small{font-size:18px}.card h3{font-size:26px}.card p,.card li,.card ul{font-size:22px}.card .who{font-size:16px}.take{font-size:22px}.take b{font-size:17px}.foot{font-size:16px}.cover-sub{font-size:30px}.part-sub{font-size:28px}.kv{font-size:24px}.kv dt{font-size:21px}.chip{font-size:23px}.lk{font-size:18px}.flow .step h3{font-size:24px}.flow .step p{font-size:21px}.prob,.biblio{font-size:23px}.biblio .ti{font-size:27px}.qlist p{font-size:26px}.tl .ev{font-size:23px}.grp h3{font-size:20px}
+  .toc h2 { font-size: 26px; margin: 0 0 22px; }
+  .toc .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 26px; }
+  .toc h3 { font-family: var(--disp); color: var(--accent); font-size: 15px; letter-spacing: .12em; margin: 0 0 10px; }
+  .toc button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--ink); font-size: 16px; padding: 6px 10px; cursor: pointer; border-radius: 10px; font-family: var(--body); font-weight: 500; }
+  .toc button:hover { background: var(--surface2); }
+  .toc button.here { color: var(--accent); font-weight: 700; }
+  .toc .close { position: fixed; top: 16px; right: 20px; width: auto; font-size: 14px; color: var(--ink2); }
+
+  /* ---------- 講義區 ---------- */
+  .notes { max-width: 960px; margin: 0 auto; padding: 56px 20px 96px; }
+  .notes-head { text-align: center; margin-bottom: 40px; }
+  .notes-head .eyebrow { margin-bottom: 10px; }
+  .notes-head h2 { font-size: 44px; margin: 0 0 12px; }
+  .notes-head p { color: var(--ink2); font-size: 18px; margin: 0; }
+  .sec { background: var(--surface); border: var(--bw) solid var(--ink); border-radius: var(--r-md); box-shadow: var(--sh-md); padding: 28px 32px; margin: 0 0 30px; }
+  .sec h2 { font-size: 30px; margin: 0 0 14px; }
+  .sec h3 { font-family: var(--disp); font-size: 21px; margin: 24px 0 8px; font-weight: 700; }
+  .sec p, .sec li { font-size: 18px; line-height: 1.85; color: var(--ink2); margin: 0 0 12px; }
+  .sec li { margin: 0 0 6px; }
+  .sec strong { color: var(--ink); font-weight: 700; }
+  .sec .kicker { display: inline-block; font-family: var(--disp); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: #fff; background: var(--accent); border-radius: 999px; padding: 4px 12px; margin-bottom: 12px; font-weight: 700; }
+  .sec.cyan .kicker { background: var(--cyan-deep); } .sec.grape .kicker { background: var(--grape); } .sec.lemon .kicker { background: #9a7400; }
+  .sec table { width: 100%; border-collapse: collapse; font-size: 17px; margin: 8px 0 16px; }
+  .sec th, .sec td { text-align: left; padding: 10px 12px; border-bottom: 2px solid #efe6f2; vertical-align: top; line-height: 1.6; }
+  .sec th { font-family: var(--disp); font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+  .scene { background: var(--surface2); border: 3px dashed var(--ink); border-radius: var(--r-sm); padding: 14px 18px; margin: 14px 0 18px; }
+  .scene .who { font-family: var(--disp); font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--cyan-deep); font-weight: 700; display: block; margin-bottom: 4px; }
+  .scene p { margin: 0; }
+  ol.src { padding-left: 1.4em; counter-reset: s; list-style: none; }
+  ol.src li { counter-increment: s; position: relative; padding-left: 8px; margin-bottom: 14px; line-height: 1.7; }
+  ol.src li::before { content: counter(s); position: absolute; left: -1.5em; top: .35em; font-family: var(--num); font-size: 13px; font-weight: 800; background: var(--ink); color: #fff; border-radius: 999px; min-width: 22px; height: 22px; line-height: 22px; text-align: center; }
+  ol.src li:target { background: #fff4c7; border-radius: 10px; }
+  ol.src .ti { color: var(--ink); font-weight: 700; }
+  ol.src .meta { display: block; font-size: 15px; color: var(--muted); }
+  ol.src a { word-break: break-all; font-size: 15px; }
+  .check { counter-reset: c; list-style: none; padding: 0; }
+  .check li { counter-increment: c; display: flex; gap: 12px; align-items: baseline; }
+  .check li::before { content: "☐"; color: var(--accent); font-size: 22px; flex: 0 0 auto; }
+  .backtop { position: fixed; right: 18px; bottom: 18px; z-index: 50; font-family: var(--disp); font-size: 15px; font-weight: 700; color: var(--ink); background: var(--lemon); border: 3px solid var(--ink); border-radius: 999px; padding: 8px 16px; text-decoration: none; box-shadow: 4px 4px 0 var(--ink); display: none; }
+  .backtop.show { display: inline-block; }
+  .version { text-align: center; font-size: 14px; color: var(--muted); margin-top: 30px; }
+
+  @media (max-width: 720px) {
+    .notes { padding: 40px 16px 80px; }
+    .sec { padding: 20px 18px; }
+    .notes-head h2 { font-size: 32px; }
+    .kv { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .slide.active { animation: none; }
+    .prog { transition: none; }
+    .ctrl button:hover { transform: none; }
+  }
+  @media print {
+    #deck, .backtop { display: none; }
+    .notes { max-width: none; padding: 0; }
+    .sec { box-shadow: none; break-inside: avoid; }
+  }
 </style>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
 </head>
 <body>
-<div id="app" data-deck="b">
-  <div class="stagewrap"><div class="stage" id="stage">
 
-  <!-- 1 封面 -->
+<div id="deck" data-deck="muse-dash">
+  <div class="stagewrap"><div class="stage" id="stage">
+<!-- 1 封面 -->
   <section class="slide cover">
     <div class="eyebrow">遊戲企畫 · 動畫與遊戲設計系</div>
     <h1>十四份變成一本</h1>
-    <p class="cover-sub">把十四份交付依八章順序組裝，逐頁核對定位、玩法、規模與排程有沒有互相矛盾。</p>
-    <div class="cover-meta"><span>第 15 週</span><span>授課：鄧樹遠</span></div>
+    <p class="cover-sub">十四份交付分開寫了三個月，今天把它們依八章順序組裝起來，逐頁核對定位、玩法、規模與排程有沒有互相矛盾。統稿的主要動作是刪，不是補。</p>
+    <div class="cover-meta"><span>第 15 週</span><span>授課：鄧樹遠</span><span>投影片 ＋ 下方講義</span></div>
   </section>
 
   <!-- 2 本週地圖 -->
@@ -150,17 +236,17 @@
     <h2>九十分鐘，五段路</h2>
     <div class="content">
       <div class="cards c5">
-        <div class="card"><span class="who">PART 1</span><h3>八章的結構</h3><p class="sub">哪一章放哪</p></div>
-        <div class="card"><span class="who">PART 2</span><h3>你已經有什麼</h3><p class="sub">十四份交付的對應</p></div>
-        <div class="card"><span class="who">PART 3</span><h3>統稿要檢查什麼</h3><p class="sub">矛盾最容易發生的地方</p></div>
-        <div class="card"><span class="who">PART 4</span><h3>寫作要領</h3><p class="sub">哪些句子一定要刪</p></div>
-        <div class="card"><span class="who">PART 5</span><h3>本週交付</h3><p class="sub">企畫書第一版</p></div>
+        <div class="card pink"><span class="who">Part 1</span><h3>八章的結構</h3><p class="sub">哪一章放哪</p></div>
+        <div class="card cyan"><span class="who">Part 2</span><h3>你已經有什麼</h3><p class="sub">十四份交付的對應</p></div>
+        <div class="card grape"><span class="who">Part 3</span><h3>統稿要檢查什麼</h3><p class="sub">矛盾最常發生的地方</p></div>
+        <div class="card lemon"><span class="who">Part 4</span><h3>寫作要領</h3><p class="sub">哪些句子一定要刪</p></div>
+        <div class="card"><span class="who">Part 5</span><h3>本週交付</h3><p class="sub">企畫書第一版</p></div>
       </div>
       <div class="take"><b>本週目標</b>離開教室時，你要有一份八章齊全的初稿，就算某幾章還很粗糙也沒關係。</div>
     </div>
   </section>
 
-  <!-- 3 承接上週 -->
+  <!-- 3 承接 -->
   <section class="slide">
     <div class="eyebrow">承接第 1 到 14 週</div>
     <h2>十四份交付都在你手上</h2>
@@ -175,7 +261,7 @@
             <li>使用者輪廓、主題定案、核心賣點</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card cyan">
           <span class="who">後半學期七份</span>
           <h3>做什麼與怎麼賣</h3>
           <ul>
@@ -189,17 +275,17 @@
     </div>
   </section>
 
-  <!-- 4 PART 1 章節頁 -->
-  <section class="slide part">
+  <!-- 4 PART 1 -->
+  <section class="slide part p-pink">
     <div class="part-num">01</div>
-    <div class="eyebrow">PART 1</div>
+    <div class="eyebrow">Part 1</div>
     <h2>八章的結構</h2>
     <p class="part-sub">前四章回答為什麼做，後四章回答怎麼做。缺哪一章，讀者就會在那裡卡住。</p>
   </section>
 
   <!-- 5 前四章 -->
   <section class="slide">
-    <div class="eyebrow">PART 1 · 前四章</div>
+    <div class="eyebrow">Part 1 · 前四章</div>
     <h2>前四章：為什麼做</h2>
     <div class="content">
       <dl class="kv">
@@ -214,22 +300,22 @@
 
   <!-- 6 後四章 -->
   <section class="slide">
-    <div class="eyebrow">PART 1 · 後四章</div>
+    <div class="eyebrow">Part 1 · 後四章</div>
     <h2>後四章：怎麼做</h2>
     <div class="content">
       <dl class="kv">
         <dt>第五章 玩法系統</dt><dd>核心循環圖、系統規格、關卡表與節奏圖</dd>
         <dt>第六章 經濟與營收</dt><dd>資源流向圖、營收模式、收入推算</dd>
         <dt>第七章 行銷與上市</dt><dd>商店頁草稿、上市節奏規劃</dd>
-        <dt>第八章 風險與計畫</dt><dd>風險表、里程碑、成本估算</dd>
+        <dt>第八章 風險與計畫</dt><dd>風險表、測試計畫、里程碑、成本估算</dd>
       </dl>
       <div class="take"><b>第五章最厚</b>它應該佔全書三成以上。如果比世界觀那章短，代表重心跑掉了。</div>
     </div>
   </section>
 
-  <!-- 7 篇幅配置 -->
+  <!-- 7 篇幅 -->
   <section class="slide">
-    <div class="eyebrow">PART 1 · 篇幅</div>
+    <div class="eyebrow">Part 1 · 篇幅</div>
     <h2>總長度與各章比重</h2>
     <div class="content">
       <ul>
@@ -238,25 +324,25 @@
         <li>第四章世界觀最多兩頁，寫不完的放附錄。</li>
         <li>另外做一份一頁版，把最重要的濃縮成一張 A4。期末要用。</li>
       </ul>
-      <div class="take"><b>一頁版不是縮小版</b>它是重新挑過的，只留最能說服人的那幾行。第 8 週寫過一次了。</div>
+      <div class="take"><b>一頁版不是縮小版</b>Librande 說一頁設計「逼出精簡的設計」，做不出那一頁代表還沒想清楚。<sup class="fn"><a href="#src-1">1</a></sup>第 8 週寫過一次了。</div>
     </div>
   </section>
 
-  <!-- 8 PART 2 章節頁 -->
-  <section class="slide part">
+  <!-- 8 PART 2 -->
+  <section class="slide part p-cyan">
     <div class="part-num">02</div>
-    <div class="eyebrow">PART 2</div>
+    <div class="eyebrow">Part 2</div>
     <h2>你已經有什麼</h2>
     <p class="part-sub">把十四份交付對應到八個章節，你會發現缺口比想像中少。</p>
   </section>
 
-  <!-- 9 對應表 -->
+  <!-- 9 對應 -->
   <section class="slide">
-    <div class="eyebrow">PART 2 · 對應</div>
+    <div class="eyebrow">Part 2 · 對應</div>
     <h2>交付與章節的對應</h2>
     <div class="content">
       <div class="cols">
-        <div class="card">
+        <div class="card cyan">
           <span class="who">直接可用</span>
           <h3>八份</h3>
           <ul>
@@ -265,7 +351,7 @@
             <li>世界觀角色、玩法系統</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card lemon">
           <span class="who">要整理擴寫</span>
           <h3>六份</h3>
           <ul>
@@ -275,62 +361,77 @@
           </ul>
         </div>
       </div>
-      <div class="take"><b>統稿的工作</b>八成是刪與接，兩成是補。不是重寫。重寫代表你之前的交付沒用心。</div>
+      <div class="take"><b>統稿的工作</b>八成是刪與接，兩成是補。重寫代表你之前的交付沒用心。</div>
     </div>
   </section>
 
-  <!-- 10 缺口怎麼補 -->
+  <!-- 10 缺口 -->
   <section class="slide">
-    <div class="eyebrow">PART 2 · 缺口</div>
+    <div class="eyebrow">Part 2 · 缺口</div>
     <h2>最常見的三個缺口</h2>
     <div class="content">
       <div class="cards c3">
-        <div class="card">
-          <span class="who">缺口一</span>
-          <h3>目錄與摘要</h3>
-          <p>從來沒交過的部分。摘要一頁，把八章各濃縮成兩三句。</p>
-        </div>
-        <div class="card">
-          <span class="who">缺口二</span>
-          <h3>章節之間的過渡</h3>
-          <p>十四份是各自獨立寫的，接在一起會很跳。每章開頭要加一段銜接。</p>
-        </div>
-        <div class="card">
-          <span class="who">缺口三</span>
-          <h3>圖表的統一</h3>
-          <p>循環圖、流向圖、節奏圖各自畫的，風格與標示方式要統一。</p>
-        </div>
+        <div class="card pink"><span class="who">缺口一</span><h3>目錄與摘要</h3><p>從來沒交過的部分。摘要一頁，把八章各濃縮成兩三句。</p></div>
+        <div class="card cyan"><span class="who">缺口二</span><h3>章節之間的過渡</h3><p>十四份是各自獨立寫的，接在一起會很跳。每章開頭加一段銜接。</p></div>
+        <div class="card lemon"><span class="who">缺口三</span><h3>圖表的統一</h3><p>循環圖、流向圖、節奏圖各自畫的，風格與標示方式要統一。</p></div>
       </div>
-      <div class="take"><b>缺口二最花時間</b>但也最影響閱讀體驗。讀起來卡的企畫書，內容再好也會被扣分。</div>
+      <div class="take"><b>缺口二最花時間</b>但也最影響閱讀。讀起來卡的企畫書，內容再好也會被扣分。</div>
     </div>
   </section>
 
-  <!-- 11 PART 3 章節頁 -->
-  <section class="slide part">
+  <!-- 11 別人的範本 -->
+  <section class="slide">
+    <div class="eyebrow">Part 2 · 對照範本</div>
+    <h2>公開範本跟我們的八章對得上</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card cyan">
+          <span class="who">Unity GDD 範本</span>
+          <ul>
+            <li>Game Play 要寫成描述段落，不要寫「enemy_1 血量比 enemy_2 多」<sup class="fn"><a href="#src-2">2</a></sup></li>
+            <li>大綱最後一題：「為什麼這些好玩？」<sup class="fn"><a href="#src-2">2</a></sup></li>
+            <li>每個屬性都要寫它改變時的回饋<sup class="fn"><a href="#src-2">2</a></sup></li>
+          </ul>
+        </div>
+        <div class="card lemon">
+          <span class="who">獨立團隊 GDD 範本</span>
+          <ul>
+            <li>十節：角色、劇情、玩法、美術風格、系統拆解、素材清單<sup class="fn"><a href="#src-3">3</a></sup></li>
+            <li>流程圖、時程、待定想法各一節<sup class="fn"><a href="#src-3">3</a></sup></li>
+            <li>對應我們的第四、五、八章</li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>用法</b>範本拿來對照缺項，不是拿來套。驗收依據仍是本課的八章。</div>
+    </div>
+  </section>
+
+  <!-- 12 PART 3 -->
+  <section class="slide part p-grape">
     <div class="part-num">03</div>
-    <div class="eyebrow">PART 3</div>
+    <div class="eyebrow">Part 3</div>
     <h2>統稿要檢查什麼</h2>
     <p class="part-sub">十四份分開寫了三個月，一定會有互相矛盾的地方。這一段講怎麼找出來。</p>
   </section>
 
-  <!-- 12 矛盾最常發生的地方 -->
+  <!-- 13 矛盾 -->
   <section class="slide">
-    <div class="eyebrow">PART 3 · 矛盾</div>
+    <div class="eyebrow">Part 3 · 矛盾</div>
     <h2>矛盾最常出現在四個地方</h2>
     <div class="content">
       <div class="cards c4">
-        <div class="card"><span class="who">矛盾一</span><h3>定位與玩法</h3><p class="sub">說輕鬆卻設計高難度</p></div>
-        <div class="card"><span class="who">矛盾二</span><h3>玩家與難度</h3><p class="sub">說給新手卻沒有引導</p></div>
-        <div class="card"><span class="who">矛盾三</span><h3>規模與排程</h3><p class="sub">內容量對不上工時</p></div>
-        <div class="card"><span class="who">矛盾四</span><h3>商業模式與設計</h3><p class="sub">買斷制卻設計每日任務</p></div>
+        <div class="card pink"><span class="who">矛盾一</span><h3>定位與玩法</h3><p class="sub">說輕鬆卻設計高難度</p></div>
+        <div class="card cyan"><span class="who">矛盾二</span><h3>玩家與難度</h3><p class="sub">說給新手卻沒有引導</p></div>
+        <div class="card lemon"><span class="who">矛盾三</span><h3>規模與排程</h3><p class="sub">內容量對不上工時</p></div>
+        <div class="card grape"><span class="who">矛盾四</span><h3>商業模式與設計</h3><p class="sub">買斷制卻設計每日任務</p></div>
       </div>
       <div class="take"><b>檢查方式</b>把八章的第一句話抽出來排在一起讀。矛盾通常在那裡就看得出來。</div>
     </div>
   </section>
 
-  <!-- 13 統稿三步 -->
+  <!-- 14 三步 -->
   <section class="slide">
-    <div class="eyebrow">PART 3 · 流程</div>
+    <div class="eyebrow">Part 3 · 流程</div>
     <h2>統稿的三個步驟</h2>
     <div class="content">
       <div class="flow">
@@ -340,25 +441,40 @@
         <div class="arr">→</div>
         <div class="step"><h3>刪多於補</h3><p>統稿階段的主要動作是刪。捨不得刪的部分，通常就是該刪的。</p></div>
       </div>
-      <div class="take"><b>第二步的方向很重要</b>發現矛盾時改後面的章節，不要回頭改定位。定位一動，全書都要重來。</div>
+      <div class="take"><b>第二步的方向</b>發現矛盾時改後面的章節，不要回頭改定位。定位一動，全書都要重來。</div>
     </div>
   </section>
 
-  <!-- 14 PART 4 章節頁 -->
-  <section class="slide part">
+  <!-- 15 公開的設計文件 -->
+  <section class="slide">
+    <div class="eyebrow">Part 3 · 公開的真實文件</div>
+    <h2>大作的設計文件都跟成品差很多</h2>
+    <div class="content">
+      <div class="cards c4">
+        <div class="card pink"><span class="who">1992</span><h3>Doom Bible</h3><p class="sub">79 頁，內容與成品差異很大<sup class="fn"><a href="#src-4">4</a></sup></p></div>
+        <div class="card cyan"><span class="who">1996</span><h3>Grim Fandango</h3><p class="sub">72 頁，砍掉一段才三年做完<sup class="fn"><a href="#src-6">6</a></sup></p></div>
+        <div class="card lemon"><span class="who">1997</span><h3>Deus Ex</h3><p class="sub">草稿，成品晚兩年<sup class="fn"><a href="#src-5">5</a></sup></p></div>
+        <div class="card grape"><span class="who">1994</span><h3>Diablo 提案</h3><p class="sub">不到十頁就談成<sup class="fn"><a href="#src-7">7</a></sup></p></div>
+      </div>
+      <div class="take"><b>讀這四份的重點</b>刪東西是常態，不是失敗。統稿時捨不得刪的，去看 Grim Fandango 砍了什麼。<sup class="fn"><a href="#src-6">6</a></sup></div>
+    </div>
+  </section>
+
+  <!-- 16 PART 4 -->
+  <section class="slide part p-sky">
     <div class="part-num">04</div>
-    <div class="eyebrow">PART 4</div>
+    <div class="eyebrow">Part 4</div>
     <h2>寫作要領</h2>
     <p class="part-sub">統稿時圈出尚未決定的句子，改成可驗證的假設，或補上做決策所需的資料。</p>
   </section>
 
-  <!-- 15 一定要刪的句子 -->
+  <!-- 17 一定要刪 -->
   <section class="slide">
-    <div class="eyebrow">PART 4 · 刪除清單</div>
+    <div class="eyebrow">Part 4 · 刪除清單</div>
     <h2>這幾種句子一律刪掉</h2>
     <div class="content">
       <div class="cols">
-        <div class="card">
+        <div class="card pink">
           <span class="who">空話</span>
           <h3>寫了等於沒寫</h3>
           <ul>
@@ -368,7 +484,7 @@
             <li>「視情況調整」</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card cyan">
           <span class="who">換成</span>
           <h3>可驗收的寫法</h3>
           <ul>
@@ -378,36 +494,93 @@
           </ul>
         </div>
       </div>
-      <div class="take"><b>檢查方法</b>把每句話問一次「這句能不能驗收」。不能驗收的形容詞全部刪掉。</div>
+      <div class="take"><b>檢查方法</b>把每句話問一次「這句能不能驗收」。不能驗收的形容詞全部刪掉。Unity 範本也這樣要求。<sup class="fn"><a href="#src-2">2</a></sup></div>
     </div>
   </section>
 
-  <!-- 16 數字的紀律 -->
+  <!-- 18 數字 -->
   <section class="slide">
-    <div class="eyebrow">PART 4 · 數字</div>
+    <div class="eyebrow">Part 4 · 數字</div>
     <h2>每個數字都要有出處</h2>
     <div class="content">
       <ul>
         <li>市場數字要寫來源與查詢日期，還要寫統計範圍。第 3 週講過為什麼。</li>
         <li>推估的銷量要寫「約」，並說明是用哪一站的資料推的。</li>
         <li>自己設定的數值（關卡數、時長）要標「預估」，不要寫得像已經測過。</li>
-        <li>查不到就誠實寫「查不到公開資料，以三款同類作品觀察推估」。</li>
+        <li>第 14 週測過的，寫「7 位符合輪廓的受測者中有幾位」，不要寫「玩家反應良好」。</li>
       </ul>
       <div class="take"><b>我的標準</b>寫「約略推估」不扣分，寫一個查不到出處的精確數字才扣分。</div>
     </div>
   </section>
 
-  <!-- 17 PART 5 章節頁 -->
-  <section class="slide part">
+  <!-- 19 讀者怎麼讀 -->
+  <section class="slide">
+    <div class="eyebrow">Part 4 · 讀者</div>
+    <h2>評審是掃的，不是讀的</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card cyan">
+          <span class="who">Nielsen 的閱讀測試</span>
+          <p class="big">79%<small>的受測者掃視頁面，只有 16% 逐字讀<sup class="fn"><a href="#src-9">9</a></sup></small></p>
+        </div>
+        <div class="card lemon">
+          <span class="who">他建議的寫法</span>
+          <ul>
+            <li>一段只講一個想法，第一句沒抓到就被跳過<sup class="fn"><a href="#src-9">9</a></sup></li>
+            <li>先講結論，小標要有意義，多用條列<sup class="fn"><a href="#src-9">9</a></sup></li>
+            <li>字數砍到一半<sup class="fn"><a href="#src-9">9</a></sup></li>
+          </ul>
+        </div>
+      </div>
+      <div class="take"><b>對企畫書的意思</b>每章第一段要能單獨讀懂那一章。評審翻到第五章時，不會回頭讀第一章。</div>
+    </div>
+  </section>
+
+  <!-- 20 2025–2026 現況 -->
+  <section class="slide">
+    <div class="eyebrow">Part 4 · 2025–2026 現況</div>
+    <h2>三分之一的人在用生成式 AI，一半的人不喜歡</h2>
+    <div class="content">
+      <div class="cols">
+        <div class="card pink">
+          <span class="who">GDC 2026 產業調查 · 2,300 多人</span>
+          <p class="big">36%<small>在用生成式 AI 工具；最常見用途是研究與腦力激盪（81%）<sup class="fn"><a href="#src-10">10</a></sup></small></p>
+        </div>
+        <div class="card grape">
+          <span class="who">同一份調查</span>
+          <p class="big">52%<small>認為它對產業有負面影響；設計與敘事從業者 63% 持負面看法<sup class="fn"><a href="#src-10">10</a></sup></small></p>
+        </div>
+      </div>
+      <div class="take"><b>對你們的意思</b>用 AI 整理稿子可以，但讀你企畫書的人有一半對它反感。用了就寫清楚用在哪、你改了什麼，下週會講格式。</div>
+    </div>
+  </section>
+
+  <!-- 21 老師的課堂規矩 -->
+  <section class="slide">
+    <div class="eyebrow">Part 4 · 老師的課堂規矩</div>
+    <h2>第一版在我這裡怎麼算數</h2>
+    <div class="content">
+      <ul>
+        <li>缺章的不收。粗糙可以，缺章不行，因為缺章代表你沒有把十四份攤開來對過。</li>
+        <li>統稿檢查表寫「無矛盾」的，我會當場翻出一條給你看。</li>
+        <li>第五章比第四章短的，退回，重心跑掉了。</li>
+        <li>八章第一句話抽出來讀不通的，先改第一句話，再談內文。</li>
+      </ul>
+      <div class="take"><b>我的判斷</b>這週的目標是「有一本完整的」，不是「有一本完美的」。下週還有一整週修。</div>
+    </div>
+  </section>
+
+  <!-- 22 PART 5 -->
+  <section class="slide part p-coral">
     <div class="part-num">05</div>
-    <div class="eyebrow">PART 5</div>
+    <div class="eyebrow">Part 5</div>
     <h2>本週交付</h2>
     <p class="part-sub">企畫書第一版。八章齊全，某幾章粗糙沒關係，下週有一整週可以修。</p>
   </section>
 
-  <!-- 18 交付規格 -->
+  <!-- 23 交付規格 -->
   <section class="slide">
-    <div class="eyebrow">PART 5 · 交付規格</div>
+    <div class="eyebrow">Part 5 · 交付規格</div>
     <h2>這週要交什麼</h2>
     <div class="content">
       <dl class="kv">
@@ -420,33 +593,21 @@
     </div>
   </section>
 
-  <!-- 19 檢核與退件 -->
+  <!-- 24 檢核 -->
   <section class="slide">
-    <div class="eyebrow">PART 5 · 檢核標準</div>
+    <div class="eyebrow">Part 5 · 檢核標準</div>
     <h2>什麼樣算過關</h2>
     <div class="content">
       <div class="cards c3">
-        <div class="card">
-          <span class="who">及格</span>
-          <h3>八章都在</h3>
-          <p>有目錄、三張圖齊全、頁數在範圍內。</p>
-        </div>
-        <div class="card">
-          <span class="who">好</span>
-          <h3>讀得下去</h3>
-          <p>章節之間有銜接，不會讀起來像十四份文件貼在一起。</p>
-        </div>
-        <div class="card">
-          <span class="who">退件</span>
-          <h3>常見的三種</h3>
-          <p>缺章節；統稿檢查表寫「無矛盾」；整本都是形容詞。</p>
-        </div>
+        <div class="card cyan"><span class="who">及格</span><h3>八章都在</h3><p>有目錄、三張圖齊全、頁數在範圍內。</p></div>
+        <div class="card lemon"><span class="who">好</span><h3>讀得下去</h3><p>章節之間有銜接，不會讀起來像十四份文件貼在一起。</p></div>
+        <div class="card pink"><span class="who">退件</span><h3>常見的三種</h3><p>缺章節；統稿檢查表寫「無矛盾」；整本都是形容詞。</p></div>
       </div>
       <div class="take"><b>下週還有一次機會</b>這週的目標是「有一本完整的」，不是「有一本完美的」。</div>
     </div>
   </section>
 
-  <!-- 20 課堂討論與課後任務 -->
+  <!-- 25 收尾 -->
   <section class="slide">
     <div class="eyebrow">Week 15 · 收尾</div>
     <h2>回去做這三件事</h2>
@@ -456,50 +617,52 @@
         <p>第五章玩法系統，佔全書幾成？如果比世界觀短，是不是重心跑掉了？</p>
         <p>整本刪掉所有形容詞之後，還剩多少內容？</p>
       </div>
-      <div class="card">
+      <div class="card grape">
         <span class="who">課後任務</span>
         <p>跟同學交換企畫書互讀。讀別人的最容易看出矛盾，也最容易發現自己的問題。</p>
       </div>
-      <div class="take"><b>下週預告</b>完整企畫書撰寫（二）：互相審閱、邏輯檢核，把第一版修成定稿。</div>
+      <div class="take"><b>下週預告</b>企畫書撰寫（二）：互相審閱、邏輯檢核，把第一版修成定稿。</div>
     </div>
   </section>
 
-  <!-- 21 資源彙整 -->
+  <!-- 26 資源彙整 -->
   <section class="slide">
     <div class="eyebrow">Week 15 · 資源彙整</div>
     <h2>本週資源</h2>
     <div class="content">
       <div class="cols">
         <div class="grp">
-          <h3>文件範本</h3>
+          <h3>範本</h3>
           <div class="linkrow">
+            <a class="lk" href="https://learn.unity.com/pathway/game-development/unit/planning-a-game/tutorial/game-dev-create-a-game-design-document" target="_blank" rel="noopener">Unity Learn GDD 教學</a>
             <a class="lk" href="https://www.gamedeveloper.com/design/a-gdd-template-for-the-indie-developer" target="_blank" rel="noopener">獨立開發 GDD</a>
-            <a class="lk" href="https://connect-prd-cdn.unity.com/20201215/83f3733d-3146-42de-8a69-f461d6662eb1/Game-Design-Document-Template.pdf" target="_blank" rel="noopener">Unity GDD 範本</a>
             <a class="lk" href="https://www.notion.com/templates/game-design-document-367" target="_blank" rel="noopener">Notion GDD 範本</a>
+            <a class="lk" href="https://www.gamedeveloper.com/design/video-one-page-designs" target="_blank" rel="noopener">一頁設計（影片介紹）</a>
           </div>
         </div>
         <div class="grp">
-          <h3>寫作與工具</h3>
+          <h3>公開的真實設計文件</h3>
           <div class="linkrow">
-            <a class="lk" href="https://docs.google.com/" target="_blank" rel="noopener">Google 文件</a>
-            <a class="lk" href="https://www.notion.com/" target="_blank" rel="noopener">Notion</a>
-            <a class="lk" href="https://en.wikipedia.org/wiki/Game_design_document" target="_blank" rel="noopener">GDD 條目</a>
+            <a class="lk" href="https://archive.org/details/Doombible" target="_blank" rel="noopener">Doom Bible</a>
+            <a class="lk" href="https://archive.org/details/gf_doc" target="_blank" rel="noopener">Grim Fandango</a>
+            <a class="lk" href="https://archive.org/details/DeusExDesignDoc11081997" target="_blank" rel="noopener">Deus Ex</a>
+            <a class="lk" href="https://archive.org/details/diablo_pitch" target="_blank" rel="noopener">Diablo 提案</a>
           </div>
         </div>
       </div>
-      <div class="take"><b>驗收依據</b>用範本對照缺項即可；本課以八章結構作為驗收依據。</div>
+      <div class="take"><b>出處與補充</b>在下方講義，按 N 鍵。範本的節次、四份公開文件的頁數與年份、閱讀測試的數字與查證日期都在講義區。</div>
     </div>
   </section>
-
-  
-
   </div></div>
 
+  <div class="hint">← → 換頁　M 目錄　N 講義　F 全螢幕</div>
   <div class="ctrl">
     <button id="prev" aria-label="上一張">‹</button>
     <span class="cnt" id="cnt">1 / 1</span>
     <button id="next" aria-label="下一張">›</button>
     <button id="menu" aria-label="目錄" title="目錄（M）">≡</button>
+    <button id="toNotes" title="講義（N）">講義 ↓</button>
+    <button id="full" title="全螢幕（F）">⛶</button>
   </div>
   <div class="prog" id="prog"></div>
 
@@ -510,17 +673,161 @@
   </div>
 </div>
 
+<!-- ============ 講義區 ============ -->
+<main class="notes" id="notes">
+  <div class="notes-head">
+    <div class="eyebrow">Week 15 · 講義</div>
+    <h2>企畫書撰寫一：組裝與統稿</h2>
+    <p>投影片講的是骨架，這裡放肉：八章的結構與篇幅、十四份交付的對應、公開範本與真實設計文件的原文、統稿的矛盾清單與三步驟、寫作要領的閱讀研究依據、老師的課堂規矩，以及交作業前的自我檢核。這週的出處是公開的 GDD 範本、Internet Archive 的原件與可用性研究的原文。</p>
+  </div>
+
+  <section class="sec">
+    <span class="kicker">導讀</span>
+    <h2>這週在解決什麼問題</h2>
+    <p>十四週交了十四份東西，各自獨立寫、隔了好幾週。它們的定位、規模、數字，一定有互相對不上的地方。這週不教新內容，只做一件事：把十四份依八章順序組裝成一本，從頭讀一次，找出矛盾並修掉。統稿的主要動作是刪與接，補是少數；重寫代表你之前的交付沒用心。</p>
+    <p>三個詞先講清楚。<strong>企畫書（Game Design Document, GDD）</strong>在這門課是固定八章的文件，前四章回答為什麼做，後四章回答怎麼做，十五到二十頁。<strong>統稿</strong>是把分開寫的段落合成一本後，逐頁核對定位、玩法、規模、排程是否一致的工作，產出是一份「統稿檢查表」。<strong>一頁版</strong>是另外重新挑過的一張 A4，只留最能說服人的幾行；它不是縮小版，第 8 週用 Librande 的一頁設計練過一次。全程用這三個詞，不換名字。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">§1</span>
+    <h2>八章的結構：前四章、後四章、篇幅</h2>
+    <p>前四章回答「為什麼做」。第一章核心概念：一句話定位、核心玩法、五個標籤。第二章目標玩家：使用者輪廓、他現在玩什麼、為什麼會換過來。第三章市場與競品：三款競品分析、你的差異化論證。第四章世界觀與角色：世界觀四題、兩個主角與那組不對等關係。第一二三章來自第 3 到 7 週，第四章來自第 9 週，都已經寫過了。</p>
+    <p>後四章回答「怎麼做」。第五章玩法系統：核心循環圖、系統規格、關卡表與節奏圖。第六章經濟與營收：資源流向圖、營收模式、收入推算。第七章行銷與上市：商店頁草稿、上市節奏規劃。第八章風險與計畫：風險表、測試計畫、里程碑、成本估算。第五章最厚，應該佔全書三成以上；如果比世界觀那章短，代表重心跑掉了。</p>
+    <p>篇幅是本課的規定，不是業界標準：總長度十五到二十頁，太短代表沒想清楚，太長代表沒收斂；第四章世界觀最多兩頁，寫不完的放附錄；另外做一份一頁版，期末要用。一頁版的道理 Librande 在 GDC 2010 講過：傳統長文件的問題是「沒有人讀較長的文件」，一頁設計「逼出精簡的設計」，做不出那一頁代表你還沒真的想清楚；他的結尾是「人們會讀你的設計！」。<a href="#src-1">[1]</a></p>
+  </section>
+
+  <section class="sec cyan">
+    <span class="kicker">§2</span>
+    <h2>你已經有什麼：對應表、三個缺口、公開範本怎麼對照</h2>
+    <p>十四份交付對應到八章：八份直接可用（倒推概念書、商業模式、競品分析、使用者輪廓、主題定案、核心賣點、世界觀角色、玩法系統），六份要整理擴寫（關卡節奏要補齊中段關卡表、經濟營收要接上關卡的資源產出、行銷與風險兩份直接進第七八章）。統稿的工作八成是刪與接，兩成是補。</p>
+    <p>最常見的三個缺口。目錄與摘要：從來沒交過的部分，摘要一頁，把八章各濃縮成兩三句。章節之間的過渡：十四份是各自獨立寫的，接在一起會很跳，每章開頭要加一段銜接，這一項最花時間，也最影響閱讀，讀起來卡的企畫書內容再好也會被扣分。圖表的統一：循環圖、流向圖、節奏圖各自畫的，風格與標示方式要統一。</p>
+    <p>公開範本拿來對照缺項，不是拿來套。Unity 官方 CDN 上的 GDD 範本 PDF 6 頁，節次從 Game Name、Genre、Game Elements（「玩家為了樂趣會做的基本活動」）、Technical Specs、Game Play、Key Features，到 Design Document（描述 GameObject 怎麼行為、怎麼被控制、有什麼屬性，「常被稱為遊戲的 mechanics」）、Game Flowchart、Player Definition、User Interface。它對 Game Play 的要求跟我們一樣：要寫成讓讀者像在玩的描述段落，不要寫「enemy_1 血量比 enemy_2 多」，要寫「Lazarus 戰機的裝甲比 Apollo 戰機厚」；玩法大綱最後一題是「為什麼這些好玩？」；每個玩家屬性「都要提到它改變時的回饋」。<a href="#src-2">[2]</a> 獨立團隊的 GDD 範本（Bakker，2009）十節：Intro、Character Bios、Rough Plot、Gameplay Description、Artistic Style Outline、Systematic Breakdown of Components、Asset Breakdown、Suggested Game Flow Diagram、Suggested Project Timeline、Additional Ideas and Possibilities，<a href="#src-3">[3]</a> 大致對應我們的第四、五、八章。Notion 上也有免費範本可當工具。<a href="#src-11">[11]</a> 驗收依據仍是本課的八章。</p>
+    <h3>八章對應的交付與範本節次</h3>
+    <table>
+      <thead><tr><th>本課章節</th><th>來自哪週的交付</th><th>Unity 範本對應節次<a href="#src-2">[2]</a></th></tr></thead>
+      <tbody>
+        <tr><td>一 核心概念</td><td>W03 倒推概念書、W07 核心賣點</td><td>Game Name、Genre、Game Elements、Key Features</td></tr>
+        <tr><td>二 目標玩家</td><td>W05 使用者輪廓</td><td>Player</td></tr>
+        <tr><td>三 市場與競品</td><td>W04 競品分析、W06 主題定案</td><td>（範本無此節，本課要求）</td></tr>
+        <tr><td>四 世界觀與角色</td><td>W09 世界觀角色</td><td>Game Play Outline 的 Story synopsis</td></tr>
+        <tr><td>五 玩法系統</td><td>W10 玩法系統、W11 關卡節奏</td><td>Game Play、Design Document、Game Flowchart、Player Definition</td></tr>
+        <tr><td>六 經濟與營收</td><td>W12 經濟營收、W02 商業模式</td><td>（範本無此節，本課要求）</td></tr>
+        <tr><td>七 行銷與上市</td><td>W13 行銷上市</td><td>（範本無此節，本課要求）</td></tr>
+        <tr><td>八 風險與計畫</td><td>W14 風險排程</td><td>（Bakker 範本的 Suggested Project Timeline<a href="#src-3">[3]</a>）</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="sec grape">
+    <span class="kicker">§3</span>
+    <h2>統稿要檢查什麼：四個矛盾、三個步驟、大作的文件也砍過</h2>
+    <p>矛盾最常出現在四個地方。定位與玩法：說輕鬆卻設計高難度。玩家與難度：說給新手卻沒有引導。規模與排程：內容量對不上工時，第八章的風險表跟第五章的關卡表要是同一個規模。商業模式與設計：買斷制卻設計每日任務。檢查方式是把八章的第一句話抽出來排在一起讀，矛盾通常在那裡就看得出來。</p>
+    <p>統稿三個步驟。先合再讀：把十四份貼進同一份文件，從頭讀一次，標出所有卡住的地方。對照定位：每一章都回頭問「這跟第一章的定位一致嗎」，不一致的改章節，不改定位；定位一動，全書都要重來。刪多於補：統稿階段的主要動作是刪，捨不得刪的部分通常就是該刪的。</p>
+    <p>捨不得刪的時候，去看公開的真實設計文件。Tom Hall 1992 年的《Doom Bible》79 頁，Internet Archive 的描述寫明內容與最後上市的遊戲差異很大。<a href="#src-4">[4]</a> Tim Schafer 1996 年的《Grim Fandango》謎題文件 72 頁，是向 LucasArts 提案用的初始設計文件；報導寫團隊砍掉 Pizza Demon 與五段動作高潮後，才得以「在三年內完成遊戲」。<a href="#src-6">[6]</a> 1997 年 8 月的《Deus Ex》設計文件是「後來被稱為 Deus Ex 的遊戲的設計文件草稿」，遊戲 2000 年才上市。<a href="#src-5">[5]</a> David Brevik 的《Diablo》原始提案只有 8 頁，他在 GDC 2016 展示後主動放上網。<a href="#src-7">[7]</a> 四份合起來的意思：刪東西是常態，不是失敗；提案文件不用厚。發行商 Chucklefish 的提案指南講的也是四樣東西：清楚的亮點、視覺素材、能交付的證明、合理的預算，「沒有什麼比遊戲本身更能賣你的遊戲」。<a href="#src-8">[8]</a></p>
+    <div class="scene">
+      <span class="who">假設情境</span>
+      <p>一組把十四份貼進同一份文件後，第一章寫「十分鐘一局的放鬆型合成遊戲」，第五章的關卡表卻排了 24 關、每關要背三種合成公式，第八章的成本估算算出 3 人要做 20 週。三處各自看都合理，排在一起就是三個不同的遊戲。他們的統稿檢查表寫了三條：關卡從 24 減為 8 並刪掉公式記憶；第八章工時跟著重算；第二章的輪廓補一句「不想背東西」當第五章的約束。改的是後面的章節，定位沒動。</p>
+    </div>
+  </section>
+
+  <section class="sec lemon">
+    <span class="kicker">§4</span>
+    <h2>寫作要領：刪除清單、數字紀律、讀者怎麼讀、2025–2026 現況</h2>
+    <p>一律刪掉的句子：「打造沉浸式的遊戲體驗」「豐富多元的關卡設計」「畫面精美、音樂動人」「視情況調整」。換成可驗收的寫法：「六個關卡，每關約五分鐘」「主角三種形態，各對應一種解謎」「像素風，色盤十六色」。檢查方法是把每句話問一次「這句能不能驗收」，不能驗收的形容詞全部刪掉。Unity 的範本對 Game Play 的要求是同一件事：不要泛用的描述，要具體到讀者能想像自己在玩。<a href="#src-2">[2]</a></p>
+    <p>數字的紀律。市場數字要寫來源與查詢日期，還要寫統計範圍；推估的銷量要寫「約」並說明是用哪一站的資料推的；自己設定的數值要標「預估」，不要寫得像已經測過；第 14 週測過的，寫「7 位符合輪廓的受測者中有幾位」，不要寫「玩家反應良好」。我的標準：寫「約略推估」不扣分，寫一個查不到出處的精確數字才扣分。</p>
+    <p>評審是掃的，不是讀的。Nielsen 1997 年的閱讀測試：79% 的受測者掃視頁面，只有 16% 逐字讀。他建議的寫法：關鍵詞醒目、有意義的小標、條列、一段只講一個想法（「讀者會跳過第一句沒抓到的其他想法」）、先講結論、字數砍到一半；三者合併在測試中可用性提升 124%。<a href="#src-9">[9]</a> 對企畫書的意思：每章第一段要能單獨讀懂那一章，因為評審翻到第五章時不會回頭讀第一章。</p>
+    <p>2025 到 2026 年的現況。GDC 2026 年 1 月發布的產業調查，超過 2,300 位從業者：36% 正在使用生成式 AI 工具，最常見用途是研究或腦力激盪（81%），其次是日常事務與程式輔助（各 47%）、原型製作（35%）；同時 52% 認為它對產業有負面影響，只有 7% 認為正面，遊戲設計與敘事從業者有 63% 持負面看法。<a href="#src-10">[10]</a> 對你們的意思：用 AI 整理稿子可以，但讀你企畫書的人有一半對它反感；用了就寫清楚用在哪、你改了什麼。下週講揭露的格式。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">老師的課堂規矩</span>
+    <h2>第一版在我這裡怎麼算數</h2>
+    <p>這週我改作業的方式就是這四條，先講給你們聽：</p>
+    <ul>
+      <li><strong>缺章的不收。</strong>粗糙可以，缺章不行，因為缺章代表你沒有把十四份攤開來對過。</li>
+      <li><strong>統稿檢查表寫「無矛盾」的，我會當場翻出一條給你看。</strong>分開寫三個月不可能沒有矛盾，找不到代表沒有從頭讀。</li>
+      <li><strong>第五章比第四章短的，退回。</strong>重心跑掉了。世界觀最多兩頁，多的放附錄。</li>
+      <li><strong>八章第一句話抽出來讀不通的，先改第一句話，再談內文。</strong>評審就是這樣讀的。<a href="#src-9">[9]</a></li>
+    </ul>
+    <p>我的判斷是：這週的目標是「有一本完整的」，不是「有一本完美的」。下週還有一整週修，而且是別人幫你找洞。</p>
+  </section>
+
+  <section class="sec">
+    <span class="kicker">出處</span>
+    <h2>本週引用的資料</h2>
+    <p>每一條都在 2026-09-16 打開確認過（第 1 條的 GDC Vault 原頁本次回 504，沿用第 8 週 2026-09-15 的紀錄並改連到影片介紹頁）。範本與網頁會改，引用前請自己再開一次。網址失效請告訴我，我會換。</p>
+    <ol class="src">
+      <li id="src-1"><span class="ti">Librande, S.〈One-Page Designs〉（GDC 2010）；Riendeau, D.〈Video: One-page designs〉</span><span class="meta">GDC Vault 官方摘要「a document that is exactly one page long」（沿用第 8 週 2026-09-15 紀錄，GDC Vault 頁 gdcvault.com/play/1012356 本次回 504，故連結改用 Game Developer 的影片介紹頁）；Game Developer · 2023-08-08 · 「no one reads longer documentation」、「forces concise design」、「People will read your designs!」· 查證 2026-09-16</span><a href="https://www.gamedeveloper.com/design/video-one-page-designs" target="_blank" rel="noopener">https://www.gamedeveloper.com/design/video-one-page-designs</a></li>
+      <li id="src-2"><span class="ti">Unity〈Game Design Document (GDD) Template〉（PDF，6 頁）；Unity Learn〈Create a Game Design Document〉</span><span class="meta">Unity Technologies · PDF 在官方 CDN，頁面未標日期（網址路徑 2020-12-15）· 「Why is all this fun?」、「Each property should mention a feedback as a result of the property changing.」、enemy_1 與 Lazarus Fighter 的寫法對照 · 本次下載後逐頁核對；PDF 網址 connect-prd-cdn.unity.com/20201215/83f3733d-3146-42de-8a69-f461d6662eb1/Game-Design-Document-Template.pdf（該 CDN 不回應連結檢查的 HEAD 請求，請貼到瀏覽器開）· Unity Learn 教學頁另有較新的範本（一句話定位、動詞、核心循環、回饋），寫 GDD 是「communication tool」· 頁面未標日期 · 查證 2026-09-16</span><a href="https://learn.unity.com/pathway/game-development/unit/planning-a-game/tutorial/game-dev-create-a-game-design-document" target="_blank" rel="noopener">https://learn.unity.com/pathway/game-development/unit/planning-a-game/tutorial/game-dev-create-a-game-design-document</a></li>
+      <li id="src-3"><span class="ti">Bakker, J.〈A GDD Template for the Indie Developer〉</span><span class="meta">Game Developer · 2009-06-04 · 十節範本、「Schedule aggressively, but be realistic」· 沿用第 8 週，本次再開啟 · 查證 2026-09-16</span><a href="https://www.gamedeveloper.com/design/a-gdd-template-for-the-indie-developer" target="_blank" rel="noopener">https://www.gamedeveloper.com/design/a-gdd-template-for-the-indie-developer</a></li>
+      <li id="src-4"><span class="ti">Hall, T.《Doom Bible》（1992）</span><span class="meta">Internet Archive · 1992 撰寫、2018-08-28 上傳 · 79 頁、Public Domain Mark 1.0、「It was written by Tom Hall in 1992.」· 沿用第 10 週，本次再開啟 · 查證 2026-09-16</span><a href="https://archive.org/details/Doombible" target="_blank" rel="noopener">https://archive.org/details/Doombible</a></li>
+      <li id="src-5"><span class="ti">Spector, W. 等〈Majestic Revolutions - Deus Ex's original design document〉（1997-08-11）</span><span class="meta">Internet Archive · 2016-11-15 上傳 · 列名作者七人、「a draft of a design documents for the game」· 沿用第 10 週，本次再開啟 · 查證 2026-09-16</span><a href="https://archive.org/details/DeusExDesignDoc11081997" target="_blank" rel="noopener">https://archive.org/details/DeusExDesignDoc11081997</a></li>
+      <li id="src-6"><span class="ti">Schafer, T.《Grim Fandango Puzzle Document》（1996）；Caoili, E.〈Schafer Releases Grim Fandango Puzzle Document〉</span><span class="meta">Internet Archive · 1996-04-30、2017-11-22 上傳 · 72 頁；Game Developer · 2008-11-06 · 「complete the game within three years」· 沿用第 8、10 週，本次再開啟 · 查證 2026-09-16</span><a href="https://archive.org/details/gf_doc" target="_blank" rel="noopener">https://archive.org/details/gf_doc</a>　<a href="https://www.gamedeveloper.com/game-platforms/schafer-releases-i-grim-fandango-i-puzzle-document" target="_blank" rel="noopener">https://www.gamedeveloper.com/game-platforms/schafer-releases-i-grim-fandango-i-puzzle-document</a></li>
+      <li id="src-7"><span class="ti">Brevik, D.〈The original Diablo Pitch by David Brevik from Blizzard〉</span><span class="meta">Internet Archive · 2017-01-01 上傳 · 8 頁、「He presented this at GDC 16」· 撰寫年份 1994 取第 8 週紀錄 · 沿用第 8 週，本次再開啟 · 查證 2026-09-16</span><a href="https://archive.org/details/diablo_pitch" target="_blank" rel="noopener">https://archive.org/details/diablo_pitch</a></li>
+      <li id="src-8"><span class="ti">Chucklefish〈Guide for Pitching to Publishers〉</span><span class="meta">Chucklefish 官方部落格（作者 Keevahh）· 2021-01-13 · 清楚的亮點、視覺素材、可玩 demo、合理預算；上市前一年、最少六個月；「Nothing is going to sell your game as well as the game itself!」· 沿用第 8 週，本次再開啟 · 查證 2026-09-16</span><a href="https://chucklefish.org/blog/guide-for-pitching-to-publishers/" target="_blank" rel="noopener">https://chucklefish.org/blog/guide-for-pitching-to-publishers/</a></li>
+      <li id="src-9"><span class="ti">Nielsen, J.〈How Users Read on the Web〉</span><span class="meta">Nielsen Norman Group · 1997-09-30 · 79% 掃視、16% 逐字讀、「one idea per paragraph」、倒金字塔、字數減半、可用性提升 124% · 查證 2026-09-16</span><a href="https://www.nngroup.com/articles/how-users-read-on-the-web/" target="_blank" rel="noopener">https://www.nngroup.com/articles/how-users-read-on-the-web/</a></li>
+      <li id="src-10"><span class="ti">GDC〈GDC 2026 State of the Game Industry Reveals Impact of Layoffs, Generative AI, and More〉</span><span class="meta">Game Developers Conference 官方文章 · 頁面未標日期（報告 2026 年 1 月發布）· 2,300 多位受訪者、36% 使用生成式 AI、52% 負面、7% 正面、用途 81%／47%／35% · 查證 2026-09-16</span><a href="https://gdconf.com/article/gdc-2026-state-of-the-game-industry-reveals-impact-of-layoffs-generative-ai-and-more/" target="_blank" rel="noopener">https://gdconf.com/article/gdc-2026-state-of-the-game-industry-reveals-impact-of-layoffs-generative-ai-and-more/</a></li>
+      <li id="src-11"><span class="ti">dos Reis, M.〈G.D.D - Game Design Document Template〉</span><span class="meta">Notion Marketplace · 頁面未標日期 · 免費、評分 5.0（7 則）· 第三方範本，只當工具連結 · 查證 2026-09-16</span><a href="https://www.notion.com/templates/game-design-document-367" target="_blank" rel="noopener">https://www.notion.com/templates/game-design-document-367</a></li>
+    </ol>
+  </section>
+
+  <section class="sec cyan">
+    <span class="kicker">補充資訊</span>
+    <h2>延伸閱讀與工具</h2>
+    <h3>四份公開文件怎麼讀</h3>
+    <ul>
+      <li><strong>不用讀完</strong>：Doom Bible 79 頁、Grim Fandango 72 頁，<a href="#src-4">[4]</a><a href="#src-6">[6]</a> 各挑一段跟成品對照，看被砍掉的是什麼、留下的是什麼。留下的通常是核心循環，砍掉的通常是內容量。</li>
+      <li><strong>Diablo 那份最值得整份讀</strong>：8 頁就談成一個案子，<a href="#src-7">[7]</a> 它回答的問題跟你們的一頁版一樣：這是什麼、為什麼現在做、為什麼是我們做。</li>
+      <li><strong>Deus Ex 那份看年份</strong>：文件 1997 年 8 月，遊戲 2000 年上市，<a href="#src-5">[5]</a> 中間差的就是第 14 週講的規劃謬誤。</li>
+    </ul>
+    <h3>統稿的工具</h3>
+    <ul>
+      <li><strong>同一份文件</strong>：Google 文件或 Notion 都可以，<a href="#src-11">[11]</a> 重點是十四份要貼進同一個檔案，才讀得出跳接。分開放十四個檔案的人，找不到矛盾。</li>
+      <li><strong>一頁版另外做</strong>：不要從正文縮，從第 8 週那份一頁企畫改；它應該是統稿後最後更新的東西。<a href="#src-1">[1]</a></li>
+    </ul>
+    <h3>下週要用的東西</h3>
+    <ul>
+      <li><strong>這週的第一版</strong>會交給兩位第一次讀的同學審閱；下週講怎麼審、怎麼收回饋、哪些不改。</li>
+      <li><strong>AI 使用說明</strong>下週給格式：用了什麼、做什麼、你改了什麼。這週先把用過的地方記下來。<a href="#src-10">[10]</a></li>
+    </ul>
+  </section>
+
+  <section class="sec lemon">
+    <span class="kicker">本週檢核</span>
+    <h2>交作業前自己打勾</h2>
+    <ul class="check">
+      <li>八章都在，有目錄，頁數在十五到二十頁之間。</li>
+      <li>三張圖（核心循環圖、資源流向圖、節奏圖）都在，而且標示方式一致。</li>
+      <li>第五章玩法系統的頁數佔全書三成以上，第四章世界觀不超過兩頁。</li>
+      <li>八章的第一句話抽出來排在一起，讀得通、不互相矛盾。</li>
+      <li>每章開頭有一段銜接，讀起來不像十四份文件貼在一起。</li>
+      <li>統稿檢查表列了三條你找到並修掉的矛盾，每條寫了改的是哪一章。</li>
+      <li>全文沒有「打造沉浸式體驗」「豐富多元」「視情況調整」這類句子。</li>
+      <li>每個市場數字有來源、查詢日期與統計範圍；自己設定的數值標了「預估」。</li>
+      <li>用過 AI 的地方已經記下來，下週要寫進使用說明。</li>
+      <li>PDF，檔名是「學號_W15_企畫書v1.pdf」。</li>
+    </ul>
+  </section>
+
+  <p class="version">2026-09-16 翻新：版型改為糖果流行、新增講義區、八章對應表補上 Unity GDD 範本節次、新增四份公開設計文件與 Chucklefish 提案指南、寫作要領補 Nielsen 閱讀測試出處、新增 GDC 2026 產業調查的生成式 AI 數字並接到下週的 AI 使用說明。前一版：2026-09-13。</p>
+</main>
+
+<a class="backtop" id="backtop" href="#deck">↑ 回投影片</a>
+
 <script>
 (function () {
   /* ★ 每週只改這一行 ★ */
+  var COURSE_LABEL = '遊戲企畫';
   var WEEK_LABEL = '第 15 週 · 企畫書撰寫一';
 
+  var deck = document.getElementById('deck');
   var stage = document.getElementById('stage');
   var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
   var cnt = document.getElementById('cnt');
   var prog = document.getElementById('prog');
   var toc = document.getElementById('toc');
   var tgrid = document.getElementById('tgrid');
+  var backtop = document.getElementById('backtop');
   var cur = 0;
 
   document.getElementById('tocTitle').textContent = '目錄：' + WEEK_LABEL;
@@ -528,7 +835,7 @@
   slides.forEach(function (s, i) {
     var f = document.createElement('div');
     f.className = 'foot';
-    f.innerHTML = '<span>遊戲企畫|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
+    f.innerHTML = '<span>' + COURSE_LABEL + '|' + WEEK_LABEL + '</span><span class="num">' + (i + 1) + ' / ' + slides.length + '</span>';
     s.appendChild(f);
   });
 
@@ -537,12 +844,12 @@
     var eb = s.querySelector('.eyebrow');
     var part = '開場';
     if (eb) {
-      var m = eb.textContent.match(/PART\s*(\d)/i);
-      if (m) part = 'PART ' + m[1];
+      var m = eb.textContent.match(/Part\s*(\d)/i);
+      if (m) part = 'Part ' + m[1];
       else if (/Week\s*\d+/i.test(eb.textContent)) part = i < 3 ? '開場' : '收尾';
     }
     var h = s.querySelector('h1, h2');
-    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent : '') });
+    (groups[part] = groups[part] || []).push({ i: i, t: (i + 1) + '. ' + (h ? h.textContent.replace(/\d+$/, '') : '') });
   });
   Object.keys(groups).forEach(function (k) {
     var col = document.createElement('div');
@@ -570,35 +877,57 @@
   function toggleToc(on) {
     toc.classList.toggle('on', on === undefined ? !toc.classList.contains('on') : on);
   }
+  function atDeck() { return window.scrollY < 40; }
+  function toNotes() { document.getElementById('notes').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  function toggleFull() {
+    if (document.fullscreenElement) { document.exitFullscreen(); return; }
+    if (deck.requestFullscreen) deck.requestFullscreen();
+  }
 
   document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
   document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
   document.getElementById('menu').addEventListener('click', function () { toggleToc(); });
   document.getElementById('tocClose').addEventListener('click', function () { toggleToc(false); });
+  document.getElementById('toNotes').addEventListener('click', toNotes);
+  document.getElementById('full').addEventListener('click', toggleFull);
 
   document.addEventListener('keydown', function (e) {
+    if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
     if (e.key === 'Escape') { toggleToc(false); return; }
     if (toc.classList.contains('on')) return;
     switch (e.key) {
-      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': e.preventDefault(); go(cur + 1); break;
-      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); go(cur - 1); break;
-      case 'Home': go(0); break;
-      case 'End': go(slides.length - 1); break;
+      case 'ArrowRight': case 'PageDown': e.preventDefault(); go(cur + 1); break;
+      case 'ArrowLeft': case 'PageUp': e.preventDefault(); go(cur - 1); break;
+      case 'ArrowDown': case ' ': if (atDeck()) { e.preventDefault(); go(cur + 1); } break;
+      case 'ArrowUp': if (atDeck()) { e.preventDefault(); go(cur - 1); } break;
+      case 'Home': if (atDeck()) go(0); break;
+      case 'End': if (atDeck()) go(slides.length - 1); break;
       case 'm': case 'M': toggleToc(); break;
+      case 'n': case 'N': toNotes(); break;
+      case 'f': case 'F': toggleFull(); break;
     }
   });
 
   function fit() {
-    var w = window.innerWidth, h = window.innerHeight;
+    var w = deck.clientWidth, h = deck.clientHeight;
     if (!w || !h) { requestAnimationFrame(fit); return; }
-    stage.style.transform = 'scale(' + Math.min(w / 1320, h / 790) + ')';
+    stage.style.transform = 'scale(' + Math.min((w - 48) / 1300, (h - 88) / 740) + ')';
   }
   window.addEventListener('resize', fit);
   window.addEventListener('load', fit);
+  document.addEventListener('fullscreenchange', fit);
   fit();
+
+  window.addEventListener('scroll', function () {
+    backtop.classList.toggle('show', window.scrollY > deck.clientHeight * 0.6);
+  }, { passive: true });
 
   var m = location.hash.match(/^#s(\d+)$/);
   go(m ? +m[1] - 1 : 0);
+  if (!m && location.hash) {
+    var target = document.querySelector(location.hash.replace(/[^#\w-]/g, ''));
+    if (target) setTimeout(function () { target.scrollIntoView({ block: 'start' }); }, 50);
+  }
 })();
 </script>
 </body>
