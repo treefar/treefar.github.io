@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>遊戲 BGM／音效快速搜尋</title>
+<meta name="description" content="免費且可商用的遊戲 BGM 與音效網站清單，可依類型、授權、語言篩選，快速找到能用的音樂與音效站台。">
+<style>
+  :root{
+    --bg:#0f1115;
+    --panel:#171a21;
+    --panel-2:#1e222b;
+    --border:#2a2f3a;
+    --text:#e8eaed;
+    --text-dim:#9aa0ac;
+    --accent:#5ec8a8;
+    --accent-2:#e8b34c;
+    --warn-bg:#3a2a12;
+    --warn-border:#e8b34c;
+    --tag-bgm:#3a5ba0;
+    --tag-se:#a05b3a;
+    --tag-both:#5b3aa0;
+  }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){
+      --bg:#f5f6f8;
+      --panel:#ffffff;
+      --panel-2:#f0f1f4;
+      --border:#dde1e7;
+      --text:#1a1d23;
+      --text-dim:#6b7280;
+      --accent:#1f8f6f;
+      --accent-2:#b5790a;
+      --warn-bg:#fff4de;
+      --warn-border:#e8b34c;
+      --tag-bgm:#e0e8fb;
+      --tag-se:#fbe6dd;
+      --tag-both:#ebe0fb;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+    line-height:1.6;
+    padding:0 16px 64px;
+  }
+  .wrap{max-width:960px;margin:0 auto;}
+  header{padding:40px 0 24px;}
+  h1{font-size:clamp(22px,4vw,32px);margin:0 0 8px;}
+  .sub{color:var(--text-dim);font-size:14px;margin:0;}
+  .meta{color:var(--text-dim);font-size:12px;margin-top:8px;}
+
+  .filters{
+    display:flex;flex-wrap:wrap;gap:10px 24px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:16px;
+    margin-bottom:24px;
+  }
+  .filter-group{display:flex;flex-direction:column;gap:6px;}
+  .filter-group .label{font-size:12px;color:var(--text-dim);}
+  .filter-btns{display:flex;flex-wrap:wrap;gap:6px;}
+  .fbtn{
+    border:1px solid var(--border);
+    background:var(--panel-2);
+    color:var(--text);
+    border-radius:999px;
+    padding:5px 12px;
+    font-size:13px;
+    cursor:pointer;
+    transition:all .15s;
+  }
+  .fbtn:hover{border-color:var(--accent);}
+  .fbtn.active{background:var(--accent);border-color:var(--accent);color:#0b1210;font-weight:700;}
+
+  .count{font-size:13px;color:var(--text-dim);margin:0 0 12px;}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:18px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .card h2{font-size:17px;margin:0;}
+  .card h2 a{color:var(--text);text-decoration:none;}
+  .card h2 a:hover{color:var(--accent);text-decoration:underline;}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;}
+  .tag{
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.02em;
+    padding:3px 8px;
+    border-radius:6px;
+    white-space:nowrap;
+  }
+  .tag.bgm{background:var(--tag-bgm);color:#fff;}
+  .tag.se{background:var(--tag-se);color:#fff;}
+  .tag.both{background:var(--tag-both);color:#fff;}
+  .tag.lang{background:var(--panel-2);color:var(--text-dim);border:1px solid var(--border);}
+
+  .desc{font-size:13.5px;color:var(--text-dim);margin:0;}
+  .rule-line{font-size:13px;margin:0;}
+  .rule-line b{color:var(--text);}
+  .ok{color:var(--accent);}
+  .need{color:var(--accent-2);}
+  .no{color:#e06060;}
+
+  .warn{
+    background:var(--warn-bg);
+    border:1px solid var(--warn-border);
+    border-radius:8px;
+    padding:8px 10px;
+    font-size:12.5px;
+    margin:0;
+  }
+
+  .visit{
+    align-self:flex-start;
+    margin-top:4px;
+    display:inline-block;
+    font-size:13px;
+    font-weight:700;
+    color:var(--accent);
+    text-decoration:none;
+    border:1px solid var(--accent);
+    padding:6px 14px;
+    border-radius:8px;
+  }
+  .visit:hover{background:var(--accent);color:#0b1210;}
+
+  .empty{
+    text-align:center;
+    color:var(--text-dim);
+    padding:40px 0;
+    display:none;
+  }
+
+  footer{
+    margin-top:40px;
+    padding-top:20px;
+    border-top:1px solid var(--border);
+    color:var(--text-dim);
+    font-size:12.5px;
+  }
+  footer p{margin:0 0 8px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>遊戲 BGM／音效快速搜尋</h1>
+    <p class="sub">免費且可商用的 BGM／音效網站清單，做遊戲作業或小專案時直接點進去找。</p>
+    <p class="meta">實測整理日期：2026-08-26　共 9 個站台</p>
+  </header>
+
+  <div class="filters">
+    <div class="filter-group">
+      <span class="label">類型</span>
+      <div class="filter-btns" data-group="type">
+        <button class="fbtn active" data-value="all">全部</button>
+        <button class="fbtn" data-value="bgm">BGM</button>
+        <button class="fbtn" data-value="se">音效 SE</button>
+        <button class="fbtn" data-value="both">BGM＋SE 都有</button>
+      </div>
+    </div>
+    <div class="filter-group">
+      <span class="label">標示出處</span>
+      <div class="filter-btns" data-group="credit">
+        <button class="fbtn active" data-value="all">全部</button>
+        <button class="fbtn" data-value="no">不必標示</button>
+        <button class="fbtn" data-value="yes">必須標示</button>
+        <button class="fbtn" data-value="mixed">依檔案而定</button>
+      </div>
+    </div>
+    <div class="filter-group">
+      <span class="label">介面語言</span>
+      <div class="filter-btns" data-group="lang">
+        <button class="fbtn active" data-value="all">全部</button>
+        <button class="fbtn" data-value="ja">日文</button>
+        <button class="fbtn" data-value="en">英文</button>
+        <button class="fbtn" data-value="zh">有中文</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="count" id="count"></p>
+
+  <div class="grid" id="grid"></div>
+  <p class="empty" id="empty">沒有符合條件的站台，把篩選條件放寬一點看看。</p>
+
+  <footer>
+    <p><b>不管挑哪一站</b>：下載時把「曲名、來源站、網址、下載日期、授權名稱」記下來，交作業前備查。授權條款會改版（PeriTune 2026 年 3 月才剛改、DOVA-SYNDROME 2026 年 9 月要改名），沒記日期，日後說不清楚是用哪個版本的授權。</p>
+    <p>本頁只做站台導覽與篩選，不能站內直接搜尋歌曲，請點「前往網站」進去該站自己的搜尋功能找。</p>
+  </footer>
+
+</div>
+
+<script>
+const SITES = [
+  {
+    name: "DOVA-SYNDROME",
+    url: "https://dova-s.jp",
+    type: "bgm",
+    typeLabel: "BGM",
+    credit: "no",
+    creditLabel: "商用可，不必標示出處",
+    lang: "ja",
+    langLabel: "日文（有繁中介面）",
+    desc: "約 19,000 首 BGM＋1,296 個音效，免註冊直接下載，付費遊戲也明列可用。",
+    forbid: "禁止把音樂本身當主要內容（例如作業用 BGM 合輯）。",
+    warn: "⚠️ 2026/9/15 起改名「OpenTracks」，屆時這個連結可能失效，找不到就搜新名字。"
+  },
+  {
+    name: "魔王魂",
+    url: "https://maou.audio",
+    type: "bgm",
+    typeLabel: "BGM",
+    credit: "yes",
+    creditLabel: "商用可、可改作，但必須標示「音樂：魔王魂」",
+    lang: "ja",
+    langLabel: "日文",
+    desc: "日本老牌站台，BGM、歌曲、音效都有，免註冊。Unity 等引擎加密打包有特別許可。",
+    forbid: "禁止拿去串流平台上架、餵 AI。"
+  },
+  {
+    name: "PeriTune",
+    url: "https://peritune.com",
+    type: "bgm",
+    typeLabel: "BGM",
+    credit: "mixed",
+    creditLabel: "2026/3 起新曲免標示；之前的舊曲是 CC BY 4.0，要標「PeriTune」",
+    lang: "ja",
+    langLabel: "日文",
+    desc: "一人創作者，奇幻／RPG／管弦樂向很強，商用可。",
+    forbid: "禁止 YouTube Content ID 登錄、單曲轉賣。"
+  },
+  {
+    name: "効果音ラボ",
+    url: "https://soundeffect-lab.info",
+    type: "se",
+    typeLabel: "音效 SE",
+    credit: "no",
+    creditLabel: "商用免費、不必標示出處",
+    lang: "ja",
+    langLabel: "日文",
+    desc: "日本遊戲圈標配音效站，免註冊、左鍵一按就下載，付費遊戲明列可用。",
+    forbid: "禁止音效再散布、成人用途、餵 AI。"
+  },
+  {
+    name: "Kenney",
+    url: "https://kenney.nl/assets",
+    type: "se",
+    typeLabel: "音效 SE",
+    credit: "no",
+    creditLabel: "CC0（作者放棄權利），隨便用、免標示、可商用",
+    lang: "en",
+    langLabel: "英文",
+    desc: "遊戲素材聖地，音效包全部 CC0，免註冊。介面音、打擊音、科幻音、RPG 音成包抓，適合快速鋪滿。"
+  },
+  {
+    name: "Freesound",
+    url: "https://freesound.org",
+    type: "se",
+    typeLabel: "音效 SE",
+    credit: "mixed",
+    creditLabel: "每個檔案授權不同：CC0 隨便用；CC BY 商用可但要標作者；CC BY-NC 禁止商用",
+    lang: "en",
+    langLabel: "英文",
+    desc: "全球最大錄音社群，環境音、實錄音最強，要註冊帳號才能下載。搜尋時用授權篩選器只挑 CC0 或 CC BY。"
+  },
+  {
+    name: "OtoLogic",
+    url: "https://otologic.jp",
+    type: "both",
+    typeLabel: "BGM＋SE",
+    credit: "yes",
+    creditLabel: "標示出處「OtoLogic」就免費商用（CC 授權）",
+    lang: "ja",
+    langLabel: "日文",
+    desc: "BGM、過場短音、音效都有，單一創作者、品質穩定。"
+  },
+  {
+    name: "Pixabay",
+    url: "https://pixabay.com",
+    type: "both",
+    typeLabel: "BGM＋SE",
+    credit: "no",
+    creditLabel: "商用可、不必標示出處、可改作",
+    lang: "zh",
+    langLabel: "有中文介面",
+    desc: "13 萬＋音效與大量音樂，介面對學生最友善。",
+    forbid: "禁止把素材原樣轉售。"
+  },
+  {
+    name: "Mixkit",
+    url: "https://mixkit.co",
+    type: "se",
+    typeLabel: "音效 SE",
+    credit: "no",
+    creditLabel: "免註冊、免標示出處，個人與商業專案皆可用",
+    lang: "en",
+    langLabel: "英文",
+    desc: "音效量較少但挑得快，站方頁面明文寫個人與商業皆可用。"
+  }
+];
+
+const creditClass = { no: "ok", yes: "need", mixed: "need" };
+
+function render(list){
+  const grid = document.getElementById("grid");
+  const empty = document.getElementById("empty");
+  const count = document.getElementById("count");
+  grid.innerHTML = "";
+  count.textContent = `符合條件：${list.length} / ${SITES.length} 個站台`;
+  empty.style.display = list.length ? "none" : "block";
+
+  for(const s of list){
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="card-head">
+        <h2><a href="${s.url}" target="_blank" rel="noopener">${s.name}</a></h2>
+      </div>
+      <div class="tags">
+        <span class="tag ${s.type}">${s.typeLabel}</span>
+        <span class="tag lang">${s.langLabel}</span>
+      </div>
+      <p class="desc">${s.desc}</p>
+      <p class="rule-line">授權：<b class="${creditClass[s.credit]}">${s.creditLabel}</b></p>
+      ${s.forbid ? `<p class="rule-line">${'<span class="no">禁止：</span>'}${s.forbid}</p>` : ""}
+      ${s.warn ? `<p class="warn">${s.warn}</p>` : ""}
+      <a class="visit" href="${s.url}" target="_blank" rel="noopener">前往網站 →</a>
+    `;
+    grid.appendChild(card);
+  }
+}
+
+const state = { type: "all", credit: "all", lang: "all" };
+
+document.querySelectorAll(".filter-btns").forEach(group => {
+  const key = group.dataset.group;
+  group.addEventListener("click", e => {
+    const btn = e.target.closest(".fbtn");
+    if(!btn) return;
+    state[key] = btn.dataset.value;
+    group.querySelectorAll(".fbtn").forEach(b => b.classList.toggle("active", b === btn));
+    apply();
+  });
+});
+
+function apply(){
+  const list = SITES.filter(s =>
+    (state.type === "all" || s.type === state.type) &&
+    (state.credit === "all" || s.credit === state.credit) &&
+    (state.lang === "all" || s.lang === state.lang)
+  );
+  render(list);
+}
+
+apply();
+</script>
+</body>
+</html>
