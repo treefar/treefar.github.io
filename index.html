@@ -196,7 +196,7 @@
   <h2 class="sec">網頁專案</h2>
   <div class="filters" id="filters">
     <button class="chip on" data-f="all">全部</button>
-    <button class="chip" data-f="game">遊戲</button>
+    
     <button class="chip" data-f="story">互動敘事</button>
     <button class="chip" data-f="site">網站</button>
     <button class="chip" data-f="tool">工具</button>
@@ -222,33 +222,6 @@ const SITES = [
   { slug: "academic-calendar-115", title: "115 學年度學生行事曆", cat: "site tool", tag: "REFERENCE × ACADEMIC CALENDAR",
     image: null, repo: "treefar.github.io",
     desc: "把 2026 年 8 月至 2027 年 7 月的學生行事曆分成重要、中度、參考三色，依今天自動整理近期期限，並提供月份、色級與關鍵字篩選。" },
-  { slug: "retro-game-house", title: "遊戲時光屋｜Retro Game House", cat: "game site", tag: "GAME × INTERACTIVE HISTORY",
-    image: "retro-game-house.png", repo: "treefar.github.io",
-    desc: "把五十年電子遊戲史做成 57 款可玩的教學復刻。從 Pong 的反彈、Pac-Man 的迷宮追逐到現代卡牌與倖存者玩法，每款都用核心動詞、史料解讀與設計演化線呈現當時的技術限制與創意；保留 CRT、街機像素、Flash、手繪、向量與當代媒材差異。" },
-  { slug: "dungeon-chef", title: "地窖大廚｜Dungeon Chef", cat: "game", tag: "GAME × DECKBUILDING DUNGEON",
-    image: "dungeon-chef.png", repo: "treefar.github.io",
-    desc: "帶著菜刀與便當盒深入三層地窖的像素卡牌迷宮。20 張電影感開場 CG、19 種敵人、42 張料理戰鬥卡與完整烹飪、事件、商店、營火流程；以食材、香料與遺物組成牌組，挑戰三名地窖 Boss。" },
-  { slug: "so-close", title: "差一點就抓到｜So Close", cat: "game", tag: "GAME × TYCOON",
-    image: "so-close.png", repo: "treefar.github.io",
-    desc: "你是黑心店長，但目標不是讓客人夾不到——那樣他們掉頭就走。要讓他們一直「差一點」，然後一直投幣。夾中反而賠錢、連續空手會被起疑，只有爪子在半空鬆手的那一瞬間才賺。三個地點各七天：選卡、佈置獎品、顧客操爪時即時出牌干擾、賺到的錢再回頭改裝機台。十張 CG 開場。手法與節奏取自《保證不取物》Prize Denied 的拆解研究，美術、文字、數值全部原創重製。" },
-  { slug: "paddy-wind", title: "風從稻田來｜Where the Paddy Wind Blows", cat: "game story", tag: "GAME × BICYCLE JOURNEY",
-    image: "paddy-wind.webp", repo: "treefar.github.io",
-    desc: "十五分鐘的南臺灣水田自行車旅程。開場直接說明操作，固定龍頭的雙姿勢踩踏循環更穩定；上坡按 D、下坡主動煞車，並加入高空浮雲、飛鳥、水面倒影與桌機、手機多點觸控。" },
-  { slug: "hold-the-line", title: "請勿掛斷｜Hold the Line", cat: "game story", tag: "GAME × VISUAL NOVEL",
-    image: "hold-the-line.jpg",
-    desc: "深夜值班時接起一通不該存在的電話。調查異常、拼湊證據，在記憶與真相互相污染前做出選擇，走向 19 種結局的心理懸疑視覺小說。" },
-  { slug: "lanternbearer", title: "提燈者｜Lanternbearer", cat: "game", tag: "GAME × DUNGEON RPG",
-    image: "lanternbearer.jpg", repo: "treefar.github.io",
-    desc: "燈火照多遠，你就看多遠，也會被多遠外的敵人發現。用燈油換視野、用視野換先手，探索三層低模地城並以十種職業調整隊伍的冒險節奏。" },
-  { slug: "bloodguard", title: "Bloodguard", cat: "game", tag: "GAME × ACTION",
-    image: "bloodguard.png",
-    desc: "選擇勇者守護石化法師，在血月競技場擊退魔物、收集血晶，逐步解除祭壇封印並迎戰血月魔王的繁中像素動作遊戲。" },
-  { slug: "stellar-commander", title: "星域指揮官 STELLAR COMMANDER", cat: "game", tag: "GAME × STRATEGY",
-    image: "stellar-commander.jpg",
-    desc: "回合制六角格搶地盤，兩軍接觸就切成即時 2D 混戰。桌機鍵盤與手機觸控皆可玩；完成四段作戰目標、培養 R1／R2／ACE 機體，並用工廠維修維持約 15 分鐘的完整戰局。" },
-  { slug: "reverse-claw-machine", title: "逆向抓娃機", cat: "game", tag: "GAME × TYCOON",
-    image: "reverse-claw-machine.jpg",
-    desc: "你是抓娃機老闆，不是玩家。佈置獎品引誘顧客投幣，靠「差點夾到」的瞬間推升上癮值——爪子會在半空鬆手，上癮的顧客失去理智後不斷加碼。五關逐關解鎖，難度隨關卡遞增；衝到營收目標就過關，但顧客連續空手會憤怒離場，信任值歸零一樣倒店。森林魔女像素風。" },
   { slug: "game-audio-station", title: "聲音補給站", cat: "tool site", tag: "TOOL × AUDIO",
     image: "game-audio-station.webp", url: "https://treefar-game-audio.treefar.chatgpt.site/", urlLabel: "私人登入站", repo: false,
     desc: "快速取得遊戲所需的音效與音樂。優先搜尋 18 套自有雲端素材，再查可商用來源；缺少時可用 Google Lyria 生成音樂、Gemini TTS 生成語音，並下載或匯入 Unity 專案。" },
@@ -257,29 +230,17 @@ const SITES = [
     desc: "全中文、瀏覽器即開即用的視覺小說製作工具。可編輯劇本、分支、角色、舞台、聊天、任務與多語內容，直接試玩並匯出可獨立執行的單一 HTML。" },
   { slug: "style-library", title: "風格庫", cat: "tool site", tag: "TOOL × DESIGN",
     desc: "二十套視覺風格，上方可切分類。文件與介面 8 組：漫畫特刊、紙上期刊、深夜實驗室、克萊因藍、RPG 訊息視窗、規格控制台、靛藍儀表板、管線青。遊戲題材 12 套（抽自 Claude Design 專案的原生設計系統）：糖果流行、典籍金箔、水彩由灰轉彩、8-bit 磚塊、夜巫金光、和紙墨繪、薔薇與椿、怪異事件簿、第十三格、墨金古典、CRT 主機介面、鏽港夜行。點風格看即時預覽，複製 CSS、拿 Unity 色票與 USS、產投影片主題參數，或複製一段指令貼回 Claude Code 直接套進專案。" },
-  { slug: "rpg-quest", title: "勇者的試煉", cat: "game story", tag: "GAME × RPG",
-    image: "rpg-quest.png",
-    desc: "月蝕將至，三名旅人只有一夜。從王城蒐集線索、集結同伴，穿越荒野與洞窟，以回合制戰鬥阻止魔王甦醒的繁中像素 RPG。" },
-  { slug: "jiu-yu-zhen", title: "鳩與鴆", cat: "game story", tag: "GAME × MYSTERY",
-    image: "jiu-yu-zhen.webp",
-    desc: "凍結三秒改寫事故，再於隔日以物證與變調聲音還原你留下的痕跡。雙主角因果推理公開試玩篇章。" },
   { slug: "github-top100-zh-tw", title: "GitHub 前百大中文精選", cat: "tool site", tag: "TOOL × DATA",
     image: "github-top100-zh-tw.png",
     desc: "每天更新 GitHub 累積 Stars 前 100 名。提供繁中重點、直接下載、安裝判讀，以及針對 Unity、AI、研究與教學工作的個人推薦。" },
   { slug: "claude-academy", title: "Claude Academy 課程地圖", cat: "tool site", tag: "TOOL × LEARNING",
     image: "claude-academy.png", repo: "treefar.github.io",
     desc: "Anthropic 官方免費學習平台的 22 門課程總覽：AI 素養、產品入門、代理與 MCP、API 與雲端四大類，每門課附章節標題與重點摘要，全繁中整理。" },
-  { slug: "crunch-defense", title: "死線防衛隊：畢展倒數", cat: "game", tag: "GAME",
-    desc: "動遊系學生趕畢展的三入口塔防。招牌機制「內耗引擎」：異職種相鄰會吵架，吵架降輸出卻累積爆氣，滿槽就能發動組合技。十關 46 波、五位審查委員各有專屬反制。" },
   { slug: "pixel-city-editor", title: "像素地圖編輯器", cat: "tool", tag: "TOOL",
     desc: "七套場景主題的 2.5D 像素地圖編輯器。67 個可放置角色、會照亮周圍的光源、碰撞與遊戲物件錨點，可匯出 Tiled TMX 與通用 JSON。" },
   { slug: "3d-pixel-tools", title: "3D／像素三工具實驗室", cat: "tool", tag: "TOOL × 3D",
     image: "3d-pixel-tools.png", repo: "treefar.github.io",
     desc: "Asset Forge、PixelOver、Crocotile 3D 的能力比較、原生驗證與 Unity 整合案例。含 Waterfall 開放世界與三型共骨架機甲。" },
-  { slug: "neon-swarm-shooter", title: "霓虹蜂潮 NEON SWARM", cat: "game", tag: "GAME",
-    desc: "固定畫面 Roguelite 彈幕射擊。像素美術與音效全原創，WebAudio 即時合成。" },
-  { slug: "avalanche-run", title: "雪崩來了！AVALANCHE RUN", cat: "game", tag: "GAME",
-    desc: "Three.js 3D 滑雪逃生。雪崩在後，一路閃樹過彎往山下衝。" },
   { slug: "capy-generator", title: "Capy Generator 水豚生成器", cat: "tool", tag: "TOOL",
     desc: "程序化 3D 水豚：捏體型、換毛色、玩玩具、切天氣，生成收藏卡片。" },
   { slug: "agd-comic-site", title: "動遊系 COMIC EDITION", cat: "site", tag: "SITE",
@@ -292,7 +253,6 @@ const SITES = [
   { slug: "first-principles-navigator", title: "第一性原理｜核心問題導航器", cat: "tool", tag: "TOOL × THINKING",
     image: "first-principles-navigator.webp",
     desc: "把模糊問題拆成事實、假設與最小驗證。提供三種分析深度、案例庫、假設風險矩陣、決策日誌與多格式匯出。" },
-
 ];
 
 // 投影片：放在首頁的獨立投影片專區，url 指向 repo 內的可下載檔案
