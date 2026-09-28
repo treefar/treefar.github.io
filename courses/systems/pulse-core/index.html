@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="以滑鼠或鍵盤旋轉盾牌、抓準時機完美格擋的星核防禦小品。">
+  <meta name="robots" content="noindex, nofollow">
+  <title>《脈衝防禦：星核守護者》Pulse Core: Shield Defender</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="game-container">
+    <canvas id="gameCanvas" width="900" height="650" tabindex="0" role="application" aria-label="脈衝防禦遊戲區；移動指標旋轉盾牌，按空白鍵完美格擋">您的瀏覽器不支援 Canvas，無法執行本遊戲。</canvas>
+
+    <!-- 頂部 HUD -->
+    <div id="hud">
+      <div class="hud-group">
+        <div class="stat-box">
+          核心生命
+          <div id="hp-bar-container" role="progressbar" aria-label="核心生命" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100">
+            <div id="hp-fill"></div>
+          </div>
+        </div>
+        <div id="parry-indicator" aria-live="polite">格擋準備</div>
+      </div>
+
+      <div class="hud-group">
+        <div class="stat-box">
+          連擊 COMBO <span id="val-combo" class="stat-value">0</span>
+        </div>
+        <div class="stat-box">
+          得分 SCORE <span id="val-score" class="stat-value">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 遊戲結束結算 -->
+    <div id="pause-indicator" aria-live="polite">已暫停</div>
+
+    <div id="game-over-modal" role="dialog" aria-modal="true" aria-labelledby="game-over-title">
+      <div id="game-over-title">核心淪陷 // SYSTEM COLLAPSE</div>
+      <div class="summary-item">最終得分：<span id="final-score">0</span></div>
+      <div class="summary-item">最高連擊：<span id="final-combo">0</span></div>
+      <button id="btn-restart" class="btn-restart" type="button">重啟星核 REBOOT CORE</button>
+    </div>
+  </div>
+
+  <!-- 底部操作提示 -->
+  <div id="controls-hint" aria-label="操作說明">
+    <div><span class="key">滑鼠移動</span> 旋轉盾牌防禦</div>
+    <div><span class="key">滑鼠左鍵</span> 或 <span class="key">空白鍵</span> 完美格擋 (Just Guard)</div>
+    <div><span class="key">P</span> 暫停 / 繼續</div>
+    <div><span class="key">R</span> 快速重開</div>
+  </div>
+
+  <!-- 模組引入：Spark 核心邏輯 + OpenCode 果汁反饋 -->
+  <script src="core-game.js"></script>
+  <script src="juice-engine.js"></script>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // 實例化兩大副戰力模組
+    const game = new CoreGame(canvas.width, canvas.height);
+    const juice = new JuiceEngine(canvas);
+
+    // 輸入狀態追蹤
+    let mouseX = canvas.width / 2;
+    let mouseY = canvas.height / 2;
+    let mouseAngle = 0;
+    let isParryPressed = false;
+    let parryTriggerTimer = 0;
+    let isPaused = false;
+    let maxCombo = 0;
+
+    // HUD 元素
+    const hpFill = document.getElementById('hp-fill');
+    const valScore = document.getElementById('val-score');
+    const valCombo = document.getElementById('val-combo');
+    const parryIndicator = document.getElementById('parry-indicator');
+    const gameOverModal = document.getElementById('game-over-modal');
+    const finalScore = document.getElementById('final-score');
+    const finalCombo = document.getElementById('final-combo');
+    const btnRestart = document.getElementById('btn-restart');
+
+    // 事件連線：將 Spark 核心邏輯拋出的事件，無縫串入 OpenCode 的 Juice 反饋引擎
+    game.on('hit', (e) => {
+      juice.playSound('hit');
+      juice.triggerShake(0.25);
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      juice.spawnParticles(cx + Math.cos(e.angle) * 30, cy + Math.sin(e.angle) * 30, '#38bdf8', 12, 180, 'triangle');
+    });
+
+    game.on('parry', (e) => {
+      juice.playSound('parry');
+      juice.freeze(65); // 頓幀 65ms 帶來極致打擊感
+      juice.triggerShake(0.65);
+      juice.flash(70, 'rgba(6, 182, 212, 0.45)');
+
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const px = cx + (e.x || 0);
+      const py = cy + (e.y || 0);
+
+      juice.spawnParticles(px, py, '#00ffff', 35, 320, 'diamond');
+      juice.spawnParticles(px, py, '#ffffff', 15, 200, 'circle');
+      juice.spawnText('PERFECT PARRY!', px, py - 20, '#38bdf8', 22);
+    });
+
+    game.on('damage', (e) => {
+      juice.playSound('damage');
+      juice.triggerShake(0.8);
+      juice.flash(100, 'rgba(244, 63, 94, 0.5)');
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      juice.spawnParticles(cx, cy, '#f43f5e', 25, 250, 'circle');
+      juice.spawnText('-' + (e.amount || 10) + ' HP', cx, cy - 30, '#f43f5e', 20);
+    });
+
+    game.on('enemyDestroyed', (e) => {
+      juice.playSound('explode');
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const ex = cx + (e.x || 0);
+      const ey = cy + (e.y || 0);
+      const color = e.type === 'spiral' ? '#c084fc' : (e.type === 'splitter' ? '#facc15' : '#fb7185');
+      juice.spawnParticles(ex, ey, color, 20, 240, 'square');
+      juice.spawnText('+' + (e.score || 100), ex, ey, '#f8fafc', 16);
+    });
+
+    game.on('combo', (e) => {
+      if (e.combo > maxCombo) maxCombo = e.combo;
+      if (e.combo >= 3 && e.combo % 2 === 1) {
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        juice.spawnText('COMBO x' + e.combo + '!', cx, cy + 40, '#facc15', 24);
+      }
+    });
+
+    game.on('gameover', (e) => {
+      juice.playSound('damage');
+      juice.triggerShake(1.0);
+      finalScore.innerText = game.score;
+      finalCombo.innerText = maxCombo;
+      gameOverModal.classList.add('show');
+      btnRestart.focus();
+    });
+
+    // 註冊滑鼠與鍵盤輸入
+    function updatePointerAngle(evt) {
+      const rect = canvas.getBoundingClientRect();
+      mouseX = (evt.clientX - rect.left) * (canvas.width / rect.width);
+      mouseY = (evt.clientY - rect.top) * (canvas.height / rect.height);
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      mouseAngle = Math.atan2(mouseY - cy, mouseX - cx);
+    }
+
+    canvas.addEventListener('pointermove', updatePointerAngle);
+
+    function triggerParryAction() {
+      juice.initAudio(); // 第一次點擊啟動 Web Audio
+      isParryPressed = true;
+      parryTriggerTimer = 0.12; // 保持按壓旗標短暫生效
+      parryIndicator.classList.add('active');
+      parryIndicator.innerText = 'PARRYING!';
+    }
+
+    canvas.addEventListener('pointerdown', (evt) => {
+      if (evt.button === 0 || evt.pointerType === 'touch') {
+        evt.preventDefault();
+        updatePointerAngle(evt);
+        canvas.focus({ preventScroll: true });
+        triggerParryAction();
+      }
+    });
+
+    window.addEventListener('keydown', (evt) => {
+      if (evt.code === 'Space') {
+        evt.preventDefault();
+        triggerParryAction();
+      } else if (evt.code === 'KeyR') {
+        restartGame();
+      } else if (evt.code === 'KeyP') {
+        isPaused = !isPaused;
+        syncPauseUi();
+      }
+    });
+
+    const pauseIndicator = document.getElementById('pause-indicator');
+    function syncPauseUi() {
+      pauseIndicator.classList.toggle('show', isPaused);
+      pauseIndicator.textContent = isPaused ? '已暫停｜按 P 繼續' : '';
+    }
+
+    function restartGame() {
+      game.reset();
+      gameOverModal.classList.remove('show');
+      maxCombo = 0;
+      isPaused = false;
+      isParryPressed = false;
+      parryTriggerTimer = 0;
+      syncPauseUi();
+      canvas.focus({ preventScroll: true });
+    }
+
+    btnRestart.addEventListener('click', restartGame);
+
+    // 主遊戲循環
+    let lastTime = performance.now();
+
+    function loop(currentTime) {
+      requestAnimationFrame(loop);
+      const dt = Math.min((currentTime - lastTime) / 1000, 0.1);
+      lastTime = currentTime;
+
+      // 更新格擋按壓狀態衰減
+      if (parryTriggerTimer > 0) {
+        parryTriggerTimer -= dt;
+        if (parryTriggerTimer <= 0) {
+          isParryPressed = false;
+          parryIndicator.classList.remove('active');
+          parryIndicator.innerText = '格擋準備';
+        }
+      }
+
+      // 更新 Juice 動態（震動、頓幀、粒子、文字）
+      juice.update(dt);
+
+      // 若未處於頓幀/暫停，推進遊戲物理狀態
+      if (!isPaused && !juice.isFrozen) {
+        game.update(dt, mouseAngle, isParryPressed);
+      }
+
+      // 更新 HUD
+      const state = game.getState();
+      valScore.innerText = state.score;
+      valCombo.innerText = state.combo;
+      const hpPct = Math.max(0, (state.core.hp / state.core.maxHp) * 100);
+      hpFill.style.width = hpPct + '%';
+      document.getElementById('hp-bar-container').setAttribute('aria-valuenow', String(Math.round(hpPct)));
+      if (hpPct < 30) {
+        hpFill.style.background = '#f43f5e';
+        hpFill.style.boxShadow = '0 0 12px #f43f5e';
+      } else {
+        hpFill.style.background = 'linear-gradient(90deg, #10b981, #06b6d4)';
+        hpFill.style.boxShadow = '0 0 8px #06b6d4';
+      }
+
+      // ========== 畫面渲染 ==========
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 繪製賽博網格背景
+      drawGrid();
+
+      // 套用創傷震動
+      ctx.save();
+      juice.applyShake(ctx);
+
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+
+      // 繪製中心坐標系實體
+      ctx.save();
+      ctx.translate(cx, cy);
+
+      // 1. 繪製反彈光束 (Bullets)
+      drawBullets(state.bullets);
+
+      // 2. 繪製核心 (Core)
+      drawCore(state.core);
+
+      // 3. 繪製防禦力場盾牌 (Shield)
+      drawShield(state.shield, isParryPressed);
+
+      // 4. 繪製敵人 (Enemies)
+      drawEnemies(state.enemies);
+
+      ctx.restore(); // 還原中心平移
+
+      // 5. 繪製果汁特效層（粒子、浮動文字、閃白）
+      juice.render(ctx);
+
+      ctx.restore(); // 還原震動
+    }
+
+    function drawGrid() {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(30, 41, 59, 0.4)';
+      ctx.lineWidth = 1;
+      const step = 40;
+      for (let x = 0; x < canvas.width; x += step) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < canvas.height; y += step) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawCore(core) {
+      ctx.save();
+      // 外能量光暈
+      const glow = ctx.createRadialGradient(0, 0, core.radius * 0.4, 0, 0, core.radius * 1.8);
+      glow.addColorStop(0, 'rgba(56, 189, 248, 0.9)');
+      glow.addColorStop(0.5, 'rgba(6, 182, 212, 0.4)');
+      glow.addColorStop(1, 'rgba(6, 182, 212, 0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(0, 0, core.radius * 1.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 核心實體
+      ctx.fillStyle = '#f8fafc';
+      ctx.shadowColor = '#00ffff';
+      ctx.shadowBlur = 15;
+      ctx.beginPath();
+      ctx.arc(0, 0, core.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawShield(shield, isParrying) {
+      ctx.save();
+      const radius = 48;
+      const startAngle = shield.angle - shield.halfSpan;
+      const endAngle = shield.angle + shield.halfSpan;
+
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, startAngle, endAngle);
+      ctx.lineWidth = isParrying ? 8 : 5;
+      ctx.strokeStyle = isParrying ? '#ffffff' : '#38bdf8';
+      ctx.shadowColor = isParrying ? '#00ffff' : '#0284c7';
+      ctx.shadowBlur = isParrying ? 25 : 12;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      // 盾牌導向指示小箭頭
+      ctx.beginPath();
+      const tipX = Math.cos(shield.angle) * (radius + 10);
+      const tipY = Math.sin(shield.angle) * (radius + 10);
+      ctx.arc(tipX, tipY, 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawEnemies(enemies) {
+      for (const e of enemies) {
+        ctx.save();
+        ctx.translate(e.x, e.y);
+
+        if (e.type === 'chaser') {
+          // 直衝型：銳利紅色三角形指向核心
+          const angle = Math.atan2(-e.y, -e.x);
+          ctx.rotate(angle);
+          ctx.fillStyle = '#f43f5e';
+          ctx.shadowColor = '#f43f5e';
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.moveTo(e.radius * 1.4, 0);
+          ctx.lineTo(-e.radius, -e.radius * 0.8);
+          ctx.lineTo(-e.radius * 0.5, 0);
+          ctx.lineTo(-e.radius, e.radius * 0.8);
+          ctx.closePath();
+          ctx.fill();
+        } else if (e.type === 'spiral') {
+          // 螺旋型：紫光旋轉六角形
+          ctx.rotate(performance.now() * 0.003);
+          ctx.fillStyle = '#c084fc';
+          ctx.shadowColor = '#c084fc';
+          ctx.shadowBlur = 12;
+          ctx.beginPath();
+          for (let i = 0; i < 6; i++) {
+            const rad = (Math.PI / 3) * i;
+            const px = Math.cos(rad) * e.radius;
+            const py = Math.sin(rad) * e.radius;
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.closePath();
+          ctx.fill();
+        } else if (e.type === 'splitter') {
+          // 分裂型：黃光旋轉菱形
+          ctx.rotate(-performance.now() * 0.004);
+          ctx.fillStyle = '#facc15';
+          ctx.shadowColor = '#facc15';
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.moveTo(0, -e.radius * 1.3);
+          ctx.lineTo(e.radius, 0);
+          ctx.lineTo(0, e.radius * 1.3);
+          ctx.lineTo(-e.radius, 0);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+    }
+
+    function drawBullets(bullets) {
+      for (const b of bullets) {
+        ctx.save();
+        ctx.strokeStyle = '#ffffff';
+        ctx.shadowColor = '#00ffff';
+        ctx.shadowBlur = 18;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        const angle = Math.atan2(b.vy, b.vx);
+        const len = 24;
+        ctx.moveTo(b.x, b.y);
+        ctx.lineTo(b.x - Math.cos(angle) * len, b.y - Math.sin(angle) * len);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // 啟動循環
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>

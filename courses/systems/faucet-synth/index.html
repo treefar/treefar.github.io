@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<style>
+html{color-scheme:light dark}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>水龍頭合成器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@300;400;500;700&display=swap">
+
+<style>
+:root{
+  /* 工作檯（隨佈景變） */
+  --bench:      #ece8e0;
+  --bench-2:    #f6f4ef;
+  --ink:        #211e19;
+  --ink-2:      #5c564b;
+  --ink-3:      #8a8478;
+  --rule:       #d6d0c4;
+  --term:       #1d7c8c;
+
+  /* 機器本體（兩種佈景都固定，它是一個實體物件） */
+  --panel:      #191d20;
+  --panel-2:    #232a2e;
+  --panel-3:    #2e373c;
+  --panel-ink:  #e8ecee;
+  --panel-ink2: #9aa5ab;
+  --brass:      #c9913f;
+  --brass-dim:  #8a6427;
+  --water:      #3fb6c8;
+  --water-deep: #1d7c8c;
+
+  --f-display: "Archivo", "Noto Sans TC", system-ui, sans-serif;
+  --f-body:    "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --f-mono:    "IBM Plex Mono", Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bench:   #101315;
+    --bench-2: #171b1e;
+    --ink:     #e6eaec;
+    --ink-2:   #a7b0b5;
+    --ink-3:   #79838a;
+    --rule:    #2a3034;
+    --term:    #3fb6c8;
+  }
+}
+:root[data-theme="dark"]{
+  --bench:   #101315;
+  --bench-2: #171b1e;
+  --ink:     #e6eaec;
+  --ink-2:   #a7b0b5;
+  --ink-3:   #79838a;
+  --rule:    #2a3034;
+  --term:    #3fb6c8;
+}
+
+*{ box-sizing: border-box; }
+
+body{
+  margin: 0;
+  background: var(--bench);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 15px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap{ max-width: 1080px; margin: 0 auto; padding: 32px 20px 72px; }
+
+/* ---------- 抬頭 ---------- */
+header.top{ display: grid; gap: 10px; margin-bottom: 26px; }
+.kicker{
+  margin: 0; font-family: var(--f-mono); font-size: 11px;
+  letter-spacing: .18em; text-transform: uppercase; color: var(--ink-3);
+}
+h1{
+  font-family: var(--f-display); font-weight: 700;
+  font-size: clamp(30px, 5vw, 46px); line-height: 1.08;
+  letter-spacing: -.015em; margin: 0; text-wrap: balance;
+}
+.sub{ margin: 0; max-width: 58ch; color: var(--ink-2); font-weight: 300; font-size: 16px; }
+
+/* ---------- 機台 ---------- */
+.rig{
+  background: var(--panel);
+  border: 1px solid var(--panel-3);
+  border-radius: 3px;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 1px 0 rgba(255,255,255,.04) inset;
+}
+.rig-head{
+  display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
+  padding: 12px 18px; border-bottom: 1px solid var(--panel-3); background: var(--panel-2);
+}
+.plate{
+  font-family: var(--f-mono); font-size: 11px; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--brass);
+}
+.readout{ font-family: var(--f-mono); font-size: 12px; color: var(--panel-ink2); font-variant-numeric: tabular-nums; }
+.readout b{ color: var(--panel-ink); font-weight: 500; }
+
+.stage{ overflow-x: auto; background: var(--panel); }
+.stage svg{ display: block; min-width: 900px; width: 100%; height: auto; }
+
+/* ---------- 鍵盤 ---------- */
+.kbd-zone{ padding: 16px 18px 20px; border-top: 1px solid var(--panel-3); background: var(--panel-2); }
+.kbd-hint{
+  font-family: var(--f-mono); font-size: 11px; color: var(--panel-ink2);
+  margin: 0 0 10px; letter-spacing: .04em;
+}
+.kbd{ display: flex; gap: 3px; overflow-x: auto; padding-bottom: 4px; }
+.key{
+  flex: 1 1 0; min-width: 40px; height: 74px;
+  border: 1px solid var(--panel-3); border-radius: 0 0 3px 3px;
+  background: linear-gradient(180deg, #f3f1ec, #ddd8cf);
+  color: #3a352d; font-family: var(--f-mono); font-size: 10px;
+  display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px;
+  cursor: pointer; user-select: none; touch-action: none;
+}
+.key.black{
+  background: linear-gradient(180deg, #33383b, #1d2124); color: #aeb6ba;
+  border-color: #12161a;
+}
+.key.on{ background: linear-gradient(180deg, var(--water), var(--water-deep)); color: #04191d; }
+.key:focus-visible{ outline: 2px solid var(--brass); outline-offset: -2px; }
+
+/* ---------- 預設組合 ---------- */
+.preset-zone{ padding: 14px 18px 18px; border-top: 1px solid var(--panel-3); background: var(--panel); }
+.preset-head{
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.preset-head .plate{ margin: 0; }
+.preset-head .now{ font-family: var(--f-mono); font-size: 11px; color: var(--panel-ink2); }
+.preset-head .now b{ color: var(--water); font-weight: 500; }
+.presets{ display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.preset{
+  flex: 1 0 138px; text-align: left; cursor: pointer;
+  background: var(--panel-2); border: 1px solid var(--panel-3); border-radius: 2px;
+  padding: 9px 11px 10px; display: grid; gap: 3px;
+  font-family: var(--f-body); color: var(--panel-ink);
+}
+.preset:hover{ border-color: var(--brass-dim); }
+.preset[aria-pressed="true"]{ border-color: var(--water); background: #16292d; }
+.preset:focus-visible{ outline: 2px solid var(--brass); outline-offset: 1px; }
+.preset .pn{ font-size: 13.5px; font-weight: 500; }
+.preset .pn em{ font-style: normal; font-family: var(--f-mono); font-size: 10px; color: var(--brass); margin-left: 5px; letter-spacing: .06em; }
+.preset .pd{ font-size: 11.5px; line-height: 1.5; color: var(--panel-ink2); }
+
+/* ---------- 控制模組 ---------- */
+.modules{
+  display: grid; gap: 14px; margin-top: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(232px, 1fr));
+}
+.mod{
+  background: var(--bench-2); border: 1px solid var(--rule);
+  border-top: 2px solid var(--brass);
+  padding: 14px 16px 16px; display: grid; gap: 11px; align-content: start;
+}
+.mod h2{
+  font-family: var(--f-display); font-size: 15px; font-weight: 600; margin: 0;
+  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+}
+.mod h2 span{ font-family: var(--f-mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); font-weight: 400; }
+.ctl{ display: grid; gap: 3px; }
+.ctl label{
+  display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+  font-size: 12.5px; color: var(--ink-2);
+}
+.ctl output{ font-family: var(--f-mono); font-size: 11.5px; color: var(--ink); font-variant-numeric: tabular-nums; }
+input[type="range"]{ width: 100%; accent-color: var(--water); margin: 0; height: 20px; }
+input[type="range"]:focus-visible{ outline: 2px solid var(--brass); outline-offset: 2px; }
+.seg{ display: flex; gap: 4px; flex-wrap: wrap; }
+.seg button{
+  flex: 1 1 auto; padding: 5px 8px; font-family: var(--f-mono); font-size: 11px;
+  background: transparent; color: var(--ink-2);
+  border: 1px solid var(--rule); border-radius: 2px; cursor: pointer;
+}
+.seg button[aria-pressed="true"]{ background: var(--water); border-color: var(--water); color: #04191d; }
+.seg button:focus-visible{ outline: 2px solid var(--brass); outline-offset: 1px; }
+
+.note{ font-size: 12px; color: var(--ink-3); margin: 0; }
+
+/* ---------- 對照表 ---------- */
+.map{ margin-top: 34px; }
+.map h2{ font-family: var(--f-display); font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+.map p.lead{ margin: 0 0 14px; color: var(--ink-2); max-width: 60ch; font-size: 14px; }
+.tbl-scroll{ overflow-x: auto; }
+table{ width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 620px; }
+th{
+  text-align: left; font-family: var(--f-mono); font-weight: 500; font-size: 10.5px;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3);
+  padding: 0 14px 7px 0; border-bottom: 1px solid var(--rule); white-space: nowrap;
+}
+td{ padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+td.term{ font-family: var(--f-mono); font-size: 12.5px; color: var(--term); white-space: nowrap; }
+
+footer{ margin-top: 34px; padding-top: 16px; border-top: 1px solid var(--rule); font-size: 12.5px; color: var(--ink-3); }
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <p class="kicker">減法合成 · 訊號路徑教具 · 單音</p>
+    <h1>水龍頭合成器</h1>
+    <p class="sub">聲音從水塔流出，經過濾網，通過閥門，最後從出水口噴出來。水管有多粗，就是訊號有多強。拉一個旋鈕，看水流怎麼變，同時聽它怎麼變。</p>
+  </header>
+
+  <div class="rig">
+    <div class="rig-head">
+      <div class="plate">Faucet Rig — Mono Voice</div>
+      <div class="readout" id="readout">尚未發聲 · 按任一鍵開始</div>
+    </div>
+
+    <div class="stage">
+      <svg id="rig" viewBox="0 0 960 300" role="img" aria-label="水管示意圖：水塔、濾網、閥門、出水口，以及上方的擺臂調變器">
+        <defs>
+          <linearGradient id="brassGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#e0ab5c"/>
+            <stop offset="0.5" stop-color="#c9913f"/>
+            <stop offset="1" stop-color="#7d5a22"/>
+          </linearGradient>
+          <linearGradient id="tankGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#2e373c"/>
+            <stop offset="1" stop-color="#1b2124"/>
+          </linearGradient>
+        </defs>
+
+        <!-- 底線 -->
+        <line x1="0" y1="252" x2="960" y2="252" stroke="#2e373c" stroke-width="1"/>
+
+        <!-- 水塔 -->
+        <rect x="34" y="112" width="96" height="92" rx="4" fill="url(#tankGrad)" stroke="#3d484e"/>
+        <path id="waveGlyph" d="M46 158 L58 138 L58 178 L70 138 L70 178 L82 138 L82 178 L94 138 L94 178 L106 138 L106 158"
+              fill="none" stroke="#3fb6c8" stroke-width="2.5" stroke-linejoin="round"/>
+        <text x="82" y="222" text-anchor="middle" fill="#c9913f" font-family="IBM Plex Mono, monospace" font-size="11" letter-spacing="1">水塔 VCO</text>
+        <text x="82" y="104" text-anchor="middle" fill="#9aa5ab" font-family="IBM Plex Mono, monospace" font-size="10" id="lblPitch">— Hz</text>
+
+        <!-- 管線骨架 -->
+        <g stroke="#3d484e" stroke-width="18" fill="none" stroke-linecap="round">
+          <path d="M130 158 H330"/>
+          <path d="M470 158 H630"/>
+          <path d="M770 158 H860"/>
+        </g>
+        <g stroke="#232a2e" stroke-width="12" fill="none" stroke-linecap="round">
+          <path d="M130 158 H330"/>
+          <path d="M470 158 H630"/>
+          <path d="M770 158 H860"/>
+        </g>
+
+        <!-- 水流 -->
+        <path id="flow1" d="M132 158 H328" stroke="#3fb6c8" stroke-width="2" fill="none" stroke-linecap="round" stroke-dasharray="16 12"/>
+        <path id="flow2" d="M472 158 H628" stroke="#3fb6c8" stroke-width="2" fill="none" stroke-linecap="round" stroke-dasharray="16 12"/>
+        <path id="flow3" d="M772 158 H858" stroke="#3fb6c8" stroke-width="2" fill="none" stroke-linecap="round" stroke-dasharray="16 12"/>
+
+        <!-- 濾網室 -->
+        <rect x="330" y="118" width="140" height="80" rx="4" fill="url(#tankGrad)" stroke="#3d484e"/>
+        <g id="mesh" stroke="#c9913f" stroke-width="2" stroke-linecap="round"></g>
+        <text x="400" y="216" text-anchor="middle" fill="#c9913f" font-family="IBM Plex Mono, monospace" font-size="11" letter-spacing="1">濾網 VCF</text>
+        <text x="400" y="110" text-anchor="middle" fill="#9aa5ab" font-family="IBM Plex Mono, monospace" font-size="10" id="lblCut">— Hz</text>
+
+        <!-- 閥門 -->
+        <circle cx="700" cy="158" r="42" fill="url(#tankGrad)" stroke="#3d484e"/>
+        <circle cx="700" cy="158" r="30" fill="none" stroke="#2e373c" stroke-width="2"/>
+        <g id="handle">
+          <rect x="696" y="120" width="8" height="76" rx="3" fill="url(#brassGrad)"/>
+          <circle cx="700" cy="158" r="7" fill="#c9913f"/>
+        </g>
+        <text x="700" y="222" text-anchor="middle" fill="#c9913f" font-family="IBM Plex Mono, monospace" font-size="11" letter-spacing="1">閥門 VCA</text>
+        <text x="700" y="104" text-anchor="middle" fill="#9aa5ab" font-family="IBM Plex Mono, monospace" font-size="10" id="lblGain">關閉</text>
+
+        <!-- 出水口與水槽 -->
+        <path d="M858 148 h26 a10 10 0 0 1 10 10 v22" stroke="#3d484e" stroke-width="18" fill="none" stroke-linecap="round"/>
+        <path d="M858 148 h26 a10 10 0 0 1 10 10 v22" stroke="#232a2e" stroke-width="12" fill="none" stroke-linecap="round"/>
+        <rect x="852" y="228" width="86" height="24" rx="3" fill="#1b2124" stroke="#3d484e"/>
+        <g id="spill"></g>
+        <text x="895" y="270" text-anchor="middle" fill="#c9913f" font-family="IBM Plex Mono, monospace" font-size="11" letter-spacing="1">出水口</text>
+
+        <!-- 擺臂 LFO -->
+        <g id="lfoArm">
+          <circle cx="400" cy="48" r="18" fill="none" stroke="#c9913f" stroke-width="2"/>
+          <line id="lfoNeedle" x1="400" y1="48" x2="400" y2="32" stroke="#c9913f" stroke-width="3" stroke-linecap="round"/>
+        </g>
+        <path id="lfoLink" d="M400 66 V 112" stroke="#8a6427" stroke-width="1.5" stroke-dasharray="4 4" fill="none"/>
+        <text x="430" y="52" fill="#9aa5ab" font-family="IBM Plex Mono, monospace" font-size="10" id="lblLfo">擺臂 LFO — 停</text>
+
+        <!-- 包絡曲線小視窗 -->
+        <rect x="600" y="26" width="190" height="56" rx="3" fill="#151a1d" stroke="#2e373c"/>
+        <polyline id="envCurve" points="" fill="none" stroke="#3fb6c8" stroke-width="2" stroke-linejoin="round"/>
+        <text x="608" y="20" fill="#9aa5ab" font-family="IBM Plex Mono, monospace" font-size="10">包絡 ADSR — 閥門開合的曲線</text>
+      </svg>
+    </div>
+
+    <div class="kbd-zone">
+      <p class="kbd-hint">用滑鼠按琴鍵，或用電腦鍵盤 A W S E D F T G Y H U J K。單音設計，因為只有一條水管。</p>
+      <div class="kbd" id="kbd"></div>
+    </div>
+
+    <div class="preset-zone">
+      <div class="preset-head">
+        <div class="plate">預設組合 Presets</div>
+        <div class="now" id="presetNow">目前：<b>自訂</b></div>
+      </div>
+      <div class="presets" id="presets" role="group" aria-label="預設音色組合"></div>
+    </div>
+  </div>
+
+  <div class="modules">
+
+    <section class="mod">
+      <h2>水塔 <span>VCO 振盪器</span></h2>
+      <p class="note">水源的形狀決定音色的粗糙度。鋸齒波泛音最多，正弦波只有基音。</p>
+      <div class="seg" id="waveSeg" role="group" aria-label="波形">
+        <button type="button" data-w="sawtooth" aria-pressed="true">鋸齒</button>
+        <button type="button" data-w="square" aria-pressed="false">方波</button>
+        <button type="button" data-w="triangle" aria-pressed="false">三角</button>
+        <button type="button" data-w="sine" aria-pressed="false">正弦</button>
+      </div>
+      <div class="ctl">
+        <label for="detune">微調 detune <output id="oDetune">0 cent</output></label>
+        <input type="range" id="detune" min="-1200" max="1200" step="1" value="0">
+      </div>
+    </section>
+
+    <section class="mod">
+      <h2>濾網 <span>VCF 低通濾波</span></h2>
+      <p class="note">孔徑越小，高頻越過不去，聲音越悶。12 dB/oct 低通，Q 值拉高會在截止點附近堆出一個峰。</p>
+      <div class="ctl">
+        <label for="cutoff">孔徑 cutoff <output id="oCut">2400 Hz</output></label>
+        <input type="range" id="cutoff" min="0" max="1000" step="1" value="620">
+      </div>
+      <div class="ctl">
+        <label for="reso">共振 Q <output id="oRes">1.0</output></label>
+        <input type="range" id="reso" min="0.3" max="20" step="0.1" value="1">
+      </div>
+    </section>
+
+    <section class="mod">
+      <h2>包絡 <span>ADSR 開合曲線</span></h2>
+      <p class="note">按下鍵時閥門怎麼開、放開鍵時怎麼關。四段合起來就是右上角那條曲線。</p>
+      <div class="ctl">
+        <label for="atk">起音 A <output id="oA">8 ms</output></label>
+        <input type="range" id="atk" min="1" max="2000" step="1" value="8">
+      </div>
+      <div class="ctl">
+        <label for="dec">衰減 D <output id="oD">260 ms</output></label>
+        <input type="range" id="dec" min="1" max="2000" step="1" value="260">
+      </div>
+      <div class="ctl">
+        <label for="sus">延持 S <output id="oS">55 %</output></label>
+        <input type="range" id="sus" min="0" max="100" step="1" value="55">
+      </div>
+      <div class="ctl">
+        <label for="rel">釋音 R <output id="oR">420 ms</output></label>
+        <input type="range" id="rel" min="1" max="3000" step="1" value="420">
+      </div>
+    </section>
+
+    <section class="mod">
+      <h2>擺臂 <span>LFO 低頻調變</span></h2>
+      <p class="note">一隻手週期性地去轉某個旋鈕。轉濾網就是哇哇聲，轉閥門就是抖音。</p>
+      <div class="seg" id="lfoSeg" role="group" aria-label="調變目標">
+        <button type="button" data-t="filter" aria-pressed="true">轉濾網</button>
+        <button type="button" data-t="valve" aria-pressed="false">轉閥門</button>
+      </div>
+      <div class="ctl">
+        <label for="lfoRate">擺速 rate <output id="oLR">5.0 Hz</output></label>
+        <input type="range" id="lfoRate" min="0.1" max="20" step="0.1" value="5">
+      </div>
+      <div class="ctl">
+        <label for="lfoDepth">幅度 depth <output id="oLD">0 %</output></label>
+        <input type="range" id="lfoDepth" min="0" max="100" step="1" value="0">
+      </div>
+      <div class="ctl">
+        <label for="vol">總水量 <output id="oV">70 %</output></label>
+        <input type="range" id="vol" min="0" max="100" step="1" value="70">
+      </div>
+    </section>
+
+  </div>
+
+  <section class="map">
+    <h2>水管詞跟合成器術語對照</h2>
+    <p class="lead">左邊是這台機器上的字，中間是合成器教科書上的字，右邊是這台機器實際在改的參數。上課時可以只講左邊，需要時再帶出中間。</p>
+    <div class="tbl-scroll">
+      <table>
+        <thead>
+          <tr><th>水管的說法</th><th>合成器術語</th><th>實際參數</th><th>聽起來的差別</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>水塔</td><td class="term">VCO / Oscillator</td><td class="term">OscillatorNode.type、frequency</td><td>換波形＝換音色底料</td></tr>
+          <tr><td>水的形狀</td><td class="term">Waveform</td><td class="term">sawtooth / square / triangle / sine</td><td>鋸齒最亮最刺，正弦最乾淨</td></tr>
+          <tr><td>水管粗細</td><td class="term">Amplitude</td><td class="term">訊號振幅</td><td>粗＝大聲</td></tr>
+          <tr><td>水流速度</td><td class="term">Frequency</td><td class="term">Hz</td><td>快＝高音</td></tr>
+          <tr><td>濾網孔徑</td><td class="term">Cutoff</td><td class="term">BiquadFilterNode.frequency</td><td>小＝悶，大＝亮</td></tr>
+          <tr><td>濾網共振</td><td class="term">Resonance / Q</td><td class="term">BiquadFilterNode.Q</td><td>高 Q 在截止點吹出哨音</td></tr>
+          <tr><td>閥門開度</td><td class="term">VCA Gain</td><td class="term">GainNode.gain</td><td>決定音量的瞬間變化</td></tr>
+          <tr><td>開合曲線</td><td class="term">Envelope ADSR</td><td class="term">起音、衰減、延持、釋音</td><td>短起音＝打擊感，長起音＝拉弦感</td></tr>
+          <tr><td>擺臂</td><td class="term">LFO</td><td class="term">低頻 OscillatorNode</td><td>0.1 到 20 Hz，慢到聽不出音高</td></tr>
+          <tr><td>擺臂去轉誰</td><td class="term">Modulation routing</td><td class="term">接到 filter.detune 或 gain</td><td>轉濾網＝哇哇，轉閥門＝顫音</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    單音設計，一次只發一個音，因為只有一條水管。聲音由瀏覽器內建的 Web Audio 即時合成，沒有預錄音檔。第一次按鍵才會啟動音訊，這是瀏覽器的規定。
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var NOTES = [
+    {n:"C4", f:261.63, k:"a", b:false}, {n:"C#4", f:277.18, k:"w", b:true},
+    {n:"D4", f:293.66, k:"s", b:false}, {n:"D#4", f:311.13, k:"e", b:true},
+    {n:"E4", f:329.63, k:"d", b:false},
+    {n:"F4", f:349.23, k:"f", b:false}, {n:"F#4", f:369.99, k:"t", b:true},
+    {n:"G4", f:392.00, k:"g", b:false}, {n:"G#4", f:415.30, k:"y", b:true},
+    {n:"A4", f:440.00, k:"h", b:false}, {n:"A#4", f:466.16, k:"u", b:true},
+    {n:"B4", f:493.88, k:"j", b:false}, {n:"C5", f:523.25, k:"k", b:false}
+  ];
+
+  var el = function(id){ return document.getElementById(id); };
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- 建鍵盤 ---------- */
+  var kbd = el("kbd"), keyEls = {};
+  NOTES.forEach(function(nt){
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "key" + (nt.b ? " black" : "");
+    b.textContent = nt.k.toUpperCase();
+    b.setAttribute("aria-label", nt.n);
+    b.dataset.note = nt.n;
+    kbd.appendChild(b);
+    keyEls[nt.n] = b;
+    b.addEventListener("pointerdown", function(ev){ ev.preventDefault(); noteOn(nt); });
+    b.addEventListener("pointerup", function(){ noteOff(nt); });
+    b.addEventListener("pointerleave", function(){ if(current && current.n === nt.n) noteOff(nt); });
+    b.addEventListener("keydown", function(ev){ if(ev.key===" "||ev.key==="Enter"){ ev.preventDefault(); noteOn(nt);} });
+    b.addEventListener("keyup", function(ev){ if(ev.key===" "||ev.key==="Enter"){ noteOff(nt);} });
+  });
+
+  /* ---------- 音訊圖 ---------- */
+  var ctx=null, osc=null, filter=null, vca=null, trem=null, master=null, analyser=null,
+      lfo=null, lfoGain=null, lfoTarget="filter", started=false, current=null, buf=null;
+
+  function build(){
+    var AC = window.AudioContext || window.webkitAudioContext;
+    ctx = new AC();
+    osc = ctx.createOscillator();
+    filter = ctx.createBiquadFilter();
+    vca = ctx.createGain();
+    trem = ctx.createGain();
+    master = ctx.createGain();
+    analyser = ctx.createAnalyser();
+
+    filter.type = "lowpass";
+    vca.gain.value = 0;
+    trem.gain.value = 1;
+    analyser.fftSize = 512;
+    buf = new Uint8Array(analyser.fftSize);
+
+    lfo = ctx.createOscillator();
+    lfo.type = "sine";
+    lfoGain = ctx.createGain();
+    lfoGain.gain.value = 0;
+    lfo.connect(lfoGain);
+
+    osc.connect(filter); filter.connect(vca); vca.connect(trem);
+    trem.connect(master); master.connect(analyser); analyser.connect(ctx.destination);
+
+    osc.start(); lfo.start();
+    started = true;
+    applyAll();
+    routeLfo();
+  }
+
+  /* ---------- 參數 ---------- */
+  function cutHz(){
+    var t = +el("cutoff").value / 1000;      /* 0..1 對數映射到 80..14000 Hz */
+    return 80 * Math.pow(14000/80, t);
+  }
+  function openness(){ return +el("cutoff").value / 1000; }
+
+  function applyAll(){
+    if(!started) return;
+    var now = ctx.currentTime;
+    osc.type = el("waveSeg").querySelector('[aria-pressed="true"]').dataset.w;
+    osc.detune.setTargetAtTime(+el("detune").value, now, 0.01);
+    filter.frequency.setTargetAtTime(cutHz(), now, 0.01);
+    filter.Q.setTargetAtTime(+el("reso").value, now, 0.01);
+    master.gain.setTargetAtTime(+el("vol").value/100 * 0.35, now, 0.02);
+    lfo.frequency.setTargetAtTime(+el("lfoRate").value, now, 0.02);
+    var d = +el("lfoDepth").value / 100;
+    lfoGain.gain.setTargetAtTime(lfoTarget === "filter" ? d * 2400 : d * 0.85, now, 0.02);
+  }
+
+  function routeLfo(){
+    if(!started) return;
+    try{ lfoGain.disconnect(); }catch(e){}
+    if(lfoTarget === "filter"){ lfoGain.connect(filter.detune); }
+    else { lfoGain.connect(trem.gain); }
+    applyAll();
+  }
+
+  /* ---------- 發聲 ---------- */
+  function noteOn(nt){
+    if(!started) build();
+    if(ctx.state === "suspended") ctx.resume();
+    if(current) keyEls[current.n].classList.remove("on");
+    current = nt;
+    keyEls[nt.n].classList.add("on");
+
+    var now = ctx.currentTime;
+    var A = +el("atk").value/1000, D = +el("dec").value/1000, S = +el("sus").value/100;
+    osc.frequency.setTargetAtTime(nt.f, now, 0.005);
+    vca.gain.cancelScheduledValues(now);
+    vca.gain.setValueAtTime(Math.max(vca.gain.value, 0.0001), now);
+    vca.gain.linearRampToValueAtTime(1, now + A);
+    vca.gain.linearRampToValueAtTime(Math.max(S, 0.0001), now + A + D);
+    el("readout").innerHTML = "發聲中 · <b>" + nt.n + "</b> · <b>" + nt.f.toFixed(2) + "</b> Hz";
+  }
+
+  function noteOff(nt){
+    if(!started || !current || current.n !== nt.n) { if(keyEls[nt.n]) keyEls[nt.n].classList.remove("on"); return; }
+    var now = ctx.currentTime, R = +el("rel").value/1000;
+    vca.gain.cancelScheduledValues(now);
+    vca.gain.setValueAtTime(Math.max(vca.gain.value, 0.0001), now);
+    vca.gain.linearRampToValueAtTime(0.0001, now + R);
+    keyEls[nt.n].classList.remove("on");
+    current = null;
+    el("readout").innerHTML = "釋音中 · 閥門正在關 · R = <b>" + el("rel").value + "</b> ms";
+  }
+
+  /* ---------- 電腦鍵盤 ---------- */
+  var down = {};
+  window.addEventListener("keydown", function(ev){
+    if(ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var t = ev.target.tagName;
+    if(t === "INPUT" || t === "BUTTON") { if(ev.key === " ") return; }
+    var nt = NOTES.filter(function(x){ return x.k === ev.key.toLowerCase(); })[0];
+    if(nt && !down[nt.k]){ down[nt.k] = true; ev.preventDefault(); noteOn(nt); }
+  });
+  window.addEventListener("keyup", function(ev){
+    var nt = NOTES.filter(function(x){ return x.k === ev.key.toLowerCase(); })[0];
+    if(nt){ down[nt.k] = false; noteOff(nt); }
+  });
+
+  /* ---------- 控制項綁定 ---------- */
+  function fmt(){
+    el("oDetune").textContent = el("detune").value + " cent";
+    el("oCut").textContent = Math.round(cutHz()) + " Hz";
+    el("oRes").textContent = (+el("reso").value).toFixed(1);
+    el("oA").textContent = el("atk").value + " ms";
+    el("oD").textContent = el("dec").value + " ms";
+    el("oS").textContent = el("sus").value + " %";
+    el("oR").textContent = el("rel").value + " ms";
+    el("oLR").textContent = (+el("lfoRate").value).toFixed(1) + " Hz";
+    el("oLD").textContent = el("lfoDepth").value + " %";
+    el("oV").textContent = el("vol").value + " %";
+    el("lblCut").textContent = Math.round(cutHz()) + " Hz";
+    var d = +el("lfoDepth").value;
+    el("lblLfo").textContent = d === 0 ? "擺臂 LFO — 停"
+      : "擺臂 LFO — " + (+el("lfoRate").value).toFixed(1) + " Hz → " + (lfoTarget==="filter" ? "濾網" : "閥門");
+    el("lfoLink").setAttribute("d", lfoTarget === "filter" ? "M400 66 V 112" : "M400 66 H700 V 116");
+    el("lfoLink").setAttribute("stroke", d === 0 ? "#3d484e" : "#c9913f");
+  }
+
+  ["detune","cutoff","reso","atk","dec","sus","rel","lfoRate","lfoDepth","vol"].forEach(function(id){
+    el(id).addEventListener("input", function(){ clearPreset(); fmt(); applyAll(); drawEnv(); drawMesh(); });
+  });
+
+  el("waveSeg").addEventListener("click", function(ev){
+    var b = ev.target.closest("button"); if(!b) return;
+    [].forEach.call(this.querySelectorAll("button"), function(x){ x.setAttribute("aria-pressed", x===b ? "true":"false"); });
+    clearPreset(); applyAll(); drawWave(b.dataset.w);
+  });
+  el("lfoSeg").addEventListener("click", function(ev){
+    var b = ev.target.closest("button"); if(!b) return;
+    [].forEach.call(this.querySelectorAll("button"), function(x){ x.setAttribute("aria-pressed", x===b ? "true":"false"); });
+    clearPreset(); lfoTarget = b.dataset.t; routeLfo(); fmt();
+  });
+
+  /* ---------- 繪圖 ---------- */
+  function drawWave(kind){
+    var d;
+    if(kind === "sawtooth") d = "M46 178 L58 138 L58 178 L70 138 L70 178 L82 138 L82 178 L94 138 L94 178 L106 138 L106 178";
+    else if(kind === "square") d = "M46 178 L46 138 L64 138 L64 178 L82 178 L82 138 L100 138 L100 178 L112 178";
+    else if(kind === "triangle") d = "M46 178 L61 138 L76 178 L91 138 L106 178";
+    else d = "M46 158 C54 128, 68 128, 76 158 C84 188, 98 188, 106 158";
+    el("waveGlyph").setAttribute("d", d);
+  }
+
+  function drawMesh(){
+    var o = openness();                       /* 0 = 密, 1 = 疏 */
+    var gap = 6 + o * 20;
+    var g = el("mesh"), s = "";
+    for(var x = 344; x < 466; x += gap){ s += '<line x1="'+x+'" y1="126" x2="'+x+'" y2="190"/>'; }
+    g.innerHTML = s;
+    g.setAttribute("opacity", (1 - o * 0.55).toFixed(2));
+  }
+
+  function drawEnv(){
+    var A = +el("atk").value, D = +el("dec").value, S = +el("sus").value/100, R = +el("rel").value;
+    var hold = 400, total = A + D + hold + R;
+    var x0 = 606, w = 178, y0 = 76, h = 42;
+    function px(ms){ return x0 + (ms/total) * w; }
+    function py(v){ return y0 - v * h; }
+    var pts = [
+      px(0)+","+py(0),
+      px(A)+","+py(1),
+      px(A+D)+","+py(S),
+      px(A+D+hold)+","+py(S),
+      px(total)+","+py(0)
+    ];
+    el("envCurve").setAttribute("points", pts.join(" "));
+  }
+
+  /* ---------- 動畫 ---------- */
+  var off = 0, last = 0;
+  function frame(ts){
+    var dt = last ? (ts - last) / 1000 : 0; last = ts;
+
+    var pitch = current ? current.f : 220;
+    var env = started ? Math.min(1, Math.max(0, vca.gain.value)) : 0;
+    var o = openness();
+
+    if(!reduce){ off -= dt * (40 + pitch * 0.22); }
+    var w1 = 2 + env * 7;
+    var w2 = w1 * (0.32 + 0.68 * o);
+    var w3 = w2 * (0.15 + 0.85 * env);
+
+    [["flow1", w1], ["flow2", w2], ["flow3", w3]].forEach(function(p){
+      var n = el(p[0]);
+      n.setAttribute("stroke-width", Math.max(0.6, p[1]).toFixed(2));
+      n.setAttribute("stroke-dashoffset", off.toFixed(1));
+      n.setAttribute("opacity", (0.25 + 0.75 * Math.min(1, p[1]/8)).toFixed(2));
+    });
+
+    el("handle").setAttribute("transform", "rotate(" + (env * 88).toFixed(1) + " 700 158)");
+    el("lblGain").textContent = env < 0.02 ? "關閉" : "開度 " + Math.round(env * 100) + "%";
+    el("lblPitch").textContent = current ? current.f.toFixed(1) + " Hz" : "— Hz";
+
+    if(!reduce && started){
+      var a = (+el("lfoDepth").value/100) * Math.sin(ts/1000 * 2 * Math.PI * (+el("lfoRate").value));
+      el("lfoNeedle").setAttribute("transform", "rotate(" + (a * 140).toFixed(1) + " 400 48)");
+    }
+
+    /* 出水口濺水，取實際輸出音量 */
+    if(started && analyser){
+      analyser.getByteTimeDomainData(buf);
+      var sum = 0;
+      for(var i=0;i<buf.length;i++){ var v = (buf[i]-128)/128; sum += v*v; }
+      var rms = Math.sqrt(sum/buf.length);
+      var s = "", n = Math.min(9, Math.round(rms * 40));
+      for(var j=0;j<n;j++){
+        var xx = 878 + (j%3)*14 - 14 + (j*7 % 9);
+        var yy = 186 + (j*11 % 40);
+        s += '<circle cx="'+xx+'" cy="'+yy+'" r="'+(1.4 + (j%3)*0.7).toFixed(1)+'" fill="#3fb6c8" opacity="'+(0.65 - j*0.05).toFixed(2)+'"/>';
+      }
+      el("spill").innerHTML = s;
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  /* ---------- 預設組合 ---------- */
+  /* cut 以 Hz 給，載入時換算回滑桿刻度；lt 是 LFO 目標 */
+  var PRESETS = [
+    { id:"pluck",  name:"撥弦",   en:"PLUCK",  teach:"延持 0%，聲音一敲就掉，靠 D 決定尾巴長短",
+      w:"sawtooth", dt:0,     cut:3200, q:3,   a:1,   d:180, s:0,   r:200,  lt:"filter", lr:5,   ld:0 },
+    { id:"bass",   name:"厚貝斯", en:"BASS",   teach:"微調 −1200 cent 就是降八度，孔徑壓低只留低頻",
+      w:"square",   dt:-1200, cut:700,  q:7,   a:2,   d:260, s:30,  r:140,  lt:"filter", lr:5,   ld:0 },
+    { id:"brass",  name:"銅管",   en:"BRASS",  teach:"起音 70 ms 是吹奏感的來源，太短就變打擊樂",
+      w:"sawtooth", dt:0,     cut:2600, q:2,   a:70,  d:320, s:70,  r:320,  lt:"filter", lr:5,   ld:0 },
+    { id:"wah",    name:"哇哇",   en:"WAH",    teach:"高 Q 加上擺臂轉濾網，就是人聲般的哇哇",
+      w:"sawtooth", dt:0,     cut:900,  q:13,  a:10,  d:400, s:65,  r:300,  lt:"filter", lr:3.2, ld:45 },
+    { id:"trem",   name:"顫音",   en:"TREMOLO",teach:"同樣的擺臂改去轉閥門，變成音量抖動不是音色變化",
+      w:"triangle", dt:0,     cut:6000, q:1,   a:120, d:200, s:85,  r:420,  lt:"valve",  lr:6,   ld:60 },
+    { id:"sweep",  name:"太空掃頻",en:"SWEEP", teach:"擺速 0.4 Hz 慢到聽不出音高，只剩緩慢的掃動",
+      w:"sawtooth", dt:0,     cut:400,  q:15,  a:600, d:800, s:80,  r:1200, lt:"filter", lr:0.4, ld:95 },
+    { id:"organ",  name:"風琴",   en:"ORGAN",  teach:"延持 100% 加超短 A、D，按住就一直是同一個音量",
+      w:"square",   dt:0,     cut:7000, q:0.8, a:5,   d:5,   s:100, r:70,   lt:"filter", lr:5,   ld:0 }
+  ];
+
+  function hzToSlider(hz){
+    return Math.round(Math.log(hz/80) / Math.log(14000/80) * 1000);
+  }
+
+  var presetBox = el("presets"), activePreset = null;
+  PRESETS.forEach(function(p){
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "preset";
+    b.setAttribute("aria-pressed", "false");
+    b.dataset.id = p.id;
+    b.innerHTML = '<span class="pn">' + p.name + '<em>' + p.en + '</em></span>'
+                + '<span class="pd">' + p.teach + '</span>';
+    b.addEventListener("click", function(){ loadPreset(p); });
+    presetBox.appendChild(b);
+  });
+
+  function loadPreset(p){
+    el("detune").value   = p.dt;
+    el("cutoff").value   = hzToSlider(p.cut);
+    el("reso").value     = p.q;
+    el("atk").value      = p.a;
+    el("dec").value      = p.d;
+    el("sus").value      = p.s;
+    el("rel").value      = p.r;
+    el("lfoRate").value  = p.lr;
+    el("lfoDepth").value = p.ld;
+
+    [].forEach.call(el("waveSeg").querySelectorAll("button"), function(x){
+      x.setAttribute("aria-pressed", x.dataset.w === p.w ? "true" : "false");
+    });
+    [].forEach.call(el("lfoSeg").querySelectorAll("button"), function(x){
+      x.setAttribute("aria-pressed", x.dataset.t === p.lt ? "true" : "false");
+    });
+    lfoTarget = p.lt;
+
+    activePreset = p.id;
+    [].forEach.call(presetBox.querySelectorAll(".preset"), function(x){
+      x.setAttribute("aria-pressed", x.dataset.id === p.id ? "true" : "false");
+    });
+    el("presetNow").innerHTML = "目前：<b>" + p.name + "</b> · " + p.teach;
+
+    drawWave(p.w); fmt(); drawEnv(); drawMesh();
+    if(started){ routeLfo(); } else { applyAll(); }
+  }
+
+  function clearPreset(){
+    if(!activePreset) return;
+    activePreset = null;
+    [].forEach.call(presetBox.querySelectorAll(".preset"), function(x){ x.setAttribute("aria-pressed", "false"); });
+    el("presetNow").innerHTML = "目前：<b>自訂</b>";
+  }
+
+  /* ---------- 起始狀態 ---------- */
+  loadPreset(PRESETS[2]);          /* 開場載入「銅管」，讓機台一打開就是可用狀態 */
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

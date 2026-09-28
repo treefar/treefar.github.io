@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>遊戲演算法速查｜AI 協作指令版</title>
+<style>
+:root{
+  --bg:#0e1116; --bg2:#151a22; --card:#1a2029; --card2:#212936;
+  --line:#2c3644; --txt:#e6ebf2; --dim:#94a3b8; --dim2:#64748b;
+  --acc:#5eead4; --acc2:#38bdf8; --warn:#fbbf24; --hot:#fb7185;
+  --t1:#5eead4; --t2:#38bdf8; --t3:#94a3b8;
+  --mono:ui-monospace,"Cascadia Mono","Consolas","Noto Sans Mono CJK TC",monospace;
+  --sans:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:light){
+  :root{
+    --bg:#f6f7f9; --bg2:#ffffff; --card:#ffffff; --card2:#f1f4f8;
+    --line:#dde3ea; --txt:#16202c; --dim:#5b6878; --dim2:#8b97a6;
+    --acc:#0d9488; --acc2:#0369a1; --warn:#b45309; --hot:#be123c;
+    --t1:#0d9488; --t2:#0369a1; --t3:#64748b;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:var(--sans);line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+
+header{padding:44px 0 26px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,var(--bg2),var(--bg))}
+h1{margin:0 0 8px;font-size:30px;letter-spacing:-.5px}
+h1 span{color:var(--acc)}
+.sub{color:var(--dim);font-size:15px;margin:0 0 4px}
+.meta{color:var(--dim2);font-size:13px;margin-top:10px}
+
+.howto{margin:22px 0 0;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:10px;padding:16px 18px}
+.howto h2{margin:0 0 8px;font-size:15px;color:var(--acc)}
+.howto ol{margin:0;padding-left:20px;font-size:14px;color:var(--dim)}
+.howto li{margin:4px 0}
+.howto b{color:var(--txt)}
+
+.bar{position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:1px solid var(--line);padding:12px 0}
+.bar .wrap{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+#q{flex:1 1 260px;min-width:0;background:var(--card);border:1px solid var(--line);color:var(--txt);
+   padding:10px 14px;border-radius:9px;font-size:15px;font-family:var(--sans)}
+#q:focus{outline:2px solid var(--acc2);outline-offset:-1px}
+.count{color:var(--dim2);font-size:13px;white-space:nowrap}
+
+.pills{display:flex;flex-wrap:wrap;gap:7px;padding:12px 0 0}
+.pill{background:var(--card);border:1px solid var(--line);color:var(--dim);padding:6px 13px;border-radius:999px;
+      font-size:13.5px;cursor:pointer;font-family:var(--sans);transition:.12s}
+.pill:hover{border-color:var(--acc2);color:var(--txt)}
+.pill.on{background:var(--acc);border-color:var(--acc);color:#07120f;font-weight:600}
+.pill.t1.on{background:var(--t1);border-color:var(--t1);color:#07120f}
+.pill.t2.on{background:var(--t2);border-color:var(--t2);color:#04121c}
+.pill.t3.on{background:var(--t3);border-color:var(--t3);color:#0e1116}
+
+main{padding:22px 0 70px}
+.grp{margin:0 0 10px}
+.grp h2{font-size:17px;margin:26px 0 12px;padding-bottom:7px;border-bottom:1px solid var(--line);color:var(--acc2)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:0;overflow:hidden}
+.chead{padding:14px 16px 12px;cursor:pointer;display:flex;gap:10px;align-items:flex-start}
+.chead:hover{background:var(--card2)}
+.tier{flex:0 0 auto;font-size:11px;font-weight:700;padding:3px 8px;border-radius:5px;margin-top:3px;letter-spacing:.5px}
+.tier.a{background:rgba(94,234,212,.15);color:var(--t1);border:1px solid var(--t1)}
+.tier.b{background:rgba(56,189,248,.13);color:var(--t2);border:1px solid var(--t2)}
+.tier.c{background:rgba(148,163,184,.13);color:var(--t3);border:1px solid var(--t3)}
+.ctitle{flex:1 1 auto;min-width:0}
+.ctitle h3{margin:0;font-size:16px;font-weight:650;line-height:1.4}
+.ctitle p{margin:4px 0 0;font-size:13.5px;color:var(--dim)}
+.caret{flex:0 0 auto;color:var(--dim2);font-size:12px;margin-top:5px;transition:.15s}
+.card.open .caret{transform:rotate(90deg)}
+
+.cbody{display:none;padding:0 16px 16px;border-top:1px solid var(--line)}
+.card.open .cbody{display:block}
+.row{margin:13px 0 0}
+.lab{font-size:11.5px;font-weight:700;letter-spacing:1px;color:var(--dim2);margin-bottom:4px}
+.row p{margin:0;font-size:14px}
+.trap{color:var(--warn)}
+.trap .lab{color:var(--warn)}
+
+.pbox{position:relative;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px 13px;margin-top:4px}
+.pbox pre{margin:0;font-family:var(--mono);font-size:12.5px;line-height:1.75;white-space:pre-wrap;word-break:break-word;color:var(--txt)}
+.copy{position:absolute;top:8px;right:8px;background:var(--card2);border:1px solid var(--line);color:var(--dim);
+      font-size:11.5px;padding:4px 9px;border-radius:6px;cursor:pointer;font-family:var(--sans)}
+.copy:hover{border-color:var(--acc);color:var(--acc)}
+.copy.ok{background:var(--acc);color:#07120f;border-color:var(--acc)}
+
+.empty{text-align:center;color:var(--dim2);padding:60px 0;font-size:15px}
+footer{border-top:1px solid var(--line);padding:22px 0 40px;color:var(--dim2);font-size:13px}
+kbd{font-family:var(--mono);font-size:12px;background:var(--card2);border:1px solid var(--line);border-bottom-width:2px;
+    padding:1px 6px;border-radius:4px;color:var(--dim)}
+@media(max-width:640px){.grid{grid-template-columns:1fr}h1{font-size:23px}.wrap{padding:0 14px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>遊戲演算法速查 <span>／ AI 協作指令版</span></h1>
+    <p class="sub">你不必會寫，但你必須會「點名」。點名了，AI 才不會自己亂猜一套。</p>
+    <div class="howto">
+      <h2>這頁怎麼用</h2>
+      <ol>
+        <li>先想清楚「我要的行為是什麼」，再來這裡找對應的<b>名字</b>。</li>
+        <li>展開卡片，把<b>指令範本</b>整段複製，填掉裡面的 <code>&lt;方括號&gt;</code>。</li>
+        <li>把<b>常見地雷</b>那一行也一起貼給 AI，它就會先避開。</li>
+      </ol>
+    </div>
+    <p class="meta">
+      <b>必學</b>＝不知道就會下錯指令　·　<b>該懂</b>＝遇到特定需求要叫得出名字　·　<b>知道就好</b>＝能聽懂別人在講什麼<br>
+      引擎脈絡以 Unity 6（C#）為主，但演算法本身不綁引擎。文中提到的 Unity API 請在實作前自行以官方文件確認版本行為。
+    </p>
+  </div>
+</header>
+
+<div class="bar">
+  <div class="wrap">
+    <input id="q" type="search" placeholder="搜尋：A*、洗牌、手感、卡頓、怪物追不到我…" autocomplete="off">
+    <span class="count" id="count"></span>
+  </div>
+  <div class="wrap">
+    <div class="pills" id="cats"></div>
+  </div>
+  <div class="wrap">
+    <div class="pills" id="tiers">
+      <button class="pill t1" data-t="1">必學</button>
+      <button class="pill t2" data-t="2">該懂</button>
+      <button class="pill t3" data-t="3">知道就好</button>
+    </div>
+  </div>
+</div>
+
+<main><div class="wrap" id="out"></div></main>
+
+<footer><div class="wrap">
+  單檔離線網頁，沒有外部連線。<kbd>Ctrl</kbd>+<kbd>F</kbd> 是瀏覽器搜尋，上面那格是只搜這份資料。
+</div></footer>
+
+<script>
+const D=[
+
+/* ───────── 尋路與移動 ───────── */
+{c:"尋路與移動",n:"A*（A-star）",t:1,
+one:"在格子或節點圖上找最短路，遊戲界的預設答案。",
+when:"回合制戰棋、塔防、RTS、2D 地城。地圖是格子、單位不多，先用它就對了。",
+ai:"用 A* 幫我做尋路。\n地圖：<例如 40x40 的二維格子，0 可走 1 是牆>\n移動方式：<四方向／八方向；八方向時斜走成本用 1.414>\n啟發式 heuristic：<四方向用 Manhattan，八方向用 Octile，不要用 Euclidean>\nopen list 請用二元堆積（priority queue），不要用 List 每次 Sort。\n找不到路時回傳空路徑，不要丟例外，也不要回傳「最接近的點」除非我說要。\n請另外寫一個測試：起點終點被牆完全隔開時，必須在有限步數內回傳空路徑。",
+trap:"斜走沒擋角，角色會從兩面牆的對角縫「穿」過去。要明確講「不允許 corner cutting」。另外 heuristic 只要高估就不保證最短路。"},
+
+{c:"尋路與移動",n:"Dijkstra",t:2,
+one:"沒有終點猜測的 A*，從一點算出到所有點的距離。",
+when:"要一次算出「全地圖每一格離補給站多遠」，或有多個終點想比較。",
+ai:"用 Dijkstra 從 <起點> 算出到地圖每一格的最短距離，輸出一張成本表。\n不要提早結束，我要完整的距離場，不是單一路徑。",
+trap:"只為了找單一終點卻用 Dijkstra，會比 A* 慢很多。單一終點就該用 A*。"},
+
+{c:"尋路與移動",n:"BFS 廣度優先搜尋",t:1,
+one:"每一步成本都一樣時的最短路；也是「洪水填充」的引擎。",
+when:"迷宮、推箱子、檢查「這個房間到得了嗎」、算爆炸波及範圍。",
+ai:"用 BFS 做 <可到達性檢查>。\n所有移動成本視為相同，不要加權。\n我要的輸出是：<從起點可到達的所有格子清單>。\n順便幫我檢查地圖生成後是不是所有房間都連通，不連通就回報哪幾塊是孤島。",
+trap:"移動成本不一樣（沼澤比草地慢）卻用 BFS，結果不是最短路。有權重就要換 Dijkstra 或 A*。"},
+
+{c:"尋路與移動",n:"NavMesh 導航網格",t:1,
+one:"把可走地面切成多邊形網格再尋路，3D 遊戲的標配。",
+when:"3D 場景、地形不規則、角色要自然繞過障礙。Unity 有內建。",
+ai:"這是 3D 場景，請用 NavMesh 而不是自己刻格子 A*。\n我要：<角色跟隨玩家／巡邏點循環>\n請處理這幾種情況：目標在 NavMesh 外時先找最近的有效點；路徑被動態障礙擋住時重算而不是卡住。\n不要每一幀都重算路徑，改成 <0.2 秒> 一次或目標移動超過 <1 公尺> 才重算。",
+trap:"每幀呼叫尋路是最常見的效能殺手。另外 NavMesh 烘焙後才存在，執行時生成的地形要另外處理。"},
+
+{c:"尋路與移動",n:"Flow Field 流場尋路",t:2,
+one:"算一次方向場，全部單位照著箭頭走。",
+when:"RTS 或塔防，上百個單位追同一個目標。人越多越划算。",
+ai:"單位數量很多（<200+>）且目標相同，請用 Flow Field 而不是每個單位各跑一次 A*。\n流程：從目標做 BFS/Dijkstra 得到成本場 → 由成本場算出每格的方向向量 → 單位只讀自己腳下那格的方向。\n目標移動時才重算整張場，單位移動時不要重算。",
+trap:"目標各不相同時反而更貴，因為每個目標要一張場。單位少（<20）也不划算。"},
+
+{c:"尋路與移動",n:"Steering Behaviors 轉向行為",t:1,
+one:"追、逃、抵達、閃避、分離、群聚，這些「怎麼移動」的小規則。",
+when:"路徑算出來之後，讓角色走得像活的而不是機器人直角轉彎。",
+ai:"尋路負責『走哪條路』，移動請用 steering behaviors 負責『怎麼走』，兩層分開。\n要用到的行為：seek（趨近）、arrive（接近時減速，不要衝過頭）、separation（同伴之間互斥不重疊）、obstacle avoidance。\n各行為的權重請做成 Inspector 可調的欄位，不要寫死在程式裡。",
+trap:"尋路和轉向混在同一個函式，之後想調手感會整個打結。一定要分兩層。"},
+
+{c:"尋路與移動",n:"路徑平滑 / 漏斗演算法",t:2,
+one:"把 A* 吐出的鋸齒折線拉直成自然路線。",
+when:"角色走起來一格一格轉彎、明明可以直線卻繞路。",
+ai:"A* 的路徑有鋸齒，請做路徑平滑：從起點往後找最遠一個「中間沒有障礙物」的節點，直接連過去，重複做完整條路。\n用 raycast / line-of-sight 判斷中間有沒有擋。\nNavMesh 的話請用漏斗演算法（funnel algorithm）而不是自己逐點檢查。",
+trap:"平滑過頭會讓角色貼著牆角磨，記得留角色半徑的安全距離。"},
+
+{c:"尋路與移動",n:"RVO / ORCA 避讓",t:3,
+one:"一群單位互相預測、彼此讓開，不會擠成一坨。",
+when:"大量單位同時移動會互卡、互相推擠穿模時。",
+ai:"單位之間會互相推擠卡住，請加入 RVO/ORCA 這類相互避讓，而不是只靠 separation 力硬推開。",
+trap:"狹窄通道會出現「互相讓到兩邊都不走」的死結，要加隨機偏移或優先權打破僵局。"},
+
+/* ───────── NPC 行為與決策 ───────── */
+{c:"NPC 行為與決策",n:"FSM 有限狀態機",t:1,
+one:"NPC 同一時間只在一個狀態，靠條件切換。",
+when:"敵人只有巡邏、追擊、攻擊、逃跑這種少數幾個明確狀態時。最簡單、最好除錯。",
+ai:"敵人 AI 請用有限狀態機（FSM）。\n狀態：<巡邏／警戒／追擊／攻擊／撤退>\n每個狀態請明確寫出：進入時做什麼（Enter）、每幀做什麼（Update）、離開時做什麼（Exit）。\n切換條件請集中寫成一張轉移表，不要散在各個狀態裡用 if 互相呼叫。\n加一個唯讀欄位顯示目前狀態，方便我在 Inspector 除錯。",
+trap:"狀態超過六七個就會變成義大利麵，每個狀態都認識其他狀態。到那個程度就該換行為樹。"},
+
+{c:"NPC 行為與決策",n:"Behavior Tree 行為樹",t:1,
+one:"用「順序、選擇、條件」這種樹狀節點組出複雜行為。",
+when:"敵人行為多、要分優先順序（血低先逃 > 有目標就打 > 否則巡邏），而且要方便加新行為。",
+ai:"敵人行為請用行為樹（Behavior Tree），不要用 FSM，因為之後還會一直加行為。\n根節點用 Selector，優先順序由上到下：<1. 血量低於30%就撤退　2. 看得到玩家就攻擊　3. 聽到聲音就去查看　4. 否則巡邏>\n節點只能回傳 Success / Failure / Running 三種，攻擊這種要花時間的動作請正確回傳 Running。\n黑板（blackboard）存共用資料：<玩家最後已知位置、目前血量>，節點之間不要直接互相讀欄位。",
+trap:"攻擊動作沒回傳 Running，會導致樹每幀重跑、動作不斷被打斷。這是最常見的行為樹 bug。"},
+
+{c:"NPC 行為與決策",n:"Utility AI 效用評分",t:2,
+one:"每個行動打分數，選分數最高的做。",
+when:"要 NPC 看起來會「權衡」——又餓又累又有敵人時，該先做哪件事。模擬經營、生存遊戲很適合。",
+ai:"NPC 決策請用 Utility AI：把每個可能行動都算一個 0~1 的分數，選最高分執行。\n行動與考量因素：<吃飯←飢餓度；睡覺←疲勞度；逃跑←敵人距離與血量>\n每個因素用一條可調的曲線（AnimationCurve）把原始數值轉成分數，不要寫死線性。\n最高分和次高分差距在 <5%> 以內時隨機選一個，避免 NPC 在兩個行動之間瘋狂抖動。",
+trap:"分數公式全部寫死在程式裡，調平衡要改程式碼重編譯。曲線一定要拉到 Inspector。"},
+
+{c:"NPC 行為與決策",n:"GOAP 目標導向行動規劃",t:3,
+one:"給 NPC 一個目標和一堆能力，它自己排出步驟。",
+when:"NPC 要臨場組合行為（沒武器→先去撿→再開打），而且你不想手寫所有組合。開發成本高。",
+ai:"用 GOAP 做 NPC 規劃。\n每個行動定義：前置條件（preconditions）、執行後效果（effects）、成本（cost）。\n目標：<擊殺玩家>\n請用 A* 在「世界狀態」空間上搜尋最低成本的行動序列。\n計畫執行到一半前提被破壞時要重新規劃，不要硬做完。",
+trap:"對小專案是大砲打小鳥，除錯極痛苦（NPC 為什麼選這步很難看出來）。行為樹能解決就別用。"},
+
+{c:"NPC 行為與決策",n:"Blackboard 黑板",t:2,
+one:"一塊共用記事板，AI 各部分透過它交換資訊。",
+when:"搭配行為樹一定會用到；也用在小隊共享「玩家在哪」。",
+ai:"AI 的共用資料請放黑板（blackboard），不要讓節點之間直接互相抓欄位。\n黑板內容：<玩家最後已知位置、最後看到的時間、目前目標、是否已警戒>\n小隊層級再開一塊共用黑板，讓隊友共享「誰已經看到玩家」。",
+trap:"黑板變成什麼都往裡丟的垃圾桶。只放「跨節點需要共享」的東西。"},
+
+{c:"NPC 行為與決策",n:"感知系統：視錐＋Raycast＋聽覺",t:1,
+one:"NPC「看不看得到你」的標準三步驟判定。",
+when:"任何有潛行、警戒、發現機制的遊戲。這是你最常需要講清楚的一塊。",
+ai:"做敵人感知，請嚴格按這三步判定，任何一步失敗就是看不到：\n1. 距離：在 <15> 公尺內\n2. 角度：在正前方 <110> 度視錐內\n3. 遮蔽：raycast 從眼睛位置到玩家胸口，中間沒有障礙物\n另外加聽覺：半徑 <8> 公尺內玩家跑步或開槍就觸發，聽覺不受視錐和遮蔽限制。\n發現不要瞬間完成，做一個 0~1 的警戒值累積，看到時上升、看不到時衰減，滿了才進入追擊。\n請不要每幀對所有敵人做 raycast，改成 <0.2 秒> 檢查一次並錯開各敵人的檢查幀。",
+trap:"raycast 起點放在角色原點（腳底），會被地面和小台階擋住，NPC 變瞎。起點要放眼睛高度。"},
+
+{c:"NPC 行為與決策",n:"Minimax ＋ Alpha-Beta 剪枝",t:2,
+one:"回合制對戰時，假設對手也會下最好的一步，往下推演。",
+when:"象棋、井字遊戲、卡牌對戰、戰棋的電腦對手。",
+ai:"做回合制 AI 對手，用 Minimax 加 alpha-beta 剪枝。\n搜尋深度 <4> 層，並做成難度參數（簡單=2 層、困難=6 層）。\n評估函式要獨立成一個函式方便我調：<我方血量 - 對方血量 * 1.2 + 場面優勢>\n難度低時請不要只是降深度，而是加入「有機率不選最佳解」，這樣比較像人。",
+trap:"分支太多會爆炸（每多一層時間乘以分支數）。狀態多的遊戲要限深度＋加迭代加深。"},
+
+{c:"NPC 行為與決策",n:"MCTS 蒙地卡羅樹搜尋",t:3,
+one:"隨機模擬很多次，哪一步贏比較多次就選哪步。",
+when:"規則複雜到寫不出好的評估函式（圍棋、複雜卡牌）時的替代方案。",
+ai:"這個遊戲的局面很難寫評估函式，請用 MCTS。\n每回合給 <1000> 次模擬預算或 <100> 毫秒上限，時間到就用當下最好的結果。\nUCB1 的探索常數請做成可調參數。",
+trap:"模擬次數不夠時，MCTS 會下出莫名其妙的爛棋，比 Minimax 還差。"},
+
+/* ───────── 隨機與程序生成 ───────── */
+{c:"隨機與程序生成",n:"亂數種子與確定性隨機",t:1,
+one:"同一個種子永遠產生同一串亂數，所以地圖可以重現。",
+when:"任何有隨機生成的遊戲。這是你第一句就該對 AI 交代的事。",
+ai:"所有隨機請走同一個可控的亂數產生器，並吃一個 seed（種子）。\n不要用全域的 UnityEngine.Random，改成自己持有 System.Random 或 Unity.Mathematics.Random 的實例並注入。\n關卡生成、掉寶、爆擊請各用一條獨立的隨機流，互不影響（這樣我調掉寶不會害地圖變了）。\nseed 要顯示在畫面上並可以手動輸入，方便我重現 bug。\n存檔要存 seed 和各流的呼叫次數。",
+trap:"用全域 Random，結果玩家多按一次爆擊就導致整張地圖不一樣，bug 再也重現不了。這是最該優先要求的一條。"},
+
+{c:"隨機與程序生成",n:"Perlin / Simplex Noise",t:1,
+one:"產生「平滑連續」的隨機值，用來做地形和自然紋理。",
+when:"高度圖地形、雲、水波、隨機但不雜亂的分布。",
+ai:"用 Perlin noise 產生 <地形高度圖>。\n參數請全部開成可調欄位：scale（縮放）、offsetX/offsetY（偏移，用 seed 決定）、octaves（疊幾層）、persistence（每層振幅衰減）、lacunarity（每層頻率倍增）。\n注意 Unity 的 Mathf.PerlinNoise 在整數座標會回傳固定值，取樣座標請加上非整數的 seed 偏移。\n輸出請正規化到 0~1，再用一條 AnimationCurve 映射成實際高度，讓我可以做出平原多、高山少的分布。",
+trap:"取樣座標直接用整數格子索引，Perlin 會回傳一片 0.5 的平地。一定要乘上 scale 並加偏移。"},
+
+{c:"隨機與程序生成",n:"fBm 疊層雜訊",t:2,
+one:"把好幾層不同頻率的 noise 疊起來，一層山脈一層碎石。",
+when:"單層 Perlin 太平滑、太假的時候。",
+ai:"單層 noise 太平滑，請改用 fBm：疊 <4> 層 octave，每層頻率乘 <2.0>、振幅乘 <0.5>，最後正規化。\n每層的偏移要不同，不然會疊出格線狀的規律紋路。",
+trap:"層數越多越慢，四到六層通常就夠，加到十層只是浪費。"},
+
+{c:"隨機與程序生成",n:"Wave Function Collapse（WFC）",t:2,
+one:"給一小張範例圖，它生出風格一致的無限大圖。",
+when:"瓦片地圖、房間拼接，想要「看起來是人設計的」而不是純隨機。",
+ai:"用 Wave Function Collapse 生成 <瓦片地圖>。\n輸入：<一張手繪的範例圖／一組瓦片與它們四個方向的相鄰規則>\n流程：每格保留所有可能瓦片 → 選熵最低的格子塌縮 → 傳播約束 → 重複。\n一定要處理矛盾（contradiction）：發生時要能回溯或整張重生成，不要直接卡死或丟例外。\n生成完請跑一次連通性檢查（BFS），確認玩家走得到出口。",
+trap:"最常見的失敗是「跑一跑就矛盾卡死」。事前一定要要求 AI 寫好矛盾處理，不然做到一半才發現。"},
+
+{c:"隨機與程序生成",n:"BSP 二元空間分割",t:1,
+one:"把大長方形一直對半切，切出來的格子擺房間，再連走廊。",
+when:"地城房間生成的最穩解法。可控、好懂、幾乎不會出錯。",
+ai:"用 BSP 生成地城。\n步驟：遞迴把區域隨機切成兩半（切到 <最小房間尺寸+邊界> 就停）→ 每個葉節點裡放一個比它小的房間 → 沿著 BSP 樹由葉往根，把兄弟節點的房間用走廊連起來。\n可調參數：最小房間尺寸、切分比例範圍（<0.35~0.65>，避免切出細長條）、房間佔格子的比例。\n保證全圖連通，並回報房間數量。",
+trap:"切分比例不設下限會切出 1 格寬的長條，房間放不下。一定要限制比例範圍。"},
+
+{c:"隨機與程序生成",n:"Cellular Automata 細胞自動機",t:2,
+one:"先隨機灑點，再反覆「看鄰居決定死活」，洞穴就長出來了。",
+when:"有機形狀的洞穴、島嶼，不要方方正正的房間時。",
+ai:"用細胞自動機生成洞穴。\n步驟：以 <45%> 機率隨機填成牆 → 跑 <5> 次平滑（一格周圍八鄰居有 <4> 個以上是牆就變牆，否則變空地）→ 邊界強制設為牆。\n平滑完請用 flood fill 找出所有連通區塊，只保留最大的那塊，其餘填成牆；或把各區塊用走廊打通（我要 <保留最大塊>）。",
+trap:"平滑完一定會產生玩家去不了的孤島。沒做連通性處理就等於做了一半。"},
+
+{c:"隨機與程序生成",n:"Poisson Disk Sampling",t:2,
+one:"隨機灑點，但保證任兩點不會太靠近。",
+when:"種樹、擺敵人、放資源點，不想要糊成一團或穿模。",
+ai:"要在 <地圖上> 隨機放置 <樹木>，但任兩個之間至少相距 <2> 公尺，請用 Poisson disk sampling（Bridson 演算法），不要用「隨機放然後檢查重疊、失敗就重試」。\n密度請支援用一張灰階圖控制（白的地方密、黑的地方不長）。",
+trap:"用純隨機加重試，點一多就會退化成幾乎無限迴圈。"},
+
+{c:"隨機與程序生成",n:"Fisher-Yates 洗牌",t:1,
+one:"唯一正確的洗牌法，每種排列機率相等。",
+when:"抽卡牌堆、隨機出題、隨機關卡順序。",
+ai:"洗牌請用 Fisher-Yates（從最後一個往前，跟 0~i 之間隨機一個交換）。\n不要用 list.OrderBy(x => Random.value) 這種寫法，也不要自己想一套交換規則。\n用我注入的 seeded 隨機來源，不要用全域 Random。",
+trap:"OrderBy 加隨機看起來能動，但分布不均勻，而且比較器不穩定時行為未定義。"},
+
+{c:"隨機與程序生成",n:"加權隨機 / Alias Method",t:1,
+one:"讓每個選項有不同的中獎機率。",
+when:"掉寶表、抽卡、隨機事件。幾乎每個遊戲都要。",
+ai:"做一張加權掉寶表：<普通 70、稀有 25、傳說 5>。\n權重請放在 ScriptableObject 讓我在編輯器調整，不要寫死。\n作法：累加權重成前綴和，再用二分搜尋定位（不要每次都線性掃過整張表）。\n如果同一張表每幀要抽上千次，改用 Alias Method（O(1) 抽取）。\n請寫一個驗證：抽 <100000> 次後統計實際比例，和設定權重誤差要在 <1%> 內，並把這個當成回歸測試留著。",
+trap:"改權重要重新編譯。還有：沒做大量抽樣驗證就上線，比例錯了玩家會先發現。"},
+
+{c:"隨機與程序生成",n:"Pity System 保底機制",t:2,
+one:"連續沒中就悄悄提高機率，避免玩家被真隨機打爆。",
+when:"抽卡、爆擊、稀有掉落。純隨機的「連續 20 次沒中」是真的會發生的。",
+ai:"抽卡加保底機制：\n1. 硬保底：第 <90> 抽必定出稀有，抽中後計數歸零。\n2. 軟保底：第 <74> 抽開始，每抽機率增加 <6%>。\n計數器要存進存檔，不能只放記憶體。\n另外做一個模擬腳本：跑 <10000> 個玩家各抽 <200> 次，輸出實際期望抽數與分布，讓我確認數值。",
+trap:"保底計數沒存檔，玩家關掉遊戲就被歸零，會直接炎上。"},
+
+{c:"隨機與程序生成",n:"隨機漫步 Drunkard's Walk",t:3,
+one:"一個點隨機亂走，走過的地方挖成通道。",
+when:"最簡單的洞穴或礦坑生成，五分鐘能做完。",
+ai:"用隨機漫步挖通道：從中心出發走 <2000> 步，每步隨機選方向並挖空。\n加一個轉向慣性參數（<70%> 機率延續上一個方向），不然通道會糊成一團。\n邊界要夾住不能走出地圖。",
+trap:"沒有轉向慣性，結果是中間一大坨、外圈沒東西。"},
+
+{c:"隨機與程序生成",n:"Marching Squares / Cubes",t:3,
+one:"把「哪裡是實心」的數值場，轉成平滑的邊界或立體網格。",
+when:"洞穴要從格子變成平滑輪廓、可破壞地形、Minecraft 式體素轉網格。",
+ai:"把細胞自動機產生的格子地圖，用 marching squares 轉成平滑的碰撞邊緣與網格，不要直接用一格一格的方塊碰撞體。",
+trap:"每次地形變動就整張重建網格會卡死。要分區塊（chunk）只重建動到的那塊。"},
+
+{c:"隨機與程序生成",n:"L-System",t:3,
+one:"用一組改寫規則遞迴長出樹枝、植物、河流。",
+when:"程序生成植被、血管狀分支、閃電。",
+ai:"用 L-System 生成 <樹木分支>，規則 <F → F[+F]F[-F]F>，遞迴 <4> 層，角度加隨機擾動 <±8 度> 避免每棵都一樣。",
+trap:"遞迴層數加一，物件數量可能翻好幾倍，很容易當機。要設上限。"},
+
+/* ───────── 物理與碰撞 ───────── */
+{c:"物理與碰撞",n:"AABB 軸對齊包圍盒",t:1,
+one:"用不會旋轉的方盒判斷碰撞，最快的粗篩。",
+when:"2D 平台遊戲、UI 命中、任何碰撞的第一道篩選。",
+ai:"碰撞判定請先做 AABB 粗篩（broad phase），通過了再做精細判定，不要一開始就做昂貴的精確檢測。\n2D 平台的角色碰撞就直接用 AABB，不要用旋轉盒。",
+trap:"物件會旋轉時 AABB 會過大，判定變得很鬆。旋轉的要用 OBB 或 SAT。"},
+
+{c:"物理與碰撞",n:"SAT 分離軸定理",t:2,
+one:"兩個凸形狀只要能找到一條軸把它們分開，就沒碰到。",
+when:"旋轉的方盒、多邊形對多邊形的精確 2D 碰撞。",
+ai:"做 <旋轉矩形 vs 多邊形> 的精確碰撞，請用 SAT（分離軸定理）。\n同時回傳最小平移向量（MTV），我需要拿它把物件推開。\n只支援凸多邊形，凹的請先幫我做凸分解或拆成多個碰撞體。",
+trap:"SAT 對凹多邊形直接失效，會判成有碰撞。一定要先確認形狀是凸的。"},
+
+{c:"物理與碰撞",n:"Raycast / SphereCast",t:1,
+one:"射一條線或滾一顆球出去，看撞到什麼。",
+when:"射擊命中、地面偵測、視線遮蔽、滑鼠點選。使用率極高。",
+ai:"做 <射擊命中判定>，用 raycast。\n注意事項：\n1. 一定要指定 LayerMask，不要用預設的全部圖層（會打到自己和觸發器）。\n2. 要不要打中觸發器（trigger）請明確設定 QueryTriggerInteraction。\n3. 距離要設上限，不要用無限遠。\n4. 角色落地偵測請用 SphereCast 或 CapsuleCast，不要用單條 raycast（站在邊緣時單條線會漏判）。\n請在編輯器裡用 Debug.DrawRay 把射線畫出來方便我確認。",
+trap:"沒設 LayerMask，raycast 打到角色自己身上的碰撞體，永遠回傳距離 0。這是新手第一大坑。"},
+
+{c:"物理與碰撞",n:"連續碰撞偵測 CCD",t:1,
+one:"高速物體用「掃過的路徑」判定，不是只看這一幀的位置。",
+when:"子彈、快速移動的角色穿牆穿地板時。",
+ai:"子彈速度很快會穿牆，請用連續碰撞偵測：\n方法一：Rigidbody 的 collisionDetectionMode 設成 Continuous / ContinuousDynamic。\n方法二（建議，子彈不用真物理時）：每幀不要直接移動，改成從上一幀位置往這一幀位置做 raycast，打中就在命中點結算。\n請用方法二實作，並保留子彈的視覺位置與判定位置一致。",
+trap:"改成 Continuous 會明顯變慢，全場子彈都開會拖垮效能。raycast 法通常更好。"},
+
+{c:"物理與碰撞",n:"Verlet 積分",t:3,
+one:"不記速度，只記「上一幀位置」，很適合做繩子和布。",
+when:"繩索、鎖鏈、頭髮、旗幟、布娃娃。",
+ai:"用 Verlet 積分做 <繩索>：質點只存目前位置與上一幀位置，每幀更新後跑 <5> 次約束鬆弛把相鄰質點距離拉回原長。\n約束迭代次數做成可調參數，越多越硬越不會被拉長。",
+trap:"迭代次數太少繩子會像橡皮筋一直被拉長，太多會卡效能。"},
+
+{c:"物理與碰撞",n:"空間分割做碰撞粗篩",t:1,
+one:"先把世界切格，只檢查同格或相鄰格的物件。",
+when:"場上物件超過幾百個，碰撞檢查開始變慢時。",
+ai:"目前碰撞是 <N 個物件兩兩比對>，複雜度 O(n²)，物件變多就卡。\n請加一層空間分割做粗篩：<2D 用 uniform grid 空間雜湊／3D 用 octree>。\n格子大小設成約物件平均直徑的 <2> 倍。\n請保留原本的精確判定當第二階段，只是少檢查很多對。",
+trap:"格子太小會導致一個物件橫跨很多格，反而更慢。格子大小要和物件尺寸匹配。"},
+
+/* ───────── 資料結構與查詢 ───────── */
+{c:"資料結構與查詢",n:"Quadtree / Octree",t:2,
+one:"空間切四份（2D）或八份（3D），有東西才繼續切。",
+when:"物件分布不均勻（有的地方密有的地方空）的空間查詢。",
+ai:"物件分布很不均勻，空間查詢請用 <quadtree>。\n最大深度 <6>、單格最多 <8> 個物件就再分割。\n物件頻繁移動的話請告訴我這個資料結構是不是還划算，還是改用空間雜湊比較好。",
+trap:"物件每幀都在動時，重建樹的成本可能吃掉全部好處。動態場景常常空間雜湊更快。"},
+
+{c:"資料結構與查詢",n:"Spatial Hash Grid 空間雜湊",t:1,
+one:"把座標除以格子大小當 key，丟進字典。簡單粗暴又快。",
+when:"大量會動的物件要找鄰居。2D 遊戲首選。",
+ai:"要找「我附近 <5> 公尺內的所有敵人」，請用空間雜湊格（spatial hash grid），不要每次都遍歷全部敵人。\n格子大小 <5>（等於查詢半徑，這樣只需檢查 3x3 共 9 格）。\n物件移動時只在跨格時更新歸屬，不要每幀重插。",
+trap:"格子大小和查詢半徑差太多，要嘛檢查太多格、要嘛每格塞太多東西。先讓兩者相等。"},
+
+{c:"資料結構與查詢",n:"Object Pool 物件池",t:1,
+one:"物件用完不銷毀，收回池子重複使用。",
+when:"子彈、特效、傷害數字、敵人。任何會大量生成銷毀的東西。",
+ai:"<子彈與命中特效> 請用物件池，不要 Instantiate/Destroy。\n開場預先生成 <100> 個，池子不夠時自動擴充並在 Console 警告我（代表我預估太少）。\n回收時一定要重設所有狀態：位置、旋轉、速度、生命週期計時、粒子系統、拖尾特效、協程要停掉。\n請寫一個回收檢查清單在註解裡，以後加欄位我才知道要補。",
+trap:"回收沒重設狀態，下一顆子彈帶著上一顆的速度或拖尾飛出去。這是物件池最典型的鬼故事。"},
+
+{c:"資料結構與查詢",n:"Priority Queue 優先佇列 / 二元堆積",t:2,
+one:"永遠能 O(log n) 取出最小的那個。A* 的核心零件。",
+when:"A*、事件排程、定時任務、回合制行動順序（ATB 計時軸）。",
+ai:"A* 的 open list 請用二元堆積實作的優先佇列，不要用 List 加 Sort 或每次線性找最小值。\n回合順序（ATB）也用同一套：以「下次行動時間」為 key。\n請附一個小測試確認取出順序正確。",
+trap:"用 List.Sort 每次迴圈排一次，節點一多 A* 會慢到爆。"},
+
+{c:"資料結構與查詢",n:"Dirty Flag 髒標記",t:2,
+one:"沒變就不重算，變了才標記重算。",
+when:"UI 更新、屬性重算、網格重建、存檔。",
+ai:"角色最終屬性（裝備＋Buff＋等級）請用 dirty flag：任何來源變動時只設旗標，真正需要讀取時才重算並快取。\n不要每幀重算，也不要每次變動都立刻重算（連換五件裝備會算五次）。",
+trap:"忘了在某條變動路徑上設旗標，屬性就會卡在舊值。所有寫入口都要經過同一個方法。"},
+
+{c:"資料結構與查詢",n:"Bitmask 位元遮罩",t:2,
+one:"用一個整數的每個位元代表一個是非狀態。",
+when:"圖層、狀態異常、瓦片自動連接（autotile）、已解鎖清單。",
+ai:"角色的狀態異常（中毒、燃燒、冰凍…）請用 [Flags] enum 位元遮罩，不要用一堆 bool。\n提供加入、移除、檢查、檢查任一、檢查全部的輔助方法。\n瓦片自動連接也用同一招：檢查八方向鄰居組成 0~255 的索引，查表決定用哪張圖。",
+trap:"忘了寫 [Flags] 或把列舉值寫成 1,2,3,4 而不是 1,2,4,8，整套邏輯會靜默出錯。"},
+
+/* ───────── 數值、機率與手感 ───────── */
+{c:"數值、機率與手感",n:"Lerp 線性插值",t:1,
+one:"在 A 和 B 之間取中間值，最常用的一行數學。",
+when:"顏色漸變、血條變化、鏡頭跟隨、任何「慢慢過去」。",
+ai:"<血條扣血> 請用 Lerp 做成漸變而不是瞬間變。\n重要：不要寫 Lerp(current, target, 0.1f) 這種每幀寫法，它和幀率綁定，在 144Hz 和 30Hz 會快慢不同。\n請改成幀率無關的寫法：t = 1 - Mathf.Exp(-speed * Time.deltaTime)，再用這個 t 去 Lerp。",
+trap:"Lerp 每幀固定 t 是全遊戲業最普遍的錯誤寫法。你不指出來，AI 十次有八次會這樣寫。"},
+
+{c:"數值、機率與手感",n:"Damping 幀率無關的平滑",t:1,
+one:"讓「追過去」的速度不會因為電腦快慢而不同。",
+when:"任何用 Lerp 做平滑的地方。這條和上一條是同一件事的正解。",
+ai:"所有平滑追蹤（鏡頭、UI、旋轉）請一律用幀率無關的阻尼：\nfloat t = 1f - Mathf.Exp(-sharpness * Time.deltaTime);\nvalue = Mathf.Lerp(value, target, t);\nsharpness 開成 Inspector 可調欄位。\n請在專案裡建一個共用的靜態工具方法，全部地方都呼叫它，不要各寫各的。",
+trap:"混用兩種寫法，結果高幀率電腦上手感不一樣，測試時很難發現。"},
+
+{c:"數值、機率與手感",n:"SmoothDamp 彈簧阻尼",t:1,
+one:"像有彈簧一樣追過去，會自然加減速。",
+when:"鏡頭跟隨、滑順的 UI 滑動。Unity 有現成的 Vector3.SmoothDamp。",
+ai:"鏡頭跟隨請用 SmoothDamp（需要自己保存 velocity 變數），smoothTime <0.15>。\n並加上 maxSpeed 上限，避免玩家瞬移時鏡頭用超快速度追過去。\n鏡頭更新請放在 LateUpdate，不要放 Update，否則會抖。",
+trap:"鏡頭寫在 Update 會比角色移動早一幀執行，畫面會持續微抖。這個 bug 非常難用肉眼定位。"},
+
+{c:"數值、機率與手感",n:"Easing Functions 緩動曲線",t:1,
+one:"不是等速，而是先慢後快、彈一下、回彈。手感的核心。",
+when:"UI 彈出、道具飛行、打擊反饋。你們說的「果汁」很多來自這裡。",
+ai:"<UI 面板彈出> 請套用緩動：ease-out-back（出現時稍微彈過頭再回來），時間 <0.25> 秒。\n關閉用 ease-in-quad，時間 <0.15> 秒（關閉要比開啟快）。\n請把曲線做成 AnimationCurve 欄位讓我在編輯器直接拉，不要寫死公式。",
+trap:"全遊戲統一用 linear，畫面會死板得像 PPT。也不要全部用同一條曲線，進場出場要不同。"},
+
+{c:"數值、機率與手感",n:"PID 控制器",t:3,
+one:"自動調整輸出讓數值穩定貼近目標，不會震盪或追不到。",
+when:"飛行器姿態穩定、懸浮車貼地、自動瞄準、賽車 AI 轉向。",
+ai:"用 PID 控制 <懸浮車的離地高度>。\nP、I、D 三個增益開成可調欄位，I 項要做積分飽和限制（anti-windup）。\n先只調 P，穩定後再加 D 抑制震盪，最後才考慮 I。",
+trap:"三個參數亂調會爆炸震盪。要有明確的調參順序。"},
+
+{c:"數值、機率與手感",n:"傷害公式：減法 vs 除法",t:1,
+one:"防禦要怎麼算，決定整個遊戲後期會不會壞掉。",
+when:"任何有攻防數值的遊戲。開工前就該決定。",
+ai:"請幫我比較並實作傷害公式，我要看數值曲線：\nA. 減法：傷害 = 攻擊 - 防禦\nB. 除法：傷害 = 攻擊 * (100 / (100 + 防禦))\nC. 百分比減傷：傷害 = 攻擊 * (1 - 減傷率)，減傷率有上限 <75%>\n請用 <攻擊 10~1000、防禦 0~500> 的範圍產生對照表，讓我看哪一種在後期不會壞。\n最低傷害請保底 <1>，不要出現 0 或負數。",
+trap:"用減法公式，後期防禦超過攻擊就完全免疫，遊戲直接壞掉。除法公式沒有這問題但成長感較弱。"},
+
+{c:"數值、機率與手感",n:"成長曲線（等級與經驗）",t:2,
+one:"等級要多久升一級、數值長多快，用公式而不是手填表。",
+when:"RPG 等級、技能樹、商店價格。",
+ai:"設計等級 1~<60> 的經驗需求與屬性成長。\n請提供三種曲線讓我比較：線性、二次方、指數（底數 <1.12>）。\n輸出一張表：每級所需經驗、累積經驗、預估遊玩時數（假設每分鐘獲得 <X> 經驗）。\n數值放 ScriptableObject 或 CSV，程式只讀不寫死。",
+trap:"用指數曲線而底數太大，到 50 級需要的經驗會變成天文數字。一定要先看表再決定。"},
+
+{c:"數值、機率與手感",n:"Elo / TrueSkill 配對分",t:3,
+one:"用勝負更新雙方分數，讓實力接近的人配在一起。",
+when:"PvP 排行榜、對戰配對。",
+ai:"做 PvP 配對分，用 Elo。K 值分段：新手 <40>、一般 <20>、高分 <10>。\n新帳號前 <10> 場用高 K 值快速定位。\n配對時優先找分差 <±100> 內，等待超過 <30> 秒逐步放寬。",
+trap:"Elo 不處理「隊伍」和「不確定性」。團隊模式要考慮 TrueSkill 這類。"},
+
+{c:"數值、機率與手感",n:"Input Buffer 與 Coyote Time",t:1,
+one:"提早按的輸入先記著，離開平台後還能跳一下下。手感的隱形功臣。",
+when:"平台跳躍、動作遊戲連段。玩家覺得「操作很爛」通常是缺這兩個。",
+ai:"跳躍手感請加這三件事：\n1. Input buffer：落地前 <0.12> 秒內按的跳躍要記著，落地立刻執行。\n2. Coyote time：離開地面後 <0.1> 秒內仍可跳。\n3. 可變跳躍高度：放開跳躍鍵時如果還在上升，把上升速度乘 <0.5>。\n這三個時間都開成 Inspector 可調欄位，我要實際試手感。",
+trap:"沒有這兩個，玩家會一直覺得「明明按了卻沒跳」，但說不出原因。是最高 CP 值的手感改善。"},
+
+{c:"數值、機率與手感",n:"Cooldown 與時間管理",t:2,
+one:"技能冷卻怎麼記，決定會不會被暫停或讀檔搞爆。",
+when:"任何有技能冷卻、Buff 持續時間的遊戲。",
+ai:"技能冷卻請存「可再次使用的時間點」（endTime = now + duration），不要每幀減一個 remaining。\n時間來源請用可暫停的遊戲時間，不要用 Time.time（暫停選單時會繼續跑）。\n存檔時存剩餘時間，讀檔時重新換算成絕對時間點。\nUI 顯示的剩餘秒數由 endTime - now 算出，不要另存一份。",
+trap:"每幀減值的做法，遇到幀率不穩或暫停就會飄；同一個數值存兩份遲早不同步。"},
+
+/* ───────── 動畫與插值 ───────── */
+{c:"動畫與插值",n:"Bezier / Catmull-Rom 樣條",t:2,
+one:"用幾個控制點畫出平滑曲線，物件沿著它走。",
+when:"鏡頭運鏡路徑、飛行道具弧線、賽道中心線、關卡巡邏路線。",
+ai:"<道具飛向玩家> 請走三次 Bezier 曲線，控制點做成可在 Scene 視窗拖曳。\n如果是「通過所有指定點」的路徑（例如巡邏點），請用 Catmull-Rom 而不是 Bezier，因為 Bezier 不會經過中間控制點。\n沿曲線等速移動請先做弧長參數化（建一張距離對 t 的查表），不要直接對 t 等速遞增，那樣速度會忽快忽慢。",
+trap:"直接對 t 等速增加，物件在曲線彎的地方會變慢、直的地方變快。很多人做完覺得怪但找不到原因。"},
+
+{c:"動畫與插值",n:"Blend Tree 動畫混合樹",t:2,
+one:"用速度之類的參數，在走路和跑步動畫之間平滑混合。",
+when:"角色移動動畫。Unity Animator 內建。",
+ai:"角色移動動畫請用 1D blend tree，參數是正規化速度 0~1（Idle / Walk / Run）。\n八方向移動用 2D Freeform Directional，參數是相對角色朝向的 X/Y 速度。\n速度參數傳進 Animator 前請先做阻尼平滑，不要直接傳原始值（會抽動）。",
+trap:"直接把原始輸入傳進去，動畫會在兩個 clip 之間高頻抖動。一定要先平滑。"},
+
+{c:"動畫與插值",n:"IK 反向運動學",t:2,
+one:"給手腳的目標位置，反推關節角度。",
+when:"腳踩在斜坡上要貼合、手要抓住武器握把、頭部看向玩家。",
+ai:"做 foot IK 讓角色腳貼合斜坡：每幀從腳上方往下 raycast 取得地面高度與法線 → 調整腳部 IK 目標位置與旋轉 → 同時把骨盆往下壓到兩腳都踩得到。\nIK 權重要做平滑過渡，不要瞬間開關（會彈一下）。\n請在 OnAnimatorIK 裡處理。",
+trap:"IK 權重瞬間切換會讓腳抽搐。還有骨盆沒調整的話，斜坡上一隻腳會浮空。"},
+
+{c:"動畫與插值",n:"Tweening 補間",t:1,
+one:"一行程式讓「某個值在 N 秒內從 A 變到 B」。",
+when:"UI 動畫、簡單物件位移、淡入淡出。非常省時間。",
+ai:"<UI 淡入> 請用補間（tween）處理，不要自己寫協程算時間。\n時間 <0.3> 秒、曲線 ease-out-cubic。\n物件被銷毀時一定要把它身上的 tween 一起殺掉，避免對已銷毀物件繼續操作而報錯。\n遊戲暫停時 tween 要跟著暫停（用可暫停的時間來源）。",
+trap:"物件銷毀了 tween 還在跑，是 NullReference 的常見來源。"},
+
+{c:"動畫與插值",n:"Screen Shake（Trauma 模型）",t:1,
+one:"用一個 0~1 的「創傷值」驅動震動，衰減後自然停止。",
+when:"打擊感、爆炸、受擊。這就是果汁的核心零件之一。",
+ai:"做畫面震動，請用 trauma 模型而不是隨機亂晃：\n維持一個 trauma 值 0~1，事件發生時加上去（小擊 <0.2>、爆炸 <0.6>），每秒衰減 <1.5>。\n實際震幅用 trauma 的平方（或立方），這樣小事件幾乎不震、大事件很明顯。\n位移用 Perlin noise 取樣而不是 Random，才會平滑不抽搐。\n請提供一個總開關與強度倍率，讓玩家在設定裡調整或關閉（這是無障礙需求）。",
+trap:"用 Random 做位移會變成高頻抖動，看起來廉價還會讓人不舒服。一定要用 noise。"},
+
+/* ───────── 效能與最佳化 ───────── */
+{c:"效能與最佳化",n:"Frustum / Occlusion Culling",t:2,
+one:"鏡頭看不到的東西不要畫。",
+when:"場景物件多、GPU 吃緊時。Unity 大多內建，你要知道它存在。",
+ai:"場景渲染變慢，請先確認 frustum culling（視錐剔除）有作用，再評估要不要烘焙 occlusion culling（遮擋剔除）。\n請先用 Profiler 與 Frame Debugger 告訴我目前瓶頸在 CPU 還是 GPU、draw call 多少，再決定做什麼，不要直接開始改。",
+trap:"還沒量測就開始最佳化，常常改了半天瓶頸根本不在那裡。一定要先要求量測。"},
+
+{c:"效能與最佳化",n:"LOD 細節層級",t:2,
+one:"遠的東西用低模、近的用高模。",
+when:"開放世界、大量重複物件（樹、石頭）。",
+ai:"為 <樹木> 設定 LOD：LOD0 近距離高模、LOD1 中距離低模、LOD2 遠距離用 billboard、超過 <80> 公尺剔除。\n切換距離做成可調並請用 Profiler 驗證實際有省到，不要只是相信理論。",
+trap:"LOD 切換距離設太近會看到明顯「跳模」。要加 cross-fade 或拉遠切換點。"},
+
+{c:"效能與最佳化",n:"Time Slicing 分幀處理",t:1,
+one:"很重的工作切成好幾幀做完，避免單幀卡頓。",
+when:"一次要處理上千個物件、地圖生成、大量存檔寫入。",
+ai:"<敵人感知檢查／地圖生成> 一次處理全部會造成單幀卡頓，請分幀處理：\n方法一：每幀只處理 <50> 個，用索引輪流（round-robin）。\n方法二：用協程，每處理 <1> 毫秒就 yield 一次。\n請用方法一，並讓每個物件的檢查幀錯開（用 instanceID % 幀數），不要全部擠在同一幀。\n生成類的請顯示進度，不要讓畫面整個凍住。",
+trap:"分幀分得太細，總時間反而拉很長（地圖要生十秒）。要在「單幀不卡」和「總時間」之間抓平衡。"},
+
+{c:"效能與最佳化",n:"Fixed Timestep ＋ 插值",t:1,
+one:"物理用固定步長算，畫面用插值補中間，兩者分開。",
+when:"物理表現在不同電腦上不一致、畫面抖動時。",
+ai:"物理運算請放 FixedUpdate 並用 Time.fixedDeltaTime；輸入偵測放 Update；視覺位置用插值補上中間幀。\nRigidbody 的 Interpolate 選項請開啟，否則低物理頻率時畫面會抖。\n不要在 Update 裡改 Rigidbody 的速度或位置。",
+trap:"在 Update 裡動 Rigidbody，物理行為會隨幀率變化，玩家電腦好壞會影響手感甚至通關難度。"},
+
+{c:"效能與最佳化",n:"Batching / GPU Instancing",t:2,
+one:"把很多相同物件合併成一次繪製命令。",
+when:"draw call 太多導致 CPU 吃滿。",
+ai:"畫面上有 <500> 個相同的 <草叢>，draw call 太多。請用 GPU instancing（材質要勾 Enable GPU Instancing，且各實例不能有獨立材質）。\n若各實例需要不同顏色，請用 MaterialPropertyBlock 而不是複製材質。\n請告訴我改完之後 draw call 從多少降到多少，用 Frame Debugger 實際量。",
+trap:"對物件呼叫 renderer.material（不是 sharedMaterial）會複製出一份新材質，instancing 立刻失效而且會漏記憶體。"},
+
+{c:"效能與最佳化",n:"Flood Fill 連通性驗證",t:1,
+one:"從起點灌水，灌不到的地方就是玩家去不了的區域。",
+when:"每一次程序生成之後，都該跑一次。",
+ai:"地圖生成完後請自動跑一次 flood fill 驗證：從玩家出生點出發，確認 <所有出口、寶箱、任務點> 都可到達。\n驗證失敗就重新生成（最多重試 <10> 次），並在 Console 記錄失敗原因與 seed。\n這個驗證請寫成可重複執行的測試：用 <100> 個不同 seed 跑生成，全部都要通過。",
+trap:"程序生成最恐怖的 bug 就是「玩家被關在牆裡」，而且不是每個 seed 都會發生。不做這個驗證等於在賭。"}
+
+];
+
+/* ───── 渲染 ───── */
+const CATS=[...new Set(D.map(x=>x.c))];
+const TN={1:"必學",2:"該懂",3:"知道就好"};
+const TC={1:"a",2:"b",3:"c"};
+let fc=null, ft=null, fq="";
+
+const catBox=document.getElementById("cats");
+catBox.innerHTML=`<button class="pill on" data-c="">全部 ${D.length}</button>`+
+  CATS.map(c=>`<button class="pill" data-c="${c}">${c} ${D.filter(x=>x.c===c).length}</button>`).join("");
+
+function esc(s){return s.replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]));}
+
+function render(){
+  const out=document.getElementById("out");
+  const q=fq.trim().toLowerCase();
+  const list=D.filter(x=>{
+    if(fc && x.c!==fc) return false;
+    if(ft && x.t!==ft) return false;
+    if(q){
+      const hay=(x.n+x.one+x.when+x.ai+x.trap+x.c).toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  document.getElementById("count").textContent=`顯示 ${list.length} / ${D.length} 條`;
+  if(!list.length){out.innerHTML='<div class="empty">沒有符合的條目。換個關鍵字，或按「全部」重來。</div>';return;}
+
+  const groups=CATS.filter(c=>list.some(x=>x.c===c));
+  out.innerHTML=groups.map(c=>{
+    const items=list.filter(x=>x.c===c);
+    return `<section class="grp"><h2>${c}</h2><div class="grid">`+items.map(x=>`
+      <article class="card">
+        <div class="chead">
+          <span class="tier ${TC[x.t]}">${TN[x.t]}</span>
+          <div class="ctitle"><h3>${esc(x.n)}</h3><p>${esc(x.one)}</p></div>
+          <span class="caret">▶</span>
+        </div>
+        <div class="cbody">
+          <div class="row"><div class="lab">什麼時候用</div><p>${esc(x.when)}</p></div>
+          <div class="row"><div class="lab">貼給 AI 的指令範本</div>
+            <div class="pbox"><button class="copy">複製</button><pre>${esc(x.ai)}</pre></div>
+          </div>
+          <div class="row trap"><div class="lab">常見地雷</div><p>${esc(x.trap)}</p></div>
+        </div>
+      </article>`).join("")+`</div></section>`;
+  }).join("");
+}
+
+document.addEventListener("click",e=>{
+  const p=e.target.closest(".pill");
+  if(p){
+    if(p.dataset.c!==undefined){
+      fc=p.dataset.c||null;
+      catBox.querySelectorAll(".pill").forEach(b=>b.classList.toggle("on",b===p));
+    }else{
+      const t=+p.dataset.t;
+      ft = (ft===t)?null:t;
+      document.querySelectorAll("#tiers .pill").forEach(b=>b.classList.toggle("on",+b.dataset.t===ft));
+    }
+    render(); return;
+  }
+  const cp=e.target.closest(".copy");
+  if(cp){
+    const txt=cp.parentElement.querySelector("pre").textContent;
+    navigator.clipboard.writeText(txt).then(()=>{
+      cp.textContent="已複製"; cp.classList.add("ok");
+      setTimeout(()=>{cp.textContent="複製"; cp.classList.remove("ok");},1400);
+    }).catch(()=>{cp.textContent="複製失敗";});
+    return;
+  }
+  const h=e.target.closest(".chead");
+  if(h){ h.parentElement.classList.toggle("open"); }
+});
+
+document.getElementById("q").addEventListener("input",e=>{fq=e.target.value;render();});
+render();
+</script>
+</body>
+</html>
