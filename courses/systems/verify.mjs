@@ -4,8 +4,13 @@ import { resolve, dirname } from 'node:path';
 const root = resolve('courses');
 const map = {
   'ai-interactive-media': ['game-algorithms', 'pixel-tools', 'faucet-synth'],
-  'game-planning': ['pulse-core', 'story-branch', 'faucet-synth'],
-  'project-planning': ['pixel-tools', 'story-branch', 'game-algorithms'],
+  'game-planning': ['game-glossary', 'story-branch', 'first-principles-navigator'],
+  'project-planning': ['pixel-city-editor', 'story-branch', 'game-algorithms'],
+};
+const external = {
+  'game-glossary': 'https://treefar.link/game-glossary/',
+  'first-principles-navigator': 'https://treefar.link/first-principles-navigator/',
+  'pixel-city-editor': 'https://treefar.link/pixel-city-editor/',
 };
 const errors = [];
 const read = path => readFileSync(path, 'utf8');
@@ -16,14 +21,17 @@ for (const [course, slugs] of Object.entries(map)) {
     const week = String(i + 4).padStart(2, '0');
     const file = resolve(root, course, `week${week}.html`);
     const html = read(file);
-    const href = `../systems/${slug}/`;
+    const href = external[slug] || `../systems/${slug}/`;
     if ((html.match(new RegExp(href.replaceAll('/', '\\/'), 'g')) || []).length !== 2) errors.push(`${file}: expected slide and notes links`);
     if (!html.includes(`<!-- student-system:${slug} -->`) || !html.includes('課堂任務') || !html.includes('操作任務')) errors.push(`${file}: missing teaching content`);
-    if (!existsSync(resolve(dirname(file), href, 'index.html'))) errors.push(`${file}: target missing`);
+    if (!external[slug] && !existsSync(resolve(dirname(file), href, 'index.html'))) errors.push(`${file}: target missing`);
   }
 }
 
 const systems = resolve(root, 'systems');
+for (const [slug, href] of Object.entries(external)) {
+  if (!read(resolve(systems, 'index.html')).includes(`href="${href}"`)) errors.push(`${slug}: missing from systems index`);
+}
 for (const slug of ['game-algorithms', 'pixel-tools', 'faucet-synth', 'pulse-core', 'story-branch']) {
   const dir = resolve(systems, slug);
   const html = read(resolve(dir, 'index.html'));
@@ -39,4 +47,4 @@ for (const slug of ['game-algorithms', 'pixel-tools', 'faucet-synth', 'pulse-cor
 }
 if (!read(resolve(systems, 'story-branch/index.html')).includes('人物、學校與事件皆為虛構')) errors.push('story-branch: fiction notice missing');
 if (errors.length) { console.error(errors.join('\n')); process.exit(1); }
-console.log('PASS: 9 week integrations, 5 student systems, local assets and public-content checks');
+console.log('PASS: 9 week integrations, 5 local student systems, 3 public systems, local assets and public-content checks');
