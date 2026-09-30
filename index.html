@@ -181,7 +181,7 @@
     <h1>treefar <span>／專案導航</span></h1>
     <div class="header-links">
       <a class="about-link" href="/about.html">關於我</a>
-      <a class="private-link" href="https://tf-private.pages.dev/" target="_blank" rel="noopener" title="Cloudflare Access 門禁：個人資料、學生查詢、論文網頁、健康記錄">
+      <a class="private-link" href="https://tf-private.pages.dev/" target="_blank" rel="noopener" title="需登入">
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>私人頁面
       </a>
     </div>
@@ -196,7 +196,7 @@
   <h2 class="sec">網頁專案</h2>
   <div class="filters" id="filters">
     <button class="chip on" data-f="all">全部</button>
-    
+    <button class="chip" data-f="gamedev">遊戲開發</button>
     <button class="chip" data-f="story">互動敘事</button>
     <button class="chip" data-f="site">網站</button>
     <button class="chip" data-f="tool">工具</button>
@@ -217,39 +217,40 @@
 <script>
 // ===== 要新增項目，改下面三個陣列即可 =====
 
-// 網頁專案：cat 可多值（空白分隔）：game / story / site / tool
+// 網頁專案：cat 可多值（空白分隔）：gamedev / story / site / tool
+// gamedev＝遊戲開發流程工具，tag 開頭的圈號是流程階段（①定位 ②選引擎 ③美術 ④音效 ⑤實作 ⑥交付 ⑦作品），完整對照在私網 gamedev-flow-hub
 const SITES = [
   { slug: "academic-calendar-115", title: "115 學年度學生行事曆", cat: "site tool", tag: "REFERENCE × ACADEMIC CALENDAR",
     image: null, repo: "treefar.github.io",
     desc: "把 2026 年 8 月至 2027 年 7 月的學生行事曆分成重要、中度、參考三色，依今天自動整理近期期限，並提供月份、色級與關鍵字篩選。" },
-  { slug: "game-audio-station", title: "聲音補給站", cat: "tool site", tag: "TOOL × AUDIO",
+  { slug: "steam-tag-prompter", title: "Steam 標籤定位器", cat: "tool gamedev", tag: "① CONCEPT × STEAM TAGS",
+    desc: "430 個 Steam 官方標籤釐清遊戲定位，選完列出 Steam 上最接近的遊戲。靈感輪盤、取捨說明、定位單與 AI 工單。短網址 /tool" },
+  { slug: "game-glossary", title: "遊戲名詞大百科", cat: "tool site gamedev", tag: "① CONCEPT × GLOSSARY",
+    image: null,
+    desc: "530 條遊戲術語的教學查詢系統：類型、題材、機制、果汁、黑話，每條附白話定義、代表作、易混淆詞比較與來源，並對應 Steam 官方標籤、與標籤定位器互連。短網址 /glossary" },
+  { slug: "style-library", title: "風格庫", cat: "tool site gamedev", tag: "③ ART × DESIGN",
+    desc: "二十套視覺風格，上方可切分類。文件與介面 8 組：漫畫特刊、紙上期刊、深夜實驗室、克萊因藍、RPG 訊息視窗、規格控制台、靛藍儀表板、管線青。遊戲題材 12 套（抽自 Claude Design 專案的原生設計系統）：糖果流行、典籍金箔、水彩由灰轉彩、8-bit 磚塊、夜巫金光、和紙墨繪、薔薇與椿、怪異事件簿、第十三格、墨金古典、CRT 主機介面、鏽港夜行。點風格看即時預覽，複製 CSS、拿 Unity 色票與 USS、產投影片主題參數，或複製一段指令貼回 Claude Code 直接套進專案。" },
+  { slug: "3d-pixel-tools", title: "3D／像素三工具實驗室", cat: "tool gamedev", tag: "③ ART × 3D PIXEL",
+    image: "3d-pixel-tools.png", repo: "treefar.github.io",
+    desc: "Asset Forge、PixelOver、Crocotile 3D 的能力比較、原生驗證與 Unity 整合案例。含 Waterfall 開放世界與三型共骨架機甲。" },
+  { slug: "game-audio-station", title: "聲音補給站", cat: "tool site gamedev", tag: "④ AUDIO × SFX BGM",
     image: "game-audio-station.webp", url: "https://treefar-game-audio.treefar.chatgpt.site/", urlLabel: "私人登入站", repo: false,
     desc: "快速取得遊戲所需的音效與音樂。優先搜尋 18 套自有雲端素材，再查可商用來源；缺少時可用 Google Lyria 生成音樂、Gemini TTS 生成語音，並下載或匯入 Unity 專案。" },
-  { slug: "vn-studio", title: "VN Studio｜視覺小說製作系統", cat: "tool story", tag: "TOOL × STORY",
+  { slug: "pixel-city-editor", title: "像素地圖編輯器", cat: "tool gamedev", tag: "⑤ BUILD × LEVEL MAP",
+    desc: "七套場景主題的 2.5D 像素地圖編輯器。67 個可放置角色、會照亮周圍的光源、碰撞與遊戲物件錨點，可匯出 Tiled TMX 與通用 JSON。" },
+  { slug: "vn-studio", title: "VN Studio｜視覺小說製作系統", cat: "tool story gamedev", tag: "⑤ BUILD × VISUAL NOVEL",
     image: "vn-studio.webp", repo: "treefar.github.io",
     desc: "全中文、瀏覽器即開即用的視覺小說製作工具。可編輯劇本、分支、角色、舞台、聊天、任務與多語內容，直接試玩並匯出可獨立執行的單一 HTML。" },
-  { slug: "style-library", title: "風格庫", cat: "tool site", tag: "TOOL × DESIGN",
-    desc: "二十套視覺風格，上方可切分類。文件與介面 8 組：漫畫特刊、紙上期刊、深夜實驗室、克萊因藍、RPG 訊息視窗、規格控制台、靛藍儀表板、管線青。遊戲題材 12 套（抽自 Claude Design 專案的原生設計系統）：糖果流行、典籍金箔、水彩由灰轉彩、8-bit 磚塊、夜巫金光、和紙墨繪、薔薇與椿、怪異事件簿、第十三格、墨金古典、CRT 主機介面、鏽港夜行。點風格看即時預覽，複製 CSS、拿 Unity 色票與 USS、產投影片主題參數，或複製一段指令貼回 Claude Code 直接套進專案。" },
   { slug: "github-top100-zh-tw", title: "GitHub 前百大中文精選", cat: "tool site", tag: "TOOL × DATA",
     image: "github-top100-zh-tw.png",
     desc: "每天更新 GitHub 累積 Stars 前 100 名。提供繁中重點、直接下載、安裝判讀，以及針對 Unity、AI、研究與教學工作的個人推薦。" },
   { slug: "claude-academy", title: "Claude Academy 課程地圖", cat: "tool site", tag: "TOOL × LEARNING",
     image: "claude-academy.png", repo: "treefar.github.io",
     desc: "Anthropic 官方免費學習平台的 22 門課程總覽：AI 素養、產品入門、代理與 MCP、API 與雲端四大類，每門課附章節標題與重點摘要，全繁中整理。" },
-  { slug: "pixel-city-editor", title: "像素地圖編輯器", cat: "tool", tag: "TOOL",
-    desc: "七套場景主題的 2.5D 像素地圖編輯器。67 個可放置角色、會照亮周圍的光源、碰撞與遊戲物件錨點，可匯出 Tiled TMX 與通用 JSON。" },
-  { slug: "3d-pixel-tools", title: "3D／像素三工具實驗室", cat: "tool", tag: "TOOL × 3D",
-    image: "3d-pixel-tools.png", repo: "treefar.github.io",
-    desc: "Asset Forge、PixelOver、Crocotile 3D 的能力比較、原生驗證與 Unity 整合案例。含 Waterfall 開放世界與三型共骨架機甲。" },
   { slug: "capy-generator", title: "Capy Generator 水豚生成器", cat: "tool", tag: "TOOL",
     desc: "程序化 3D 水豚：捏體型、換毛色、玩玩具、切天氣，生成收藏卡片。" },
   { slug: "agd-comic-site", title: "動遊系 COMIC EDITION", cat: "site", tag: "SITE",
     desc: "樹德科大動畫與遊戲設計系，漫畫風新形象網站。" },
-  { slug: "steam-tag-prompter", title: "Steam 標籤定位器", cat: "tool", tag: "TOOL",
-    desc: "430 個 Steam 官方標籤釐清遊戲定位，選完列出 Steam 上最接近的遊戲。靈感輪盤、取捨說明、定位單與 AI 工單。短網址 /tool" },
-  { slug: "game-glossary", title: "遊戲名詞大百科", cat: "tool site", tag: "TOOL × GLOSSARY",
-    image: null,
-    desc: "530 條遊戲術語的教學查詢系統：類型、題材、機制、果汁、黑話，每條附白話定義、代表作、易混淆詞比較與來源，並對應 Steam 官方標籤、與標籤定位器互連。短網址 /glossary" },
   { slug: "first-principles-navigator", title: "第一性原理｜核心問題導航器", cat: "tool", tag: "TOOL × THINKING",
     image: "first-principles-navigator.webp",
     desc: "把模糊問題拆成事實、假設與最小驗證。提供三種分析深度、案例庫、假設風險矩陣、決策日誌與多格式匯出。" },
