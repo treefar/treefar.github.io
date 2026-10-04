@@ -46,16 +46,7 @@
   h2.sec { font-size: 15px; letter-spacing: 3px; color: var(--dim); margin: 36px 0 14px; display: flex; align-items: center; gap: 10px; }
   h2.sec::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 
-  .filters { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
-  .chip {
-    border: 1px solid var(--line); background: none; color: var(--dim);
-    padding: 6px 14px; border-radius: 999px; font-size: 13px; cursor: pointer;
-    font-family: inherit; transition: all .15s;
-  }
-  .chip:hover { color: var(--ink); border-color: var(--dim); }
-  .chip.on { color: var(--bg); background: var(--ink); border-color: var(--ink); }
-
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
   .card {
     position: relative; display: flex; flex-direction: column; background: var(--panel);
     border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
@@ -98,7 +89,6 @@
   .mini .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
   .mini p { font-size: 12px; color: var(--dim); line-height: 1.5; }
   .mini .addr { font-size: 11px; color: var(--dim); opacity: .7; font-family: Consolas, monospace; word-break: break-all; }
-  .note { font-size: 12px; color: var(--dim); opacity: .8; margin: -6px 0 12px; }
 
   .notice-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .notice-card {
@@ -128,97 +118,38 @@
     opacity: 0;
   }
   .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-
-  /* ===== 暫時性首頁存取門檻：不需要時可連同頁尾 JS 區塊一起移除 ===== */
-  body.gate-locked { overflow: hidden; }
-  body.gate-locked > .wrap { filter: blur(9px); pointer-events: none; user-select: none; }
-  .access-gate {
-    position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center;
-    padding: 24px; background: rgba(8, 11, 15, .88); backdrop-filter: blur(10px);
-  }
-  .access-gate[hidden] { display: none; }
-  .access-card {
-    width: min(100%, 390px); padding: 30px; border: 1px solid var(--line); border-radius: 18px;
-    background: var(--panel); box-shadow: 0 24px 80px rgba(0, 0, 0, .45);
-  }
-  .access-mark {
-    width: 46px; height: 46px; display: grid; place-items: center; margin-bottom: 18px;
-    border-radius: 13px; background: var(--ink); color: var(--bg); font-weight: 800; font-size: 20px;
-  }
-  .access-card h2 { font-size: 21px; margin-bottom: 8px; }
-  .access-card p { color: var(--dim); font-size: 13px; line-height: 1.7; }
-  .access-form { display: grid; gap: 12px; margin-top: 22px; }
-  .access-form label { font-size: 13px; color: var(--dim); }
-  .access-form input {
-    width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px;
-    background: var(--bg); color: var(--ink); font: inherit; outline: none;
-  }
-  .access-form input:focus { border-color: var(--c-tool); box-shadow: 0 0 0 3px rgba(251, 191, 36, .12); }
-  .access-form button {
-    padding: 12px 16px; border: 0; border-radius: 10px; background: var(--ink); color: var(--bg);
-    font: inherit; font-weight: 700; cursor: pointer;
-  }
-  .access-form button:hover { opacity: .9; }
-  .access-error { min-height: 21px; color: #fda4af !important; }
 </style>
 </head>
-<body class="gate-locked">
-<div class="access-gate" id="accessGate" role="dialog" aria-modal="true" aria-labelledby="accessTitle">
-  <section class="access-card">
-    <div class="access-mark" aria-hidden="true">樹</div>
-    <h2 id="accessTitle">私人專案首頁</h2>
-    <p>這是暫時性的存取門檻。請輸入密碼後進入。</p>
-    <form class="access-form" id="accessForm">
-      <label for="accessPassword">密碼</label>
-      <input id="accessPassword" name="password" type="password" inputmode="numeric" autocomplete="current-password" required autofocus />
-      <button type="submit">進入首頁</button>
-      <p class="access-error" id="accessError" role="alert" aria-live="polite"></p>
-    </form>
-  </section>
-</div>
+<body>
 <div class="wrap">
   <header>
-    <h1>treefar <span>／專案導航</span></h1>
+    <h1>treefar <span>／公開專案導航</span></h1>
     <div class="header-links">
       <a class="about-link" href="/about.html">關於我</a>
       <a class="private-link" href="https://tf-private.pages.dev/" target="_blank" rel="noopener" title="需登入">
-      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>私人頁面
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>私人工作台
       </a>
     </div>
   </header>
-  <p class="hint"><span class="kbd-only">按數字鍵 1–9 直接開啟對應專案</span></p>
+  <p class="hint"><span class="kbd-only">按數字鍵 1–3 直接開啟對應專案</span></p>
 
   <section aria-labelledby="noticeHeading">
     <h2 class="sec" id="noticeHeading">近期注意事項</h2>
     <div class="notice-grid" id="homeNotices"></div>
   </section>
 
-  <h2 class="sec">網頁專案</h2>
-  <div class="filters" id="filters">
-    <button class="chip on" data-f="all">全部</button>
-    <button class="chip" data-f="gamedev">遊戲開發</button>
-    <button class="chip" data-f="story">互動敘事</button>
-    <button class="chip" data-f="site">網站</button>
-    <button class="chip" data-f="tool">工具</button>
-  </div>
+  <h2 class="sec">公開工具與教學專區</h2>
   <div class="grid" id="grid"></div>
 
-  <h2 class="sec">投影片專區</h2>
-  <p class="note">可下載的完整簡報，以及站內的速查頁。</p>
-  <div class="grid" id="slides"></div>
-
-  <h2 class="sec">外部連結</h2>
+  <h2 class="sec">相關連結</h2>
   <div class="mini-grid" id="links"></div>
 
-  <footer>treefar.github.io — 自用專案導航</footer>
+  <footer>treefar.github.io — 樹遠老師公開專案導航</footer>
 </div>
 <div class="toast" id="toast">已複製路徑</div>
 
 <script>
-// ===== 要新增項目，改下面三個陣列即可 =====
-
-// 網頁專案：cat 可多值（空白分隔）：gamedev / story / site / tool
-// gamedev＝遊戲開發流程工具，tag 開頭的圈號是流程階段（①定位 ②選引擎 ③美術 ④音效 ⑤實作 ⑥交付 ⑦作品），完整對照在私網 gamedev-flow-hub
+// ===== 公開精選專案 (1, 2, 3) =====
 const SITES = [
   { slug: "academic-calendar-115", title: "115 學年度學生行事曆", cat: "site tool", tag: "REFERENCE × ACADEMIC CALENDAR",
     image: null, repo: "treefar.github.io",
@@ -227,57 +158,17 @@ const SITES = [
     desc: "430 個 Steam 官方標籤釐清遊戲定位，選完列出 Steam 上最接近的遊戲。靈感輪盤、取捨說明、定位單與 AI 工單。短網址 /tool" },
   { slug: "game-glossary", title: "遊戲名詞大百科", cat: "tool site gamedev", tag: "① CONCEPT × GLOSSARY",
     image: null,
-    desc: "530 條遊戲術語的教學查詢系統：類型、題材、機制、果汁、黑話，每條附白話定義、代表作、易混淆詞比較與來源，並對應 Steam 官方標籤、與標籤定位器互連。短網址 /glossary" },
-  { slug: "style-library", title: "風格庫", cat: "tool site gamedev", tag: "③ ART × DESIGN",
-    desc: "二十套視覺風格，上方可切分類。文件與介面 8 組：漫畫特刊、紙上期刊、深夜實驗室、克萊因藍、RPG 訊息視窗、規格控制台、靛藍儀表板、管線青。遊戲題材 12 套（抽自 Claude Design 專案的原生設計系統）：糖果流行、典籍金箔、水彩由灰轉彩、8-bit 磚塊、夜巫金光、和紙墨繪、薔薇與椿、怪異事件簿、第十三格、墨金古典、CRT 主機介面、鏽港夜行。點風格看即時預覽，複製 CSS、拿 Unity 色票與 USS、產投影片主題參數，或複製一段指令貼回 Claude Code 直接套進專案。" },
-  { slug: "3d-pixel-tools", title: "3D／像素三工具實驗室", cat: "tool gamedev", tag: "③ ART × 3D PIXEL",
-    image: "3d-pixel-tools.png", repo: "treefar.github.io",
-    desc: "Asset Forge、PixelOver、Crocotile 3D 的能力比較、原生驗證與 Unity 整合案例。含 Waterfall 開放世界與三型共骨架機甲。" },
-  { slug: "game-audio-station", title: "聲音補給站", cat: "tool site gamedev", tag: "④ AUDIO × SFX BGM",
-    image: "game-audio-station.webp", url: "https://treefar-game-audio.treefar.chatgpt.site/", urlLabel: "私人登入站", repo: false,
-    desc: "快速取得遊戲所需的音效與音樂。優先搜尋 18 套自有雲端素材，再查可商用來源；缺少時可用 Google Lyria 生成音樂、Gemini TTS 生成語音，並下載或匯入 Unity 專案。" },
-  { slug: "pixel-city-editor", title: "像素地圖編輯器", cat: "tool gamedev", tag: "⑤ BUILD × LEVEL MAP",
-    desc: "七套場景主題的 2.5D 像素地圖編輯器。67 個可放置角色、會照亮周圍的光源、碰撞與遊戲物件錨點，可匯出 Tiled TMX 與通用 JSON。" },
-  { slug: "vn-studio", title: "VN Studio｜視覺小說製作系統", cat: "tool story gamedev", tag: "⑤ BUILD × VISUAL NOVEL",
-    image: "vn-studio.webp", repo: "treefar.github.io",
-    desc: "全中文、瀏覽器即開即用的視覺小說製作工具。可編輯劇本、分支、角色、舞台、聊天、任務與多語內容，直接試玩並匯出可獨立執行的單一 HTML。" },
-  { slug: "github-top100-zh-tw", title: "GitHub 前百大中文精選", cat: "tool site", tag: "TOOL × DATA",
-    image: "github-top100-zh-tw.png",
-    desc: "每天更新 GitHub 累積 Stars 前 100 名。提供繁中重點、直接下載、安裝判讀，以及針對 Unity、AI、研究與教學工作的個人推薦。" },
-  { slug: "claude-academy", title: "Claude Academy 課程地圖", cat: "tool site", tag: "TOOL × LEARNING",
-    image: "claude-academy.png", repo: "treefar.github.io",
-    desc: "Anthropic 官方免費學習平台的 22 門課程總覽：AI 素養、產品入門、代理與 MCP、API 與雲端四大類，每門課附章節標題與重點摘要，全繁中整理。" },
-  { slug: "capy-generator", title: "Capy Generator 水豚生成器", cat: "tool", tag: "TOOL",
-    desc: "程序化 3D 水豚：捏體型、換毛色、玩玩具、切天氣，生成收藏卡片。" },
-  { slug: "agd-comic-site", title: "動遊系 COMIC EDITION", cat: "site", tag: "SITE",
-    desc: "樹德科大動畫與遊戲設計系，漫畫風新形象網站。" },
-  { slug: "first-principles-navigator", title: "第一性原理｜核心問題導航器", cat: "tool", tag: "TOOL × THINKING",
-    image: "first-principles-navigator.webp",
-    desc: "把模糊問題拆成事實、假設與最小驗證。提供三種分析深度、案例庫、假設風險矩陣、決策日誌與多格式匯出。" },
-];
-
-// 投影片：放在首頁的獨立投影片專區，url 指向 repo 內的可下載檔案
-const SLIDES = [
-  { title: "AI Agent Context Engineering 精簡教學版", tag: "SLIDES × AI AGENT", image: null,
-    url: "/slides/AI_Agent_Context_Engineering_精簡教學版.pptx",
-    desc: "從壓縮、記憶、過濾到任務導向摘要，理解 Agent 如何管理資訊生命週期。" },
-  { title: "期刊 AI 規範速查", tag: "REFERENCE × ACADEMIC AI", kind: "page", image: null,
-    url: "/journal-ai-policy/",
-    desc: "COPE、ICMJE、WAME 與 Elsevier、Springer Nature、SAGE、Wiley、T&F、IEEE、ACM、APA 共 12 個單位的生成式 AI 政策速查表，含五條跨出版社底線與台灣現況三個常見誤解。每筆對過官方原文與政策日期，2026-08-23 快照。" },
-  { title: "遊戲 BGM／音效快速搜尋", tag: "TOOL × GAME AUDIO", kind: "page", image: null,
-    url: "/bgm-se-finder/",
-    desc: "9 個免費可商用的 BGM／音效網站，依類型、授權標示、介面語言篩選，同學做遊戲作業直接點進去找。每站都實測過授權條款與禁止事項，2026-08-26 整理。" },
+    desc: "530 條遊戲術語的教學查詢系統：類型、題材、機制、果汁、黑話，每條附白話定義、代表作、易混淆詞比較與來源，並對應 Steam 官方標籤、與標籤定位器互連。短網址 /glossary" }
 ];
 
 // 外部連結
 const LINKS = [
-  { title: "Google Vids", url: "https://vids.google.com/", desc: "Google AI 影音創作工具，自動生成分鏡大綱、配樂素材與旁白語音。" },
-  { title: "MusicFX", url: "https://aitestkitchen.withgoogle.com/tools/music-fx", desc: "Google DeepMind MusicLM 音樂與配樂生成實驗工具，支援即時 DJ 迴圈混搭。" },
-  { title: "NotebookLM", url: "https://notebooklm.google.com/", desc: "Google AI 深度研究筆記，支援多份文件/論文統整與雙人語音對談摘要（Audio Overview）。" },
-  { title: "GitHub（treefar）", url: "https://github.com/treefar", desc: "所有 repo 與原始碼。" },
+  { title: "GitHub（treefar）", url: "https://github.com/treefar", desc: "開源專案、工具與教材原始碼。" },
+  { title: "樹德科大 動遊系", url: "https://agd.stu.edu.tw", desc: "動畫與遊戲設計系官方首頁。" },
+  { title: "私人工作台", url: "https://tf-private.pages.dev/", desc: "需 Cloudflare Access 登入授權。" }
 ];
 
-// ===== 以下為渲染邏輯，一般不用動 =====
+// ===== 以下為渲染邏輯 =====
 const CALENDAR_NOTICES = [
   { date: "2026-08-30", title: "新生宿舍開放、初選第三階段開始", desc: "初選至 9/2 上午 9:00；新生宿舍 8/30 上午 9:00 開放。" },
   { date: "2026-08-31", title: "註冊基準日與研究生畢業離校截止", desc: "研究生請留意論文繳交與 114-2 畢業離校手續。" },
@@ -316,32 +207,17 @@ SITES.forEach((s, i) => {
   if (s.url) { a.target = "_blank"; a.rel = "noopener"; }
   const t = s.tag.toLowerCase().includes("story") && !s.cat.includes("game") ? "story" : s.cat.split(" ")[0];
   const thumb = s.image === null
-    ? `<div class="thumb slide-text-thumb"><span>${s.title}</span>${i < 9 ? '<span class="key">' + (i + 1) + '</span>' : ''}</div>`
-    : `<div class="thumb"><img src="/previews/${s.image || (s.slug + ".jpg")}" alt="${s.title}" width="640" height="360" loading="lazy">${i < 9 ? '<span class="key">' + (i + 1) + '</span>' : ''}</div>`;
+    ? `<div class="thumb slide-text-thumb"><span>${s.title}</span><span class="key">${i + 1}</span></div>`
+    : `<div class="thumb"><img src="/previews/${s.image || (s.slug + ".jpg")}" alt="${s.title}" width="640" height="360" loading="lazy"><span class="key">${i + 1}</span></div>`;
   a.innerHTML = `
     ${thumb}
     <div class="body">
       <div class="tag t-${t}">${s.tag}</div>
       <h3>${s.title}</h3>
       <p>${s.desc}</p>
-      <div class="foot"><span class="url">${s.urlLabel || ("/" + s.slug)}</span>${s.repo === false ? '<span class="url">登入使用</span>' : `<span class="gh" data-gh="https://github.com/treefar/${s.repo || s.slug}">repo</span>`}</div>
+      <div class="foot"><span class="url">${s.urlLabel || ("/" + s.slug)}</span><span class="gh" data-gh="https://github.com/treefar/${s.repo || s.slug}">repo</span></div>
     </div>`;
   grid.appendChild(a);
-});
-
-const slides = document.getElementById("slides");
-SLIDES.forEach((s) => {
-  const a = document.createElement("a");
-  a.className = "card"; a.href = s.url;
-  a.innerHTML = `
-    ${s.image ? `<div class="thumb"><img src="/previews/${s.image}" alt="${s.title}" width="640" height="360" loading="lazy"></div>` : `<div class="thumb slide-text-thumb"><span>${s.title}</span></div>`}
-    <div class="body">
-      <div class="tag t-tool">${s.tag}</div>
-      <h3>${s.title}</h3>
-      <p>${s.desc}</p>
-      <div class="foot"><span class="url">${s.kind === "data" ? "下載 Excel" : s.kind === "collection" ? "開啟簡報集" : s.kind === "page" ? "開啟速查頁" : "下載 PPTX"}</span><span class="gh">投影片專區</span></div>
-    </div>`;
-  slides.appendChild(a);
 });
 
 const links = document.getElementById("links");
@@ -356,14 +232,6 @@ LINKS.forEach(t => {
 });
 
 const cards = [...grid.querySelectorAll(".card")];
-document.getElementById("filters").addEventListener("click", e => {
-  const btn = e.target.closest(".chip");
-  if (!btn) return;
-  document.querySelectorAll(".chip").forEach(c => c.classList.remove("on"));
-  btn.classList.add("on");
-  const f = btn.dataset.f;
-  cards.forEach(c => c.classList.toggle("hide", f !== "all" && !c.dataset.f.split(" ").includes(f)));
-});
 grid.addEventListener("click", e => {
   const gh = e.target.closest(".gh");
   if (gh) { e.preventDefault(); e.stopPropagation(); window.open(gh.dataset.gh, "_blank"); }
@@ -378,41 +246,6 @@ function showToast() {
   t.classList.add("show");
   setTimeout(() => t.classList.remove("show"), 1600);
 }
-
-// ===== 暫時性首頁存取門檻：不需要時可連同上方 CSS／HTML 區塊一起移除 =====
-const ACCESS_SESSION_KEY = "treefar-home-access-v1";
-const ACCESS_PASSWORD_HASH = "4c08c723d47104e004dee56e8fa90173f7158339f7cb30d2099d8e64522c3d59";
-const accessGate = document.getElementById("accessGate");
-const accessForm = document.getElementById("accessForm");
-const accessPassword = document.getElementById("accessPassword");
-const accessError = document.getElementById("accessError");
-
-function unlockHomepage() {
-  document.body.classList.remove("gate-locked");
-  accessGate.hidden = true;
-}
-
-if (sessionStorage.getItem(ACCESS_SESSION_KEY) === "granted") {
-  unlockHomepage();
-} else {
-  requestAnimationFrame(() => accessPassword.focus());
-}
-
-accessForm.addEventListener("submit", async event => {
-  event.preventDefault();
-  accessError.textContent = "";
-  const bytes = new TextEncoder().encode(accessPassword.value);
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  const hash = [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, "0")).join("");
-  if (hash === ACCESS_PASSWORD_HASH) {
-    sessionStorage.setItem(ACCESS_SESSION_KEY, "granted");
-    accessPassword.value = "";
-    unlockHomepage();
-    return;
-  }
-  accessPassword.select();
-  accessError.textContent = "密碼不正確，請再試一次。";
-});
 </script>
 </body>
 </html>
