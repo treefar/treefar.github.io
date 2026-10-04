@@ -78,18 +78,6 @@
   .gh { font-size: 12px; color: var(--dim); border-bottom: 1px dotted var(--dim); cursor: pointer; }
   .gh:hover { color: var(--ink); }
 
-  .mini-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
-  .mini {
-    display: flex; flex-direction: column; gap: 5px; background: var(--panel);
-    border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px;
-    text-decoration: none; color: inherit; transition: all .15s; cursor: pointer;
-  }
-  .mini:hover { background: var(--panel-hover); border-color: var(--dim); }
-  .mini h3 { font-size: 14px; display: flex; align-items: center; gap: 8px; }
-  .mini .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
-  .mini p { font-size: 12px; color: var(--dim); line-height: 1.5; }
-  .mini .addr { font-size: 11px; color: var(--dim); opacity: .7; font-family: Consolas, monospace; word-break: break-all; }
-
   .notice-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .notice-card {
     display: flex; flex-direction: column; gap: 6px; min-height: 118px; padding: 15px 16px;
@@ -141,9 +129,6 @@
   <h2 class="sec">公開工具與教學專區</h2>
   <div class="grid" id="grid"></div>
 
-  <h2 class="sec">相關連結</h2>
-  <div class="mini-grid" id="links"></div>
-
   <footer>treefar.github.io — 樹遠老師公開專案導航</footer>
 </div>
 <div class="toast" id="toast">已複製路徑</div>
@@ -159,13 +144,6 @@ const SITES = [
   { slug: "game-glossary", title: "遊戲名詞大百科", cat: "tool site gamedev", tag: "① CONCEPT × GLOSSARY",
     image: null,
     desc: "530 條遊戲術語的教學查詢系統：類型、題材、機制、果汁、黑話，每條附白話定義、代表作、易混淆詞比較與來源，並對應 Steam 官方標籤、與標籤定位器互連。短網址 /glossary" }
-];
-
-// 外部連結
-const LINKS = [
-  { title: "GitHub（treefar）", url: "https://github.com/treefar", desc: "開源專案、工具與教材原始碼。" },
-  { title: "樹德科大 動遊系", url: "https://agd.stu.edu.tw", desc: "動畫與遊戲設計系官方首頁。" },
-  { title: "私人工作台", url: "https://tf-private.pages.dev/", desc: "需 Cloudflare Access 登入授權。" }
 ];
 
 // ===== 以下為渲染邏輯 =====
@@ -218,17 +196,6 @@ SITES.forEach((s, i) => {
       <div class="foot"><span class="url">${s.urlLabel || ("/" + s.slug)}</span><span class="gh" data-gh="https://github.com/treefar/${s.repo || s.slug}">repo</span></div>
     </div>`;
   grid.appendChild(a);
-});
-
-const links = document.getElementById("links");
-LINKS.forEach(t => {
-  const el = document.createElement("a");
-  el.className = "mini"; el.href = t.url; el.target = "_blank"; el.rel = "noopener";
-  el.innerHTML = `
-    <h3><span class="dot d-ext"></span>${t.title}</h3>
-    <p>${t.desc || ""}</p>
-    <span class="addr">${t.url}</span>`;
-  links.appendChild(el);
 });
 
 const cards = [...grid.querySelectorAll(".card")];
