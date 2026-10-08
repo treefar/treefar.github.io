@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>堀井企劃工具鏈</title>
+<meta name="description" content="企劃→規格檔→檢查器→灰盒試玩→Unity：堀井式 RPG 企劃怎麼落地，以及目前驗證到哪裡。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&family=DotGothic16&display=swap">
+<style>
+/* 工具鏈說明：上方管線圖，下方依序是四層、檢查器、試玩、Unity 實測、缺口、狀態。配色沿用原則卡片庫 */
+:root{
+  --bg:#eef1f6; --panel:#ffffff; --ink:#18213a; --muted:#5b6782; --line:#c9d1e2;
+  --accent:#2c52c4; --gold:#9a6f12; --win:#18213a; --win-fg:#f3f5fb; --win-gold:#e2c46a;
+  --ok:#2f7d5b; --warn:#b5651d; --no:#8a8f9e; --code:#e7ebf3;
+  --f-display:"LXGW WenKai TC","Noto Serif TC",serif;
+  --f-body:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-pixel:"DotGothic16","Noto Sans TC",monospace;
+  --f-mono:ui-monospace,"Cascadia Code",Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c1222; --panel:#121a2e; --ink:#e6eaf4; --muted:#9aa6c2; --line:#2a3655; --accent:#8fb0ff; --gold:#e2c46a; --win:#050913;
+  --ok:#79d1a6; --warn:#f0a868; --no:#7d869c; --code:#1b2440; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1222; --panel:#121a2e; --ink:#e6eaf4; --muted:#9aa6c2; --line:#2a3655; --accent:#8fb0ff; --gold:#e2c46a; --win:#050913;
+  --ok:#79d1a6; --warn:#f0a868; --no:#7d869c; --code:#1b2440; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.75}
+.wrap{max-width:980px;margin:0 auto;padding:28px 16px 80px;display:flex;flex-direction:column;gap:30px}
+.home{font-family:var(--f-pixel);font-size:.85rem;color:var(--accent);text-decoration:none}
+.hero{background:var(--win);color:var(--win-fg);border-radius:10px;padding:24px;outline:3px double var(--win-fg);outline-offset:-8px}
+.hero h1{font-family:var(--f-display);font-size:clamp(1.5rem,4.5vw,2.2rem);line-height:1.3;margin:0 0 8px;text-wrap:balance}
+.hero p{margin:0;color:#c6cde0;max-width:64ch}
+h2{font-family:var(--f-display);font-size:1.4rem;margin:0 0 6px;line-height:1.35}
+h2 .n{font-family:var(--f-pixel);color:var(--gold);font-size:1rem;margin-right:8px}
+section>p{margin:0 0 10px;max-width:70ch}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+svg.pipe{width:100%;height:auto;display:block}
+svg.pipe .box{fill:var(--panel);stroke:var(--line);stroke-width:1.5}
+svg.pipe .box.key{stroke:var(--accent);stroke-width:2}
+svg.pipe .t{fill:var(--ink);font-family:var(--f-body);font-size:15px;font-weight:700}
+svg.pipe .s{fill:var(--muted);font-family:var(--f-body);font-size:12px}
+svg.pipe .arrow{stroke:var(--muted);stroke-width:1.5;fill:none;marker-end:url(#ah)}
+svg.pipe .ahead{fill:var(--muted)}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:520px}
+th,td{text-align:left;vertical-align:top;padding:8px 10px;border-bottom:1px solid var(--line)}
+th{font-size:.78rem;letter-spacing:.05em;color:var(--muted);font-weight:700}
+td.id{font-family:var(--f-pixel);color:var(--gold);white-space:nowrap}
+code{font-family:var(--f-mono);font-size:.85em;background:var(--code);padding:1px 5px;border-radius:4px}
+pre{font-family:var(--f-mono);font-size:.82rem;background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto;margin:0;line-height:1.6}
+.pill{display:inline-block;font-size:.75rem;font-weight:700;padding:1px 8px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.pill.ok{color:var(--ok)} .pill.warn{color:var(--warn)} .pill.no{color:var(--no)}
+.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+figure{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+figure img{display:block;width:100%;height:auto;image-rendering:pixelated;background:#222}
+figcaption{font-size:.82rem;color:var(--muted);padding:8px 10px}
+.nums{display:flex;flex-wrap:wrap;gap:8px 22px;font-family:var(--f-pixel);margin:4px 0 12px}
+.nums b{color:var(--gold);font-weight:400;font-size:1.25rem;margin-right:3px}
+ul.gap{margin:0;padding-left:1.2em} ul.gap li{margin-bottom:6px}
+.note{font-size:.82rem;color:var(--muted);max-width:76ch;border-top:1px solid var(--line);padding-top:16px}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="home" href="../">← 堀井 RPG 設計</a>
+  <header class="hero">
+    <h1>企劃怎麼走到可玩：堀井式 RPG 工具鏈</h1>
+    <p>原則不直接碰遊戲引擎。企劃的每個決定先寫進一份跟引擎無關的規格檔，再由這份檔案產出檢查報告、灰盒試玩與 Unity 專案。看到任何一筆資料，都能查回它是根據哪條原則定的。</p>
+  </header>
+
+  <section>
+    <h2><span class="n">00</span>整條管線</h2>
+    <div class="panel">
+      <svg class="pipe" viewBox="0 0 900 250" role="img" aria-label="企劃二十步寫進規格檔，規格檔分別產出檢查報告、灰盒試玩、Unity 專案">
+        <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ahead" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+        <rect class="box" x="10" y="90" width="180" height="70" rx="8"/>
+        <text class="t" x="100" y="120" text-anchor="middle">堀井 20 步企劃</text>
+        <text class="s" x="100" y="142" text-anchor="middle">每步附原則編號</text>
+        <path class="arrow" d="M190,125 L268,125"/>
+        <rect class="box key" x="270" y="80" width="200" height="90" rx="8"/>
+        <text class="t" x="370" y="115" text-anchor="middle">rpg-spec.json</text>
+        <text class="s" x="370" y="137" text-anchor="middle">唯一事實來源</text>
+        <text class="s" x="370" y="155" text-anchor="middle">結構驗證 0 失敗才往下</text>
+        <path class="arrow" d="M470,110 C520,110 520,45 588,45"/>
+        <path class="arrow" d="M470,125 L588,125"/>
+        <path class="arrow" d="M470,140 C520,140 520,205 588,205"/>
+        <rect class="box" x="590" y="15" width="300" height="60" rx="8"/>
+        <text class="t" x="740" y="41" text-anchor="middle">堀井檢查器</text>
+        <text class="s" x="740" y="61" text-anchor="middle">用可量化的原則掃規格，列出建議</text>
+        <rect class="box" x="590" y="95" width="300" height="60" rx="8"/>
+        <text class="t" x="740" y="121" text-anchor="middle">灰盒試玩網頁</text>
+        <text class="s" x="740" y="141" text-anchor="middle">先驗證企劃好不好玩</text>
+        <rect class="box" x="590" y="175" width="300" height="60" rx="8"/>
+        <text class="t" x="740" y="201" text-anchor="middle">Unity 6000.5.10f1</text>
+        <text class="s" x="740" y="221" text-anchor="middle">BakinKit（已打通）／ORK 3（規劃中）</text>
+      </svg>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">01</span>四層結構</h2>
+    <p>每一層只做自己的事。原則只在企劃層與驗證層介入，落地層照規格做就好。</p>
+    <div class="panel tw"><table>
+      <thead><tr><th>層</th><th>產出</th><th>原則怎麼介入</th></tr></thead>
+      <tbody>
+        <tr><td>1 企劃</td><td>人看的設計決定</td><td>照 20 步順序，從魔王開始；每個決定附原則編號，記進規格的 <code>design.decisions[]</code></td></tr>
+        <tr><td>2 規格</td><td><code>rpg-spec.json</code></td><td>能寫成資料的決定寫進對應區塊：魔王→敵人＋登場對話；城鎮的困擾→NPC＋旗標＋對話；看得到拿不到的寶箱→寶箱＋鑰匙旗標</td></tr>
+        <tr><td>3 落地</td><td>網頁試玩、Unity 專案</td><td>不介入，只照規格做</td></tr>
+        <tr><td>4 驗證</td><td>檢查報告、試玩紀錄</td><td>把可量化的原則變成自動檢查；量化不了的（角色立起來了嗎）靠人讀</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin-top:10px">為了接上堀井的系統類原則，規格檔新增了幾個選填欄位：怪物的聰明程度（動物／人類／神）、行動傾向、會不會集中攻擊同一人；夥伴的「先入觀」；道具等級；地圖類型與區塊等級；旗標的「重要情報」標記。</p>
+  </section>
+
+  <section>
+    <h2><span class="n">02</span>堀井檢查器：自動掃 13 項</h2>
+    <p>以示範作品「霧笛港」為基準，13 項全部符合。數字門檻（例如最少幾步才遇敵）可以依自己的遊戲調整。</p>
+    <div class="panel tw"><table>
+      <thead><tr><th>原則</th><th>檢查什麼</th></tr></thead>
+      <tbody>
+        <tr><td class="id">H-059</td><td>每句台詞不超過三行</td></tr>
+        <tr><td class="id">H-121</td><td>標成「重要情報」的旗標，至少有兩個不同 NPC 會說</td></tr>
+        <tr><td class="id">H-078</td><td>每個遇敵區有最少步數，不會一走出城就連續遇敵</td></tr>
+        <tr><td class="id">H-077</td><td>遇敵步數是一個區間，玩家數不出規律</td></tr>
+        <tr><td class="id">H-080</td><td>有遇敵的地圖都標了區塊等級，玩家判斷得出危不危險</td></tr>
+        <tr><td class="id">H-026</td><td>寶箱道具等級沒有比地圖區塊等級高太多</td></tr>
+        <tr><td class="id">H-107</td><td>關鍵道具有確定的取得方式，不只靠機率掉落</td></tr>
+        <tr><td class="id">H-043</td><td>每場頭目戰都有登場對話，玩家知道他為什麼做壞事</td></tr>
+        <tr><td class="id">H-018</td><td>每個城鎮至少有一個推動劇情的事件</td></tr>
+        <tr><td class="id">H-019</td><td>城鎮 NPC 夠多，有生活感</td></tr>
+        <tr><td class="id">H-068</td><td>每隻怪物都宣告了聰明程度</td></tr>
+        <tr><td class="id">H-088</td><td>兩個以上夥伴時，每人有自己的先入觀，AI 不會一模一樣</td></tr>
+        <tr><td class="id">流程</td><td>企劃 20 步都有紀錄，每筆資料查得回原則</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2><span class="n">03</span>灰盒試玩</h2>
+    <p>規格檔改了，重跑產生器就能玩新版本。示範作品《霧笛港》用 20 步流程從頭做出：一座港鎮、一片海濱、一個洞窟、一個魔王。對話、旗標、出港條件、夥伴加入、魔王戰與結局都已用自動腳本從開場走到結局。</p>
+    <p>全滅時照 H-105 處理：不會 Game Over，金幣減半、經驗值保留。拒絕夥伴時她不會加入。</p>
+    <p><a href="../playtest/">▶ 開始試玩霧笛港</a>　（平衡還沒調：用初始等級直接打魔王會輸。）</p>
+  </section>
+
+  <section>
+    <h2><span class="n">04</span>轉進 Unity：BakinKit 匯入實測</h2>
+    <p>BakinKit 是在 Unity 裡重現 RPG Developer Bakin 資料庫與事件系統的套件。它讀 Bakin 的中介格式（IR v3），所以另寫了一支轉換器把規格檔轉成 IR v3，再用 BakinKit 既有的匯入器。</p>
+    <div class="nums"><span><b>22</b>事件</span><span><b>203</b>條指令</span><span><b>0</b>條認不得</span><span><b>0</b>編譯錯誤</span><span><b>3</b>張地圖場景</span></div>
+    <div class="shots">
+      <figure><img src="img/harbor.png" alt="霧笛港匯入後的 Unity 場景截圖，灰色方塊代表 NPC 與玩家起點" loading="lazy"><figcaption>霧笛港：5 個 NPC 與玩家起點，位置和規格一致</figcaption></figure>
+      <figure><img src="img/coast.png" alt="霧濱匯入後的 Unity 場景截圖" loading="lazy"><figcaption>霧濱</figcaption></figure>
+      <figure><img src="img/cave.png" alt="沉鐘洞匯入後的 Unity 場景截圖" loading="lazy"><figcaption>沉鐘洞</figcaption></figure>
+    </div>
+    <p style="margin-top:10px;font-size:.85rem;color:var(--muted)">2026-10-07 實測，Unity 6000.5.10f1。畫面全是灰盒占位，不是正式美術。</p>
+  </section>
+
+  <section>
+    <h2><span class="n">05</span>還沒解決的缺口</h2>
+    <ul class="gap">
+      <li><b>還沒進遊戲實際玩。</b>匯入成功只證明格式正確、每條指令都被認得；對話、戰鬥、換地圖還沒在 Unity 裡測。</li>
+      <li><b>怪物 AI 與夥伴先入觀轉不過去。</b>BakinKit 沒有對應欄位，目前 AI 一律普通攻擊。</li>
+      <li><b>遇敵被攤平。</b>只能整張地圖一組權重，遇敵區域範圍和「哪些怪一起出現」沒有保留。</li>
+      <li><b>傷害公式只轉近似式。</b>數值不保證和網頁試玩版相等。</li>
+      <li><b>ORK 3 還沒接。</b>新欄位對到 ORK 的方向已寫好，但 ORK 實際欄位名未查證，builder 還沒寫。</li>
+    </ul>
+    <p style="margin-top:10px">轉不過去的東西不會偷偷丟掉，轉換器會逐條寫進報告，分成「近似」「未轉」「未查證」三類。</p>
+  </section>
+
+  <section>
+    <h2><span class="n">06</span>目前狀態</h2>
+    <div class="panel tw"><table>
+      <thead><tr><th>項目</th><th>資料已建</th><th>工具驗證</th><th>使用者確認</th></tr></thead>
+      <tbody>
+        <tr><td>138 條原則</td><td><span class="pill ok">完成</span></td><td><span class="pill ok">格式檢查通過</span></td><td><span class="pill warn">待確認</span></td></tr>
+        <tr><td>20 步企劃流程</td><td><span class="pill ok">完成</span></td><td><span class="pill ok">引用編號全部存在</span></td><td><span class="pill warn">待確認</span></td></tr>
+        <tr><td>堀井檢查器</td><td><span class="pill ok">13 項</span></td><td><span class="pill ok">回歸測試 18/18</span></td><td><span class="pill warn">待確認</span></td></tr>
+        <tr><td>霧笛港灰盒試玩</td><td><span class="pill ok">完成</span></td><td><span class="pill ok">自動走完開場到結局</span></td><td><span class="pill warn">待確認</span></td></tr>
+        <tr><td>BakinKit 匯入</td><td><span class="pill ok">轉換器完成</span></td><td><span class="pill ok">匯入 0 錯誤</span>　<span class="pill warn">PlayMode 未測</span></td><td><span class="pill no">未開始</span></td></tr>
+        <tr><td>ORK 3 builder</td><td><span class="pill no">未開始</span></td><td><span class="pill no">—</span></td><td><span class="pill no">—</span></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <footer class="note">
+    原則來源：堀井雄二・塩崎剛三《堀井雄二のドラゴンクエストのつくりかた》（Square Enix，2026），本站只有改寫整理，不含原文。示範作品《霧笛港》為原創灰盒，與《勇者鬥惡龍》無關。
+  </footer>
+</div>
+</body>
+</html>
